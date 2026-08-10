@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
+import {
+  createWorkspaceAction,
+  selectWorkspaceAction,
+} from "./workspace-actions";
+import type { OwnerSummary, WorkspaceSummary } from "./workspace-types";
 
 type View = "dashboard" | "case" | "brain" | "connections" | "lab";
 
@@ -133,7 +139,27 @@ const stageLabels = [
 
 const timelineSteps = ["Signal", "Investigate", "Intervene", "Measure", "Learn"];
 
-export default function CrossSignalApp() {
+type CrossSignalAppProps = {
+  owner: OwnerSummary;
+  workspace: WorkspaceSummary;
+  workspaces: WorkspaceSummary[];
+};
+
+function initials(value: string): string {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "WS";
+}
+
+export default function CrossSignalApp({
+  owner,
+  workspace,
+  workspaces,
+}: CrossSignalAppProps) {
+  const router = useRouter();
   const [view, setView] = useState<View>("dashboard");
   const [caseStage, setCaseStage] = useState(0);
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
@@ -145,14 +171,25 @@ export default function CrossSignalApp() {
   );
   const [cohortConfirmed, setCohortConfirmed] = useState(false);
   const [published, setPublished] = useState(false);
+  const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
+  const [ownerMenuOpen, setOwnerMenuOpen] = useState(false);
+  const [workspaceCreateOpen, setWorkspaceCreateOpen] = useState(false);
+  const [newWorkspaceName, setNewWorkspaceName] = useState("");
+  const [workspaceError, setWorkspaceError] = useState("");
+  const [workspacePending, startWorkspaceTransition] = useTransition();
   const toastTimerRef = useRef<number | null>(null);
   const scanTimerRef = useRef<number | null>(null);
+  const workspaceNameInputRef = useRef<HTMLInputElement | null>(null);
+  const ownerName = owner.fullName ?? owner.displayName;
 
   useEffect(() => {
     const closeOverlay = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setSelectedEvidence(null);
       setScanOpen(false);
+      setWorkspaceMenuOpen(false);
+      setOwnerMenuOpen(false);
+      setWorkspaceCreateOpen(false);
     };
 
     window.addEventListener("keydown", closeOverlay);
@@ -163,10 +200,47 @@ export default function CrossSignalApp() {
     };
   }, []);
 
+  useEffect(() => {
+    if (workspaceCreateOpen) workspaceNameInputRef.current?.focus();
+  }, [workspaceCreateOpen]);
+
   const notify = (message: string) => {
     setToast(message);
     if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
     toastTimerRef.current = window.setTimeout(() => setToast(""), 3200);
+  };
+
+  const selectWorkspace = (workspaceId: string) => {
+    if (workspaceId === workspace.id) {
+      setWorkspaceMenuOpen(false);
+      return;
+    }
+
+    startWorkspaceTransition(async () => {
+      const result = await selectWorkspaceAction(workspaceId);
+      if (!result.ok) {
+        notify(result.error);
+        return;
+      }
+      setWorkspaceMenuOpen(false);
+      router.refresh();
+    });
+  };
+
+  const createWorkspace = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setWorkspaceError("");
+    startWorkspaceTransition(async () => {
+      const result = await createWorkspaceAction(newWorkspaceName);
+      if (!result.ok) {
+        setWorkspaceError(result.error);
+        return;
+      }
+      setNewWorkspaceName("");
+      setWorkspaceCreateOpen(false);
+      setWorkspaceMenuOpen(false);
+      router.refresh();
+    });
   };
 
   const startScan = () => {
@@ -626,7 +700,7 @@ export default function CrossSignalApp() {
         <button className="button button-secondary" onClick={() => notify("Brain export prepared as Markdown + JSON")}>Export brain</button>
       </section>
       <section className="brain-grid">
-        <article className="brain-profile"><span className="eyebrow">COMPANY IDENTITY</span><h2>Atlas Foundry</h2><p>Workflow automation for independent design studios.</p><dl><div><dt>Primary customer</dt><dd>Studio owner · 2–10 people</dd></div><div><dt>Timezone</dt><dd>America/Los_Angeles</dd></div><div><dt>Product promise</dt><dd>Keep client delivery moving without project-manager overhead.</dd></div></dl></article>
+        <article className="brain-profile"><span className="eyebrow">COMPANY IDENTITY</span><h2>{workspace.name}</h2><p>Workflow automation for independent design studios.</p><dl><div><dt>Primary customer</dt><dd>Studio owner · 2–10 people</dd></div><div><dt>Timezone</dt><dd>America/Los_Angeles</dd></div><div><dt>Product promise</dt><dd>Keep client delivery moving without project-manager overhead.</dd></div></dl></article>
         <article className="brain-metric"><span className="eyebrow">NORTH-STAR METRIC · V3</span><h2>Paid conversion</h2><div className="metric-definition"><span>checkout_success</span><b>÷</b><span>eligible_landing</span></div><p>Segment: paid acquisition · minimum exposure: 50 · tolerance: 5%</p></article>
       </section>
       <section className="learning-ledger">
@@ -688,10 +762,49 @@ export default function CrossSignalApp() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span><strong>CrossSignal</strong><small>Revenue flight recorder</small></span>
         </button>
-        <div className="workspace-switcher">
-          <span className="workspace-avatar">AF</span>
-          <span><strong>Atlas Foundry</strong><small>Seeded demo</small></span>
-          <span aria-hidden="true">⌄</span>
+        <div className="workspace-control">
+          <button
+            className="workspace-switcher"
+            aria-expanded={workspaceMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => {
+              setWorkspaceMenuOpen((open) => !open);
+              setOwnerMenuOpen(false);
+            }}
+          >
+            <span className="workspace-avatar">{initials(workspace.name)}</span>
+            <span><strong>{workspace.name}</strong><small>Owner workspace</small></span>
+            <span aria-hidden="true">⌄</span>
+          </button>
+          {workspaceMenuOpen && (
+            <div className="workspace-menu" role="menu" aria-label="Your workspaces">
+              <div className="workspace-menu-label">YOUR WORKSPACES</div>
+              {workspaces.map((candidate) => (
+                <button
+                  key={candidate.id}
+                  role="menuitem"
+                  className={candidate.id === workspace.id ? "active" : ""}
+                  disabled={workspacePending}
+                  onClick={() => selectWorkspace(candidate.id)}
+                >
+                  <span className="workspace-avatar">{initials(candidate.name)}</span>
+                  <span><strong>{candidate.name}</strong><small>{candidate.role}</small></span>
+                  <i aria-hidden="true">{candidate.id === workspace.id ? "✓" : ""}</i>
+                </button>
+              ))}
+              <button
+                className="workspace-create-trigger"
+                role="menuitem"
+                onClick={() => {
+                  setWorkspaceError("");
+                  setWorkspaceCreateOpen(true);
+                  setWorkspaceMenuOpen(false);
+                }}
+              >
+                <span aria-hidden="true">+</span> Create workspace
+              </button>
+            </div>
+          )}
         </div>
         <nav className="main-nav" aria-label="Main navigation">
           <span className="nav-label">WORKSPACE</span>
@@ -708,12 +821,80 @@ export default function CrossSignalApp() {
           <div><span className="system-orbit"><i /></span><span><strong>System healthy</strong><small>Last scan · 6m ago</small></span></div>
           <button onClick={() => setScanOpen(true)}>Run manual scan</button>
         </div>
-        <div className="owner-row"><span className="owner-avatar">Y</span><span><strong>Workspace owner</strong><small>Demo mode</small></span><button aria-label="Owner settings">•••</button></div>
+        <div className="owner-control">
+          <button
+            className="owner-row"
+            aria-expanded={ownerMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => {
+              setOwnerMenuOpen((open) => !open);
+              setWorkspaceMenuOpen(false);
+            }}
+          >
+            <span className="owner-avatar">{initials(ownerName)}</span>
+            <span><strong>{ownerName}</strong><small>Workspace owner</small></span>
+            <i aria-hidden="true">•••</i>
+          </button>
+          {ownerMenuOpen && (
+            <div className="owner-menu" role="menu">
+              <span className="owner-menu-role"><i /> AUTHENTICATED OWNER</span>
+              <strong>{ownerName}</strong>
+              <small>{owner.email}</small>
+              <dl><div><dt>Workspace</dt><dd>{workspace.name}</dd></div><div><dt>Access</dt><dd>Owner only</dd></div></dl>
+              <a role="menuitem" href="/signout-with-chatgpt?return_to=%2F">Sign out</a>
+            </div>
+          )}
+        </div>
       </aside>
 
       <main className="main-panel">
         <header className="topbar">
-          <div className="breadcrumb"><span>Atlas Foundry</span><i>/</i><strong>{navItems.find((item) => item.id === view)?.label}</strong></div>
+          <div className="breadcrumb"><span>{workspace.name}</span><i>/</i><strong>{navItems.find((item) => item.id === view)?.label}</strong></div>
+          <div className="mobile-workspace-control">
+            <button
+              className="mobile-workspace-trigger"
+              aria-expanded={workspaceMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setWorkspaceMenuOpen((open) => !open)}
+            >
+              <span>{initials(workspace.name)}</span>
+              <strong>{workspace.name}</strong>
+              <i aria-hidden="true">⌄</i>
+            </button>
+            {workspaceMenuOpen && (
+              <div className="workspace-menu mobile-workspace-menu" role="menu" aria-label="Your workspaces">
+                <div className="workspace-menu-label">YOUR WORKSPACES</div>
+                {workspaces.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    role="menuitem"
+                    className={candidate.id === workspace.id ? "active" : ""}
+                    disabled={workspacePending}
+                    onClick={() => selectWorkspace(candidate.id)}
+                  >
+                    <span className="workspace-avatar">{initials(candidate.name)}</span>
+                    <span><strong>{candidate.name}</strong><small>{candidate.role}</small></span>
+                    <i aria-hidden="true">{candidate.id === workspace.id ? "✓" : ""}</i>
+                  </button>
+                ))}
+                <button
+                  className="workspace-create-trigger"
+                  role="menuitem"
+                  onClick={() => {
+                    setWorkspaceError("");
+                    setWorkspaceCreateOpen(true);
+                    setWorkspaceMenuOpen(false);
+                  }}
+                >
+                  <span aria-hidden="true">+</span> Create workspace
+                </button>
+                <div className="mobile-owner-footer">
+                  <span><strong>{ownerName}</strong><small>{owner.email}</small></span>
+                  <a role="menuitem" href="/signout-with-chatgpt?return_to=%2F">Sign out</a>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="topbar-actions"><span className="demo-chip"><i /> SYNTHETIC DATA</span><button className="topbar-icon" aria-label="Open activity">⌁</button><button className="topbar-icon" aria-label="Open help">?</button></div>
         </header>
         <div className={`content ${view === "case" ? "case-content" : ""}`}>
@@ -724,6 +905,39 @@ export default function CrossSignalApp() {
           {view === "lab" && renderLab()}
         </div>
       </main>
+
+      {workspaceCreateOpen && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !workspacePending) setWorkspaceCreateOpen(false);
+        }}>
+          <div className="workspace-create-modal" role="dialog" aria-modal="true" aria-labelledby="workspace-create-title">
+            <button className="modal-close" aria-label="Close workspace dialog" disabled={workspacePending} onClick={() => setWorkspaceCreateOpen(false)}>×</button>
+            <div className="workspace-modal-mark" aria-hidden="true">+</div>
+            <div className="eyebrow">OWNER ACTION</div>
+            <h2 id="workspace-create-title">Create another workspace</h2>
+            <p>Evidence, approvals, and future connector credentials will remain isolated to this workspace.</p>
+            <form onSubmit={createWorkspace}>
+              <label className="field-label" htmlFor="new-workspace-name">Company or product name</label>
+              <input
+                id="new-workspace-name"
+                ref={workspaceNameInputRef}
+                value={newWorkspaceName}
+                onChange={(event) => setNewWorkspaceName(event.target.value)}
+                minLength={2}
+                maxLength={64}
+                autoComplete="organization"
+                disabled={workspacePending}
+                required
+              />
+              {workspaceError && <p className="form-error" role="alert">{workspaceError}</p>}
+              <button className="button button-primary button-block" disabled={workspacePending || newWorkspaceName.trim().length < 2}>
+                {workspacePending ? <><span className="spinner" /> Creating workspace…</> : <>Create owner workspace <span aria-hidden="true">→</span></>}
+              </button>
+            </form>
+            <p className="demo-disclosure">Membership is checked again on the server before every switch.</p>
+          </div>
+        </div>
+      )}
 
       {scanOpen && (
         <div className="modal-backdrop" role="presentation" onMouseDown={(event) => {
