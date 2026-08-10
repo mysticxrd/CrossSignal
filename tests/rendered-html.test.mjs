@@ -22,20 +22,31 @@ test("protects the product with authenticated owner and workspace checks", async
   assert.doesNotMatch(`${page}\n${actions}\n${workspaceStore}`, /localStorage|sessionStorage/);
 });
 
-test("ships the durable workspace schema and migration", async () => {
-  const [hosting, migration, schema] = await Promise.all([
+test("ships durable workspace and case-ledger migrations", async () => {
+  const [hosting, workspaceMigration, caseMigration, schema, caseStore] = await Promise.all([
     readFile(new URL(".openai/hosting.json", projectRoot), "utf8"),
     readFile(new URL("drizzle/0000_dry_chat.sql", projectRoot), "utf8"),
+    readFile(new URL("drizzle/0001_gigantic_shriek.sql", projectRoot), "utf8"),
     readFile(new URL("db/schema.ts", projectRoot), "utf8"),
+    readFile(new URL("db/cases.ts", projectRoot), "utf8"),
   ]);
 
   assert.equal(JSON.parse(hosting).d1, "DB");
-  assert.match(migration, /CREATE TABLE `users`/);
-  assert.match(migration, /CREATE TABLE `workspaces`/);
-  assert.match(migration, /CREATE TABLE `workspace_members`/);
-  assert.match(migration, /idx_workspace_members_user_id/);
-  assert.match(migration, /PRAGMA optimize/);
+  assert.match(workspaceMigration, /CREATE TABLE `users`/);
+  assert.match(workspaceMigration, /CREATE TABLE `workspaces`/);
+  assert.match(workspaceMigration, /CREATE TABLE `workspace_members`/);
+  assert.match(caseMigration, /CREATE TABLE `cases`/);
+  assert.match(caseMigration, /CREATE TABLE `case_events`/);
+  assert.match(caseMigration, /CREATE TABLE `approvals`/);
+  assert.match(caseMigration, /idx_case_events_workspace_idempotency/);
+  assert.match(caseMigration, /idx_approvals_case_cycle_gate/);
+  assert.match(caseMigration, /PRAGMA optimize/);
   assert.match(schema, /primaryKey\(\{ columns: \[table\.workspaceId, table\.userId\] \}\)/);
+  assert.match(caseStore, /ownerCanAccessWorkspace\(userId, workspaceId\)/);
+  assert.match(caseStore, /INSERT OR IGNORE INTO approvals/);
+  assert.match(caseStore, /INSERT OR IGNORE INTO case_events/);
+  assert.match(caseStore, /idempotencyKey/);
+  assert.doesNotMatch(caseStore, /localStorage|sessionStorage/);
 });
 
 test("packages the authenticated release and removes starter infrastructure", async () => {
@@ -46,6 +57,7 @@ test("packages the authenticated release and removes starter infrastructure", as
     readFile(new URL("dist/.openai/hosting.json", projectRoot), "utf8"),
     access(new URL("dist/server/index.js", projectRoot)),
     access(new URL("dist/.openai/drizzle/0000_dry_chat.sql", projectRoot)),
+    access(new URL("dist/.openai/drizzle/0001_gigantic_shriek.sql", projectRoot)),
   ]);
 
   assert.match(page, /WorkspaceOnboarding/);

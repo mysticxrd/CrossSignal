@@ -6,6 +6,8 @@ import {
   createWorkspaceAction,
   selectWorkspaceAction,
 } from "./workspace-actions";
+import { updateSeededCaseAction } from "./case-actions";
+import type { CaseCommand, CaseSnapshot } from "./case-types";
 import type { OwnerSummary, WorkspaceSummary } from "./workspace-types";
 
 type View = "dashboard" | "case" | "brain" | "connections" | "lab";
@@ -139,10 +141,21 @@ const stageLabels = [
 
 const timelineSteps = ["Signal", "Investigate", "Intervene", "Measure", "Learn"];
 
+const eventLabels: Record<string, string> = {
+  case_materialized: "Case materialized",
+  case_reset: "New scan cycle",
+  evidence_approved: "Evidence approved",
+  intervention_approved: "Intervention approved",
+  implementation_confirmed: "Implementation confirmed",
+  measurement_completed: "Outcome measured",
+  learning_accepted: "Learning accepted",
+};
+
 type CrossSignalAppProps = {
   owner: OwnerSummary;
   workspace: WorkspaceSummary;
   workspaces: WorkspaceSummary[];
+  initialCaseState: CaseSnapshot;
 };
 
 function initials(value: string): string {
@@ -158,16 +171,19 @@ export default function CrossSignalApp({
   owner,
   workspace,
   workspaces,
+  initialCaseState,
 }: CrossSignalAppProps) {
   const router = useRouter();
   const [view, setView] = useState<View>("dashboard");
-  const [caseStage, setCaseStage] = useState(0);
+  const [caseState, setCaseState] = useState(initialCaseState);
+  const caseStage = caseState.stage;
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
   const [scanOpen, setScanOpen] = useState(false);
   const [scanRunning, setScanRunning] = useState(false);
   const [toast, setToast] = useState("");
-  const [issueTitle, setIssueTitle] = useState(
-    "Fix Mobile Safari checkout submission and add regression coverage",
+  const [issueTitle, setIssueTitle] = useState(initialCaseState.issueTitle);
+  const [reviewerNote, setReviewerNote] = useState(
+    "The browser segment and release timing are specific enough to proceed. Keep causal language provisional.",
   );
   const [cohortConfirmed, setCohortConfirmed] = useState(false);
   const [published, setPublished] = useState(false);
@@ -177,6 +193,7 @@ export default function CrossSignalApp({
   const [newWorkspaceName, setNewWorkspaceName] = useState("");
   const [workspaceError, setWorkspaceError] = useState("");
   const [workspacePending, startWorkspaceTransition] = useTransition();
+  const [casePending, startCaseTransition] = useTransition();
   const toastTimerRef = useRef<number | null>(null);
   const scanTimerRef = useRef<number | null>(null);
   const workspaceNameInputRef = useRef<HTMLInputElement | null>(null);
@@ -243,24 +260,61 @@ export default function CrossSignalApp({
     });
   };
 
+  const runCaseCommand = (
+    command: CaseCommand,
+    payload: { issueTitle?: string; reviewerNote?: string },
+    successMessage: string | ((reused: boolean) => string),
+    onSuccess?: () => void,
+  ) => {
+    startCaseTransition(async () => {
+      const result = await updateSeededCaseAction(
+        workspace.id,
+        command,
+        payload,
+      );
+      if (!result.ok) {
+        notify(result.error);
+        return;
+      }
+
+      setCaseState(result.caseState);
+      setIssueTitle(result.caseState.issueTitle);
+      if (command === "reset_case") {
+        setCohortConfirmed(false);
+        setPublished(false);
+      }
+      notify(
+        typeof successMessage === "function"
+          ? successMessage(result.reused)
+          : successMessage,
+      );
+      onSuccess?.();
+      router.refresh();
+    });
+  };
+
   const startScan = () => {
     setScanRunning(true);
     if (scanTimerRef.current !== null) window.clearTimeout(scanTimerRef.current);
     scanTimerRef.current = window.setTimeout(() => {
       setScanRunning(false);
       setScanOpen(false);
-      setCaseStage(0);
-      setView("dashboard");
-      notify("Scan complete · 1 explainable signal matched");
+      runCaseCommand(
+        "reset_case",
+        {},
+        "Scan complete · 1 explainable signal matched · new case cycle saved",
+        () => setView("dashboard"),
+      );
     }, 1600);
   };
 
   const resetDemo = () => {
-    setCaseStage(0);
-    setCohortConfirmed(false);
-    setPublished(false);
-    setView("dashboard");
-    notify("Seeded case reset to evidence review");
+    runCaseCommand(
+      "reset_case",
+      {},
+      "New case cycle saved · evidence review restored",
+      () => setView("dashboard"),
+    );
   };
 
   const timelineState = (index: number) => {
@@ -302,16 +356,22 @@ export default function CrossSignalApp({
           <textarea
             id="review-note"
             className="review-note"
-            defaultValue="The browser segment and release timing are specific enough to proceed. Keep causal language provisional."
+            value={reviewerNote}
+            onChange={(event) => setReviewerNote(event.target.value)}
+            disabled={casePending}
           />
           <button
             className="button button-primary button-block"
-            onClick={() => {
-              setCaseStage(1);
-              notify("Evidence accepted · intervention unlocked");
-            }}
+            disabled={casePending || reviewerNote.trim().length === 0}
+            onClick={() =>
+              runCaseCommand(
+                "approve_evidence",
+                { reviewerNote },
+                "Evidence accepted · intervention unlocked · ledger saved",
+              )
+            }
           >
-            Continue to intervention <span aria-hidden="true">→</span>
+            {casePending ? <><span className="spinner" /> Saving approval…</> : <>Continue to intervention <span aria-hidden="true">→</span></>}
           </button>
           <button
             className="button button-quiet button-block"
@@ -340,6 +400,7 @@ export default function CrossSignalApp({
             className="payload-title"
             value={issueTitle}
             onChange={(event) => setIssueTitle(event.target.value)}
+            disabled={casePending}
           />
           <div className="payload-preview">
             <div className="payload-row"><span>Repository</span><strong>atlas/checkout</strong></div>
@@ -353,12 +414,18 @@ export default function CrossSignalApp({
           </div>
           <button
             className="button button-primary button-block"
-            onClick={() => {
-              setCaseStage(2);
-              notify("Approved · seeded GitHub issue created once");
-            }}
+            disabled={casePending || issueTitle.trim().length === 0}
+            onClick={() =>
+              runCaseCommand(
+                "approve_intervention",
+                { issueTitle },
+                (reused) => reused
+                  ? "Existing approval restored · no duplicate receipt"
+                  : "Approved · seeded GitHub issue created once · receipt saved",
+              )
+            }
           >
-            Approve &amp; create issue
+            {casePending ? <><span className="spinner" /> Binding payload…</> : <>Approve &amp; create issue</>}
           </button>
           <p className="demo-disclosure">Seeded demo · no external write is made.</p>
         </div>
@@ -371,10 +438,10 @@ export default function CrossSignalApp({
           <div className="decision-card-kicker success-kicker">
             <span className="status-dot status-dot-green" /> ACTION RECEIPT
           </div>
-          <h2>Issue #184 created</h2>
+          <h2>Issue {caseState.externalReceiptLabel ?? "#184"} created</h2>
           <p className="decision-summary">The approved payload was executed once and the idempotency receipt is stored.</p>
           <a className="issue-receipt" href="#case-action" onClick={(event) => event.preventDefault()}>
-            <span className="issue-number">#184</span>
+            <span className="issue-number">{caseState.externalReceiptLabel ?? "#184"}</span>
             <span>{issueTitle}</span>
             <span aria-hidden="true">↗</span>
           </a>
@@ -392,13 +459,16 @@ export default function CrossSignalApp({
           </label>
           <button
             className="button button-primary button-block"
-            disabled={!cohortConfirmed}
-            onClick={() => {
-              setCaseStage(3);
-              notify("Implementation confirmed · measurement scheduled");
-            }}
+            disabled={!cohortConfirmed || casePending}
+            onClick={() =>
+              runCaseCommand(
+                "mark_implemented",
+                {},
+                "Implementation confirmed · measurement scheduled · ledger saved",
+              )
+            }
           >
-            Mark implemented
+            {casePending ? <><span className="spinner" /> Saving receipt…</> : <>Mark implemented</>}
           </button>
         </div>
       );
@@ -426,12 +496,16 @@ export default function CrossSignalApp({
           </div>
           <button
             className="button button-primary button-block"
-            onClick={() => {
-              setCaseStage(4);
-              notify("Simulated window complete · outcome ready");
-            }}
+            disabled={casePending}
+            onClick={() =>
+              runCaseCommand(
+                "simulate_measurement",
+                {},
+                "Simulated window complete · measured outcome saved",
+              )
+            }
           >
-            Simulate 14-day time jump
+            {casePending ? <><span className="spinner" /> Recording outcome…</> : <>Simulate 14-day time jump</>}
           </button>
           <p className="demo-disclosure">Explicit demo control · production time never jumps.</p>
         </div>
@@ -461,12 +535,16 @@ export default function CrossSignalApp({
           </div>
           <button
             className="button button-primary button-block"
-            onClick={() => {
-              setCaseStage(5);
-              notify("Learning accepted · case closed");
-            }}
+            disabled={casePending}
+            onClick={() =>
+              runCaseCommand(
+                "accept_learning",
+                {},
+                "Learning accepted · case closed · ledger sealed",
+              )
+            }
           >
-            Accept learning &amp; close case
+            {casePending ? <><span className="spinner" /> Sealing ledger…</> : <>Accept learning &amp; close case</>}
           </button>
           <button className="button button-quiet button-block" onClick={() => notify("Learning kept provisional")}>Keep provisional</button>
         </div>
@@ -483,7 +561,7 @@ export default function CrossSignalApp({
           learning are preserved in one ledger.
         </p>
         <button className="button button-primary button-block" onClick={() => setView("brain")}>View accepted learning</button>
-        <button className="button button-quiet button-block" onClick={resetDemo}>Reset seeded case</button>
+        <button className="button button-quiet button-block" disabled={casePending} onClick={resetDemo}>Start a new case cycle</button>
       </div>
     );
   };
@@ -596,7 +674,7 @@ export default function CrossSignalApp({
         <div className="case-title-row">
           <div>
             <div className="case-id-line"><span>CS-014</span><i /> <span>{stageLabels[caseStage]}</span></div>
-            <h1>Mobile Safari checkout regression after release</h1>
+            <h1>{caseState.title}</h1>
           </div>
           <div className="case-header-actions">
             <span className="confidence-chip dark-chip">68% confidence</span>
@@ -608,6 +686,8 @@ export default function CrossSignalApp({
           <span><small>WINDOW</small>24 Jul – 7 Aug</span>
           <span><small>OWNER</small>You</span>
           <span><small>EST. CASE COST</small>$0.42 / $1.00</span>
+          <span><small>WORKSPACE LEDGER</small>{caseState.eventCount} events · append-only</span>
+          <span><small>CASE CYCLE</small>{String(caseState.cycle).padStart(2, "0")} · saved</span>
         </div>
       </section>
 
@@ -683,10 +763,10 @@ export default function CrossSignalApp({
         <aside className="decision-rail" id="case-action">
           {renderDecisionPanel()}
           <div className="artifact-card">
-            <div><span className="eyebrow">CASE ARTIFACT</span><span className="version-chip">v7</span></div>
+            <div><span className="eyebrow">DURABLE CASE LEDGER</span><span className="version-chip">{caseState.eventCount} events</span></div>
             <strong>investigation/evidence-brief.md</strong>
-            <p>Last changed by evidence reviewer · 4m ago</p>
-            <button className="text-link" onClick={() => notify("Artifact history previewed in the next build slice")}>View history &amp; diff</button>
+            <p>Last event · {eventLabels[caseState.lastEventType] ?? caseState.lastEventType} · saved to {workspace.name}</p>
+            <button className="text-link" onClick={() => notify("Every case mutation is stored with actor, payload, and idempotency key")}>Review ledger guarantees</button>
           </div>
         </aside>
       </section>

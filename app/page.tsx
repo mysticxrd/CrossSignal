@@ -4,6 +4,7 @@ import WorkspaceOnboarding from "./WorkspaceOnboarding";
 import { requireCrossSignalUser } from "./crosssignal-auth";
 import { ACTIVE_WORKSPACE_COOKIE } from "./workspace-config";
 import { listOwnerWorkspaces } from "../db/workspaces";
+import { getOrCreateSeededCase } from "../db/cases";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,15 @@ export default async function Home() {
   const workspace =
     workspaces.find((candidate) => candidate.id === requestedWorkspaceId) ??
     workspaces[0];
+  const caseState = await getOrCreateSeededCase(owner.userId, workspace.id);
 
   return (
     <CrossSignalApp
+      key={workspace.id}
       owner={ownerSummary}
       workspace={workspace}
       workspaces={workspaces}
+      initialCaseState={caseState}
     />
   );
 }

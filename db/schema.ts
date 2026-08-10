@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   index,
+  integer,
   primaryKey,
   sqliteTable,
   text,
@@ -48,5 +49,93 @@ export const workspaceMembers = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.userId] }),
     index("idx_workspace_members_user_id").on(table.userId),
+  ],
+);
+
+export const cases = sqliteTable(
+  "cases",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    caseKey: text("case_key").notNull(),
+    title: text("title").notNull(),
+    stage: integer("stage").notNull().default(0),
+    cycle: integer("cycle").notNull().default(1),
+    issueTitle: text("issue_title").notNull(),
+    externalReceiptId: text("external_receipt_id"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("idx_cases_workspace_case_key").on(
+      table.workspaceId,
+      table.caseKey,
+    ),
+    index("idx_cases_workspace_stage").on(table.workspaceId, table.stage),
+  ],
+);
+
+export const caseEvents = sqliteTable(
+  "case_events",
+  {
+    id: text("id").primaryKey(),
+    caseId: text("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    cycle: integer("cycle").notNull(),
+    eventType: text("event_type").notNull(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    payloadJson: text("payload_json").notNull().default("{}"),
+    idempotencyKey: text("idempotency_key").notNull(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("idx_case_events_workspace_idempotency").on(
+      table.workspaceId,
+      table.idempotencyKey,
+    ),
+    index("idx_case_events_case_created_at").on(table.caseId, table.createdAt),
+  ],
+);
+
+export const approvals = sqliteTable(
+  "approvals",
+  {
+    id: text("id").primaryKey(),
+    caseId: text("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    cycle: integer("cycle").notNull(),
+    gate: text("gate", {
+      enum: ["evidence", "intervention", "learning"],
+    }).notNull(),
+    payloadHash: text("payload_hash").notNull(),
+    approvedBy: text("approved_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    externalReceiptId: text("external_receipt_id"),
+    approvedAt: text("approved_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("idx_approvals_case_cycle_gate").on(
+      table.workspaceId,
+      table.caseId,
+      table.cycle,
+      table.gate,
+    ),
+    index("idx_approvals_case_id").on(table.caseId),
   ],
 );
