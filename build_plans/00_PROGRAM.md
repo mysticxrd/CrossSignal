@@ -91,14 +91,7 @@ The binding scope amendment is `_shared/DEMO_RELEASE_PROFILE.md`.
 
 ## Explicit demo deferrals
 
-- Live Stripe and PostHog
-- Customer-repository GitHub writes, pull requests, or code patches
-- Production schedules
-- Postgres migration and object storage
-- Slack and notification channels
-- Full OpenTelemetry infrastructure beyond the trace needed for proof
-- Billing, payments, KYC, and commercial account setup
-- Collaboration, role hierarchies, and high-concurrency serving
-- Production deletion, retention automation, and backup-expiry guarantees
-
-These are assigned to Phase 08 so they are visible without blocking the demo.
+The canonical decision register is
+`00_evidence/P00_M1/DEFERRED_SCOPE_REGISTER.md`. Every row is assigned to Phase
+08 with an explicit re-entry trigger, stays open in `TRACEABILITY.md`, and does
+not block the Result-team demo while its disclosed demo treatment is used.

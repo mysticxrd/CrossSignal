@@ -36,11 +36,11 @@ deferred P0 requirements have shipped.
 
 ## Deferred to Phase 08
 
-- Live provider OAuth/credentials and real customer data.
-- Scheduled-principal authority and production schedules.
-- Production GitHub writes, patches, pull requests, or preview deployments.
-- Postgres/object storage migration, operational telemetry, Slack, collaborators,
-  configurable rules, automatic exposure, and full deletion/retention lifecycle.
+The canonical itemized register, demo treatment, owner, and re-entry trigger are
+in `../00_evidence/P00_M1/DEFERRED_SCOPE_REGISTER.md`. The deferrals include live
+providers and customer data, production schedules and principals, customer
+repository mutations, production-scale persistence/telemetry, collaboration,
+commercial operations, and full deletion/retention guarantees.
 
 ## Release naming and claims
 
@@ -63,3 +63,7 @@ deferred scenarios are visible in the stored eval report.
 Phase 00 closes only after the project owner accepts this release profile. Any
 request to call the release PRD-complete automatically reopens the deferred
 requirements and blocks Phase 07 until Phase 08 work is completed.
+
+The single approval record is
+`../00_evidence/P00_M1/OWNER_APPROVAL_GATE.md`. Its status is authoritative;
+approval is never inferred from other checklist progress.

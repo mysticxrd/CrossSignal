@@ -66,3 +66,14 @@ Production Stripe, repository patching, preview deployment, pull requests,
 Slack, collaborators, configurable rules, automatic exposure detection, model
 comparison, and stale-artifact detection all remain in Phase 08. None are
 prerequisites for the Result-team demonstration.
+
+## Phase 00 contract evidence
+
+| Milestone | Status | Proof |
+|---|---|---|
+| P00-M1 Freeze the evaluation contract | Pending project-owner approval | `00_evidence/P00_M1/CONTEXT.md`, `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`, and `00_evidence/P00_M1/OWNER_APPROVAL_GATE.md` |
+
+All live-provider, production-schedule, production-action, public-hosting, and
+full lifecycle requirements remain open. Their canonical non-blocking demo
+treatment and Phase 08 re-entry triggers are recorded in
+`00_evidence/P00_M1/DEFERRED_SCOPE_REGISTER.md`.

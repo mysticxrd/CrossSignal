@@ -46,7 +46,7 @@ export default function WorkspaceOnboarding({ owner }: WorkspaceOnboardingProps)
             <li><span>03</span><div><strong>Seed flight recorder</strong><small>Load the inspectable demo case</small></div></li>
           </ol>
         </div>
-        <p className="onboarding-footnote">Authentication identifies the owner. Server-side membership checks authorize every workspace read and write.</p>
+        <p className="onboarding-footnote">Authentication identifies the owner. Current workspace and case routes recheck membership on the server; the full adversarial isolation matrix is a Phase 00 release gate.</p>
       </section>
 
       <section className="onboarding-form-panel">

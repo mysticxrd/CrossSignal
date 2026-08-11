@@ -85,14 +85,18 @@ Known gaps to address in this phase:
 
 **Work**
 
-- [ ] Define the target three-minute evaluator story and optional deep-dive.
-- [ ] Classify each visible claim as real, fixture, sandbox, simulated time, or
+- [x] Define the target three-minute evaluator story and optional deep-dive.
+- [x] Classify each visible claim as real, fixture, sandbox, simulated time, or
       planned.
-- [ ] Replace or schedule removal of unsupported live-health and pass-count copy.
-- [ ] Freeze the default fixture case, reset boundary, workspace, and date model.
-- [ ] Record Phase 08 items as explicitly non-blocking.
+- [x] Replace or schedule removal of unsupported live-health and pass-count copy.
+- [x] Freeze the default fixture case, reset boundary, workspace, and date model.
+- [x] Record Phase 08 items as explicitly non-blocking.
 - [ ] Review and approve `_shared/DEMO_RELEASE_PROFILE.md`; retain every deferred
       PRD requirement as open in traceability.
+
+**Current evidence:** `00_evidence/P00_M1/CONTEXT.md`. Technical contract work
+and verification are complete; only the project-owner release-profile gate
+remains open in `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`.
 
 **Acceptance evidence**
 

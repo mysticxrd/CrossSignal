@@ -21,6 +21,7 @@ compelling demonstration of ICM and EVE.
 | Result-demo versus PRD-MVP scope | `_shared/DEMO_RELEASE_PROFILE.md` |
 | PRD requirement and eval ownership | `TRACEABILITY.md` |
 | Current foundation and topology decisions | `00_foundation_and_demo_contract.md` |
+| Phase 00 acceptance evidence | `00_evidence/CONTEXT.md` |
 | ICM semantic workspace | `01_icm_workspace_kernel.md` |
 | Fixture adapters and deterministic scans | `02_fixture_data_and_scan_provenance.md` |
 | EVE investigation over ICM | `03_eve_investigation_over_icm.md` |

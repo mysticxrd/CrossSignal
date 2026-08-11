@@ -507,25 +507,25 @@ function eventPresentation(
   switch (row.event_type) {
     case "case_materialized":
       return {
-        label: "Case materialized",
-        detail: "Seeded decision case created inside this workspace.",
+        label: "Fixture case materialized",
+        detail: "Versioned fixture decision case created inside this workspace.",
         kind: "system",
       };
     case "evidence_registered":
       return {
-        label: "Evidence registered",
-        detail: "Five immutable source observations linked to the case.",
+        label: "Fixture evidence registered",
+        detail: "Five immutable D1 fixture observations linked to the case.",
         kind: "system",
       };
     case "case_reset":
       return {
-        label: "New scan cycle",
-        detail: "A new review cycle opened without deleting prior events.",
+        label: "Fixture cycle reset",
+        detail: "A new D1 review cycle opened without running a detector or deleting prior events.",
         kind: "system",
       };
     case "evidence_approved":
       return {
-        label: "Evidence approved",
+        label: "Fixture evidence approved",
         detail:
           payloadText(payload, "reviewerNote") ??
           "Evidence threshold accepted for intervention planning.",
@@ -533,26 +533,26 @@ function eventPresentation(
       };
     case "intervention_approved":
       return {
-        label: "Intervention approved",
-        detail: `Exactly one GitHub issue approved: ${payloadText(payload, "issueTitle") ?? "scoped checkout fix"}.`,
+        label: "Fixture intervention approved",
+        detail: `One fixture issue payload saved with no external write: ${payloadText(payload, "issueTitle") ?? "scoped checkout fix"}.`,
         kind: "action",
       };
     case "implementation_confirmed":
       return {
-        label: "Implementation confirmed",
-        detail: "The approved fix reached the preregistered Mobile Safari cohort.",
+        label: "Fixture implementation confirmed",
+        detail: "The owner recorded the frozen fixture implementation and cohort attestation.",
         kind: "action",
       };
     case "measurement_completed":
       return {
-        label: "Outcome measured",
-        detail: "Paid conversion improved by 18.7% across 73 eligible sessions.",
+        label: "Simulated-time outcome saved",
+        detail: "The fixture outcome improved by 18.7% across 73 synthetic eligible sessions.",
         kind: "measurement",
       };
     case "learning_accepted":
       return {
-        label: "Learning accepted",
-        detail: "Mobile Safari regression coverage promoted to company knowledge.",
+        label: "Fixture learning event accepted",
+        detail: "The D1 event is saved; no canonical ICM Company Brain was changed.",
         kind: "learning",
       };
     default:
@@ -783,7 +783,7 @@ export async function transitionSeededCase(
       : current.issue_title;
   const receiptId =
     input.command === "approve_intervention"
-      ? `github:atlas/checkout#${183 + current.cycle}`
+      ? `fixture-github:atlas/checkout#${183 + current.cycle}`
       : current.external_receipt_id;
   const payload = {
     caseKey: CASE_KEY,

@@ -133,3 +133,43 @@ test("packages the authenticated evidence-ledger release", async () => {
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   await assert.rejects(access(new URL("app/_sites-preview", projectRoot)));
 });
+
+test("labels every Phase 00 demonstration surface truthfully", async () => {
+  const cockpit = await readFile(
+    new URL("app/CrossSignalApp.tsx", projectRoot),
+    "utf8",
+  );
+
+  assert.match(cockpit, /RESULT DEMO · FIXTURES/);
+  assert.match(cockpit, /No live provider is connected/);
+  assert.match(cockpit, /No EVE runtime is connected in Phase 00/);
+  assert.match(cockpit, /No external call occurred/);
+  assert.match(cockpit, /EVAL SUITE · NOT RUN/);
+  assert.match(cockpit, /Real D1 cycle reset · fixture data/);
+  assert.doesNotMatch(
+    cockpit,
+    /System healthy|Fresh 6m ago|Run #AR-2281|18 \/ 18 PASSING|LOCKED BY SERVER POLICY|ACTION RECEIPT/,
+  );
+});
+
+test("freezes the P00-M1 contract without fabricating owner approval", async () => {
+  const evidenceRoot = new URL(
+    "build_plans/00_evidence/P00_M1/",
+    projectRoot,
+  );
+  const [story, fixture, claims, deferrals, ownerGate] = await Promise.all([
+    readFile(new URL("THREE_MINUTE_STORY.md", evidenceRoot), "utf8"),
+    readFile(new URL("GOLDEN_FIXTURE.md", evidenceRoot), "utf8"),
+    readFile(new URL("CLAIM_REGISTER.md", evidenceRoot), "utf8"),
+    readFile(new URL("DEFERRED_SCOPE_REGISTER.md", evidenceRoot), "utf8"),
+    readFile(new URL("OWNER_APPROVAL_GATE.md", evidenceRoot), "utf8"),
+  ]);
+
+  assert.match(story, /duration_seconds: 180/);
+  assert.match(fixture, /id: golden-mobile-safari-checkout-v1/);
+  assert.match(claims, /taxonomy: \[real, fixture, sandbox, simulated-time, planned\]/);
+  assert.match(deferrals, /production_owner: phase-08/);
+  assert.match(ownerGate, /status: pending/);
+  assert.match(ownerGate, /approved_by: null/);
+  assert.doesNotMatch(ownerGate, /status: approved/);
+});

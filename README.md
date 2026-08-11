@@ -9,11 +9,17 @@ The phased ICM + EVE development program starts at
 build plan per phase and full PRD/eval ownership in
 [`build_plans/TRACEABILITY.md`](build_plans/TRACEABILITY.md).
 
-## Runtime foundation
+## Current foundation
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+The private demo shell runs on [vinext](https://github.com/cloudflare/vinext)
+with Sites authentication, Cloudflare D1, and checked-in Drizzle migrations.
+It currently persists owner workspaces, one versioned synthetic case fixture,
+immutable fixture observations, approvals, case cycles, and an additive ledger.
+
+This is the Phase 00 foundation, not a live-integrated or production-ready
+release. Provider health, EVE work, sandbox actions, deterministic measurement,
+the Git-backed ICM Company Brain, Lab publication, schedules, and stored evals
+remain explicitly phased work.
 
 ## Prerequisites
 
@@ -29,12 +35,14 @@ npm run build
 
 This starter does not use `wrangler.jsonc`.
 
-## Included Shape
+## Included shape
 
 - edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
+- `.openai/hosting.json` declares the Sites D1 binding; R2 is unused
 - `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
+- `db/schema.ts` defines the current durable product schema
+- `drizzle/` contains the canonical checked-in migration history
+- `build_plans/00_evidence/` contains inspectable Phase 00 acceptance evidence
 - `examples/d1/` contains an optional D1 example surface
 - `drizzle.config.ts` supports local migration generation when needed
 
@@ -102,7 +110,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 - `npm run dev`: start local development
 - `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
+- `npm test`: build CrossSignal and run the current structural/database tests
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 
 ## Learn More
