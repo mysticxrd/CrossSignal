@@ -1,6 +1,6 @@
 ---
 id: p00-m1-acceptance-evidence
-status: pending_owner_approval
+status: complete
 last_updated: 2026-08-11
 ---
 
@@ -16,7 +16,7 @@ last_updated: 2026-08-11
 | Phase 08 items remain open and non-blocking | `DEFERRED_SCOPE_REGISTER.md` and `../../TRACEABILITY.md` |
 | Baseline reconciled with implementation | `BASELINE_AUDIT.md` |
 | Unsupported present-tense product wording removed or relabeled | `../../../app/CrossSignalApp.tsx` plus verification below |
-| Explicit release-profile owner decision | `OWNER_APPROVAL_GATE.md` — **pending** |
+| Explicit release-profile owner decision | `OWNER_APPROVAL_GATE.md` — **accepted 2026-08-11** |
 
 ## Acceptance checks
 
@@ -25,11 +25,11 @@ last_updated: 2026-08-11
 - [x] All executable baseline tests pass with a truthful denominator.
 - [x] Claim-string audit finds no static live-health, Agent Run, external-action,
       public-publication, or eval-pass wording presented as current truth.
-- [ ] Project owner accepts `../../_shared/DEMO_RELEASE_PROFILE.md` through the
+- [x] Project owner accepts `../../_shared/DEMO_RELEASE_PROFILE.md` through the
       single gate in `OWNER_APPROVAL_GATE.md`.
 
-P00-M1 remains incomplete until every box above has actual proof. Owner approval
-is intentionally not inferred from the instruction to begin Phase 00.
+P00-M1 is complete. The owner's explicit approval is quoted and timestamped in
+`OWNER_APPROVAL_GATE.md`; it was not inferred from implementation instructions.
 
 ## Verification proof — 2026-08-11
 
@@ -39,4 +39,4 @@ is intentionally not inferred from the instruction to begin Phase 00.
 | `npm.cmd test` | Pass; Vinext production build completed |
 | Executable denominator | 6 tests, 6 passed, 0 failed, 0 skipped |
 | Truthfulness regression test | Pass; required fixture/planned disclosures present and banned current-tense strings absent |
-| Owner decision | Pending in `OWNER_APPROVAL_GATE.md` |
+| Owner decision | Accepted explicitly on 2026-08-11; recorded in `OWNER_APPROVAL_GATE.md` |

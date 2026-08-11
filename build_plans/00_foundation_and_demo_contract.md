@@ -91,12 +91,12 @@ Known gaps to address in this phase:
 - [x] Replace or schedule removal of unsupported live-health and pass-count copy.
 - [x] Freeze the default fixture case, reset boundary, workspace, and date model.
 - [x] Record Phase 08 items as explicitly non-blocking.
-- [ ] Review and approve `_shared/DEMO_RELEASE_PROFILE.md`; retain every deferred
+- [x] Review and approve `_shared/DEMO_RELEASE_PROFILE.md`; retain every deferred
       PRD requirement as open in traceability.
 
-**Current evidence:** `00_evidence/P00_M1/CONTEXT.md`. Technical contract work
-and verification are complete; only the project-owner release-profile gate
-remains open in `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`.
+**Acceptance evidence:** `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md` records the
+verified contract artifacts and the project owner's explicit 2026-08-11
+acceptance in `00_evidence/P00_M1/OWNER_APPROVAL_GATE.md`.
 
 **Acceptance evidence**
 
@@ -235,7 +235,7 @@ as fixtures/sandbox behavior pending later phases.
 ## Exit gate
 
 - [ ] Every Phase 00 milestone has captured acceptance evidence.
-- [ ] The project owner has accepted `_shared/DEMO_RELEASE_PROFILE.md`.
+- [x] The project owner has accepted `_shared/DEMO_RELEASE_PROFILE.md`.
 - [ ] EVE topology and canonical ICM repository decisions are approved.
 - [ ] Database schema ownership and tenant tests are reliable.
 - [ ] All current simulations are labeled honestly.

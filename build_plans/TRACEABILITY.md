@@ -71,7 +71,7 @@ prerequisites for the Result-team demonstration.
 
 | Milestone | Status | Proof |
 |---|---|---|
-| P00-M1 Freeze the evaluation contract | Pending project-owner approval | `00_evidence/P00_M1/CONTEXT.md`, `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`, and `00_evidence/P00_M1/OWNER_APPROVAL_GATE.md` |
+| P00-M1 Freeze the evaluation contract | Complete | `00_evidence/P00_M1/CONTEXT.md`, `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`, and the explicit 2026-08-11 decision in `00_evidence/P00_M1/OWNER_APPROVAL_GATE.md` |
 | P00-M2 Harden persistence and tenant foundation | Complete | `00_evidence/P00_M2/CONTEXT.md`, migration `../drizzle/0003_faithful_guardsmen.sql`, and `00_evidence/P00_M2/ACCEPTANCE_EVIDENCE.md` |
 | P00-M3 Decide state ownership and service boundaries | Complete | `00_evidence/P00_M3/CONTEXT.md`, ADRs 001–004, and `00_evidence/P00_M3/STATE_OWNERSHIP_DIAGRAM.md` |
 

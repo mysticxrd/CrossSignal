@@ -10,6 +10,9 @@ and reproducible safety evidence.
 This is a scoped amendment to the PRD delivery profile, not a silent claim that
 deferred P0 requirements have shipped.
 
+Project-owner approval was given explicitly on 2026-08-11 and is recorded in
+`../00_evidence/P00_M1/OWNER_APPROVAL_GATE.md`.
+
 ## Required for the demo release
 
 - Real owner authentication and isolated durable workspaces.

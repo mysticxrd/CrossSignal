@@ -2,7 +2,7 @@
 id: p00-m1-evidence
 phase: phase-00
 milestone: P00-M1
-status: pending_owner_approval
+status: complete
 ---
 
 # P00-M1 — Freeze the evaluation contract
