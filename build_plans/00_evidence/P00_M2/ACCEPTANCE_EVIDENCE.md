@@ -12,7 +12,7 @@ verified_at: 2026-08-11
 |---|---|
 | Canonical migration policy | `MIGRATION_POLICY.md` |
 | Runtime/schema drift inventory and resolution | `SCHEMA_DRIFT_REPORT.md`, `../../../db/migrations.ts` |
-| Generated and reviewed tenant migration | `../../../drizzle/0003_faithful_guardsmen.sql` and matching Drizzle metadata |
+| Generated and reviewed tenant migration | `../../../drizzle/0003_faithful_guardsmen.sql`; final schema matches Drizzle metadata and D1-safe rebuild choreography is hand-reviewed |
 | Empty versus upgrade equivalence | Executable schema-signature and integrity test |
 | Two-user/two-workspace matrix | `TENANT_ISOLATION_MATRIX.md` and executable rejection test |
 | Invalid workspace-cookie handling | Executable authorized-workspace selector test |
@@ -28,6 +28,7 @@ verified_at: 2026-08-11
 | Fresh database | Full 0000–0003 history passes schema, FK, and integrity checks |
 | Upgrade database | Valid 0002 data survives 0003; schema matches fresh database |
 | Tenant attacks | Foreign cases, evidence, events, approvals, and actors rejected |
+| D1 deployment regression | Enforced-foreign-key transactional upgrade preserves the populated graph; corrected Sites version 6 succeeded |
 
 ## Acceptance
 

@@ -2,7 +2,7 @@
 id: p00-m5-evidence
 phase: phase-00
 milestone: P00-M5
-status: pending_private_deployment
+status: complete
 ---
 
 # P00-M5 — Baseline verification and reset contract

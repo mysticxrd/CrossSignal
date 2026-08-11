@@ -1,5 +1,5 @@
 ---
-status: validated_before_deployment
+status: verified_after_deployment
 verified_at: 2026-08-11
 ---
 

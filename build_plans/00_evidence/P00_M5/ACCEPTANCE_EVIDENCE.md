@@ -1,6 +1,6 @@
 ---
 id: p00-m5-acceptance-evidence
-status: pending_private_deployment
+status: complete
 last_updated: 2026-08-11
 ---
 
@@ -22,10 +22,13 @@ last_updated: 2026-08-11
 
 ## Deployment gate
 
-- [ ] The exact committed source is pushed and packaged.
-- [ ] Sites verifies owner-only access and deploys the saved version privately.
-- [ ] Deployment status is `succeeded` and the returned URL loads.
-- [ ] Authenticated refresh and workspace switching preserve isolated D1 state.
+- [x] The exact committed source `a1e7dde1670bdbca5a8aebd46f0b33d74cc32293`
+  is pushed and packaged with archive SHA-256
+  `DAA45954F588D6428FF6B6B25B0C530B6676D983A704EE05ACF88DF62F7951D4`.
+- [x] Sites verified owner-only access and deployed saved version 6 privately.
+- [x] Deployment status is `succeeded` and the returned production URL loads.
+- [x] Authenticated refresh and workspace switching preserve isolated D1 state,
+  as recorded in `PRIVATE_DEPLOYMENT.md`.
 
-P00-M5 and the Phase 00 exit gate remain open until the deployment evidence is
-written into `PRIVATE_DEPLOYMENT.md` after those checks actually occur.
+P00-M5 is complete. The Phase 00 exit gate may close because its deployment and
+persistence proof now exists.

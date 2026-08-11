@@ -1,6 +1,6 @@
 ---
 id: phase-00
-status: in_progress
+status: complete
 depends_on: []
 unlocks: [phase-01, phase-02]
 prd_requirements: [FR-01, FR-05, FR-13, FR-15]
@@ -212,8 +212,8 @@ after replacing the EVE process.
 - [x] Define reset as a scoped, recoverable demo-workspace operation that never
       deletes unrelated workspaces or audit evidence.
 - [x] Record the real test denominator and remove static eval assertions.
-- [ ] Deploy the truthful foundation increment privately.
-- [ ] Verify refresh and workspace switching against persisted data.
+- [x] Deploy the truthful foundation increment privately.
+- [x] Verify refresh and workspace switching against persisted data.
 
 **Acceptance evidence**
 
@@ -239,13 +239,13 @@ as fixtures/sandbox behavior pending later phases.
 
 ## Exit gate
 
-- [ ] Every Phase 00 milestone has captured acceptance evidence.
+- [x] Every Phase 00 milestone has captured acceptance evidence.
 - [x] The project owner has accepted `_shared/DEMO_RELEASE_PROFILE.md`.
-- [ ] EVE topology and canonical ICM repository decisions are approved.
-- [ ] Database schema ownership and tenant tests are reliable.
-- [ ] All current simulations are labeled honestly.
-- [ ] The private foundation deployment passes the golden baseline checks.
-- [ ] Phases 01 and 02 can begin without unresolved shared-contract questions.
+- [x] EVE topology and canonical ICM repository decisions are approved.
+- [x] Database schema ownership and tenant tests are reliable.
+- [x] All current simulations are labeled honestly.
+- [x] The private foundation deployment passes the golden baseline checks.
+- [x] Phases 01 and 02 can begin without unresolved shared-contract questions.
 
 ## Rollback and recovery
 
@@ -254,6 +254,11 @@ carry an explicit compatibility path. A failed EVE spike is removed without
 changing the durable application or its data.
 
 ## Handoff
+
+Phase 00 closes on Sites version 6 from commit `a1e7dde`. The deployed Vinext
+application and D1 migrations are the truthful foundation baseline; the
+isolated `eve-spike/` remains local topology evidence and is not a connected
+product runtime. Phases 01 and 02 are unblocked but have not started.
 
 Phases 01 and 02 may rely on the state-ownership ADRs, tenant boundary, golden
 demo fixture contract, migration policy, and selected EVE service topology.

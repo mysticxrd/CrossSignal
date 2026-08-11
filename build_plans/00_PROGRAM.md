@@ -1,7 +1,7 @@
 ---
 id: crosssignal-demo-program
 status: active
-active_phase: phase-00
+active_phase: phase-00-complete
 target: result-team-evaluation
 release_profile: result-demo
 ---
@@ -52,7 +52,7 @@ composed, not interchangeable:
 
 | Phase | Status | Depends on | Outcome | Evaluator-visible proof |
 |---|---|---|---|---|
-| 00. Foundation and demo contract | In progress | Existing repo | Honest baseline and viable EVE/hosting topology | Current durable shell works and every simulation is disclosed |
+| 00. Foundation and demo contract | Complete | Existing repo | Honest baseline and viable EVE/hosting topology | Owner-approved contract, D1-safe private baseline, and pinned EVE restart proof |
 | 01. ICM workspace kernel | Planned | 00 | Real stamped, versioned decision workspaces | Browse contracts, artifacts, history, diffs, and derived status |
 | 02. Fixture data and scan provenance | Planned | 00 | Explainable deterministic scan input | Rule-by-rule scan receipt creates exactly one ICM case |
 | 03. EVE investigation over ICM | Planned | 01 + 02 | First undeniable combined proof | Human edit survives interruption and changes resumed EVE work |

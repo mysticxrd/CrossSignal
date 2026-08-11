@@ -24,9 +24,10 @@ status: resolved
   indexes, the evidence immutability trigger, and foreign-key enforcement.
 - Migration 0003 adds composite workspace/case, workspace/evidence, and
   workspace/actor membership constraints plus enum/range checks.
-- The reviewed migration keeps foreign keys off through the complete rebuild,
-  recreates the migration-owned trigger, re-enables enforcement at the end, and
-  runs `PRAGMA optimize`.
+- The reviewed migration uses D1-safe staging tables, drops children before
+  parents, rebuilds parents before children, recreates the migration-owned
+  trigger, and runs `PRAGMA optimize` without relying on unsupported
+  `foreign_keys=OFF` behavior.
 - Automated schema signatures are identical for empty and 0002-upgrade paths;
   both pass `foreign_key_check` and `integrity_check`.
 
@@ -34,5 +35,9 @@ status: resolved
 
 The first generated 0003 candidate re-enabled foreign keys after rebuilding
 only `approvals` and omitted the trigger that a later table rebuild would drop.
-The checked-in SQL was corrected before acceptance. This is why generated SQL
-is evidence to inspect, not an automatically trusted artifact.
+The first Sites version-5 deployment then exposed a second flaw: local SQLite
+accepted `foreign_keys=OFF`, but D1 keeps enforcement active during migration
+transactions. The checked-in SQL now uses dependency-ordered staging and its
+upgrade test runs as an enforced-foreign-key transaction with populated cases,
+evidence, events, and approvals. This is why generated SQL is evidence to
+inspect, not an automatically trusted artifact.

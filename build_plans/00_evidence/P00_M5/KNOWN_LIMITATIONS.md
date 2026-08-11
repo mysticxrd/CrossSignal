@@ -4,8 +4,8 @@
 
 - Sites owner authentication, D1-backed owner workspaces, server membership
   checks, workspace cookie validation, durable seeded case/evidence/ledger
-  records, and additive cycle reset. Private hosting is not counted as real
-  until `PRIVATE_DEPLOYMENT.md` records a successful owner-only deployment.
+  records, additive cycle reset, and the owner-only version-6 Sites deployment
+  recorded in `PRIVATE_DEPLOYMENT.md`.
 - A separately executable EVE 0.32.0 fixture proves durable session recovery
   after process replacement.
 
