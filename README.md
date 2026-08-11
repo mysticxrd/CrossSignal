@@ -1,4 +1,15 @@
-# vinext-starter
+# CrossSignal
+
+CrossSignal is a Revenue Flight Recorder: a human-reviewed loop from business
+signal to evidence, intervention, measured outcome, and accepted learning.
+
+The phased ICM + EVE development program starts at
+[`build_plans/AGENTS.md`](build_plans/AGENTS.md). The complete phase map is in
+[`build_plans/00_PROGRAM.md`](build_plans/00_PROGRAM.md), with one executable
+build plan per phase and full PRD/eval ownership in
+[`build_plans/TRACEABILITY.md`](build_plans/TRACEABILITY.md).
+
+## Runtime foundation
 
 A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
