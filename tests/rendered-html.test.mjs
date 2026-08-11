@@ -26,6 +26,17 @@ function applyMigration(database, migration) {
   }
 }
 
+function applyMigrationAsD1(database, migration) {
+  database.exec("BEGIN");
+  try {
+    applyMigration(database, migration);
+    database.exec("COMMIT");
+  } catch (error) {
+    database.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 test("protects the product with authenticated owner and workspace checks", async () => {
   const [page, auth, actions, workspaceStore] = await Promise.all([
     readFile(new URL("app/page.tsx", projectRoot), "utf8"),
@@ -99,11 +110,21 @@ test("ships migration-owned durable workspace, tenant, ledger, and evidence sche
   );
   assert.match(tenantMigration, /trg_evidence_observations_immutable/);
   assert.match(tenantMigration, /PRAGMA optimize/);
-  assert.equal(tenantMigration.match(/PRAGMA foreign_keys=OFF/g)?.length, 1);
-  assert.equal(tenantMigration.match(/PRAGMA foreign_keys=ON/g)?.length, 1);
+  assert.doesNotMatch(tenantMigration, /PRAGMA foreign_keys=OFF/);
+  assert.equal(tenantMigration.match(/PRAGMA defer_foreign_keys=ON/g)?.length, 1);
+  assert.equal(tenantMigration.match(/PRAGMA defer_foreign_keys=OFF/g)?.length, 1);
   assert.ok(
-    tenantMigration.lastIndexOf("PRAGMA foreign_keys=ON") >
-      tenantMigration.lastIndexOf("ALTER TABLE"),
+    tenantMigration.indexOf("DROP TABLE `approvals`") <
+      tenantMigration.indexOf("DROP TABLE `cases`"),
+  );
+  assert.match(tenantMigration, /DROP TABLE IF EXISTS `__new_approvals`/);
+  assert.ok(
+    tenantMigration.indexOf("idx_cases_workspace_id") <
+      tenantMigration.indexOf("CREATE TABLE `approvals`"),
+  );
+  assert.ok(
+    tenantMigration.lastIndexOf("PRAGMA defer_foreign_keys=OFF") >
+      tenantMigration.lastIndexOf("DROP TABLE `__p00_backup"),
   );
   assert.match(schema, /primaryKey\(\{ columns: \[table\.workspaceId, table\.userId\] \}\)/);
   assert.match(caseStore, /ownerCanAccessWorkspace\(userId, workspaceId\)/);
@@ -227,12 +248,25 @@ test("produces identical healthy schema from empty and latest-release databases"
     );
     INSERT INTO case_evidence (case_id, evidence_id, workspace_id, relation, position)
       VALUES ('case-1', 'ev-1', 'ws-1', 'supports', 1);
+    INSERT INTO case_events (
+      id, case_id, workspace_id, cycle, event_type, actor_user_id, idempotency_key
+    ) VALUES ('event-1', 'case-1', 'ws-1', 1, 'evidence_registered', 'user-1', 'case-1:evidence:v1');
+    INSERT INTO approvals (
+      id, case_id, workspace_id, cycle, gate, payload_hash, approved_by
+    ) VALUES ('approval-1', 'case-1', 'ws-1', 1, 'evidence', 'payload-v1', 'user-1');
+    CREATE TABLE __new_approvals (id text);
   `);
-  applyMigration(upgraded, migrations[3]);
+  applyMigrationAsD1(upgraded, migrations[3]);
 
   assert.deepEqual(schemaSignature(upgraded), schemaSignature(fresh));
   assert.equal(upgraded.prepare("SELECT COUNT(*) AS count FROM cases").get().count, 1);
   assert.equal(upgraded.prepare("SELECT COUNT(*) AS count FROM case_evidence").get().count, 1);
+  assert.equal(upgraded.prepare("SELECT COUNT(*) AS count FROM case_events").get().count, 1);
+  assert.equal(upgraded.prepare("SELECT COUNT(*) AS count FROM approvals").get().count, 1);
+  assert.equal(
+    upgraded.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE name = '__new_approvals'").get().count,
+    0,
+  );
   assertDatabaseHealthy(fresh);
   assertDatabaseHealthy(upgraded);
   fresh.close();
