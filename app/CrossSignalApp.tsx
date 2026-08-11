@@ -36,6 +36,9 @@ const stageLabels = [
 
 const timelineSteps = ["Signal", "Investigate", "Intervene", "Measure", "Learn"];
 
+const DEFAULT_REVIEWER_NOTE =
+  "The browser segment and release timing are specific enough to proceed. Keep causal language provisional.";
+
 const eventLabels: Record<string, string> = {
   case_materialized: "Fixture case materialized",
   evidence_registered: "Fixture evidence registered",
@@ -83,9 +86,7 @@ export default function CrossSignalApp({
   const [scanRunning, setScanRunning] = useState(false);
   const [toast, setToast] = useState("");
   const [issueTitle, setIssueTitle] = useState(initialCaseState.issueTitle);
-  const [reviewerNote, setReviewerNote] = useState(
-    "The browser segment and release timing are specific enough to proceed. Keep causal language provisional.",
-  );
+  const [reviewerNote, setReviewerNote] = useState(DEFAULT_REVIEWER_NOTE);
   const [cohortConfirmed, setCohortConfirmed] = useState(false);
   const [published, setPublished] = useState(false);
   const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
@@ -182,8 +183,10 @@ export default function CrossSignalApp({
       setCaseState(result.caseState);
       setIssueTitle(result.caseState.issueTitle);
       if (command === "reset_case") {
+        setReviewerNote(DEFAULT_REVIEWER_NOTE);
         setCohortConfirmed(false);
         setPublished(false);
+        setSelectedEvidence(null);
       }
       notify(
         typeof successMessage === "function"

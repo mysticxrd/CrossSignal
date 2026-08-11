@@ -410,3 +410,30 @@ test("pins and proves the isolated zero-capability EVE topology spike", async ()
   assert.match(docs, /docs_root: eve-spike\/node_modules\/eve\/docs/);
   assert.match(security, /D1 operational authorization/);
 });
+
+test("keeps the Phase 00 fixture reset scoped, additive, and recoverable", async () => {
+  const [caseStore, action, cockpit, resetContract] = await Promise.all([
+    readFile(new URL("db/cases.ts", projectRoot), "utf8"),
+    readFile(new URL("app/case-actions.ts", projectRoot), "utf8"),
+    readFile(new URL("app/CrossSignalApp.tsx", projectRoot), "utf8"),
+    readFile(
+      new URL("build_plans/00_evidence/P00_M5/RESET_CONTRACT.md", projectRoot),
+      "utf8",
+    ),
+  ]);
+  const start = caseStore.indexOf("async function resetSeededCase");
+  const end = caseStore.indexOf("export async function transitionSeededCase");
+  assert.ok(start >= 0 && end > start);
+  const resetImplementation = caseStore.slice(start, end);
+
+  assert.match(resetImplementation, /INSERT OR IGNORE INTO case_events/);
+  assert.match(resetImplementation, /UPDATE cases SET/);
+  assert.match(resetImplementation, /WHERE id = \? AND workspace_id = \? AND cycle = \?/);
+  assert.match(resetImplementation, /external_receipt_id = NULL/);
+  assert.doesNotMatch(resetImplementation, /DELETE\s+FROM/i);
+  assert.match(action, /const user = await getCrossSignalUser\(\)/);
+  assert.match(cockpit, /setReviewerNote\(DEFAULT_REVIEWER_NOTE\)/);
+  assert.match(cockpit, /Real D1 cycle reset · fixture data · no external systems are changed/);
+  assert.match(resetContract, /Prior-cycle events, approvals, payload hashes, receipt labels/);
+  assert.match(resetContract, /it is not an\s+idempotent whole-workspace golden reset/);
+});

@@ -208,10 +208,10 @@ after replacing the EVE process.
 
 **Work**
 
-- [ ] Run build, targeted lint, migrations, database tests, and diff checks.
-- [ ] Define reset as a scoped, recoverable demo-workspace operation that never
+- [x] Run build, targeted lint, migrations, database tests, and diff checks.
+- [x] Define reset as a scoped, recoverable demo-workspace operation that never
       deletes unrelated workspaces or audit evidence.
-- [ ] Record the real test denominator and remove static eval assertions.
+- [x] Record the real test denominator and remove static eval assertions.
 - [ ] Deploy the truthful foundation increment privately.
 - [ ] Verify refresh and workspace switching against persisted data.
 
