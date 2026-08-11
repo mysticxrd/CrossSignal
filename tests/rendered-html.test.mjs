@@ -347,3 +347,26 @@ test("freezes the P00-M1 contract without fabricating owner approval", async () 
   assert.match(ownerGate, /approved_by: null/);
   assert.doesNotMatch(ownerGate, /status: approved/);
 });
+
+test("assigns canonical owners and keeps EVE topology evidence-bound", async () => {
+  const evidenceRoot = new URL(
+    "build_plans/00_evidence/P00_M3/",
+    projectRoot,
+  );
+  const [repository, authority, eveBoundary, retention, diagram] = await Promise.all([
+    readFile(new URL("ADR-001_ICM_REPOSITORY.md", evidenceRoot), "utf8"),
+    readFile(new URL("ADR-002_STATE_AND_AUTHORITY.md", evidenceRoot), "utf8"),
+    readFile(new URL("ADR-003_EVE_SERVICE_BOUNDARY.md", evidenceRoot), "utf8"),
+    readFile(new URL("ADR-004_TRACE_AND_LEDGER_RETENTION.md", evidenceRoot), "utf8"),
+    readFile(new URL("STATE_OWNERSHIP_DIAGRAM.md", evidenceRoot), "utf8"),
+  ]);
+
+  assert.match(repository, /one app-managed private Git repository per CrossSignal workspace/);
+  assert.match(authority, /ICM is the semantic authority/);
+  assert.match(authority, /D1 approval stores at minimum/);
+  assert.match(eveBoundary, /status: accepted_for_spike/);
+  assert.match(eveBoundary, /compatibility_evidence: pending-P00-M4/);
+  assert.match(eveBoundary, /lifetime no longer than 60 seconds/);
+  assert.match(retention, /D1\s+application ledger is the permanent business audit surface/);
+  assert.match(diagram, /If expected ICM heads\/hashes and D1 authorization hashes disagree/);
+});

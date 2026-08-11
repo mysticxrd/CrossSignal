@@ -142,16 +142,21 @@ passing tests.
 
 **Work**
 
-- [ ] Select the app-managed private Git repository strategy behind
+- [x] Select the app-managed private Git repository strategy behind
       `IcmRepository`.
-- [ ] Define which semantic state is derived from artifacts and which operational
+- [x] Define which semantic state is derived from artifacts and which operational
       state remains in D1.
-- [ ] Define canonical ICM human-review artifacts separately from D1 operational
+- [x] Define canonical ICM human-review artifacts separately from D1 operational
       approval/authorization records, including hash binding and mismatch behavior.
-- [ ] Define signed server-to-server workspace/case context for EVE.
-- [ ] Define the EVE run/session/cursor mapping stored in D1.
-- [ ] Define how Agent Runs can expire without weakening the permanent ledger.
-- [ ] Document rejected alternatives and rollback boundaries.
+- [x] Define signed server-to-server workspace/case context for EVE.
+- [x] Define the EVE run/session/cursor mapping stored in D1.
+- [x] Define how Agent Runs can expire without weakening the permanent ledger.
+- [x] Document rejected alternatives and rollback boundaries.
+
+**Acceptance evidence:** `00_evidence/P00_M3/ACCEPTANCE_EVIDENCE.md` links four
+ADRs and the one-page ownership diagram. The separate EVE service decision is
+accepted for the spike and must be confirmed or explicitly revised by P00-M4's
+exact-version compatibility evidence.
 
 **Acceptance evidence**
 
