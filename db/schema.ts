@@ -139,3 +139,70 @@ export const approvals = sqliteTable(
     index("idx_approvals_case_id").on(table.caseId),
   ],
 );
+
+export const evidenceObservations = sqliteTable(
+  "evidence_observations",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    evidenceKey: text("evidence_key").notNull(),
+    source: text("source").notNull(),
+    sourceClass: text("source_class", {
+      enum: [
+        "source-posthog",
+        "source-stripe",
+        "source-support",
+        "source-github",
+      ],
+    }).notNull(),
+    eyebrow: text("eyebrow").notNull(),
+    title: text("title").notNull(),
+    displayValue: text("display_value").notNull(),
+    delta: text("delta").notNull(),
+    detail: text("detail").notNull(),
+    queryText: text("query_text").notNull(),
+    observedWindow: text("observed_window").notNull(),
+    ingestedAt: text("ingested_at").notNull(),
+    contentHash: text("content_hash").notNull(),
+    identityLevel: text("identity_level").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("idx_evidence_observations_workspace_key").on(
+      table.workspaceId,
+      table.evidenceKey,
+    ),
+  ],
+);
+
+export const caseEvidence = sqliteTable(
+  "case_evidence",
+  {
+    caseId: text("case_id")
+      .notNull()
+      .references(() => cases.id, { onDelete: "cascade" }),
+    evidenceId: text("evidence_id")
+      .notNull()
+      .references(() => evidenceObservations.id, { onDelete: "restrict" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    relation: text("relation", {
+      enum: ["supports", "contradicts"],
+    }).notNull(),
+    position: integer("position").notNull(),
+    linkedAt: text("linked_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    primaryKey({ columns: [table.caseId, table.evidenceId] }),
+    index("idx_case_evidence_workspace_case").on(
+      table.workspaceId,
+      table.caseId,
+    ),
+  ],
+);

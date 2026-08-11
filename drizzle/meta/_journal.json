@@ -15,6 +15,13 @@
       "when": 1786391042963,
       "tag": "0001_gigantic_shriek",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786436085733,
+      "tag": "0002_funny_madripoor",
+      "breakpoints": true
     }
   ]
 }

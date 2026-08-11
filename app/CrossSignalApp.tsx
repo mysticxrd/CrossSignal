@@ -7,120 +7,15 @@ import {
   selectWorkspaceAction,
 } from "./workspace-actions";
 import { updateSeededCaseAction } from "./case-actions";
-import type { CaseCommand, CaseSnapshot } from "./case-types";
+import type {
+  CaseCommand,
+  CaseEventSnapshot,
+  CaseSnapshot,
+  EvidenceItem,
+} from "./case-types";
 import type { OwnerSummary, WorkspaceSummary } from "./workspace-types";
 
 type View = "dashboard" | "case" | "brain" | "connections" | "lab";
-
-type EvidenceItem = {
-  id: string;
-  stamp: string;
-  source: string;
-  sourceClass: string;
-  eyebrow: string;
-  title: string;
-  value: string;
-  delta: string;
-  detail: string;
-  query: string;
-  observed: string;
-  ingested: string;
-  hash: string;
-  relation: "supports" | "contradicts";
-};
-
-const evidenceItems: EvidenceItem[] = [
-  {
-    id: "posthog",
-    stamp: "EV–01",
-    source: "PostHog",
-    sourceClass: "source-posthog",
-    eyebrow: "PRODUCT ANALYTICS",
-    title: "Mobile Safari paid conversion",
-    value: "4.8%",
-    delta: "−22.4%",
-    detail:
-      "Paid conversion fell from 6.2% to 4.8% across comparable seven-day windows. 184 eligible sessions were observed after the release.",
-    query:
-      "funnel(landing_view → checkout_success) · browser = Mobile Safari · campaign = summer_launch",
-    observed: "24 Jul – 7 Aug 2026",
-    ingested: "8 Aug 2026, 02:14 UTC",
-    hash: "sha256:0f7b…9d21",
-    relation: "supports",
-  },
-  {
-    id: "stripe",
-    stamp: "EV–02",
-    source: "Stripe",
-    sourceClass: "source-stripe",
-    eyebrow: "REVENUE",
-    title: "Net-new test revenue",
-    value: "$3,420",
-    delta: "−17.1%",
-    detail:
-      "Net-new test-mode revenue declined for the same campaign cohort. Refunds and plan mix stayed within the normal range.",
-    query:
-      "sum(net_amount) · livemode = false · linked cohort = summer_launch · currency = USD",
-    observed: "24 Jul – 7 Aug 2026",
-    ingested: "8 Aug 2026, 02:16 UTC",
-    hash: "sha256:31c4…a80e",
-    relation: "supports",
-  },
-  {
-    id: "support",
-    stamp: "EV–03",
-    source: "Support import",
-    sourceClass: "source-support",
-    eyebrow: "CUSTOMER VOICE",
-    title: "Checkout failure theme",
-    value: "3 messages",
-    delta: "7 days",
-    detail:
-      "Three independent, synthetic support records mention the checkout button failing or stalling on iPhone devices.",
-    query:
-      "taxonomy.checkout_failure v3 · distinct source records · device terms: iPhone, Safari",
-    observed: "2 Aug – 7 Aug 2026",
-    ingested: "8 Aug 2026, 02:19 UTC",
-    hash: "sha256:88ea…12bb",
-    relation: "supports",
-  },
-  {
-    id: "github",
-    stamp: "EV–04",
-    source: "GitHub",
-    sourceClass: "source-github",
-    eyebrow: "RELEASE ACTIVITY",
-    title: "Checkout UI release",
-    value: "PR #181",
-    delta: "+19h",
-    detail:
-      "A checkout interaction change reached production nineteen hours before the regression window began.",
-    query:
-      "repo:atlas/checkout · merged PRs touching /checkout · deployment environment = production",
-    observed: "31 Jul 2026, 16:42 UTC",
-    ingested: "8 Aug 2026, 02:21 UTC",
-    hash: "sha256:c18d…4f92",
-    relation: "supports",
-  },
-  {
-    id: "desktop",
-    stamp: "EV–05",
-    source: "PostHog",
-    sourceClass: "source-posthog",
-    eyebrow: "SKEPTIC CHECK",
-    title: "Desktop conversion held",
-    value: "6.4%",
-    delta: "+0.3%",
-    detail:
-      "Desktop paid conversion remained flat, which argues against a campaign-wide traffic-quality explanation.",
-    query:
-      "funnel(landing_view → checkout_success) · browser family = Desktop · campaign = summer_launch",
-    observed: "24 Jul – 7 Aug 2026",
-    ingested: "8 Aug 2026, 02:14 UTC",
-    hash: "sha256:462c…ae70",
-    relation: "contradicts",
-  },
-];
 
 const navItems: Array<{ id: View; label: string; symbol: string }> = [
   { id: "dashboard", label: "Overview", symbol: "⌂" },
@@ -143,6 +38,7 @@ const timelineSteps = ["Signal", "Investigate", "Intervene", "Measure", "Learn"]
 
 const eventLabels: Record<string, string> = {
   case_materialized: "Case materialized",
+  evidence_registered: "Evidence registered",
   case_reset: "New scan cycle",
   evidence_approved: "Evidence approved",
   intervention_approved: "Intervention approved",
@@ -156,6 +52,8 @@ type CrossSignalAppProps = {
   workspace: WorkspaceSummary;
   workspaces: WorkspaceSummary[];
   initialCaseState: CaseSnapshot;
+  evidenceItems: EvidenceItem[];
+  caseEvents: CaseEventSnapshot[];
 };
 
 function initials(value: string): string {
@@ -172,12 +70,15 @@ export default function CrossSignalApp({
   workspace,
   workspaces,
   initialCaseState,
+  evidenceItems,
+  caseEvents,
 }: CrossSignalAppProps) {
   const router = useRouter();
   const [view, setView] = useState<View>("dashboard");
   const [caseState, setCaseState] = useState(initialCaseState);
   const caseStage = caseState.stage;
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [scanRunning, setScanRunning] = useState(false);
   const [toast, setToast] = useState("");
@@ -203,6 +104,7 @@ export default function CrossSignalApp({
     const closeOverlay = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       setSelectedEvidence(null);
+      setLedgerOpen(false);
       setScanOpen(false);
       setWorkspaceMenuOpen(false);
       setOwnerMenuOpen(false);
@@ -710,7 +612,7 @@ export default function CrossSignalApp({
               <div><span className="eyebrow">EVIDENCE MAP</span><h2>What the records show</h2></div>
               <div className="evidence-legend"><span><i className="legend-dot support" /> Supports</span><span><i className="legend-dot challenge" /> Challenges</span></div>
             </div>
-            <p className="section-intro">Observations stay separate from the explanation. Select an evidence stamp to inspect its exact query and provenance.</p>
+            <p className="section-intro">Observations stay separate from the explanation and are stored once per workspace. Select a stamp to inspect its immutable query, scope, and content hash.</p>
             <div className="evidence-map">
               <div className="evidence-row evidence-row-top">
                 {evidenceItems.slice(0, 2).map((item) => (
@@ -766,7 +668,7 @@ export default function CrossSignalApp({
             <div><span className="eyebrow">DURABLE CASE LEDGER</span><span className="version-chip">{caseState.eventCount} events</span></div>
             <strong>investigation/evidence-brief.md</strong>
             <p>Last event · {eventLabels[caseState.lastEventType] ?? caseState.lastEventType} · saved to {workspace.name}</p>
-            <button className="text-link" onClick={() => notify("Every case mutation is stored with actor, payload, and idempotency key")}>Review ledger guarantees</button>
+            <button className="text-link" onClick={() => setLedgerOpen(true)}>Open complete ledger <span aria-hidden="true">→</span></button>
           </div>
         </aside>
       </section>
@@ -1049,8 +951,50 @@ export default function CrossSignalApp({
               <div className="drawer-value">{selectedEvidence.value} <span>{selectedEvidence.delta}</span></div>
               <p>{selectedEvidence.detail}</p>
               <div className="source-query"><span>BOUND QUERY</span><code>{selectedEvidence.query}</code></div>
-              <dl className="provenance-list"><div><dt>Observation window</dt><dd>{selectedEvidence.observed}</dd></div><div><dt>Ingested</dt><dd>{selectedEvidence.ingested}</dd></div><div><dt>Content hash</dt><dd><code>{selectedEvidence.hash}</code></dd></div><div><dt>Identity level</dt><dd>Aggregate · no person-level join</dd></div></dl>
+              <dl className="provenance-list"><div><dt>Observation window</dt><dd>{selectedEvidence.observed}</dd></div><div><dt>Ingested</dt><dd>{selectedEvidence.ingested}</dd></div><div><dt>Content hash</dt><dd><code>{selectedEvidence.hash}</code></dd></div><div><dt>Identity level</dt><dd>{selectedEvidence.identityLevel}</dd></div></dl>
               <div className="immutable-note"><span>◇</span><p><strong>Source observation is immutable.</strong><br />Corrections are stored as attributed annotations, never silent edits.</p></div>
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {ledgerOpen && (
+        <div className="drawer-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setLedgerOpen(false);
+        }}>
+          <aside className="source-drawer ledger-drawer" role="dialog" aria-modal="true" aria-labelledby="ledger-title">
+            <div className="drawer-header ledger-drawer-header">
+              <div><span className="ledger-header-mark" aria-hidden="true">◇</span><span><small>CS-014 · WORKSPACE LEDGER</small><strong>Decision history</strong></span></div>
+              <button aria-label="Close case ledger" onClick={() => setLedgerOpen(false)}>×</button>
+            </div>
+            <div className="ledger-body">
+              <div className="eyebrow">APPEND-ONLY ACTIVITY</div>
+              <h2 id="ledger-title">Every decision, latest first.</h2>
+              <p>Events are attributed to the signed-in owner and retained across case cycles. Approval hashes bind the payload that was authorized.</p>
+              <div className="ledger-summary">
+                <span><small>WORKSPACE</small><strong>{workspace.name}</strong></span>
+                <span><small>EVENTS</small><strong>{caseEvents.length} stored</strong></span>
+                <span><small>CURRENT CYCLE</small><strong>{String(caseState.cycle).padStart(2, "0")}</strong></span>
+              </div>
+              <ol className="ledger-event-list">
+                {caseEvents.map((caseEvent) => (
+                  <li className={`ledger-event ledger-${caseEvent.kind}`} key={caseEvent.id}>
+                    <span className="ledger-event-marker" aria-hidden="true"><i /></span>
+                    <article>
+                      <div className="ledger-event-heading"><strong>{caseEvent.label}</strong><time>{caseEvent.occurredAt}</time></div>
+                      <p>{caseEvent.detail}</p>
+                      <div className="ledger-event-meta"><span>Actor · {caseEvent.actorName}</span><span>Cycle · {String(caseEvent.cycle).padStart(2, "0")}</span></div>
+                      {(caseEvent.approvalHash || caseEvent.receiptLabel) && (
+                        <dl className="ledger-integrity">
+                          {caseEvent.approvalHash && <div><dt>Bound payload</dt><dd><code>sha256:{caseEvent.approvalHash}</code></dd></div>}
+                          {caseEvent.receiptLabel && <div><dt>Action receipt</dt><dd>{caseEvent.receiptLabel} · exactly once</dd></div>}
+                        </dl>
+                      )}
+                    </article>
+                  </li>
+                ))}
+              </ol>
+              <div className="immutable-note ledger-note"><span>◇</span><p><strong>History is additive.</strong><br />New scans open a new cycle; prior approvals and receipts remain available for audit.</p></div>
             </div>
           </aside>
         </div>
