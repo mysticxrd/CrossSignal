@@ -175,14 +175,19 @@ exact-version compatibility evidence.
 
 **Work**
 
-- [ ] Install an exact candidate EVE version in the selected service surface.
-- [ ] Read `node_modules/eve/docs/README.md` and every guide required by the
+- [x] Install an exact candidate EVE version in the selected service surface.
+- [x] Read `node_modules/eve/docs/README.md` and every guide required by the
       chosen channel, session, human interaction, subagent, and deployment path.
-- [ ] Start one minimal agent with no product capabilities.
-- [ ] Call it through the intended server-side CrossSignal adapter.
-- [ ] Persist and retrieve its session/run identifier after process restart.
-- [ ] Verify secrets and continuation tokens never reach browser props or logs.
-- [ ] Record whether EVE is colocated or separately deployed and why.
+- [x] Start one minimal agent with no product capabilities.
+- [x] Call it through the intended server-side CrossSignal adapter.
+- [x] Persist and retrieve its session/run identifier after process restart.
+- [x] Verify secrets and continuation tokens never reach browser props or logs.
+- [x] Record whether EVE is colocated or separately deployed and why.
+
+**Acceptance evidence:** `00_evidence/P00_M4/ACCEPTANCE_EVIDENCE.md` records the
+exact EVE `0.32.0` pin, bundled-doc review, zero-capability compiled surface,
+ES256 server adapter, and one session retrieved and continued under Node 24.14.0
+after replacing the EVE process.
 
 **Failure and recovery**
 

@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+**/node_modules/
 /.pnp
 .pnp.*
 .yarn/*
@@ -38,3 +39,7 @@ yarn-error.log*
 /.wrangler/
 /outputs/
 /work/
+
+# isolated EVE topology spike build and durable local workflow state
+/eve-spike/.eve/
+/eve-spike/.output/

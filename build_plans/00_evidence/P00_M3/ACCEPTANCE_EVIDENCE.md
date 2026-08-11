@@ -30,12 +30,13 @@ verified_at: 2026-08-11
 - [x] A failed EVE spike rolls back at the adapter without changing accepted D1
       or ICM state.
 
-ADR-003's separate-service compatibility statement is deliberately subject to
-the real exact-version P00-M4 spike. A contrary bundled runtime requirement
-must revise the ADR explicitly; it may not be worked around silently.
+ADR-003's separate-service compatibility statement was confirmed by the real
+exact-version P00-M4 spike. EVE `0.32.0` requires Node 24+, built a separate
+Nitro service, and preserved one session across process replacement; the proof
+is `../P00_M4/ACCEPTANCE_EVIDENCE.md`.
 
 ## Verification proof
 
-- `node --test tests\rendered-html.test.mjs`: 10 tests passed, 0 failed, with
-  the state-owner/topology contract test included.
+- `node --test tests\rendered-html.test.mjs`: 11 tests passed, 0 failed, with
+  the state-owner and exact-version topology contract tests included.
 - `git diff --check`: no whitespace errors.

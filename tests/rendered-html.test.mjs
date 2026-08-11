@@ -326,7 +326,7 @@ test("labels every Phase 00 demonstration surface truthfully", async () => {
   );
 });
 
-test("freezes the P00-M1 contract without fabricating owner approval", async () => {
+test("freezes the P00-M1 contract with explicit owner approval", async () => {
   const evidenceRoot = new URL(
     "build_plans/00_evidence/P00_M1/",
     projectRoot,
@@ -343,9 +343,10 @@ test("freezes the P00-M1 contract without fabricating owner approval", async () 
   assert.match(fixture, /id: golden-mobile-safari-checkout-v1/);
   assert.match(claims, /taxonomy: \[real, fixture, sandbox, simulated-time, planned\]/);
   assert.match(deferrals, /production_owner: phase-08/);
-  assert.match(ownerGate, /status: pending/);
-  assert.match(ownerGate, /approved_by: null/);
-  assert.doesNotMatch(ownerGate, /status: approved/);
+  assert.match(ownerGate, /status: accepted/);
+  assert.match(ownerGate, /approved_by: project-owner/);
+  assert.match(ownerGate, /I approve the Phase 00 demo release profile/);
+  assert.doesNotMatch(ownerGate, /approved_by: null/);
 });
 
 test("assigns canonical owners and keeps EVE topology evidence-bound", async () => {
@@ -364,9 +365,48 @@ test("assigns canonical owners and keeps EVE topology evidence-bound", async () 
   assert.match(repository, /one app-managed private Git repository per CrossSignal workspace/);
   assert.match(authority, /ICM is the semantic authority/);
   assert.match(authority, /D1 approval stores at minimum/);
-  assert.match(eveBoundary, /status: accepted_for_spike/);
-  assert.match(eveBoundary, /compatibility_evidence: pending-P00-M4/);
+  assert.match(eveBoundary, /status: accepted/);
+  assert.match(eveBoundary, /compatibility_evidence: \.\.\/P00_M4\/ACCEPTANCE_EVIDENCE\.md/);
   assert.match(eveBoundary, /lifetime no longer than 60 seconds/);
   assert.match(retention, /D1\s+application ledger is the permanent business audit surface/);
   assert.match(diagram, /If expected ICM heads\/hashes and D1 authorization hashes disagree/);
+});
+
+test("pins and proves the isolated zero-capability EVE topology spike", async () => {
+  const spikeRoot = new URL("eve-spike/", projectRoot);
+  const evidenceRoot = new URL("build_plans/00_evidence/P00_M4/", projectRoot);
+  const [rootPackage, spikePackage, spikeLock, agent, channel, adapter, verifier, proof, docs, security] = await Promise.all([
+    readFile(new URL("package.json", projectRoot), "utf8"),
+    readFile(new URL("package.json", spikeRoot), "utf8"),
+    readFile(new URL("package-lock.json", spikeRoot), "utf8"),
+    readFile(new URL("agent/agent.ts", spikeRoot), "utf8"),
+    readFile(new URL("agent/channels/eve.ts", spikeRoot), "utf8"),
+    readFile(new URL("src/crosssignal-eve-adapter.ts", spikeRoot), "utf8"),
+    readFile(new URL("scripts/verify-spike.ts", spikeRoot), "utf8"),
+    readFile(new URL("EVE_RESTART_PROOF.json", evidenceRoot), "utf8"),
+    readFile(new URL("BUNDLED_DOC_INDEX.md", evidenceRoot), "utf8"),
+    readFile(new URL("SECURITY_BOUNDARY_REVIEW.md", evidenceRoot), "utf8"),
+  ]);
+
+  assert.equal(JSON.parse(spikePackage).dependencies.eve, "0.32.0");
+  assert.equal(JSON.parse(spikeLock).packages["node_modules/eve"].version, "0.32.0");
+  assert.doesNotMatch(rootPackage, /"eve"\s*:/);
+  assert.match(agent, /mockModel/);
+  assert.match(agent, /sessionTimeoutMs: 60_000/);
+  assert.match(channel, /jwtEcdsa/);
+  assert.match(channel, /algorithm: "ES256"/);
+  assert.match(adapter, /redirect: "error"/);
+  assert.match(adapter, /allowed_tools: envelope\.allowedTools/);
+  assert.doesNotMatch(adapter, /continuationToken|console\.(?:log|error)/);
+  assert.match(verifier, /retrieveSession\(first\.state\)/);
+  assert.match(verifier, /second\.result\.sessionId === first\.result\.sessionId/);
+  const parsedProof = JSON.parse(proof);
+  assert.equal(parsedProof.eveVersion, "0.32.0");
+  assert.equal(parsedProof.restartObserved, true);
+  assert.equal(parsedProof.productCapabilities, 0);
+  assert.equal(parsedProof.firstStatus, "waiting");
+  assert.equal(parsedProof.secondStatus, "waiting");
+  assert.ok(parsedProof.retrievedEventCount > 0);
+  assert.match(docs, /docs_root: eve-spike\/node_modules\/eve\/docs/);
+  assert.match(security, /D1 operational authorization/);
 });

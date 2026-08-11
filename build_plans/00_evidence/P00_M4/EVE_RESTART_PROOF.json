@@ -1,0 +1,31 @@
+{
+  "classification": "fixture",
+  "eveVersion": "0.32.0",
+  "nodeVersion": "v24.14.0",
+  "model": "crosssignal-p00-deterministic-fixture",
+  "productCapabilities": 0,
+  "disabledFrameworkTools": [
+    "agent",
+    "ask_question",
+    "bash",
+    "glob",
+    "grep",
+    "load_skill",
+    "read_file",
+    "todo",
+    "web_fetch",
+    "web_search",
+    "write_file"
+  ],
+  "routeAuth": "ES256 JWT, 60-second maximum token lifetime",
+  "workflowWorld": "EVE local Workflow world (.eve/.workflow-data)",
+  "firstProcessId": 27092,
+  "secondProcessId": 12244,
+  "restartObserved": true,
+  "sessionId": "wrun_01KZRDVNFM8KDPTMYWBVWQEWA5",
+  "firstStatus": "waiting",
+  "secondStatus": "waiting",
+  "retrievedEventCount": 9,
+  "firstReply": "Fixture turn 1: start topology proof",
+  "secondReply": "Fixture turn 2: continue after process restart"
+}

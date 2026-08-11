@@ -1,9 +1,9 @@
 ---
 id: ADR-003
 title: Separate Node EVE service behind a signed server adapter
-status: accepted_for_spike
+status: accepted
 date: 2026-08-11
-compatibility_evidence: pending-P00-M4
+compatibility_evidence: ../P00_M4/ACCEPTANCE_EVIDENCE.md
 ---
 
 # ADR-003 — EVE service boundary
@@ -12,13 +12,19 @@ compatibility_evidence: pending-P00-M4
 
 Keep the Sites/Vinext application and D1 boundary unchanged. Put EVE in a
 separate Node.js service behind a narrow `EveRuntime` server adapter. P00-M4
-must prove the exact pinned package and deployment surface; if bundled docs
-prove this topology invalid, this ADR is revised before product EVE work.
+proved this topology with EVE `0.32.0` under Node `24.14.0`; the package requires
+Node 24 or newer and builds a self-hosted Nitro Node service. The Sites/Vinext
+application remains a separate Cloudflare/D1 deployment with no EVE dependency.
 
 The browser calls authenticated CrossSignal server actions only. The Sites
 server authorizes the workspace/case, signs a short-lived execution-context
 envelope, and calls EVE. EVE receives no ChatGPT cookie, Git credential,
 provider credential, or unconstrained tenant selector.
+
+The Phase 00 spike uses EVE's local Workflow world solely to prove process
+restart durability. Selecting and operating a persistent production Workflow
+world is deferred; the exact-version docs require it to match EVE's Workflow
+protocol line. No product EVE runtime is deployed in Phase 00.
 
 ## Execution-context envelope
 

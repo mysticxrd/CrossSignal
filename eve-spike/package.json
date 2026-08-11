@@ -1,0 +1,26 @@
+{
+  "name": "crosssignal-eve-topology-spike",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "eve:info": "eve info --json",
+    "build": "eve build",
+    "start": "eve start --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "verify": "node scripts/verify-spike.ts"
+  },
+  "dependencies": {
+    "ai": "7.0.58",
+    "eve": "0.32.0",
+    "jose": "6.2.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "typescript": "5.9.3"
+  }
+}
