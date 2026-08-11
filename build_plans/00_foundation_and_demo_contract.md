@@ -112,14 +112,19 @@ remains open in `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`.
 
 **Work**
 
-- [ ] Inventory differences between Drizzle migrations and runtime DDL.
-- [ ] Make migrations authoritative and reduce runtime initialization to safe,
+- [x] Inventory differences between Drizzle migrations and runtime DDL.
+- [x] Make migrations authoritative and reduce runtime initialization to safe,
       idempotent compatibility behavior.
-- [ ] Test migrations from an empty database and from the latest release schema.
-- [ ] Add two-user/two-workspace tests across cases, evidence, events, approvals,
+- [x] Test migrations from an empty database and from the latest release schema.
+- [x] Add two-user/two-workspace tests across cases, evidence, events, approvals,
       workspace switching, and supplied foreign identifiers.
-- [ ] Reject invalid workspace cookies and mismatched cross-table workspace IDs.
-- [ ] Run `PRAGMA optimize` after index-bearing migrations.
+- [x] Reject invalid workspace cookies and mismatched cross-table workspace IDs.
+- [x] Run `PRAGMA optimize` after index-bearing migrations.
+
+**Acceptance evidence:** `00_evidence/P00_M2/ACCEPTANCE_EVIDENCE.md` records the
+reviewed migration, identical fresh/upgrade schemas, SQLite integrity results,
+the two-user/two-workspace rejection matrix, the production build, and 9/9
+passing tests.
 
 **Acceptance evidence**
 

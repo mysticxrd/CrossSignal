@@ -6,8 +6,8 @@ import type {
   EvidenceItem,
 } from "../app/case-types";
 import { getD1 } from ".";
+import { ensureDatabaseCompatibility } from "./migrations";
 import {
-  ensureWorkspaceSchema,
   ownerCanAccessWorkspace,
 } from "./workspaces";
 
@@ -201,111 +201,8 @@ const transitions: Record<
   },
 };
 
-let schemaReady: Promise<void> | null = null;
-
-async function initializeCaseSchema(): Promise<void> {
-  await ensureWorkspaceSchema();
-  const d1 = getD1();
-  await d1.batch([
-    d1.prepare(`CREATE TABLE IF NOT EXISTS cases (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL,
-      case_key TEXT NOT NULL,
-      title TEXT NOT NULL,
-      stage INTEGER NOT NULL DEFAULT 0,
-      cycle INTEGER NOT NULL DEFAULT 1,
-      issue_title TEXT NOT NULL,
-      external_receipt_id TEXT,
-      created_by TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS case_events (
-      id TEXT PRIMARY KEY NOT NULL,
-      case_id TEXT NOT NULL,
-      workspace_id TEXT NOT NULL,
-      cycle INTEGER NOT NULL,
-      event_type TEXT NOT NULL,
-      actor_user_id TEXT NOT NULL,
-      payload_json TEXT NOT NULL DEFAULT '{}',
-      idempotency_key TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-      FOREIGN KEY (actor_user_id) REFERENCES users(id) ON DELETE RESTRICT
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS approvals (
-      id TEXT PRIMARY KEY NOT NULL,
-      case_id TEXT NOT NULL,
-      workspace_id TEXT NOT NULL,
-      cycle INTEGER NOT NULL,
-      gate TEXT NOT NULL,
-      payload_hash TEXT NOT NULL,
-      approved_by TEXT NOT NULL,
-      external_receipt_id TEXT,
-      approved_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-      FOREIGN KEY (approved_by) REFERENCES users(id) ON DELETE RESTRICT
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS evidence_observations (
-      id TEXT PRIMARY KEY NOT NULL,
-      workspace_id TEXT NOT NULL,
-      evidence_key TEXT NOT NULL,
-      source TEXT NOT NULL,
-      source_class TEXT NOT NULL,
-      eyebrow TEXT NOT NULL,
-      title TEXT NOT NULL,
-      display_value TEXT NOT NULL,
-      delta TEXT NOT NULL,
-      detail TEXT NOT NULL,
-      query_text TEXT NOT NULL,
-      observed_window TEXT NOT NULL,
-      ingested_at TEXT NOT NULL,
-      content_hash TEXT NOT NULL,
-      identity_level TEXT NOT NULL,
-      created_by TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE RESTRICT
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS case_evidence (
-      case_id TEXT NOT NULL,
-      evidence_id TEXT NOT NULL,
-      workspace_id TEXT NOT NULL,
-      relation TEXT NOT NULL,
-      position INTEGER NOT NULL,
-      linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (case_id, evidence_id),
-      FOREIGN KEY (case_id) REFERENCES cases(id) ON DELETE CASCADE,
-      FOREIGN KEY (evidence_id) REFERENCES evidence_observations(id) ON DELETE RESTRICT,
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
-    )`),
-    d1.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_cases_workspace_case_key ON cases(workspace_id, case_key)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_cases_workspace_stage ON cases(workspace_id, stage)"),
-    d1.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_case_events_workspace_idempotency ON case_events(workspace_id, idempotency_key)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_case_events_case_created_at ON case_events(case_id, created_at)"),
-    d1.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_approvals_case_cycle_gate ON approvals(workspace_id, case_id, cycle, gate)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_approvals_case_id ON approvals(case_id)"),
-    d1.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_evidence_observations_workspace_key ON evidence_observations(workspace_id, evidence_key)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_case_evidence_workspace_case ON case_evidence(workspace_id, case_id)"),
-    d1.prepare(`CREATE TRIGGER IF NOT EXISTS trg_evidence_observations_immutable
-      BEFORE UPDATE ON evidence_observations
-      BEGIN
-        SELECT RAISE(ABORT, 'evidence observations are immutable');
-      END`),
-    d1.prepare("PRAGMA optimize"),
-  ]);
-}
-
 export async function ensureCaseSchema(): Promise<void> {
-  schemaReady ??= initializeCaseSchema().catch((error) => {
-    schemaReady = null;
-    throw error;
-  });
-  return schemaReady;
+  return ensureDatabaseCompatibility();
 }
 
 function toCaseStage(value: number): CaseStage {

@@ -72,6 +72,7 @@ prerequisites for the Result-team demonstration.
 | Milestone | Status | Proof |
 |---|---|---|
 | P00-M1 Freeze the evaluation contract | Pending project-owner approval | `00_evidence/P00_M1/CONTEXT.md`, `00_evidence/P00_M1/ACCEPTANCE_EVIDENCE.md`, and `00_evidence/P00_M1/OWNER_APPROVAL_GATE.md` |
+| P00-M2 Harden persistence and tenant foundation | Complete | `00_evidence/P00_M2/CONTEXT.md`, migration `../drizzle/0003_faithful_guardsmen.sql`, and `00_evidence/P00_M2/ACCEPTANCE_EVIDENCE.md` |
 
 All live-provider, production-schedule, production-action, public-hosting, and
 full lifecycle requirements remain open. Their canonical non-blocking demo

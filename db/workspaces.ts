@@ -1,6 +1,7 @@
 import type { ChatGPTUser } from "../app/chatgpt-auth";
 import type { WorkspaceSummary } from "../app/workspace-types";
 import { getD1 } from ".";
+import { ensureDatabaseCompatibility } from "./migrations";
 
 type WorkspaceRow = {
   id: string;
@@ -9,8 +10,6 @@ type WorkspaceRow = {
   role: "owner";
   created_at: string;
 };
-
-let schemaReady: Promise<void> | null = null;
 
 export function normalizeWorkspaceName(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -29,47 +28,8 @@ export function workspaceSlugBase(value: string): string {
   return slug || "workspace";
 }
 
-async function initializeWorkspaceSchema(): Promise<void> {
-  const d1 = getD1();
-  await d1.batch([
-    d1.prepare(`CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY NOT NULL,
-      email TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS workspaces (
-      id TEXT PRIMARY KEY NOT NULL,
-      name TEXT NOT NULL,
-      slug TEXT NOT NULL,
-      owner_user_id TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
-    )`),
-    d1.prepare(`CREATE TABLE IF NOT EXISTS workspace_members (
-      workspace_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
-      role TEXT NOT NULL CHECK (role = 'owner'),
-      joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (workspace_id, user_id),
-      FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-    )`),
-    d1.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_workspaces_slug ON workspaces(slug)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_workspaces_owner_user_id ON workspaces(owner_user_id)"),
-    d1.prepare("CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON workspace_members(user_id)"),
-    d1.prepare("PRAGMA optimize"),
-  ]);
-}
-
 export async function ensureWorkspaceSchema(): Promise<void> {
-  schemaReady ??= initializeWorkspaceSchema().catch((error) => {
-    schemaReady = null;
-    throw error;
-  });
-  return schemaReady;
+  return ensureDatabaseCompatibility();
 }
 
 export async function upsertOwner(user: ChatGPTUser): Promise<void> {

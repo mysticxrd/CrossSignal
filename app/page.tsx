@@ -3,6 +3,7 @@ import CrossSignalApp from "./CrossSignalApp";
 import WorkspaceOnboarding from "./WorkspaceOnboarding";
 import { requireCrossSignalUser } from "./crosssignal-auth";
 import { ACTIVE_WORKSPACE_COOKIE } from "./workspace-config";
+import { selectAuthorizedWorkspace } from "./workspace-selection.mjs";
 import { listOwnerWorkspaces } from "../db/workspaces";
 import {
   getOrCreateSeededCase,
@@ -27,9 +28,10 @@ export default async function Home() {
 
   const cookieStore = await cookies();
   const requestedWorkspaceId = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
-  const workspace =
-    workspaces.find((candidate) => candidate.id === requestedWorkspaceId) ??
-    workspaces[0];
+  const workspace = selectAuthorizedWorkspace(
+    workspaces,
+    requestedWorkspaceId,
+  );
   const caseState = await getOrCreateSeededCase(owner.userId, workspace.id);
   const [evidenceItems, caseEvents] = await Promise.all([
     listCaseEvidence(owner.userId, workspace.id),

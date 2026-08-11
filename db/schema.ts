@@ -1,5 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
+  check,
+  foreignKey,
   index,
   integer,
   primaryKey,
@@ -49,6 +51,7 @@ export const workspaceMembers = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.workspaceId, table.userId] }),
     index("idx_workspace_members_user_id").on(table.userId),
+    check("chk_workspace_members_role", sql`${table.role} = 'owner'`),
   ],
 );
 
@@ -76,7 +79,15 @@ export const cases = sqliteTable(
       table.workspaceId,
       table.caseKey,
     ),
+    uniqueIndex("idx_cases_workspace_id").on(table.workspaceId, table.id),
     index("idx_cases_workspace_stage").on(table.workspaceId, table.stage),
+    foreignKey({
+      name: "fk_cases_workspace_creator_membership",
+      columns: [table.workspaceId, table.createdBy],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }),
+    check("chk_cases_stage", sql`${table.stage} BETWEEN 0 AND 5`),
+    check("chk_cases_cycle", sql`${table.cycle} >= 1`),
   ],
 );
 
@@ -84,9 +95,7 @@ export const caseEvents = sqliteTable(
   "case_events",
   {
     id: text("id").primaryKey(),
-    caseId: text("case_id")
-      .notNull()
-      .references(() => cases.id, { onDelete: "cascade" }),
+    caseId: text("case_id").notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
@@ -105,6 +114,17 @@ export const caseEvents = sqliteTable(
       table.idempotencyKey,
     ),
     index("idx_case_events_case_created_at").on(table.caseId, table.createdAt),
+    foreignKey({
+      name: "fk_case_events_workspace_case",
+      columns: [table.workspaceId, table.caseId],
+      foreignColumns: [cases.workspaceId, cases.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_case_events_workspace_actor_membership",
+      columns: [table.workspaceId, table.actorUserId],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }),
+    check("chk_case_events_cycle", sql`${table.cycle} >= 1`),
   ],
 );
 
@@ -112,9 +132,7 @@ export const approvals = sqliteTable(
   "approvals",
   {
     id: text("id").primaryKey(),
-    caseId: text("case_id")
-      .notNull()
-      .references(() => cases.id, { onDelete: "cascade" }),
+    caseId: text("case_id").notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
@@ -137,6 +155,21 @@ export const approvals = sqliteTable(
       table.gate,
     ),
     index("idx_approvals_case_id").on(table.caseId),
+    foreignKey({
+      name: "fk_approvals_workspace_case",
+      columns: [table.workspaceId, table.caseId],
+      foreignColumns: [cases.workspaceId, cases.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_approvals_workspace_approver_membership",
+      columns: [table.workspaceId, table.approvedBy],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }),
+    check("chk_approvals_cycle", sql`${table.cycle} >= 1`),
+    check(
+      "chk_approvals_gate",
+      sql`${table.gate} IN ('evidence', 'intervention', 'learning')`,
+    ),
   ],
 );
 
@@ -177,18 +210,27 @@ export const evidenceObservations = sqliteTable(
       table.workspaceId,
       table.evidenceKey,
     ),
+    uniqueIndex("idx_evidence_observations_workspace_id").on(
+      table.workspaceId,
+      table.id,
+    ),
+    foreignKey({
+      name: "fk_evidence_workspace_creator_membership",
+      columns: [table.workspaceId, table.createdBy],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }),
+    check(
+      "chk_evidence_source_class",
+      sql`${table.sourceClass} IN ('source-posthog', 'source-stripe', 'source-support', 'source-github')`,
+    ),
   ],
 );
 
 export const caseEvidence = sqliteTable(
   "case_evidence",
   {
-    caseId: text("case_id")
-      .notNull()
-      .references(() => cases.id, { onDelete: "cascade" }),
-    evidenceId: text("evidence_id")
-      .notNull()
-      .references(() => evidenceObservations.id, { onDelete: "restrict" }),
+    caseId: text("case_id").notNull(),
+    evidenceId: text("evidence_id").notNull(),
     workspaceId: text("workspace_id")
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
@@ -204,5 +246,23 @@ export const caseEvidence = sqliteTable(
       table.workspaceId,
       table.caseId,
     ),
+    foreignKey({
+      name: "fk_case_evidence_workspace_case",
+      columns: [table.workspaceId, table.caseId],
+      foreignColumns: [cases.workspaceId, cases.id],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_case_evidence_workspace_evidence",
+      columns: [table.workspaceId, table.evidenceId],
+      foreignColumns: [
+        evidenceObservations.workspaceId,
+        evidenceObservations.id,
+      ],
+    }).onDelete("restrict"),
+    check(
+      "chk_case_evidence_relation",
+      sql`${table.relation} IN ('supports', 'contradicts')`,
+    ),
+    check("chk_case_evidence_position", sql`${table.position} >= 1`),
   ],
 );
