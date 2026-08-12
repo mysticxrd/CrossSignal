@@ -38,6 +38,7 @@ approving them.
 
 ## Outputs
 
+- [`PHASE_00_SIMPLE_EXPLANATION.md`](PHASE_00_SIMPLE_EXPLANATION.md)
 - [`01_EVALUATION_CONTRACT.md`](01_EVALUATION_CONTRACT.md)
 - [`02_PERSISTENCE_BOUNDARY.md`](02_PERSISTENCE_BOUNDARY.md)
 - [`03_STATE_OWNERSHIP.md`](03_STATE_OWNERSHIP.md)
@@ -47,7 +48,8 @@ approving them.
 
 ## Human check
 
-Read the overall review and all five briefs. Then give one consolidated response:
+Start with the simple explanation. Use the overall review and five briefs only
+when you want more detail. Then give one consolidated response:
 `understood`, `understood with corrections`, or `requires reconsideration`.
 This retrospective does not request individual gate re-approval and does not
 change Phase 00's technical completion record.
