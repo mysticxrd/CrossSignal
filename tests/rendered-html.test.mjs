@@ -180,7 +180,7 @@ test("enforces workspace evidence and ledger uniqueness in SQLite", async () => 
   database.close();
 });
 
-test("packages the authenticated evidence-ledger release", async () => {
+test("packages the authenticated human-control release", async () => {
   const [page, cockpit, layout, packageJson, builtHosting] = await Promise.all([
     readFile(new URL("app/page.tsx", projectRoot), "utf8"),
     readFile(new URL("app/CrossSignalApp.tsx", projectRoot), "utf8"),
@@ -192,15 +192,17 @@ test("packages the authenticated evidence-ledger release", async () => {
     access(new URL("dist/.openai/drizzle/0001_gigantic_shriek.sql", projectRoot)),
     access(new URL("dist/.openai/drizzle/0002_funny_madripoor.sql", projectRoot)),
     access(new URL("dist/.openai/drizzle/0003_faithful_guardsmen.sql", projectRoot)),
+    access(new URL("dist/.openai/drizzle/0004_typical_omega_red.sql", projectRoot)),
+    access(new URL("dist/.openai/drizzle/0005_flight_recorder_guards.sql", projectRoot)),
   ]);
 
   assert.match(page, /WorkspaceOnboarding/);
   assert.match(page, /CrossSignalApp/);
-  assert.match(page, /listCaseEvidence/);
-  assert.match(page, /listCaseEvents/);
-  assert.match(cockpit, /Open complete ledger/);
-  assert.match(cockpit, /caseEvents\.map/);
-  assert.doesNotMatch(cockpit, /const evidenceItems: EvidenceItem\[\]/);
+  assert.match(page, /getOrCreateFlightRecorderSnapshot/);
+  assert.match(cockpit, /Nothing happens/);
+  assert.match(cockpit, /Authorize exact action/);
+  assert.match(cockpit, /Pause all actions/);
+  assert.match(cockpit, /Narrative trace/);
   assert.match(layout, /Revenue Flight Recorder/);
   assert.equal(JSON.parse(builtHosting).d1, "DB");
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview/);
@@ -342,132 +344,36 @@ test("rejects cross-workspace cases, evidence, events, approvals, and actors", a
   database.close();
 });
 
-test("labels every Phase 00 demonstration surface truthfully", async () => {
+test("labels the Stage 03 control surfaces truthfully", async () => {
   const cockpit = await readFile(
     new URL("app/CrossSignalApp.tsx", projectRoot),
     "utf8",
   );
 
-  assert.match(cockpit, /RESULT DEMO · FIXTURES/);
-  assert.match(cockpit, /No live provider is connected/);
-  assert.match(cockpit, /No EVE runtime is connected in Phase 00/);
-  assert.match(cockpit, /No external call occurred/);
-  assert.match(cockpit, /EVAL SUITE · NOT RUN/);
-  assert.match(cockpit, /Real D1 cycle reset · fixture data/);
+  assert.match(cockpit, /TruthBadge mode="FIXTURE"/);
+  assert.match(cockpit, /TruthBadge mode="TEST"/);
+  assert.match(cockpit, /correlated, not proven/i);
+  assert.match(cockpit, /single-user screen does not visually prove tenant isolation/);
+  assert.match(cockpit, /Blind retry count: 0/);
   assert.doesNotMatch(
     cockpit,
     /System healthy|Fresh 6m ago|Run #AR-2281|18 \/ 18 PASSING|LOCKED BY SERVER POLICY|ACTION RECEIPT/,
   );
 });
 
-test("freezes the P00-M1 contract with explicit owner approval", async () => {
-  const evidenceRoot = new URL(
-    "build_plans/00_evidence/P00_M1/",
-    projectRoot,
-  );
-  const [story, fixture, claims, deferrals, ownerGate] = await Promise.all([
-    readFile(new URL("THREE_MINUTE_STORY.md", evidenceRoot), "utf8"),
-    readFile(new URL("GOLDEN_FIXTURE.md", evidenceRoot), "utf8"),
-    readFile(new URL("CLAIM_REGISTER.md", evidenceRoot), "utf8"),
-    readFile(new URL("DEFERRED_SCOPE_REGISTER.md", evidenceRoot), "utf8"),
-    readFile(new URL("OWNER_APPROVAL_GATE.md", evidenceRoot), "utf8"),
-  ]);
-
-  assert.match(story, /duration_seconds: 180/);
-  assert.match(fixture, /id: golden-mobile-safari-checkout-v1/);
-  assert.match(claims, /taxonomy: \[real, fixture, sandbox, simulated-time, planned\]/);
-  assert.match(deferrals, /production_owner: phase-08/);
-  assert.match(ownerGate, /status: accepted/);
-  assert.match(ownerGate, /approved_by: project-owner/);
-  assert.match(ownerGate, /I approve the Phase 00 demo release profile/);
-  assert.doesNotMatch(ownerGate, /approved_by: null/);
-});
-
-test("assigns canonical owners and keeps EVE topology evidence-bound", async () => {
-  const evidenceRoot = new URL(
-    "build_plans/00_evidence/P00_M3/",
-    projectRoot,
-  );
-  const [repository, authority, eveBoundary, retention, diagram] = await Promise.all([
-    readFile(new URL("ADR-001_ICM_REPOSITORY.md", evidenceRoot), "utf8"),
-    readFile(new URL("ADR-002_STATE_AND_AUTHORITY.md", evidenceRoot), "utf8"),
-    readFile(new URL("ADR-003_EVE_SERVICE_BOUNDARY.md", evidenceRoot), "utf8"),
-    readFile(new URL("ADR-004_TRACE_AND_LEDGER_RETENTION.md", evidenceRoot), "utf8"),
-    readFile(new URL("STATE_OWNERSHIP_DIAGRAM.md", evidenceRoot), "utf8"),
-  ]);
-
-  assert.match(repository, /one app-managed private Git repository per CrossSignal workspace/);
-  assert.match(authority, /ICM is the semantic authority/);
-  assert.match(authority, /D1 approval stores at minimum/);
-  assert.match(eveBoundary, /status: accepted/);
-  assert.match(eveBoundary, /compatibility_evidence: \.\.\/P00_M4\/ACCEPTANCE_EVIDENCE\.md/);
-  assert.match(eveBoundary, /lifetime no longer than 60 seconds/);
-  assert.match(retention, /D1\s+application ledger is the permanent business audit surface/);
-  assert.match(diagram, /If expected ICM heads\/hashes and D1 authorization hashes disagree/);
-});
-
-test("pins and proves the isolated zero-capability EVE topology spike", async () => {
-  const spikeRoot = new URL("eve-spike/", projectRoot);
-  const evidenceRoot = new URL("build_plans/00_evidence/P00_M4/", projectRoot);
-  const [rootPackage, spikePackage, spikeLock, agent, channel, adapter, verifier, proof, docs, security] = await Promise.all([
-    readFile(new URL("package.json", projectRoot), "utf8"),
-    readFile(new URL("package.json", spikeRoot), "utf8"),
-    readFile(new URL("package-lock.json", spikeRoot), "utf8"),
-    readFile(new URL("agent/agent.ts", spikeRoot), "utf8"),
-    readFile(new URL("agent/channels/eve.ts", spikeRoot), "utf8"),
-    readFile(new URL("src/crosssignal-eve-adapter.ts", spikeRoot), "utf8"),
-    readFile(new URL("scripts/verify-spike.ts", spikeRoot), "utf8"),
-    readFile(new URL("EVE_RESTART_PROOF.json", evidenceRoot), "utf8"),
-    readFile(new URL("BUNDLED_DOC_INDEX.md", evidenceRoot), "utf8"),
-    readFile(new URL("SECURITY_BOUNDARY_REVIEW.md", evidenceRoot), "utf8"),
-  ]);
-
-  assert.equal(JSON.parse(spikePackage).dependencies.eve, "0.32.0");
-  assert.equal(JSON.parse(spikeLock).packages["node_modules/eve"].version, "0.32.0");
-  assert.doesNotMatch(rootPackage, /"eve"\s*:/);
-  assert.match(agent, /mockModel/);
-  assert.match(agent, /sessionTimeoutMs: 60_000/);
-  assert.match(channel, /jwtEcdsa/);
-  assert.match(channel, /algorithm: "ES256"/);
-  assert.match(adapter, /redirect: "error"/);
-  assert.match(adapter, /allowed_tools: envelope\.allowedTools/);
-  assert.doesNotMatch(adapter, /continuationToken|console\.(?:log|error)/);
-  assert.match(verifier, /retrieveSession\(first\.state\)/);
-  assert.match(verifier, /second\.result\.sessionId === first\.result\.sessionId/);
-  const parsedProof = JSON.parse(proof);
-  assert.equal(parsedProof.eveVersion, "0.32.0");
-  assert.equal(parsedProof.restartObserved, true);
-  assert.equal(parsedProof.productCapabilities, 0);
-  assert.equal(parsedProof.firstStatus, "waiting");
-  assert.equal(parsedProof.secondStatus, "waiting");
-  assert.ok(parsedProof.retrievedEventCount > 0);
-  assert.match(docs, /docs_root: eve-spike\/node_modules\/eve\/docs/);
-  assert.match(security, /D1 operational authorization/);
-});
-
-test("keeps the Phase 00 fixture reset scoped, additive, and recoverable", async () => {
-  const [caseStore, action, cockpit, resetContract] = await Promise.all([
-    readFile(new URL("db/cases.ts", projectRoot), "utf8"),
-    readFile(new URL("app/case-actions.ts", projectRoot), "utf8"),
+test("keeps the Stage 03 fixture reset exact and authority-preserving", async () => {
+  const [store, action, cockpit] = await Promise.all([
+    readFile(new URL("db/flight-recorder.ts", projectRoot), "utf8"),
+    readFile(new URL("app/flight-recorder-actions.ts", projectRoot), "utf8"),
     readFile(new URL("app/CrossSignalApp.tsx", projectRoot), "utf8"),
-    readFile(
-      new URL("build_plans/00_evidence/P00_M5/RESET_CONTRACT.md", projectRoot),
-      "utf8",
-    ),
   ]);
-  const start = caseStore.indexOf("async function resetSeededCase");
-  const end = caseStore.indexOf("export async function transitionSeededCase");
-  assert.ok(start >= 0 && end > start);
-  const resetImplementation = caseStore.slice(start, end);
-
-  assert.match(resetImplementation, /INSERT OR IGNORE INTO case_events/);
-  assert.match(resetImplementation, /UPDATE cases SET/);
-  assert.match(resetImplementation, /WHERE id = \? AND workspace_id = \? AND cycle = \?/);
-  assert.match(resetImplementation, /external_receipt_id = NULL/);
-  assert.doesNotMatch(resetImplementation, /DELETE\s+FROM/i);
+  const start = store.indexOf("export async function resetFlightRecorderFixture");
+  assert.ok(start >= 0);
+  const resetImplementation = store.slice(start);
+  assert.match(resetImplementation, /DELETE FROM flight_traces/);
+  assert.match(resetImplementation, /fixture_key = \?/);
+  assert.match(resetImplementation, /truth_mode = 'FIXTURE'/);
+  assert.doesNotMatch(resetImplementation, /DELETE FROM workspace/);
   assert.match(action, /const user = await getCrossSignalUser\(\)/);
-  assert.match(cockpit, /setReviewerNote\(DEFAULT_REVIEWER_NOTE\)/);
-  assert.match(cockpit, /Real D1 cycle reset · fixture data · no external systems are changed/);
-  assert.match(resetContract, /Prior-cycle events, approvals, payload hashes, receipt labels/);
-  assert.match(resetContract, /it is not an\s+idempotent whole-workspace golden reset/);
+  assert.match(cockpit, /Reset exact FIXTURE trace for replay/);
 });

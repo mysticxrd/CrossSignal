@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
+import * as flightRecorderSchema from "./flight-recorder-schema";
 
 export function getD1() {
   if (!env.DB) {
@@ -13,5 +14,5 @@ export function getD1() {
 }
 
 export function getDb() {
-  return drizzle(getD1(), { schema });
+  return drizzle(getD1(), { schema: { ...schema, ...flightRecorderSchema } });
 }

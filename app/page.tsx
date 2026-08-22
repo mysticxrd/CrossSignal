@@ -5,11 +5,7 @@ import { requireCrossSignalUser } from "./crosssignal-auth";
 import { ACTIVE_WORKSPACE_COOKIE } from "./workspace-config";
 import { selectAuthorizedWorkspace } from "./workspace-selection.mjs";
 import { listOwnerWorkspaces } from "../db/workspaces";
-import {
-  getOrCreateSeededCase,
-  listCaseEvents,
-  listCaseEvidence,
-} from "../db/cases";
+import { getOrCreateFlightRecorderSnapshot } from "../db/flight-recorder";
 
 export const dynamic = "force-dynamic";
 
@@ -32,11 +28,10 @@ export default async function Home() {
     workspaces,
     requestedWorkspaceId,
   );
-  const caseState = await getOrCreateSeededCase(owner.userId, workspace.id);
-  const [evidenceItems, caseEvents] = await Promise.all([
-    listCaseEvidence(owner.userId, workspace.id),
-    listCaseEvents(owner.userId, workspace.id),
-  ]);
+  const flightRecorder = await getOrCreateFlightRecorderSnapshot(
+    owner.userId,
+    workspace.id,
+  );
 
   return (
     <CrossSignalApp
@@ -44,9 +39,7 @@ export default async function Home() {
       owner={ownerSummary}
       workspace={workspace}
       workspaces={workspaces}
-      initialCaseState={caseState}
-      evidenceItems={evidenceItems}
-      caseEvents={caseEvents}
+      initialFlightRecorder={flightRecorder}
     />
   );
 }

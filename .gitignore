@@ -36,10 +36,11 @@ yarn-error.log*
 .vercel
 
 /dist/
-/.wrangler/
+*.tsbuildinfo
+**/.wrangler/
 /outputs/
 /work/
 
-# isolated EVE topology spike build and durable local workflow state
-/eve-spike/.eve/
-/eve-spike/.output/
+# local workflow builds and durable local workflow state, including archives
+**/.eve/
+**/.output/
