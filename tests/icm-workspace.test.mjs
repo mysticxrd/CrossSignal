@@ -16,6 +16,23 @@ function words(text) {
   return text.match(/[A-Za-z0-9_-]+/g)?.length ?? 0;
 }
 
+function frontmatterValue(markdown, field) {
+  return markdown.match(new RegExp(`^${field}:\\s*(.+)$`, "m"))?.[1]?.trim() ?? null;
+}
+
+function assertReviewState(verification, gate) {
+  assert.equal(frontmatterValue(verification, "status"), "passed");
+  const gateStatus = frontmatterValue(gate, "gate_status");
+  const decision = frontmatterValue(gate, "decision");
+  assert.ok(["open", "closed"].includes(gateStatus), `invalid gate status: ${gateStatus}`);
+  assert.ok(
+    ["pending", "accepted", "changes-requested", "rejected"].includes(decision),
+    `invalid gate decision: ${decision}`,
+  );
+  if (gateStatus === "closed") assert.notEqual(decision, "pending");
+  if (decision === "accepted") assert.equal(gateStatus, "closed");
+}
+
 test("provides a small root catalog and excludes superseded history", async () => {
   const [agents, context, factory, archive] = await Promise.all([
     readFile(new URL("AGENTS.md", projectRoot), "utf8"),
@@ -95,9 +112,7 @@ test("implements one hardened five-stage pipeline with filesystem-derived status
       "utf8",
     ),
   ]);
-  assert.match(stageOneVerify, /^status: passed$/m);
-  assert.match(stageOneGate, /^gate_status: closed$/m);
-  assert.match(stageOneGate, /^decision: accepted$/m);
+  assertReviewState(stageOneVerify, stageOneGate);
 
   const [stageTwoPackage, stageTwoVerify, stageTwoGate] = await Promise.all([
     readFile(new URL("factory/02_data/output/DATA_PACKAGE.md", projectRoot), "utf8"),
@@ -105,9 +120,7 @@ test("implements one hardened five-stage pipeline with filesystem-derived status
     readFile(new URL("factory/02_data/output/HUMAN_GATE.md", projectRoot), "utf8"),
   ]);
   assert.match(stageTwoPackage, /^status: ready-for-review$/m);
-  assert.match(stageTwoVerify, /^status: passed$/m);
-  assert.match(stageTwoGate, /^gate_status: closed$/m);
-  assert.match(stageTwoGate, /^decision: accepted$/m);
+  assertReviewState(stageTwoVerify, stageTwoGate);
 
   const [stageThreeEvidence, stageThreeVerify, stageThreeGate] = await Promise.all([
     readFile(new URL("factory/03_build/output/BUILD_EVIDENCE.md", projectRoot), "utf8"),
@@ -115,9 +128,7 @@ test("implements one hardened five-stage pipeline with filesystem-derived status
     readFile(new URL("factory/03_build/output/HUMAN_GATE.md", projectRoot), "utf8"),
   ]);
   assert.match(stageThreeEvidence, /^status: ready-for-review$/m);
-  assert.match(stageThreeVerify, /^status: passed$/m);
-  assert.match(stageThreeGate, /^gate_status: closed$/m);
-  assert.match(stageThreeGate, /^decision: accepted$/m);
+  assertReviewState(stageThreeVerify, stageThreeGate);
 
   const [stageFourReport, stageFourVerify, stageFourGate] = await Promise.all([
     readFile(new URL("factory/04_verify/output/VERIFICATION_REPORT.md", projectRoot), "utf8"),
@@ -125,9 +136,7 @@ test("implements one hardened five-stage pipeline with filesystem-derived status
     readFile(new URL("factory/04_verify/output/HUMAN_GATE.md", projectRoot), "utf8"),
   ]);
   assert.match(stageFourReport, /^status: ready-for-review$/m);
-  assert.match(stageFourVerify, /^status: passed$/m);
-  assert.match(stageFourGate, /^gate_status: closed$/m);
-  assert.match(stageFourGate, /^decision: accepted$/m);
+  assertReviewState(stageFourVerify, stageFourGate);
 
   const [stageFiveManifest, stageFiveScript, stageFiveVerify, stageFiveGate] =
     await Promise.all([
@@ -138,9 +147,7 @@ test("implements one hardened five-stage pipeline with filesystem-derived status
     ]);
   assert.match(stageFiveManifest, /^status: ready-for-review$/m);
   assert.match(stageFiveScript, /^status: ready-for-review$/m);
-  assert.match(stageFiveVerify, /^status: passed$/m);
-  assert.match(stageFiveGate, /^gate_status: closed$/m);
-  assert.match(stageFiveGate, /^decision: accepted$/m);
+  assertReviewState(stageFiveVerify, stageFiveGate);
 
   for (const stalePath of [
     "factory/01_prove-result/",

@@ -1,52 +1,59 @@
 ---
 type: stage-contract
 stage: 01
-job: specify-one-result-relevant-product-slice
+job: specify-superseded-intent-authority-correction
 ---
 
-# 01_spec - decide what to build
+# 01_spec - define the authority correction
 
-One job: turn the owner's goal and the current product baseline into one
-bounded, evidence-backed, testable build specification.
+One job: turn the confirmed L08 edit/authorize race into one bounded, testable
+correction specification without changing product code.
 
 ## Inputs
 
 - Reference: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Reference: `../_shared/QUALITY_GATES.md`
-- Working baseline: `../../README.md`, `../../package.json`
-- Working baseline: `../../app/`, `../../db/`, `../../drizzle/`, `../../tests/`
-- External during this stage only: Result's public website, public thesis, YC
-  profile, and Lab. Record URLs and retrieval dates; separate facts from
-  inferences.
+- Working baseline: `../../db/flight-recorder.ts`,
+  `../../db/flight-recorder-schema.ts`, `../../db/migrations.ts`
+- Working baseline: `../../drizzle/`, `../../tests/`, `../../package.json`
+- Factory verification baseline: `../_lib/factory-tools.test.mjs`
+- Audit input: the L08 superseded-intent interleaving described by the owner
+- Historical release binding: commit
+  `7b07ff62b2c0de605c86b378a1b90639f4b90547`
+- External during this stage only: Cloudflare D1 prepared-statement and batch
+  documentation, and SQLite foreign-key documentation. Record URLs and
+  retrieval date; use only primary sources.
 
-Do not load: `_archive/`, the source Obsidian vault, later stages, dependency
-folders, or generated build output.
+Do not load: `_archive/`, later stages, dependency folders, generated build
+output, or unrelated product surfaces.
 
 ## Process
 
-1. Establish the Result relationship and adjacent product wedge from public evidence.
-2. Define one primary user, problem, golden path, truth boundary, and visible surface.
-3. Fix scope, non-goals, repository gaps, and observable acceptance criteria.
-4. Write `SPEC.md`, add `npm run verify:spec`, verify it, and stop.
+1. Model the edit/authorize interleaving and the exact authority invariant.
+2. Decide the atomic database condition and migration/backfill behavior.
+3. Define deterministic concurrency and negative acceptance tests.
+4. Bound compatibility, rollback, non-goals, and observable completion.
+5. Write `SPEC.md`, verify it, and stop.
 
 ## Outputs
 
-- `output/SPEC.md` - the canonical editable product specification for this run
+- `output/SPEC.md` - canonical correction specification for this run
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 
 ## Verify
 
-Run `npm run verify:spec`, `npm run build`, `npm run lint`, and `npm test`.
-Fail on missing public evidence, invented Result claims, vague acceptance
-criteria, hidden implementation gaps, secret patterns, or scope contradictions.
+Fail on a check-then-act authorization design, an unbound active intent,
+ambiguous migration behavior, a nondeterministic race test, unrelated audit
+scope, or any proposal that rewrites the sealed release.
 
 ## Human gate
 
-Read the specification as the product owner. Accept only if its relationship to
-Result, primary user, golden path, scope, truth labels, and observable definition
-of done match the product you want to build.
+Accept only if the authority invariant, atomic enforcement point, migration
+behavior, deterministic failing test, and scope boundary are explicit. Product
+code must still be unchanged at this gate.
 
 ## Failure routing
 
-Edit `SPEC.md` or its approved source. Do not move ambiguity into Data or Build.
+Correct this specification. Do not begin Data or patch the runtime to hide a
+specification gap.

@@ -43,6 +43,13 @@
       "when": 1786603710976,
       "tag": "0005_flight_recorder_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787398307678,
+      "tag": "0006_l08_active_intent_authority",
+      "breakpoints": true
     }
   ]
 }

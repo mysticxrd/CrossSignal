@@ -2,13 +2,15 @@
 type: verification
 stage: 02
 status: passed
-verified_at: 2026-08-13T13:19:03.0594077+05:30
+verified_at: 2026-08-22T16:41:17.7612060+05:30
+finding: L08
 ---
 
-# Stage 02 verification
+# Stage 02 verification - L08 authority data contract
 
-The accepted Spec is executable as a tenant-bound, replayable Data package.
-Verification opens the human gate; it does not accept the package.
+The accepted specification is executable as a schema, migration, transaction,
+fixture, interleaving, and failure contract. Verification opens the human gate;
+it does not accept the package or claim the runtime defect is fixed.
 
 ## Artifact bindings
 
@@ -16,48 +18,54 @@ Text hashes normalize line endings to LF before SHA-256.
 
 | Artifact | SHA-256 |
 |---|---|
-| `DATA_PACKAGE.md` | `bc63fbcec2cfb8ba70cf8286dbb2f8cbca2f02272b9b07b1eea918b6072e32b0` |
-| `../verify.mjs` | `3f5140e02d9cb9f7bad5c4f650d3711b09ace0c19be0564e37f23794fbf756b3` |
-| `../fixtures/onboarding-rescue.fixture.mjs` | `aeb7e0d1b977f90682d473efdbe88dafdb82d498682578f26a894c682cf0083d` |
-| `../fixtures/reset.mjs` | `79e3261492955e78cfa708d25b503865d033f06b7d308d5b65790009d4068a2e` |
-| `../../../drizzle/0004_typical_omega_red.sql` | `7faff14fddee736cf378e9010f4a1c113f20049f4d9714caf676f6296cf792b4` |
-| `../../../drizzle/0005_flight_recorder_guards.sql` | `17f5a4ffb041d4a3851c9ff441fe61a44274d687c1cbc917356bd247fe6094a7` |
+| `DATA_PACKAGE.md` | `ff047b6e5c3b664307ce6626f34e5c28b518b8fabd28048e442b2c99ae2d3ba8` |
+| `../verify.mjs` | `0f5eeb5b1a8664172307d8d94b548c6511527fd55b940bd36e8899070e10e033` |
+| `../fixtures/superseded-intent-authority.fixture.mjs` | `b49748c7305ac896e8a756dd5d8ba6733a79dc89eed0dad3438db9b24cb1fea8` |
 
-The Data Package separately binds all 17 declared upstream and implementation
-inputs, including the accepted Spec gate and LF policy.
+The Data Package separately binds fifteen accepted, shared, schema, migration,
+runtime, test, fixture, and repository-command inputs.
 
 ## Executable evidence
 
-- Eight shared state machines and seven focused contract tests passed.
-- Six journal-aligned migrations and their complete snapshot ancestry passed
-  `drizzle-kit check` and applied to a fresh local D1.
-- The fresh database contained all 18 Stage 02 tables, all 53 Stage 02 guards,
-  and zero foreign-key violations.
-- The complete canonical fixture was inserted through legal durable state
-  transitions: five evidence/context sources, six reasoning nodes/artifacts,
-  exact intent/policy/grant/effect authority, three effect events, one observed
-  outcome/assessment, and seven ordered trace events.
-- Fourteen independent database attacks were rejected, including tenant drift,
-  truth mutation, illegal transitions, parent deletion, incomplete or drifted
-  context, canonical intent drift, kill-switch execution, cross-trace events,
-  duplicate/out-of-order events, and a supported claim from FIXTURE evidence.
-- Exact reset removed only the canonical FIXTURE trace and preserved its
-  workspace, authority control, and an unrelated non-fixture trace.
+- One explicit `active_intent_id` authority head is coupled to an immutable
+  `supersedes_intent_id` predecessor edge; activation never depends on runtime
+  timestamp or `rowid` inference.
+- The policy-insert activation sentinel, grant linearization guard, repeated
+  effect guard, active-head compare-and-swap, and executing-event assertion are
+  all named and fail the complete D1 batch closed.
+- The deterministic fixture validates both edit-wins and authorization-wins
+  schedules at the real production barrier phase.
+- Ten direct database attacks cover stale grant/effect, tenant/trace drift,
+  clearing or invalid head movement, missing policy, kill switch, replay, and
+  zero-row projection transition.
+- Five migration databases cover empty, pending-v1, pending-v2, completed-v1,
+  and an invalid historical L08 race that must abort without partial changes.
+- AC-L08-01 through AC-L08-08 map to concrete Build-stage proof. L06, L20,
+  L04, and L14 remain explicitly excluded.
+- No file under `app/`, `db/`, `drizzle/`, or `worker/` changed in Stage 02.
 
 ## Command results
 
-Environment: Windows PowerShell, Node.js `22.15.0`, Wrangler `4.92.0`,
-Drizzle Kit `0.31.10`, Vinext `1.0.0-beta.2`, Vite `8.0.13`.
+Environment: Windows PowerShell, Node.js `22.15.0`, ESLint `9.39.4`, Vinext
+`1.0.0-beta.2`, Vite `8.0.13`, and tsx `4.22.1`.
 
 | Command | Exit | Relevant result |
 |---|---:|---|
-| `npm.cmd run verify:data` | `0` | `7/7` focused tests; 18 tables, 53 guards, 14 rejected D1 attacks, exact reset proof. |
-| `npm.cmd run build` | `0` | Production build completed. |
-| `npm.cmd run lint` | `0` | Active repository lint passed. |
-| `npm.cmd test` | `0` | Production build and all `19/19` tests passed; `0` failed. |
+| `node factory/02_data/verify.mjs` | `0` | 2 deterministic schedules, 10 attacks, 5 migration cases, 4 required-head states, and 15 declared inputs passed. |
+| `node node_modules/eslint/bin/eslint.js . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | `0` | Exact repository lint-script scope passed. |
+| `node_modules/.bin/vinext.cmd build` | `0` | Production build completed. |
+| `node_modules/.bin/tsx.cmd --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs` | `0` | `41/41` tests passed; zero failures, skips, cancellations, or todos. Existing migrations and authority tests passed. |
+| `git diff --check` | `0` | No whitespace errors. |
+| `git diff --quiet -- app db drizzle worker` | `0` | No Stage 02 product/runtime changes. |
+
+An initial ad hoc `eslint .` invocation omitted the repository's declared
+`_archive`, `dist`, and `.next` ignore patterns. It traversed archived generated
+bundles and reported 8,482 irrelevant generated-code errors. The exact scoped
+lint command above was then run and passed; no archive file was changed or used
+as a Data input.
 
 ## Gate state
 
-Verification passed and the Stage 02 human gate is open. Stage 02 remains
+Verification passed and the Stage 02 gate is open. Stage 02 remains
 `in-progress` until a human accepts the exact Data Package and verification
 hashes recorded in `HUMAN_GATE.md`.

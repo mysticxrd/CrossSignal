@@ -24,6 +24,7 @@ type TraceRow = {
   workspace_id: string;
   trace_key: string;
   current_state: FlightRecorderSnapshot["traceState"];
+  active_intent_id: string | null;
   truth_mode: "FIXTURE";
 };
 
@@ -33,6 +34,7 @@ type IntentRow = {
   trace_id: string;
   context_snapshot_id: string;
   source_artifact_id: string;
+  supersedes_intent_id: string | null;
   intent_key: string;
   action_kind: "email_test";
   truth_mode: "TEST";
@@ -76,6 +78,27 @@ type GrantRow = {
   bound_recipient_set_hash: string;
   nonce: string;
 };
+
+let authorizationBeforeWriteBarrier: (() => Promise<void>) | null = null;
+let replacementBeforeWriteBarrier: (() => Promise<void>) | null = null;
+
+export function installAuthorizationRaceBarrierForTest(
+  barrier: (() => Promise<void>) | null,
+): () => void {
+  authorizationBeforeWriteBarrier = barrier;
+  return () => {
+    authorizationBeforeWriteBarrier = null;
+  };
+}
+
+export function installReplacementRaceBarrierForTest(
+  barrier: (() => Promise<void>) | null,
+): () => void {
+  replacementBeforeWriteBarrier = barrier;
+  return () => {
+    replacementBeforeWriteBarrier = null;
+  };
+}
 
 function parseStringArray(value: string, field: string): string[] {
   const parsed: unknown = JSON.parse(value);
@@ -126,7 +149,7 @@ async function requireOwner(userId: string, workspaceId: string): Promise<void> 
 
 async function findTrace(workspaceId: string): Promise<TraceRow | null> {
   return getD1()
-    .prepare(`SELECT id, workspace_id, trace_key, current_state, truth_mode
+    .prepare(`SELECT id, workspace_id, trace_key, current_state, active_intent_id, truth_mode
       FROM flight_traces
       WHERE workspace_id = ? AND fixture_key = ? AND trace_key = ?
       LIMIT 1`)
@@ -307,7 +330,7 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
         userId,
         definition.registeredAt,
       ),
-    intentStatement(intent),
+    intentStatement(intent, null),
     policyStatement(policy),
     d1
       .prepare(`UPDATE flight_traces SET current_state = 'awaiting_approval', updated_at = ?
@@ -318,21 +341,25 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
   await d1.batch(statements);
 }
 
-function intentStatement(intent: Awaited<ReturnType<typeof buildDemoIntent>>["intent"]) {
+function intentStatement(
+  intent: Awaited<ReturnType<typeof buildDemoIntent>>["intent"],
+  supersedesIntentId: string | null,
+) {
   return getD1()
     .prepare(`INSERT INTO action_intents (
-      id, workspace_id, trace_id, context_snapshot_id, source_artifact_id,
+      id, workspace_id, trace_id, context_snapshot_id, source_artifact_id, supersedes_intent_id,
       intent_key, action_kind, truth_mode, recipients_json, recipient_set_hash,
       subject, body, cohort_cap, evidence_ids_json, metric_definition_id,
       context_manifest_hash, policy_version, policy_hash, nonce, expires_at,
       canonical_payload_json, canonical_payload_hash, created_by, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(
       intent.id,
       intent.workspaceId,
       intent.traceId,
       intent.contextSnapshotId,
       intent.sourceArtifactId,
+      supersedesIntentId,
       intent.intentKey,
       intent.actionKind,
       intent.truthMode,
@@ -420,12 +447,16 @@ function traceEventStatement(event: {
     );
 }
 
-async function activeIntent(workspaceId: string, traceId: string): Promise<IntentRow> {
+async function activeIntent(
+  workspaceId: string,
+  traceId: string,
+  activeIntentId: string | null,
+): Promise<IntentRow> {
+  if (!activeIntentId) throw new Error("The trace has no active action intent.");
   const row = await getD1()
     .prepare(`SELECT * FROM action_intents
-      WHERE workspace_id = ? AND trace_id = ?
-      ORDER BY created_at DESC, rowid DESC LIMIT 1`)
-    .bind(workspaceId, traceId)
+      WHERE id = ? AND workspace_id = ? AND trace_id = ? LIMIT 1`)
+    .bind(activeIntentId, workspaceId, traceId)
     .first<IntentRow>();
   if (!row) throw new Error("The proposed action could not be loaded.");
   return row;
@@ -459,7 +490,7 @@ export async function readFlightRecorderSnapshot(
   const trace = await findTrace(workspaceId);
   if (!trace) throw new Error("The onboarding-rescue trace is not ready.");
   const d1 = getD1();
-  const intentRow = await activeIntent(workspaceId, trace.id);
+  const intentRow = await activeIntent(workspaceId, trace.id, trace.active_intent_id);
   const policy = await activePolicy(workspaceId, intentRow.id);
   const [control, grant, effect, context, evidence, nodes, outcome, eventCount] =
     await Promise.all([
@@ -726,7 +757,7 @@ export async function replacePendingIntent(input: {
   if (!trace || trace.current_state !== "awaiting_approval") {
     throw new Error("Only a pending action can be edited.");
   }
-  const prior = await activeIntent(input.workspaceId, trace.id);
+  const prior = await activeIntent(input.workspaceId, trace.id, trace.active_intent_id);
   const priorGrant = await getD1()
     .prepare("SELECT id FROM approval_grants WHERE workspace_id = ? AND intent_id = ? LIMIT 1")
     .bind(input.workspaceId, prior.id)
@@ -757,7 +788,18 @@ export async function replacePendingIntent(input: {
     body: input.body,
     now: new Date().toISOString(),
   });
-  await getD1().batch([intentStatement(next.intent), policyStatement(next.policyDecision)]);
+  await replacementBeforeWriteBarrier?.();
+  try {
+    await getD1().batch([
+      intentStatement(next.intent, prior.id),
+      policyStatement(next.policyDecision),
+    ]);
+  } catch (error) {
+    if (String(error).includes("l08_intent_activation_rejected")) {
+      throw new Error("l08_intent_activation_rejected");
+    }
+    throw error;
+  }
   return readFlightRecorderSnapshot(input.userId, input.workspaceId);
 }
 
@@ -824,11 +866,12 @@ export async function authorizeAndExecute(input: {
   if (!trace || trace.current_state !== "awaiting_approval") {
     throw new Error("This action is no longer awaiting authorization.");
   }
-  const intentRow = await activeIntent(input.workspaceId, trace.id);
+  const intentRow = await activeIntent(input.workspaceId, trace.id, trace.active_intent_id);
   const intent = toPersistedIntent(intentRow);
   const resealErrors = await validatePersistedActionIntent(intent);
   if (resealErrors.length > 0) throw new Error(resealErrors.join("; "));
   const policy = await activePolicy(input.workspaceId, intentRow.id);
+  await authorizationBeforeWriteBarrier?.();
   const d1 = getD1();
   const control = await d1
     .prepare(`SELECT kill_switch_engaged FROM workspace_authority_controls
@@ -1030,8 +1073,9 @@ export async function authorizeAndExecute(input: {
       ),
     d1
       .prepare(`UPDATE flight_traces SET current_state = 'executing', updated_at = ?
-        WHERE id = ? AND workspace_id = ? AND current_state = 'awaiting_approval'`)
-      .bind(effectTime, trace.id, input.workspaceId),
+        WHERE id = ? AND workspace_id = ? AND current_state = 'awaiting_approval'
+          AND active_intent_id = ?`)
+      .bind(effectTime, trace.id, input.workspaceId, intentRow.id),
     traceEventStatement(executingEvent),
     d1
       .prepare(`UPDATE flight_traces SET current_state = ?, updated_at = ?
@@ -1130,7 +1174,18 @@ export async function authorizeAndExecute(input: {
     );
   }
 
-  await d1.batch(statements);
+  try {
+    await d1.batch(statements);
+  } catch (error) {
+    const message = String(error);
+    if (
+      message.includes("l08_stale_or_superseded_intent") ||
+      message.includes("l08_trace_execution_projection_mismatch")
+    ) {
+      throw new Error("l08_stale_or_superseded_intent");
+    }
+    throw error;
+  }
   return readFlightRecorderSnapshot(input.userId, input.workspaceId);
 }
 

@@ -1,56 +1,72 @@
 ---
-type: verification
+type: stage-verification
 stage: 01
 status: passed
-verified_at: 2026-08-13T02:44:10.4739515+05:30
+verified_at: 2026-08-22T15:53:35+05:30
+environment: Windows; Node.js v22.15.0; vinext v1.0.0-beta.2; FIXTURE/TEST only
+spec_sha256: 8a9a4c93f8fc2e8418d0d733e327d4d64d906261c0e65c82989ff6211a2de492
 ---
 
-# Stage 01 verification
+# Stage 01 verification - L08 authority correction
 
-The product specification passes its evidence, scope, and acceptance boundary.
-Verification opens the human gate; it does not accept the specification.
+## Result
 
-## Specification checks
+The proposed specification is bounded to L08, binds all ten declared repository
+inputs, preserves the sealed release, chooses a database-atomic active-intent
+invariant, and defines deterministic red/green interleaving evidence. No runtime,
+schema, migration, worker, application, or provider code changed in Stage 01.
 
-- Result's public website, thesis, YC profile, and Lab are directly linked and
-  were retrieved on 2026-08-12.
-- Result-specific observations are labeled `Public fact`, `Inference`, or
-  `Unknown / non-claim`.
-- The primary user, golden path, included/excluded scope, truth boundary, eight
-  observable acceptance criteria, repository gaps, and Data handoff are explicit.
-- The verifier rejects missing product sections, invented private Result
-  capabilities, and common secret patterns.
-
-## Artifact and input hashes
-
-Hashes use the algorithm recorded in `SPEC.md`.
-
-| Artifact/input | SHA-256 |
-|---|---|
-| `SPEC.md` | `bcbe3dbffe2471617e48cda0f2b2cbf9cea00ef6a60f943ce827077ad8cd27e8` |
-| `../verify.mjs` | `862956742d148dfabe1c9243ab8563189bf92a0013f07496f53c8044f14fe9cc` |
-| `../../_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
-| `../../_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `../../../README.md` | `8372e938a8fb552053f62eae6fa2a8b41ec8856678d244629f908e27934bf4e8` |
-| `../../../package.json` | `368b45c93653b264cbe2468f628bf4aa8aff98661b3291ffe9ac9fe12d47a0bc` |
-| `../../../app/` | `a619a249990cd42b2ba5231fa9865013f39e6fb5e602ec5befa354a065abefd8` |
-| `../../../db/` | `ed6a06fd76bd21b08d3a700044dfacc438bc4fdd07b98934e25a9afee270953d` |
-| `../../../drizzle/` | `54b195948ca74d7e219ed5c6aa7803eb862007f379ce4701d6bf9c1c4a36c23d` |
-| `../../../tests/` | `389cc7e53da069b6599ea01d6d3268c51f5166c7e8b829ba20ca1c21e5bcc9f8` |
-
-## Command results
-
-Environment: Windows PowerShell, Node.js `>=22.13.0` project engine, Vinext
-`1.0.0-beta.2`, Vite `8.0.13`.
+## Commands
 
 | Command | Exit | Relevant result |
 |---|---:|---|
-| `npm.cmd run verify:spec` | `0` | Four public sources, eight acceptance criteria, zero unsupported private claims. |
-| `npm.cmd run build` | `0` | Production build completed. |
-| `npm.cmd run lint` | `0` | Active repository lint passed. |
-| `npm.cmd test` | `0` | Production build and all `12` tests passed; `0` failed. |
+| `node factory/01_spec/verify.mjs` | 0 | Passed 13 required sections, 8 acceptance criteria, 10 fresh input bindings, sealed-commit existence, secret scan, scope scan, and product-diff guard. |
+| `node_modules/.bin/eslint.cmd . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | 0 | No lint findings. |
+| `node_modules/.bin/vinext.cmd build` | 0 | Five build phases completed; route `/` produced successfully. |
+| `node_modules/.bin/tsx.cmd --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs` | 0 | 41 tests passed; 0 failed, skipped, cancelled, or todo. |
+| `git diff --check` | 0 | No whitespace errors. |
+| `node factory/status.mjs` | 0 | Active stage remains `01_spec`; its verified gate is open and later stages cannot advance. |
 
-## Gate state
+The shell's user-level `npm` shim points to a missing global `npm-cli.js`, so the
+named package scripts were executed through their exact installed binaries.
+No dependency installation or network access was required. A pnpm fallback was
+attempted once, stopped before installation, and its generated cache removed;
+the original npm-managed `node_modules` packages were restored and tool versions
+were checked before verification continued.
 
-Verification passed and the human gate is open. Stage 01 remains `in-progress`
-until a human accepts `SPEC.md` against its final bound hashes.
+## Pre-gate corrections
+
+The first full-suite run passed 39 of 41 tests, including all product, authority,
+migration, release, and rendering cases. The only failures were two factory
+self-tests coupled to the previously sealed live pipeline state. Stage 01
+corrected only that harness behavior:
+
+- `factory/_lib/factory-tools.test.mjs` now proves historical downstream drift
+  in a synthetic two-stage factory instead of requiring the live factory to be
+  complete.
+- `tests/icm-workspace.test.mjs` now accepts a valid open/pending human gate and
+  still enforces allowed gate/decision combinations.
+- The fresh later-stage contracts put `_archive/` first in their `Do not load`
+  clauses to preserve the existing cold-load contract.
+
+These changes do not alter product behavior or relax factory acceptance. They
+make the factory's own tests runnable during the active state they are meant to
+govern.
+
+## Negative checks
+
+- A specification without `active_intent_id`, an in-batch raising assertion,
+  deterministic barrier, migration abort behavior, rollback limits, or the L08
+  scope boundary fails `verify.mjs`.
+- A stale declared input hash fails verification.
+- Any Stage 01 change under `app/`, `db/`, `drizzle/`, or `worker/` fails the
+  product-diff guard.
+- Any test change other than the exact workspace meta-test fails the scoped
+  test-diff guard.
+- Secret-like bearer, payment, GitHub, or private-key patterns fail the scan.
+
+## Human review focus
+
+Review the chosen linearization point, pointer transition rules, zero-row batch
+sentinel, legacy backfill abort conditions, deterministic production-path test,
+and rollback boundary. Verification opens this gate; it does not accept it.

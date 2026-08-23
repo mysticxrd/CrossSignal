@@ -1,223 +1,136 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { readFile, readdir, stat } from "node:fs/promises";
-import { dirname, join, relative, sep } from "node:path";
+import { readFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  frontmatterValue,
+  markdownHashBindings,
+  markdownSection,
+  pathHash,
+} from "../_lib/verify-kit.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "../..");
-const textPattern = /\.(?:c|css|html|js|json|jsonc|jsx|md|mjs|sql|ts|tsx|txt|yml|yaml)$/;
 
-function run(command, args) {
-  const executable =
-    process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
-  const result = spawnSync(executable, args, {
+async function read(relative) {
+  return readFile(join(root, relative), "utf8");
+}
+
+function runNode(args, timeout = 180_000) {
+  const result = spawnSync(process.execPath, args, {
     cwd: root,
     encoding: "utf8",
-    timeout: 180_000,
+    timeout,
   });
   assert.equal(
     result.status,
     0,
-    command +
-      " " +
-      args.join(" ") +
-      " failed:\n" +
-      (result.error?.message ?? result.stderr ?? result.stdout),
+    `node ${args.join(" ")} failed:\n${result.error?.message ?? result.stderr ?? result.stdout}`,
   );
-  return result.stdout;
+  return `${result.stdout}\n${result.stderr}`;
 }
 
-function repositoryPath(path) {
-  return relative(root, path).split(sep).join("/");
-}
-
-async function fileHash(path) {
-  const bytes = await readFile(path);
-  return createHash("sha256")
-    .update(
-      textPattern.test(repositoryPath(path))
-        ? Buffer.from(bytes.toString("utf8").replace(/\r\n?/g, "\n"))
-        : bytes,
-    )
-    .digest("hex");
-}
-
-async function walk(path) {
-  const files = [];
-  for (const entry of await readdir(path, { withFileTypes: true })) {
-    const child = join(path, entry.name);
-    if (entry.isDirectory()) files.push(...(await walk(child)));
-    else if (entry.isFile()) files.push(child);
-  }
-  return files;
-}
-
-async function inputHash(input) {
-  const absolute = join(root, input);
-  if ((await stat(absolute)).isFile()) return fileHash(absolute);
-  const lines = await Promise.all(
-    (await walk(absolute))
-      .toSorted((left, right) =>
-        repositoryPath(left).localeCompare(repositoryPath(right)),
-      )
-      .map(
-        async (path) =>
-          repositoryPath(path) + "\0" + (await fileHash(path)) + "\n",
-      ),
-  );
-  return createHash("sha256").update(lines.join("")).digest("hex");
-}
-
-function frontmatterHash(text, field) {
-  const match = text.match(
-    new RegExp("^" + field + ": ([0-9a-f]{64})$", "m"),
-  );
-  assert.ok(match, "missing " + field);
-  return match[1];
-}
-
-const [manifest, demoScript, releaseReport, releaseVerify, releaseGate, readme] =
+const [manifest, demoScript, verificationReport, verificationGate, architecture, quality, readme] =
   await Promise.all([
-    readFile(join(root, "factory/05_ship/output/RELEASE_MANIFEST.md"), "utf8"),
-    readFile(join(root, "factory/05_ship/output/DEMO_SCRIPT.md"), "utf8"),
-    readFile(
-      join(root, "factory/04_verify/output/VERIFICATION_REPORT.md"),
-      "utf8",
-    ),
-    readFile(join(root, "factory/04_verify/output/VERIFY.md"), "utf8"),
-    readFile(join(root, "factory/04_verify/output/HUMAN_GATE.md"), "utf8"),
-    readFile(join(root, "README.md"), "utf8"),
+    read("factory/05_ship/output/RELEASE_MANIFEST.md"),
+    read("factory/05_ship/output/DEMO_SCRIPT.md"),
+    read("factory/04_verify/output/VERIFICATION_REPORT.md"),
+    read("factory/04_verify/output/HUMAN_GATE.md"),
+    read("factory/_shared/ARCHITECTURE_SNAPSHOT.md"),
+    read("factory/_shared/QUALITY_GATES.md"),
+    read("README.md"),
   ]);
 
-assert.match(releaseReport, /^status: ready-for-review$/m);
-assert.match(releaseVerify, /^status: passed$/m);
-assert.match(releaseGate, /^gate_status: closed$/m);
-assert.match(releaseGate, /^decision: accepted$/m);
+assert.equal(frontmatterValue(verificationReport, "status"), "ready-for-review");
+assert.equal(frontmatterValue(verificationGate, "gate_status"), "closed");
+assert.equal(frontmatterValue(verificationGate, "decision"), "accepted");
 assert.equal(
-  frontmatterHash(releaseGate, "verification_report_sha256"),
-  await fileHash(
-    join(root, "factory/04_verify/output/VERIFICATION_REPORT.md"),
-  ),
-  "accepted verification report hash drifted",
+  frontmatterValue(verificationGate, "verification_report_sha256"),
+  await pathHash(root, join(root, "factory/04_verify/output/VERIFICATION_REPORT.md")),
 );
-assert.equal(
-  frontmatterHash(releaseGate, "verification_sha256"),
-  await fileHash(join(root, "factory/04_verify/output/VERIFY.md")),
-  "accepted verification hash drifted",
-);
+assert.equal(frontmatterValue(manifest, "status"), "ready-for-review");
+assert.equal(frontmatterValue(manifest, "release_id"), "crosssignal-l08-authority-correction-v1");
+assert.equal(frontmatterValue(manifest, "truth_mode"), "FIXTURE");
+assert.equal(frontmatterValue(manifest, "effect_mode"), "TEST");
 
-assert.match(manifest, /^status: ready-for-review$/m);
-assert.match(manifest, /^truth_mode: FIXTURE$/m);
-assert.match(manifest, /^effect_mode: TEST$/m);
-assert.match(demoScript, /^status: ready-for-review$/m);
+for (const token of [
+  "flight_traces.active_intent_id",
+  "l08_stale_or_superseded_intent",
+  "l08_intent_activation_rejected",
+  "migration 0006",
+  "node factory/04_verify/verify.mjs",
+  "node factory/05_ship/prepare.mjs",
+  "L06",
+  "L20",
+  "L04",
+  "L14",
+]) assert.match(manifest, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+
+assert.match(manifest, /human control layer for consequential agent actions/i);
+assert.match(manifest, /single-user UI does not visually prove tenant isolation/i);
+assert.match(manifest, /no (?:blind |silent )?retry/i);
+assert.match(manifest, /not proven/i);
+assert.match(manifest, /normal runtime[^\n]+never infers[^\n]+(?:time|order)/i);
 assert.match(demoScript, /^truth_mode: FIXTURE$/m);
 assert.match(demoScript, /^effect_mode: TEST$/m);
 assert.match(readme, /npm run verify:ship/);
+assert.match(architecture, /Any payload, context, policy, recipient, cap, or display mutation creates a/);
+assert.match(quality, /Changed, stale, replayed, cross-tenant, or directly invoked authority fails/);
 
-const screenshotBindings = [
-  ...releaseReport.matchAll(
-    /\| `\d{2}` \| `(screenshots\/[^`]+\.png)`[^|]+\| `([0-9a-f]{64})` \|/g,
-  ),
-];
-assert.equal(
-  screenshotBindings.length,
-  6,
-  "Verify report must bind six screenshots",
-);
-for (const [, screenshot, expected] of screenshotBindings) {
-  assert.equal(
-    await fileHash(join(root, "factory/04_verify/output", screenshot)),
-    expected,
-    "screenshot hash drift: " + screenshot,
-  );
-}
-
-const shipScreenshotBindings = [
-  ...manifest.matchAll(
-    /\]\((screenshots\/[^)]+\.png)\)[^|]+\| `([0-9a-f]{64})` \|/g,
-  ),
-];
-assert.equal(
-  shipScreenshotBindings.length,
-  5,
-  "Ship manifest must bind five cold-review screenshots",
-);
-for (const [, screenshot, expected] of shipScreenshotBindings) {
-  assert.equal(
-    await fileHash(join(root, "factory/05_ship/output", screenshot)),
-    expected,
-    "ship screenshot hash drift: " + screenshot,
-  );
-}
-
-run(process.execPath, [
-  "--import",
-  "tsx",
-  "factory/04_verify/verify.mjs",
-]);
-const shipFocused = run(process.execPath, [
-  "--import",
-  "tsx",
-  "--test",
-  "tests/flight-recorder-ship.test.mjs",
-]);
-assert.match(shipFocused, /pass 5/);
-
-const declaredInputPaths = [
+const bindingSection = markdownSection(manifest, /^## Declared input bindings$/);
+const bindings = markdownHashBindings(bindingSection);
+const requiredBindings = new Set([
   "factory/05_ship/CONTEXT.md",
-  "factory/01_spec/output/SPEC.md",
   "factory/04_verify/output/VERIFICATION_REPORT.md",
-  "factory/04_verify/output/VERIFY.md",
   "factory/04_verify/output/HUMAN_GATE.md",
-  "factory/03_build/output/BUILD_EVIDENCE.md",
   "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
   "factory/_shared/QUALITY_GATES.md",
   "README.md",
   "package.json",
-  "app",
-  "db",
-  "drizzle",
-  "tests",
-];
-const declaredInputs = Object.fromEntries(
-  await Promise.all(
-    declaredInputPaths.map(async (path) => [path, await inputHash(path)]),
-  ),
-);
+  "app/",
+  "db/",
+  "drizzle/",
+  "worker/",
+  "tests/",
+  "factory/02_data/fixtures/superseded-intent-authority.fixture.mjs",
+  "factory/03_build/verify.mjs",
+  "factory/04_verify/verify.mjs",
+  "factory/05_ship/prepare.mjs",
+  "factory/05_ship/verify.mjs",
+  "factory/05_ship/output/DEMO_SCRIPT.md",
+]);
+assert.deepEqual(new Set(bindings.map(({ input }) => input)), requiredBindings);
+const declaredInputs = {};
+for (const { input, expected } of bindings) {
+  const actual = await pathHash(root, resolve(root, input.replace(/[\\/]$/, "")));
+  assert.equal(actual, expected, `release-head drift: ${input}`);
+  declaredInputs[input] = actual;
+}
 
-console.log(
-  JSON.stringify(
-    {
-      status: "passed",
-      releaseId: "crosssignal-onboarding-rescue-evaluator-v1",
-      traceId: "trace_d12fc25947ed88cd",
-      truthMode: "FIXTURE",
-      effectMode: "TEST",
-      acceptedVerifyGate: true,
-      releaseAcceptanceCriteria: 8,
-      releaseFocusedTests: 21,
-      shipFocusedTests: 5,
-      verifiedUpstreamScreenshots: screenshotBindings.length,
-      verifiedShipScreenshots: shipScreenshotBindings.length,
-      declaredInputs,
-      releaseArtifacts: {
-        manifest: await fileHash(
-          join(root, "factory/05_ship/output/RELEASE_MANIFEST.md"),
-        ),
-        demoScript: await fileHash(
-          join(root, "factory/05_ship/output/DEMO_SCRIPT.md"),
-        ),
-        readme: await fileHash(join(root, "README.md")),
-        package: await fileHash(join(root, "package.json")),
-        prepare: await fileHash(join(root, "factory/05_ship/prepare.mjs")),
-        shipTests: await fileHash(
-          join(root, "tests/flight-recorder-ship.test.mjs"),
-        ),
-      },
-    },
-    null,
-    2,
-  ),
-);
+const prepareOutput = runNode(["factory/05_ship/prepare.mjs"]);
+assert.match(prepareOutput, /ready through migration 0006|prepared and verified through migration 0006/);
+const verifyOutput = runNode(["factory/04_verify/verify.mjs"]);
+assert.match(verifyOutput, /"deterministicSchedules": 2/);
+assert.match(verifyOutput, /"directDatabaseAttacks": 10/);
+assert.match(verifyOutput, /"migrationCases": 5/);
+const buildTests = runNode(["--import", "tsx", "--test", "tests/flight-recorder-build.test.mjs"]);
+assert.match(buildTests, /tests 15/);
+assert.match(buildTests, /fail 0/);
+const shipTests = runNode(["--import", "tsx", "--test", "tests/flight-recorder-ship.test.mjs"]);
+assert.match(shipTests, /tests 5/);
+assert.match(shipTests, /fail 0/);
+
+console.log(JSON.stringify({
+  status: "passed",
+  releaseId: "crosssignal-l08-authority-correction-v1",
+  correctedFinding: "L08",
+  acceptedVerifyGate: true,
+  coldPreparation: "migration 0006 ready and idempotent",
+  deterministicSchedules: 2,
+  directDatabaseAttacks: 10,
+  migrationCases: 5,
+  focusedTests: { build: 15, ship: 5 },
+  remainingFindings: ["L06", "L20", "L04", "L14"],
+  declaredInputs,
+}, null, 2));

@@ -1,107 +1,164 @@
 import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { readFile, readdir, stat } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  AUTHORITY_ERRORS,
+  MIGRATION_CASES,
+  buildAuthorityRaceFixture,
+  validateAuthorityRaceFixture,
+} from "../02_data/fixtures/superseded-intent-authority.fixture.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, "../..");
 
-function run(command, args) {
-  const executable = process.platform === "win32" && command === "npm" ? "npm.cmd" : command;
-  const result = spawnSync(executable, args, { cwd: root, encoding: "utf8", timeout: 120_000 });
-  assert.equal(result.status, 0, `${command} ${args.join(" ")} failed:\n${result.error?.message ?? result.stderr ?? result.stdout}`);
-  return result.stdout;
+async function read(relative) {
+  return readFile(join(root, relative), "utf8");
 }
 
-async function hash(path) {
-  return createHash("sha256").update((await readFile(path, "utf8")).replaceAll("\r\n", "\n")).digest("hex");
+async function hash(relative) {
+  return createHash("sha256")
+    .update((await read(relative)).replaceAll("\r\n", "\n"))
+    .digest("hex");
 }
 
-async function directoryHash(path) {
-  const files = [];
-  async function visit(current) {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const next = join(current, entry.name);
-      if (entry.isDirectory()) await visit(next);
-      else if (entry.isFile()) files.push(next);
-    }
-  }
-  await visit(path);
-  const manifest = [];
-  for (const file of files.toSorted()) {
-    const relative = file.slice(root.length + 1).replaceAll("\\", "/");
-    manifest.push(`${relative}\0${await hash(file)}\n`);
-  }
-  return createHash("sha256").update(manifest.join("")).digest("hex");
+function runNode(args) {
+  const result = spawnSync(process.execPath, args, {
+    cwd: root,
+    encoding: "utf8",
+    timeout: 120_000,
+  });
+  assert.equal(
+    result.status,
+    0,
+    `node ${args.join(" ")} failed:\n${result.error?.message ?? result.stderr ?? result.stdout}`,
+  );
+  return `${result.stdout}\n${result.stderr}`;
 }
 
-async function inputHash(relative) {
-  const absolute = join(root, relative);
-  return (await stat(absolute)).isDirectory() ? directoryHash(absolute) : hash(absolute);
-}
+const [dataPackage, dataVerify, dataGate, schema, compatibility, runtime, migration, snapshot, journal, tests] =
+  await Promise.all([
+    read("factory/02_data/output/DATA_PACKAGE.md"),
+    read("factory/02_data/output/VERIFY.md"),
+    read("factory/02_data/output/HUMAN_GATE.md"),
+    read("db/flight-recorder-schema.ts"),
+    read("db/migrations.ts"),
+    read("db/flight-recorder.ts"),
+    read("drizzle/0006_l08_active_intent_authority.sql"),
+    read("drizzle/meta/0006_snapshot.json"),
+    read("drizzle/meta/_journal.json"),
+    read("tests/flight-recorder-build.test.mjs"),
+  ]);
 
-const [ui, repository, actions, types, dataGate] = await Promise.all([
-  readFile(join(root, "app/CrossSignalApp.tsx"), "utf8"),
-  readFile(join(root, "db/flight-recorder.ts"), "utf8"),
-  readFile(join(root, "app/flight-recorder-actions.ts"), "utf8"),
-  readFile(join(root, "app/flight-recorder-types.ts"), "utf8"),
-  readFile(join(root, "factory/02_data/output/HUMAN_GATE.md"), "utf8"),
-]);
-
+assert.match(dataGate, /gate_status: closed/);
 assert.match(dataGate, /decision: accepted/);
-assert.match(ui, /Nothing happens/);
-assert.match(ui, /exact proposed action/);
-assert.match(ui, /SPENDING CAP/);
-assert.match(ui, /Pause all actions/);
-assert.match(ui, /Evidence used/i);
-assert.match(ui, /CHALLENGE \/ SKEPTIC REVIEW/);
-assert.match(ui, /HUMAN AUTHORIZATION/);
-assert.match(ui, /EXECUTION RESULT/);
-assert.match(ui, /OBSERVED BUSINESS OUTCOME/);
-assert.match(ui, /Correlated/);
-assert.match(ui, /Proven/);
-assert.match(ui, /single-user screen does not visually prove tenant isolation/);
-assert.match(repository, /validatePersistedActionIntent/);
-assert.match(repository, /assertExecutionAuthority/);
-assert.match(repository, /killSwitchEngaged/);
-assert.match(repository, /priorAttemptCount/);
-assert.match(repository, /retryAttempted: false/);
-assert.match(actions, /getCrossSignalUser/);
-assert.match(types, /"indeterminate"/);
+assert.match(dataGate, new RegExp(`data_package_sha256: ${await hash("factory/02_data/output/DATA_PACKAGE.md")}`));
+assert.match(dataGate, new RegExp(`verification_sha256: ${await hash("factory/02_data/output/VERIFY.md")}`));
+assert.match(dataPackage, /active_intent_id` is the sole database-owned authority head/);
+assert.match(dataVerify, /status: passed/);
 
-const tests = run(process.execPath, ["--import", "tsx", "--test", "tests/flight-recorder-build.test.mjs"]);
-assert.match(tests, /pass 6/);
+for (const token of [
+  "activeIntentId: text(\"active_intent_id\")",
+  "supersedesIntentId: text(\"supersedes_intent_id\")",
+  "idx_flight_traces_workspace_active_intent",
+  "idx_action_intents_one_successor",
+]) assert.match(schema, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+
+for (const token of [
+  "trg_flight_traces_active_intent_transition",
+  "trg_policy_decisions_activate_intent",
+  "trg_flight_traces_required_active_intent",
+  "trg_approval_grants_bind_active_intent",
+  "trg_effect_attempts_bind_active_intent",
+  "trg_flight_trace_events_executing_projection",
+  AUTHORITY_ERRORS.staleAuthorization,
+  AUTHORITY_ERRORS.activationRejected,
+  AUTHORITY_ERRORS.pointerRejected,
+  AUTHORITY_ERRORS.projectionMismatch,
+  AUTHORITY_ERRORS.migrationHistoricalMismatch,
+  AUTHORITY_ERRORS.migrationMissingHead,
+]) assert.match(migration, new RegExp(token));
+
+assert.match(migration, /ORDER BY prior_intent\.`created_at` DESC, prior_intent\.`rowid` DESC/);
+assert.match(migration, /ORDER BY latest\.`created_at` DESC, latest\.`rowid` DESC/);
+assert.match(migration, /DROP TRIGGER `trg_action_intents_immutable`/);
+assert.match(migration, /CREATE TRIGGER `trg_action_intents_immutable`/);
+assert.match(snapshot, /"active_intent_id"/);
+assert.match(snapshot, /"supersedes_intent_id"/);
+assert.match(journal, /0006_l08_active_intent_authority/);
+
+for (const token of [
+  "active_intent_id",
+  "supersedes_intent_id",
+  "idx_flight_traces_workspace_active_intent",
+  "idx_action_intents_one_successor",
+  "trg_policy_decisions_activate_intent",
+  "trg_approval_grants_bind_active_intent",
+  "trg_effect_attempts_bind_active_intent",
+  "trg_flight_trace_events_executing_projection",
+]) assert.match(compatibility, new RegExp(token));
+
+const activeLookup = runtime.slice(
+  runtime.indexOf("async function activeIntent"),
+  runtime.indexOf("async function activePolicy"),
+);
+assert.match(activeLookup, /WHERE id = \? AND workspace_id = \? AND trace_id = \? LIMIT 1/);
+assert.doesNotMatch(activeLookup, /ORDER BY|created_at|rowid|MAX\(/);
+assert.match(runtime, /activeIntent\(workspaceId, trace\.id, trace\.active_intent_id\)/);
+assert.match(runtime, /intentStatement\(next\.intent, prior\.id\)/);
+assert.match(runtime, /installAuthorizationRaceBarrierForTest/);
+assert.match(runtime, /installReplacementRaceBarrierForTest/);
+assert.match(runtime, /AND active_intent_id = \?/);
+assert.match(runtime, /l08_stale_or_superseded_intent/);
+assert.match(runtime, /l08_intent_activation_rejected/);
+
+const fixture = buildAuthorityRaceFixture();
+assert.deepEqual(validateAuthorityRaceFixture(fixture), []);
+assert.equal(Object.keys(fixture.schedules).length, 2);
+assert.equal(fixture.directDatabaseAttacks.length, 10);
+assert.equal(MIGRATION_CASES.length, 5);
+assert.match(tests, /production operations fail closed in both deterministic L08 schedules/);
+assert.match(tests, /direct database guards reject the ten accepted L08 attacks/);
+assert.match(tests, /migration 0006 handles the canonical L08 matrix atomically/);
+
+const dataTestOutput = runNode(["--import", "tsx", "--test", "tests/flight-recorder-data.test.mjs"]);
+assert.match(dataTestOutput, /tests 7/);
+const buildTestOutput = runNode(["--import", "tsx", "--test", "tests/flight-recorder-build.test.mjs"]);
+assert.match(buildTestOutput, /tests 15/);
 
 const declaredInputPaths = [
   "factory/03_build/CONTEXT.md",
-  "factory/01_spec/output/SPEC.md",
   "factory/02_data/output/DATA_PACKAGE.md",
   "factory/02_data/output/VERIFY.md",
   "factory/02_data/output/HUMAN_GATE.md",
   "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
   "factory/_shared/QUALITY_GATES.md",
-  "app",
-  "db",
-  "drizzle",
-  "worker",
-  "tests",
+  "db/flight-recorder-schema.ts",
+  "db/migrations.ts",
+  "db/flight-recorder.ts",
+  "drizzle/0006_l08_active_intent_authority.sql",
+  "drizzle/meta/0006_snapshot.json",
+  "drizzle/meta/_journal.json",
+  "tests/flight-recorder-data.test.mjs",
+  "tests/flight-recorder-build.test.mjs",
+  "factory/02_data/fixtures/onboarding-rescue.fixture.mjs",
+  "factory/02_data/fixtures/reset.mjs",
+  "factory/02_data/fixtures/superseded-intent-authority.fixture.mjs",
+  "package.json",
 ];
 const declaredInputs = Object.fromEntries(
-  await Promise.all(declaredInputPaths.map(async (path) => [path, await inputHash(path)])),
+  await Promise.all(declaredInputPaths.map(async (path) => [path, await hash(path)])),
 );
 
 console.log(JSON.stringify({
   status: "passed",
-  focusedTests: 6,
-  traceContract: "context -> reviewed playbook -> intent -> policy -> exact approval -> effect -> observation",
-  safetyStates: ["confirmed", "failed", "indeterminate-no-retry"],
+  finding: "L08",
+  redReproduction: "sealed 0005 accepted a stale v1 grant after v2 replacement",
+  deterministicSchedules: 2,
+  directDatabaseAttacks: 10,
+  migrationCases: 5,
+  targetedTests: { data: 7, build: 15 },
   declaredInputs,
-  hashes: {
-    ui: await hash(join(root, "app/CrossSignalApp.tsx")),
-    repository: await hash(join(root, "db/flight-recorder.ts")),
-    actions: await hash(join(root, "app/flight-recorder-actions.ts")),
-    buildTests: await hash(join(root, "tests/flight-recorder-build.test.mjs")),
-  },
 }, null, 2));

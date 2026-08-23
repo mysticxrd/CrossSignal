@@ -2,153 +2,142 @@
 type: verification-report
 stage: 04
 status: ready-for-review
-verified_at: 2026-08-17T12:25:01.0905373+05:30
-trace_id: trace_d12fc25947ed88cd
-truth_mode: FIXTURE
-effect_mode: TEST
+verified_at: 2026-08-23T01:49:04.6952951+05:30
+unit: superseded-intent-authority-correction
+finding: L08
 ---
 
-# CrossSignal release verification report
+# L08 active-intent authority verification report
 
-Stage 04 resolves the eight Spec acceptance criteria for the accepted Build.
-The verified product promise is control before action, control during
-operation, and an honest narrative afterward. This report opens the Verify
-human gate; it does not accept that gate or authorize Stage 05.
+Stage 04 independently verifies the accepted correction: only the exact intent
+identified by `flight_traces.active_intent_id` can acquire authority or reserve
+an effect. The former edit/authorize interleaving now fails closed at the
+database transaction boundary. This report opens the Verify human gate; it
+does not accept that gate or authorize Stage 05.
 
-## Verified story
+## Verdict
 
-A signed-in Atlas Foundry owner reviewed an exact TEST email, its three
-recipients, and its `$0.15` spending ceiling before an effect could be
-reserved. Global Pause disabled authorization and caused the server-side
-reservation path to fail closed until the owner resumed actions. Editing the
-subject created immutable Intent v2 and invalidated authority over Intent v1.
+Passed. Both deterministic production schedules, all ten accepted direct
+database attacks, all five migration cases, 22 targeted tests, the production
+build, repository lint, and the 45-test pre-Ship regression suite are green. No stale or
+losing operation leaves a partial grant, effect, policy, intent, terminal event,
+observation, or assessment.
 
-The browser then exercised both consequential result branches:
+## Vulnerable interleaving replay
 
-1. An ambiguous provider response became `INDETERMINATE · NO RETRY`, exposed
-   `fixture_provider_timeout_after_dispatch`, stopped execution, and produced
-   no business-outcome claim.
-2. After an exact FIXTURE reset, a fresh Intent v2 and fresh human grant
-   produced one confirmed TEST effect. The narrative ended with one recorded
-   observation labeled `Correlated, not proven`.
+The sealed 0005 baseline had allowed authorization to read v1, replacement to
+insert v2, and then the stale v1 grant to commit. Against migration 0006 and the
+corrected runtime, the same production-path interleaving deterministically
+returns `l08_stale_or_superseded_intent`. The rejected batch leaves zero grant,
+effect, terminal-event, observation, and assessment rows; exact v2 authority
+then succeeds once.
 
-Reloading the application reconstructed the same confirmed Intent v2,
-authorization record, effect result, subject, and trace from D1. Browser
-warning/error logs were empty. All observed GET and server-action POST
-requests returned HTTP 200.
+The test uses manual promise barriers in the real `authorizeAndExecute` and
+`replacePendingIntent` operations. It uses no timers, copied authorization
+validator, or scheduling guess.
 
 ## Acceptance matrix
 
-| Criterion | Resolution | Evidence |
+| Criterion | Resolution | Inspectable evidence |
 |---|---|---|
-| `AC-01` | Passed | Release test reconstructs one `trace_id` across context, graph artifacts, intent, policy, grant, attempt, observation, and assessment. Browser screenshot `05` presents the same chain in human order. |
-| `AC-02` | Passed | Release test mutates payload, context, policy, recipients, nonce, tenant, replay state, expiry, and kill-switch state; every mutation is rejected. The browser edit created Intent v2 and made the prior intent ineligible for approval. |
-| `AC-03` | Passed | D1 uniqueness guards admit one effect identity. Confirmed duplicates and any retry from `indeterminate` are rejected. Screenshots `02` and `03` show the ambiguous result, reason, and no-retry status. |
-| `AC-04` | Passed | Fresh D1 tests insert two late assessments and an immutable supersession edge. The UI separates Observed, Correlated, and Proven; screenshot `04` includes cohort, metric, baseline, observation, limitations, and `CORRELATED, NOT PROVEN`. |
-| `AC-05` | Passed | A fresh two-workspace six-migration D1 database rejects cross-workspace trace and foreign-actor references while `foreign_key_check` remains clean. This is written/database evidence; the single-user UI is not claimed as visual proof of tenant isolation. |
-| `AC-06` | Passed | The deterministic recovery planner preserves succeeded/skipped nodes, resumes only incomplete nodes with stable identities, rejects input drift, and never reopens a failed node or effect. |
-| `AC-07` | Passed | Fresh D1 and contract tests reject duplicate and out-of-order ingress, direct execution without authority, expired/replayed grants, denied or undeclared evidence, prompt-injection material, context leakage, and ambiguous-effect retry. Every tested path leaves a visible terminal reason. |
-| `AC-08` | Passed | TEST/FIXTURE labels remain visible on the control, trace, and outcome views. Stage 03 instructions and the exact reset control let a fresh reviewer run the confirmed and ambiguous branches. The six Stage 04 screenshots are content-hash bound below. |
+| `exact-active-head` | Passed | Runtime loads `trace.active_intent_id` and resolves it by exact `id + workspace_id + trace_id`. The accepted lookup slice contains no `ORDER BY`, timestamp, `rowid`, or aggregate inference. |
+| `edit-wins-no-partial-authority` | Passed | Replacement promotes v2; the paused real v1 authorization batch aborts with the stable stale error and leaves zero rejected writes; exact v2 succeeds once. |
+| `authorization-wins-no-partial-replacement` | Passed | Exact v1 authorization commits once; resumed v2 intent-plus-policy activation aborts with `l08_intent_activation_rejected`; both v2 rows roll back. |
+| `transactional-guard-alignment` | Passed | Grant, effect, active-head transition, executing compare-and-swap, and executing event all check the same persisted active identity inside the transaction. |
+| `runtime-order-independence` | Passed | The runtime authority lookup is exact-identity only. Legacy ordering is confined to migration backfill. |
+| `atomic-migration-matrix` | Passed | `empty`, `pending-v1`, `pending-v2`, and `completed-v1` migrate; `invalid-historical-race` aborts and restores the complete 0005 schema/data state. |
+| `direct-database-attack-matrix` | Passed | All ten accepted attacks fail closed, including stale grant/effect, cross-boundary heads, pointer corruption, invalid movement, kill-switch execution, replay, and zero-row compare-and-swap commit. |
+| `terminal-results-no-retry` | Passed | Confirmed v1/v2, failed v1, and indeterminate v2 preserve one effect per reset. Failed and indeterminate states are terminal and are not retried. |
 
-No acceptance criterion remains implied or deferred.
+No Stage 04 criterion remains implied or deferred.
 
-## Full-story boundary evidence
+## Deterministic schedules
 
-| Boundary | Probe | Result |
-|---|---|---|
-| Browser -> control UI | Review exact email, recipients, `$0.15` cap, truth labels, and Global Pause | Passed; authorization was disabled while paused. |
-| Control UI -> server action | Create Intent v2, authorize an ambiguous TEST result, reset, then authorize a confirmed TEST result | Passed; each mutation completed as an HTTP 200 POST and rendered the resulting state. |
-| Server action -> authority contract | Reseal intent and check membership, exact grant bindings, policy, recipients, nonce, expiry, cap, kill switch, and prior attempts | Passed in focused authority mutation/replay tests. |
-| Authority contract -> D1 effect reservation | Reserve a unique TEST effect only after current exact authority | Passed; uniqueness and terminal-state transitions reject duplicates and blind retries. |
-| D1 -> response UI | Reload after confirmed execution and navigate across control, narrative, and outcome | Passed; durable Intent v2, authorization, confirmed effect, trace, and correlated assessment were reconstructed. |
+| Schedule | Linearization and result |
+|---|---|
+| Edit wins | v1 authorization pauses after its read; replacement atomically activates v2; the complete stale v1 batch aborts; exact v2 authorization succeeds once. |
+| Authorization wins | v2 replacement pauses before its batch; v1 authorization commits one effect; the resumed v2 intent-plus-policy batch aborts and rolls back both v2 rows. |
 
-## Attack and recovery matrix
+## Database attack matrix
 
-| Required class | Executed evidence | Result |
-|---|---|---|
-| Recovery | Stable graph-node identities, preserved completion, incomplete-only resume, input-drift rejection | Fail closed |
-| Tenant isolation | Fresh two-workspace D1 cross-trace and foreign-actor insert attacks | Fail closed |
-| Duplicate ingress | D1 unique ingress identity and duplicate insertion probe | Fail closed |
-| Out-of-order events | Per-trace event sequence guard and out-of-order insertion probe | Fail closed |
-| Injection | Denied-source and prompt-injection classification probes | Fail closed |
-| Context leakage | Undeclared/secret evidence and context-manifest mutation probes | Fail closed |
-| Authority mutation/replay | Exact-binding mutations, expiry, replay, kill switch, tenant mismatch, direct execution | Fail closed |
-| Ambiguous effects | `indeterminate` is terminal, visible, and cannot transition back to dispatching | Fail closed; no retry |
-| Late outcomes | Two immutable assessments with one explicit immutable supersession edge | Preserved honestly |
-
-The accepted Stage 02 record documents 14 tenant-isolation/security attack
-probes against its pre-Build data package. Stage 04 does not present that
-historical number as a new run. Instead, it independently executes the current
-attack classes above against fresh databases and the built contracts.
-
-## Browser evidence
-
-All images are full-page captures from the local Chromium preview at
-`http://localhost:3000/`.
-
-| # | Evidence | SHA-256 |
+| # | Attack | Result |
 |---:|---|---|
-| `01` | `screenshots/01-global-pause.png` — paused workspace, exact proposal still visible, authorization disabled | `4307e0b8ef7f26c3104a473b5467fc406bd34d969008d013797e823885e3d6eb` |
-| `02` | `screenshots/02-indeterminate-trace.png` — readable narrative ending in indeterminate execution and no outcome claim | `ab316afe01e83973de98edc74bcfa6ff1166141ba39020aa6612d0172026a4f7` |
-| `03` | `screenshots/03-indeterminate-control.png` — explicit provider timeout reason and `NO RETRY` | `c416a35281f156f6c7a2957f92e82ba86a6eb96fc09628e41c1d2842ff5cfe8d` |
-| `04` | `screenshots/04-correlated-not-proven.png` — observed metric, cohort, limitations, and calibrated claim | `bb188bbc5278052e3cacae56b074e36ba2e97c3f794ecec3e34355c2813b9d04` |
-| `05` | `screenshots/05-golden-narrative-trace.png` — evidence -> skeptic -> proposal -> authorization -> execution -> outcome | `def55f9a702866d623be864508c90de334f0442f415c4f7974dccd997599c8d2` |
-| `06` | `screenshots/06-golden-authorization.png` — persisted exact authorization record beside Global Pause and reviewed playbook | `980a7c1195fe89ec8ba573fbd413eaa658604d46eaff0bf9781399b91741c278` |
+| 1 | Grant superseded v1 | Rejected |
+| 2 | Reserve effect for superseded v1 | Rejected |
+| 3 | Point a trace at another workspace's intent | Rejected |
+| 4 | Point a trace at another trace's intent | Rejected |
+| 5 | Clear a required active pointer | Rejected |
+| 6 | Move to an intent without matching policy activation | Rejected |
+| 7 | Move backward or to a non-predecessor successor | Rejected |
+| 8 | Execute while the kill switch is engaged | Rejected |
+| 9 | Replay a consumed grant/effect identity | Rejected |
+| 10 | Commit after a zero-row executing compare-and-swap | Rejected by the in-batch event projection guard |
 
-Technical hashes, IDs, evidence, policy, expiry, and trace provenance remain
-available through `View technical proof`, per-stage `View details`, and
-`Inspect trace proof` disclosures. They do not displace the human decision.
+## Migration and rollback matrix
 
-## Defects found and fixed in Verify
+| Case | Result |
+|---|---|
+| `empty` | Migrates with no active head. |
+| `pending-v1` | Backfills v1 as the active head. |
+| `pending-v2` | Backfills v2 and records v2's predecessor edge to v1. |
+| `completed-v1` | Preserves v1 and its completed authority history. |
+| `invalid-historical-race` | Aborts with `migration_l08_historical_authority_mismatch`; new columns roll back and the 0005 immutability trigger remains installed. |
 
-1. Recovery had durable graph identities but no directly testable resume
-   planner. `planReasoningRecovery` now preserves completed nodes, resumes only
-   incomplete nodes, rejects input drift/duplicates, and blocks failed nodes.
-2. Late-outcome and tenant tests previously leaned on structural assertions.
-   Stage 04 now materializes a fresh six-migration D1 database, inserts real
-   late assessments and supersession, and attacks cross-workspace references.
-3. The Stage 02 verifier correctly rejects the post-Build `db/` tree as a
-   stale Data-package input. Stage 04 did not weaken or rewrite that accepted
-   historical gate; `verify:release` owns current-product checks instead.
+## Command record
 
-## Residual risk and honest limits
+Environment: Windows PowerShell, Node.js `22.15.0`, ESLint `9.39.4`, Vinext
+`1.0.0-beta.2`, Vite `8.0.13`, Drizzle Kit `0.31.10`, and Node SQLite.
 
-- This is a local, single-user FIXTURE UI with a TEST effect adapter. It does
-  not send live email, prove production provider behavior, or visually prove
-  tenant isolation.
-- Tenant isolation is supported by composite D1 references and fresh
-  two-workspace attacks. Production-scale concurrency, distributed delivery,
-  and vendor failure modes remain outside this slice.
-- The accepted Stage 02 14-probe result is historical evidence bound to the
-  pre-Build data tree. Stage 04 verifies the current eight required attack
-  classes but does not claim it reran that historical harness unchanged.
-- One confirmed fixture observation is correlated in a three-recipient cohort.
-  It is not causal proof and cannot support a production efficacy claim.
-- No automatic retry is implemented for failed or indeterminate effects. A
-  later action requires an explicit new intent and human authorization.
+| Command | Timestamp (+05:30) | Exit | Relevant result |
+|---|---|---:|---|
+| `node factory/04_verify/verify.mjs` | `2026-08-23T01:38` | `0` | Eight L08 criteria, 2 schedules, 10 attacks, 5 migration cases, 7 Data tests, and 15 Build tests passed. |
+| `node node_modules/eslint/bin/eslint.js . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | `2026-08-23T01:39-01:41` | `0` | Active repository lint passed. |
+| `node_modules/.bin/vinext.cmd build` | `2026-08-23T01:39-01:40` | `0` | All five build environments passed; dynamic `/` route emitted. |
+| Six-file pre-Ship `node_modules/.bin/tsx.cmd --test ...` regression command | `2026-08-23T01:52` | `0` | 45 tests passed; 0 failed, cancelled, skipped, or todo. |
+| Seven-file command including Stage 05 inheritance tests | `2026-08-23T01:50` | `1` | 49 tests passed; the sole failure correctly required this Stage 04 gate to be closed and accepted. This is the intentional human gate, not a product failure. |
+| `git diff --check` | `2026-08-23T01:49` | `0` | No whitespace errors. |
+
+## Evidence-integrity correction
+
+The first Stage 04 attempt correctly stopped because the accepted Stage 03
+reports referenced a superseded hash for `factory/03_build/verify.mjs`. The
+reports were corrected to the current `4a959c...` verifier, Stage 03 verification
+passed again, and the owner reaccepted the corrected exact hashes. No product,
+migration, fixture, or behavior changed during that evidence correction.
 
 ## Declared input bindings
 
-Text hashes normalize line endings to LF before SHA-256.
+Text hashes normalize CRLF to LF before SHA-256.
 
 | Input | SHA-256 |
 |---|---|
-| `../CONTEXT.md` | `1160aeb04b78a93e4c31d6a2ac06043ff4317842e528481bbbb1ba31642782e0` |
-| `../../01_spec/output/SPEC.md` | `bcbe3dbffe2471617e48cda0f2b2cbf9cea00ef6a60f943ce827077ad8cd27e8` |
-| `../../02_data/output/DATA_PACKAGE.md` | `bc63fbcec2cfb8ba70cf8286dbb2f8cbca2f02272b9b07b1eea918b6072e32b0` |
-| `../../03_build/output/BUILD_EVIDENCE.md` | `9b5b07c376e2ffe44d9015ae500ae597c6e5e68a77818d1196bf29aa013eae34` |
-| `../../03_build/output/VERIFY.md` | `1b9ab1d931f9154186a1ebf97a79639dd8442040fd2dbb3545b10408dc3ca0a0` |
-| `../../03_build/output/HUMAN_GATE.md` | `ebae846ebe366ac36fcd7372dd8e206fbb7ab5e49f2324c56d1ee8ba04b2feb9` |
-| `../../_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
-| `../../_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `../../../tests/` | `b4220fc7d11f337ab6c16cb0e1bc78d11e01473fbd06e935185eb9d7348f7dba` |
+| `factory/04_verify/CONTEXT.md` | `e8e76c1435c5d8e992a9031708ef5a1178257b6a3df6f3cadd2e0da16f77603c` |
+| `factory/03_build/output/BUILD_EVIDENCE.md` | `09c0c113adbc67b0a3dced716a6637e2b44e27d042aba3aa0b97317c07d9d895` |
+| `factory/03_build/output/HUMAN_GATE.md` | `2ec7c29d02971e6ffdc96de6881be656bde1cf841a02a429202756d37324b1c8` |
+| `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
+| `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
+| `factory/02_data/fixtures/superseded-intent-authority.fixture.mjs` | `b49748c7305ac896e8a756dd5d8ba6733a79dc89eed0dad3438db9b24cb1fea8` |
 
-## Implementation bindings
+## Observed Build bindings
 
 | Artifact | SHA-256 |
 |---|---|
-| `../../../app/CrossSignalApp.tsx` | `f764416effea5014bee700dd42e8368bc2e1ce73d80da9b0dac4098a9998f501` |
-| `../../../app/flight-recorder-actions.ts` | `3823f5b3487147b4a9a3f9c691cefed1fb93206527a81e1b229606899fc085c3` |
-| `../../../db/flight-recorder.ts` | `41f248e8e6bc0134552ff75b20f3f8f31f079bb319c05e6af5a28d5a722b70f7` |
-| `../../../db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
-| `../../../tests/flight-recorder-release.test.mjs` | `65d341700d5378e79be376656ee0a8380108c3891ff560ea5ae912985ddc1e8c` |
+| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
+| `db/migrations.ts` | `259c0cd885daaf23bccb1bf3bfc46c278240c45d3291b045a999335f97cdd47d` |
+| `db/flight-recorder.ts` | `ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6` |
+| `drizzle/0006_l08_active_intent_authority.sql` | `a97ce8f9b2a6b595197981742f80b1c4089cf05d57834921b3855fa5d2f844c5` |
+| `drizzle/meta/0006_snapshot.json` | `ed1b70151519da162b465f3bc4c82de3a296b9b32d53855a001c1287d63c0bee` |
+| `drizzle/meta/_journal.json` | `19db7a837d8b57ce6a5c6de6b10c8a599979a99a5457aa5388d0e5544defcf89` |
+| `tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
+| `factory/03_build/verify.mjs` | `4a959cf71527cd3a4d6fa9b6a9f3e1d8b1fbfcdd6f4643581beebe8c48a4e7fd` |
+
+## Scope and residual risk
+
+- This stage verifies only L08. L06, L20, L04, and L14 remain unchanged and
+  are not claimed as resolved.
+- No application route, UI surface, worker, provider, or public behavior changed;
+  prior-release screenshots are not reused as evidence for this correction.
+- The tested adapter is TEST/FIXTURE backed. This report does not claim live
+  provider delivery, distributed exactly-once execution, or causal outcomes.
+- Migration backfill necessarily inspects legacy order once. Normal runtime
+  authority never infers the active head from order.

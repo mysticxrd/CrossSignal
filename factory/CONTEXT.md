@@ -1,7 +1,7 @@
 ---
 type: pipeline-contract
 form: pipeline
-unit: evaluator-ready-onboarding-rescue-slice
+unit: superseded-intent-authority-correction
 ---
 
 # Company Flight Recorder - build factory

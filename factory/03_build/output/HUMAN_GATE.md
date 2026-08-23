@@ -3,40 +3,36 @@ type: human-gate
 stage: 03
 gate_status: closed
 decision: accepted
-reviewer: project owner
-reviewed_at: 2026-08-17T12:01:43.4140116+05:30
-build_evidence_sha256: 9b5b07c376e2ffe44d9015ae500ae597c6e5e68a77818d1196bf29aa013eae34
-verification_sha256: 1b9ab1d931f9154186a1ebf97a79639dd8442040fd2dbb3545b10408dc3ca0a0
+reviewer: owner
+reviewed_at: 2026-08-23T01:35:26.2571847+05:30
+build_evidence_sha256: 09c0c113adbc67b0a3dced716a6637e2b44e27d042aba3aa0b97317c07d9d895
+verification_sha256: 5753beff4a9c5232a671afe192833a1ab4a94509a7fa12466ba4d62b716cc850
 ---
 
-# Stage 03 Build human gate
+# Stage 03 human gate - L08 atomic authority correction
 
-Review `BUILD_EVIDENCE.md` after `VERIFY.md` passes. Run the local golden path
-from the exact FIXTURE reset, engage and resume Global Pause, and edit the
-proposed email or recipients before authorization.
+Review `BUILD_EVIDENCE.md` after `VERIFY.md` passes. Accept only if:
 
-Accept only if the edited proposal becomes a new immutable intent; the exact
-recipients, message, and `$0.15` spending cap remain visible before approval;
-no effect occurs without current exact authority; execution failures and
-post-dispatch uncertainty remain visible without silent retry; and the
-narrative ends in a claim explicitly separated as Observed, Correlated, or
-Proven.
+- `flight_traces.active_intent_id` is the sole runtime authority head;
+- normal runtime lookup never infers the head from time, `rowid`, insertion
+  order, or an aggregate;
+- edit wins rejects the complete stale v1 authorization batch and exact v2
+  authorization subsequently succeeds once;
+- authorization wins rolls back both the v2 intent and policy while retaining
+  exactly one v1 effect;
+- grant, effect, compare-and-swap, and executing-event guards enforce the same
+  active identity inside the transaction;
+- the five migration cases are atomic and the historical mismatch restores
+  the complete 0005 schema/data state;
+- all ten direct database attacks fail closed;
+- build, lint, targeted tests, full tests, and diff inspection pass; and
+- the Build claims only L08, with L06, L20, L04, and L14 unchanged.
 
-Also confirm that the UI describes the fixed graph as a reviewed operational
-playbook and does not claim that a single-user screen visually proves tenant
-isolation.
+Verification opened this gate. Only a human may set `reviewer`, `reviewed_at`,
+`gate_status`, and `decision`. Stage 04 may not begin while this gate is open.
 
-Record reviewer, timestamp, corrections, the exact Build Evidence and
-verification hashes, and exactly one decision: `accepted`,
-`changes-requested`, or `rejected`.
+## Review outcome
 
-## Decision
-
-Accepted by the project owner on 2026-08-17 against the exact Build Evidence
-and verification hashes recorded in frontmatter.
-
-Corrections: none.
-
-Stage 04 may verify the accepted build, but it may not silently weaken the
-control-before-action, exact-authority, truth-label, no-retry, tenant, or
-replay contracts.
+Accepted by the owner after correction of the stale
+`factory/03_build/verify.mjs` evidence binding. Product code and behavior were
+unchanged; no further corrections were requested.

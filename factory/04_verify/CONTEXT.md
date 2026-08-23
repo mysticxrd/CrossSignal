@@ -1,54 +1,49 @@
 ---
 type: stage-contract
 stage: 04
-job: prove-the-complete-product-promise
+job: verify-superseded-intent-cannot-be-authorized
 ---
 
-# 04_verify - turn the working slice into evidence
+# 04_verify - prove the authority invariant
 
-One job: resolve every acceptance criterion and attack recovery, isolation,
-authority, provenance, effects, and truthfulness before release.
+One job: independently verify that only the trace's exact active intent can be
+authorized across normal, edited, concurrent, migrated, and failure states.
 
 ## Inputs
 
-- Working specification: `../01_spec/output/SPEC.md`
-- Data contract: `../02_data/output/DATA_PACKAGE.md`
-- Working: `../03_build/output/BUILD_EVIDENCE.md`
-- Working verification: `../03_build/output/VERIFY.md`
-- Working gate: `../03_build/output/HUMAN_GATE.md`
-- Reference: `../_shared/ARCHITECTURE_SNAPSHOT.md`
-- Reference: `../_shared/QUALITY_GATES.md`
-- Test surface: `../../tests/` and the deployed preview named by Stage 03
+- Freshness dependency: `../03_build/output/BUILD_EVIDENCE.md`
+- Freshness dependency: `../03_build/output/HUMAN_GATE.md`
+- Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
+- Freshness dependency: `../_shared/QUALITY_GATES.md`
+- Observed baseline: accepted product and test paths declared by Build
+- Stage-owned surface: verification cases and `output/VERIFICATION_REPORT.md`
 
-Do not load: `_archive/`, Stage 05, unrelated vault material, or production
-customer data.
+Do not load: `_archive/`, Ship, dependency folders, generated build output, or
+unrelated audit findings.
 
 ## Process
 
-1. Map each Spec acceptance criterion to a test, trace, receipt, screenshot, or explicit failure.
-2. Exercise recovery, tenant isolation, duplicate ingress, injection, context leakage, authority mutation/replay, ambiguous effects, and late outcomes.
-3. Fix defects at their owning source and rerun the complete relevant matrix.
-4. Add `npm run verify:release`, write the verification report, and stop.
+1. Reproduce the pre-fix interleaving against the corrected invariant.
+2. Verify positive, negative, concurrency, migration, and rollback behavior.
+3. Resolve every acceptance criterion with inspectable evidence.
+4. Write `VERIFICATION_REPORT.md` and stop.
 
 ## Outputs
 
-- Durable tests and source fixes in the product tree
-- `output/VERIFICATION_REPORT.md` - acceptance matrix, evidence, failures, fixes, and residual risk
+- `output/VERIFICATION_REPORT.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 
 ## Verify
 
-Run `npm run verify:release`, `npm run build`, `npm run lint`, and `npm test`.
-No acceptance criterion may remain implied; no unauthorized write may occur;
-failures remain visible; replay creates zero external effects.
+Fail on flaky scheduling, untested migration state, stale grants, mismatched
+policy or payload bindings, or evidence that cannot be rerun.
 
 ## Human gate
 
-Inspect failed and passing cases. Accept only if each acceptance criterion has
-resolvable evidence, attacks fail closed, and limitations remain explicit.
+Accept only if the vulnerable interleaving deterministically fails closed and
+all accepted authority semantics remain green.
 
 ## Failure routing
 
-Return product-definition defects to Spec, contract defects to Data, and
-implementation defects to Build. Upstream changes make this report stale.
+Route implementation defects to Build and contract defects to their owner.

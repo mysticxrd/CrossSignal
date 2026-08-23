@@ -68,6 +68,7 @@ export const flightTraces = sqliteTable(
     })
       .notNull()
       .default("collecting"),
+    activeIntentId: text("active_intent_id"),
     retentionClass: text("retention_class", {
       enum: ["ephemeral_demo", "review_evidence"],
     }).notNull(),
@@ -90,6 +91,10 @@ export const flightTraces = sqliteTable(
     index("idx_flight_traces_workspace_state").on(
       table.workspaceId,
       table.currentState,
+    ),
+    index("idx_flight_traces_workspace_active_intent").on(
+      table.workspaceId,
+      table.activeIntentId,
     ),
     foreignKey({
       name: "fk_flight_traces_workspace_creator_membership",
@@ -503,6 +508,7 @@ export const actionIntents = sqliteTable(
     traceId: text("trace_id").notNull(),
     contextSnapshotId: text("context_snapshot_id").notNull(),
     sourceArtifactId: text("source_artifact_id").notNull(),
+    supersedesIntentId: text("supersedes_intent_id"),
     intentKey: text("intent_key").notNull(),
     actionKind: text("action_kind", { enum: ["email_test"] }).notNull(),
     truthMode: text("truth_mode", { enum: ["TEST"] }).notNull(),
@@ -543,6 +549,9 @@ export const actionIntents = sqliteTable(
       table.workspaceId,
       table.nonce,
     ),
+    uniqueIndex("idx_action_intents_one_successor")
+      .on(table.workspaceId, table.traceId, table.supersedesIntentId)
+      .where(sql`${table.supersedesIntentId} IS NOT NULL`),
     foreignKey({
       name: "fk_action_intents_workspace_trace",
       columns: [table.workspaceId, table.traceId],

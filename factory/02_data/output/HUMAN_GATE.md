@@ -3,34 +3,34 @@ type: human-gate
 stage: 02
 gate_status: closed
 decision: accepted
-reviewer: project owner
-reviewed_at: 2026-08-13T21:52:17.2915839+05:30
-data_package_sha256: bc63fbcec2cfb8ba70cf8286dbb2f8cbca2f02272b9b07b1eea918b6072e32b0
-verification_sha256: d800abb18d671def25d88655b1898f15fda60daab6f34a44758315999befa129
+reviewer: owner
+reviewed_at: 2026-08-22T16:57:15.5240957+05:30
+data_package_sha256: ff047b6e5c3b664307ce6626f34e5c28b518b8fabd28048e442b2c99ae2d3ba8
+verification_sha256: 8537680fe4c56e18540d4274cc557ddbf52af52ee604aa88581126eabe7c4927
 ---
 
-# Stage 02 human gate
+# Stage 02 human gate - L08 executable data contract
 
-Review `DATA_PACKAGE.md` after `VERIFY.md` passes. Inspect the canonical fixture
-from labeled evidence through frozen context, reasoning artifacts, immutable
-intent, deterministic policy, exact approval, TEST effect, observation, and
-qualified outcome.
+Review `DATA_PACKAGE.md` after `VERIFY.md` passes. Accept only if:
 
-Confirm that ownership and truth mode are explicit; transitions and history are
-durable; stored intent, grant, actor, kill switch, and intended effect bind the
-same authority; unauthorized paths fail closed; and reset touches only the exact
-FIXTURE trace.
+- `active_intent_id` remains the sole database authority head;
+- the immutable predecessor edge is a necessary internal monotonicity guard
+  and does not redefine the accepted product authority semantics;
+- intent plus policy activation rolls back completely when authorization wins;
+- stale authorization rolls back grant, effect, events, outcome, cost, and
+  receipt writes when editing wins;
+- the zero-row executing compare-and-swap is converted into an in-batch abort;
+- legacy backfill uses the old sort only during migration and aborts historical
+  authority mismatch without partial changes;
+- the deterministic schedules exercise production operations through a manual
+  barrier or controlled database connections; and
+- L06, L20, L04, and L14 remain out of scope.
 
-Record reviewer, timestamp, corrections, the current Data Package and
-verification hashes, and exactly one decision: `accepted`,
-`changes-requested`, or `rejected`.
+Verification opened this gate. Only a human may set `reviewer`, `reviewed_at`,
+`gate_status`, and `decision`. No Stage 03 product implementation may begin
+while this gate is open.
 
-## Decision
+## Review outcome
 
-Accepted by the project owner on 2026-08-13 against the exact Data Package and
-verification hashes recorded in frontmatter.
-
-Corrections: none.
-
-Stage 03 may build the accepted package, but it may not silently weaken its
-tenant, truth, transition, authority, reset, or replay contracts.
+Accepted by the owner without corrections. Stage 03 may proceed against the
+hashed Data package and verification artifact recorded above.

@@ -3,40 +3,41 @@ type: human-gate
 stage: 04
 gate_status: closed
 decision: accepted
-reviewer: project owner
-reviewed_at: 2026-08-20T15:35:29.2797104+05:30
-verification_report_sha256: 8e42bd7e5030b8f1985c6fbfa2efcf0549d7ecb4e711f04e48a018f7e5514852
-verification_sha256: a78b03d777bed74a9cba48510a320ff4b7ab50ae1747e5c0df7ebd8a8ca1d252
+reviewer: owner
+reviewed_at: 2026-08-23T01:54:02.8393023+05:30
+verification_report_sha256: aa42efe813a0094ec7c8e5f38b6341eb4a13af5fb8b89db5e78cf59906e3c95d
+verification_sha256: 4a52a4003c9b9b7e0b93f8102d9cfd5bd1f3f0cc9d9db39507a8b415db6a5bb5
 ---
 
-# Stage 04 Verify human gate
+# Stage 04 human gate - L08 authority verification
 
-Review `VERIFICATION_REPORT.md` only after `VERIFY.md` passes. Inspect both the
-failed/ambiguous and confirmed browser evidence, and resolve every Spec
-acceptance criterion to its executable test, D1 probe, trace, or screenshot.
+Review `VERIFICATION_REPORT.md` only after `VERIFY.md` passes. Accept only if:
 
-Accept only if exact human authorization remains mandatory; recipient and
-spending-cap bindings fail closed; Global Pause prevents effect reservation;
-failed and indeterminate actions remain visible without retry; the narrative
-orders evidence, skeptic review, proposal, authorization, execution, and
-outcome; and Observed, Correlated, and Proven remain distinct.
+- the vulnerable edit-wins interleaving deterministically rejects the complete
+  stale v1 authorization batch and leaves zero partial authority/effect rows;
+- exact v2 authorization subsequently succeeds once;
+- authorization wins retains exactly one v1 effect and rolls back both losing
+  v2 rows;
+- normal runtime authority uses only the persisted exact active head, never
+  time, `rowid`, insertion order, or an aggregate;
+- grant, effect, compare-and-swap, and executing-event guards enforce the same
+  active identity inside one transaction;
+- all ten direct database attacks fail closed;
+- all five migration states are covered and the invalid historical race fully
+  restores the 0005 schema/data state;
+- confirmed, failed, and indeterminate paths preserve exactly-once reservation
+  semantics without retry; and
+- build, lint, 22 targeted tests, the 45-test pre-Ship suite, and diff
+  inspection pass; the sole seven-file-suite failure is the intentional Stage
+  05 inheritance check requiring this gate to be accepted first.
 
-Also confirm the limitations: this is FIXTURE data through a TEST adapter; the
-single-user UI does not visually prove tenant isolation; the accepted Stage 02
-14-attack record is historical rather than a new Stage 04 run; and the outcome
-is correlated, not proven.
+Also confirm the scope limitation: this report resolves L08 only. It does not
+claim L06, L20, L04, or L14; it does not reuse prior screenshots; and it does
+not claim live-provider, distributed exactly-once, or causal-outcome proof.
 
-Record reviewer, timestamp, corrections, the exact report and verification
-hashes, and exactly one decision: `accepted`, `changes-requested`, or
-`rejected`.
+Only a human may set `reviewer`, `reviewed_at`, `gate_status`, and `decision`.
+Stage 05 may not begin while this gate is open.
 
-## Decision
+## Review outcome
 
-Accepted by the project owner on 2026-08-20 against the exact verification
-report and verification hashes recorded in frontmatter.
-
-Corrections: none.
-
-Stage 05 may package and present the accepted release evidence, but it may not
-silently weaken the control-before-action, exact-authority, truth-label,
-no-retry, tenant, replay, or limitation contracts.
+Accepted by the owner without corrections.

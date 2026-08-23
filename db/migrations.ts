@@ -39,6 +39,7 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "idx_flight_traces_workspace_key",
   "idx_flight_traces_workspace_id",
   "idx_flight_traces_workspace_state",
+  "idx_flight_traces_workspace_active_intent",
   "idx_flight_evidence_workspace_id",
   "idx_flight_evidence_trace_key",
   "idx_flight_evidence_idempotency",
@@ -55,6 +56,7 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "idx_action_intents_trace_key",
   "idx_action_intents_workspace_payload",
   "idx_action_intents_workspace_nonce",
+  "idx_action_intents_one_successor",
   "idx_policy_decisions_workspace_id",
   "idx_policy_decisions_intent_policy",
   "idx_approval_grants_workspace_id",
@@ -82,6 +84,8 @@ const REQUIRED_SCHEMA_OBJECTS = [
   // Stage 02 transition, binding, immutability, deletion, and sequence guards.
   "trg_flight_traces_identity_immutable",
   "trg_flight_traces_transition",
+  "trg_flight_traces_active_intent_transition",
+  "trg_flight_traces_required_active_intent",
   "trg_flight_traces_delete_guard",
   "trg_flight_evidence_immutable",
   "trg_flight_evidence_delete_guard",
@@ -107,12 +111,15 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "trg_policy_decisions_immutable",
   "trg_policy_decisions_delete_guard",
   "trg_policy_decisions_bind_intent",
+  "trg_policy_decisions_activate_intent",
   "trg_approval_grants_immutable",
   "trg_approval_grants_delete_guard",
   "trg_approval_grants_bind_authority",
+  "trg_approval_grants_bind_active_intent",
   "trg_effect_attempts_immutable",
   "trg_effect_attempts_delete_guard",
   "trg_effect_attempts_bind_grant",
+  "trg_effect_attempts_bind_active_intent",
   "trg_effect_attempt_events_append_only",
   "trg_effect_attempt_events_delete_guard",
   "trg_effect_attempt_events_attempt_binding",
@@ -133,6 +140,7 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "trg_flight_trace_events_sequence",
   "trg_flight_trace_events_subject_binding",
   "trg_flight_trace_events_transition",
+  "trg_flight_trace_events_executing_projection",
 ] as const;
 
 let compatibilityReady: Promise<void> | null = null;
@@ -166,6 +174,17 @@ async function verifyCheckedInMigrations(): Promise<void> {
     throw new Error(
       `Database schema is not ready. Apply the checked-in Drizzle migrations; missing: ${missing.join(", ")}.`,
     );
+  }
+
+  const [traceColumns, intentColumns] = await Promise.all([
+    d1.prepare("PRAGMA table_info('flight_traces')").all<{ name: string }>(),
+    d1.prepare("PRAGMA table_info('action_intents')").all<{ name: string }>(),
+  ]);
+  if (!traceColumns.results.some((column) => column.name === "active_intent_id")) {
+    throw new Error("Database schema is not ready. Apply migration 0006; missing: flight_traces.active_intent_id.");
+  }
+  if (!intentColumns.results.some((column) => column.name === "supersedes_intent_id")) {
+    throw new Error("Database schema is not ready. Apply migration 0006; missing: action_intents.supersedes_intent_id.");
   }
 }
 

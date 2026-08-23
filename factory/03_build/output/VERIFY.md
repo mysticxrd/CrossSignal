@@ -2,65 +2,75 @@
 type: verification
 stage: 03
 status: passed
-verified_at: 2026-08-13T22:53:30.0816353+05:30
+verified_at: 2026-08-23T01:05:42.2082437+05:30
+unit: superseded-intent-authority-correction
+finding: L08
 ---
 
-# Stage 03 verification
+# Stage 03 L08 verification
 
-The accepted onboarding-rescue Data package now runs as a durable,
-control-first product loop. Verification opens the Build human gate; it does
-not accept it.
+The accepted Data package is implemented and the original superseded-intent
+race fails closed in both deterministic schedules. Verification opens the
+Build gate; it does not accept it.
 
 ## Artifact bindings
 
-Text hashes normalize line endings to LF before SHA-256.
+Text hashes normalize CRLF to LF before SHA-256.
 
 | Artifact | SHA-256 |
 |---|---|
-| `BUILD_EVIDENCE.md` | `9b5b07c376e2ffe44d9015ae500ae597c6e5e68a77818d1196bf29aa013eae34` |
-| `../verify.mjs` | `18c77153e5fc1740edb092894c746ca231c212296db0dbb53d70f5941d34114c` |
-| `../../../app/CrossSignalApp.tsx` | `f764416effea5014bee700dd42e8368bc2e1ce73d80da9b0dac4098a9998f501` |
-| `../../../db/flight-recorder.ts` | `41f248e8e6bc0134552ff75b20f3f8f31f079bb319c05e6af5a28d5a722b70f7` |
-| `../../../app/flight-recorder-actions.ts` | `3823f5b3487147b4a9a3f9c691cefed1fb93206527a81e1b229606899fc085c3` |
-| `../../../tests/flight-recorder-build.test.mjs` | `79bc737e6f5844410b92ae1d0a8f286a1c7de003955c40e5432210dcb9b67d68` |
-
-The Build Evidence binds all declared Stage 03 inputs, the replayable trace,
-and four screenshot hashes.
+| `BUILD_EVIDENCE.md` | `09c0c113adbc67b0a3dced716a6637e2b44e27d042aba3aa0b97317c07d9d895` |
+| `../verify.mjs` | `4a959cf71527cd3a4d6fa9b6a9f3e1d8b1fbfcdd6f4643581beebe8c48a4e7fd` |
+| `../../../db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
+| `../../../db/migrations.ts` | `259c0cd885daaf23bccb1bf3bfc46c278240c45d3291b045a999335f97cdd47d` |
+| `../../../db/flight-recorder.ts` | `ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6` |
+| `../../../drizzle/0006_l08_active_intent_authority.sql` | `a97ce8f9b2a6b595197981742f80b1c4089cf05d57834921b3855fa5d2f844c5` |
+| `../../../drizzle/meta/0006_snapshot.json` | `ed1b70151519da162b465f3bc4c82de3a296b9b32d53855a001c1287d63c0bee` |
+| `../../../tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
 
 ## Executable evidence
 
-- Six focused Build tests pass for pending-without-authority, immutable edited
-  intent, kill-switch denial, exact one-time approval/effect reservation,
-  failed and indeterminate no-retry handling, and calibrated FIXTURE outcome.
-- The repository derives actor and workspace from authenticated membership,
-  reseals the persisted intent, and checks current policy, exact grant,
-  recipients, nonce, expiry, spend ceiling, Global Pause, and prior-attempt
-  count before reserving the TEST effect.
-- A browser golden path edited the proposal before approval and resolved
-  `trace_d12fc25947ed88cd` from frozen context through confirmed effect and a
-  correlated—not proven—observation.
-- A browser negative path showed a TEST provider rejection as failed, exposed
-  its reason, made no outcome claim, and performed no retry.
-- The React best-practices review found authenticated server actions, direct
-  imports, event-bound interaction logic, accessible named controls, and no
-  new critical waterfall or client-fetching issue in the bounded slice.
+- The sealed 0005 red run exited `1` because the stale v1 grant produced
+  `Missing expected exception` after v2 replacement.
+- The same assertion passes with migration 0006.
+- The real production operations run through manual promise barriers for edit
+  wins and authorization wins; the losing batch leaves zero partial rows.
+- Ten direct database attacks fail closed, including the zero-row compare-and-
+  swap followed by its in-batch executing-event assertion.
+- Five migration databases pass the accepted matrix. The invalid historical
+  race rolls the schema change back and retains the old immutable trigger.
+- Confirmed, failed, and indeterminate v1/v2 paths preserve one effect and no
+  retry behavior.
+- Static verification proves runtime authority lookup has no timestamp,
+  `rowid`, `MAX`, or ordering inference.
 
-## Command results
+## Command record
 
-Environment: Windows PowerShell, Node.js `22.15.0`, Wrangler `4.92.0`,
-Drizzle Kit `0.31.10`, Vinext `1.0.0-beta.2`, Vite `8.0.13`, local Chromium
-preview at `http://localhost:3000/`.
+| Command | Exit | Relevant result |
+|---|---:|---|
+| Red: `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs` on sealed 0005 behavior | `1` | Replacement committed; stale v1 grant was accepted (`Missing expected exception`). |
+| `node factory/03_build/verify.mjs` | `0` | 2 schedules, 10 attacks, 5 migration cases, 7 Data tests, 15 Build tests; exact input hashes emitted. |
+| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-data.test.mjs` | `0` | 7 tests passed. |
+| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs` | `0` | 15 tests passed, including five migration subtests. |
+| `node node_modules/eslint/bin/eslint.js . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | `0` | Exact repository lint scope passed. |
+| `node_modules/.bin/vinext.cmd build` | `0` | All five build environments passed; dynamic `/` emitted and migration 0006 packaged. |
+| `node_modules/.bin/tsx.cmd --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs` | `0` | 50 tests passed, 0 failed. |
+| `git diff --check` | `0` | No whitespace errors. |
 
-| Command / probe | Timestamp (+05:30) | Exit | Relevant result |
-|---|---|---:|---|
-| `npm.cmd run verify:build` | `2026-08-13T22:53:30` | `0` | `6/6` focused tests; declared input hashes; confirmed, failed, and indeterminate-no-retry safety states. |
-| `npm.cmd run build` | `2026-08-13T22:51` | `0` | Five Vinext environments built; dynamic `/` route emitted. |
-| `npm.cmd run lint` | `2026-08-13T22:51` | `0` | Active repository ESLint passed. |
-| `npm.cmd test` | `2026-08-13T22:56` | `0` | Production build plus all `25/25` tests passed; `0` failed. |
-| In-app Chromium golden path | `2026-08-13T22:45–22:52` | `0` | Pause denial, resume, Intent v2 edit, exact approval, confirmed outcome, readable trace. |
-| In-app Chromium rejected path | `2026-08-13T22:49` | `0` | Failed with reason, no retry, and no business outcome claim. |
+## Acceptance mapping
+
+| Criterion | Result |
+|---|---|
+| `AC-L08-01` | Red 0005 reproduction captured stale-v1 success. |
+| `AC-L08-02` | Explicit head, predecessor edge, migration, exact lookup, and required-state guards implemented. |
+| `AC-L08-03` | Edit-wins real v1 batch returns the named stale error with zero rejected writes; exact v2 succeeds once. |
+| `AC-L08-04` | Authorization-wins rolls back both v2 rows and retains one v1 effect. |
+| `AC-L08-05` | Confirmed v1/v2, failed v1, and indeterminate v2 paths complete once. |
+| `AC-L08-06` | Ten attacks and zero-row projection assertion abort. |
+| `AC-L08-07` | Five migration cases match the canonical matrix and generated metadata. |
+| `AC-L08-08` | Build, lint, targeted tests, full tests, migration compatibility, and diff checks pass. Only L08 is claimed. |
 
 ## Gate state
 
-Verification passed. The Build gate is open and human-owned; no later stage is
-authorized.
+Verification passed. Stage 03 is ready for human review. Stage 04 remains
+unauthorized until the Build gate binds this verification and Build Evidence.

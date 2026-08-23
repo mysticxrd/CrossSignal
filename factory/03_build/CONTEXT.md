@@ -1,53 +1,50 @@
 ---
 type: stage-contract
 stage: 03
-job: build-one-durable-vertical-slice
+job: build-atomic-active-intent-authorization
 ---
 
-# 03_build - close one bounded product loop
+# 03_build - implement the atomic authority correction
 
-One job: implement the accepted onboarding-rescue slice against the accepted
-specification and data package.
+One job: implement the accepted data package as a durable schema, transaction,
+and test change.
 
 ## Inputs
 
-- Working specification: `../01_spec/output/SPEC.md`
-- Working: `../02_data/output/DATA_PACKAGE.md`
-- Working verification: `../02_data/output/VERIFY.md`
-- Working gate: `../02_data/output/HUMAN_GATE.md`
-- Reference: `../_shared/ARCHITECTURE_SNAPSHOT.md`
-- Reference: `../_shared/QUALITY_GATES.md`
-- Durable product: `../../app/`, `../../db/`, `../../drizzle/`, `../../worker/`, `../../tests/`
+- Freshness dependency: `../02_data/output/DATA_PACKAGE.md`
+- Freshness dependency: `../02_data/output/HUMAN_GATE.md`
+- Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
+- Freshness dependency: `../_shared/QUALITY_GATES.md`
+- Observed baseline: exact product paths named by the accepted data package
+- Stage-owned surface: exact migration, database, and test paths accepted by Data
 
-Do not load: `_archive/`, later stages, speculative connectors, or unrelated
-source-vault pages.
+Do not load: `_archive/`, later stages, dependency folders, generated build
+output, or unrelated audit findings.
 
 ## Process
 
-1. Implement the fixed planner, workers, skeptic, and synthesizer over one frozen snapshot.
-2. Persist evidence, intent, policy, exact approval, effect attempt, observation, assessment, and trace.
-3. Expose only the timeline, approval inbox, trace inspector, and outcome view required by Spec.
-4. Add `npm run verify:build`, capture one replayable trace, and stop.
+1. Add and backfill the active-intent binding.
+2. Maintain it on creation and edit in the owning transaction.
+3. Enforce exact active-intent equality atomically during authorization.
+4. Add the deterministic regression and negative tests.
+5. Write `BUILD_EVIDENCE.md`, verify the slice, and stop.
 
 ## Outputs
 
-- Accepted implementation changes in the durable product tree
-- `output/BUILD_EVIDENCE.md` - preview, trace ID, artifact links, screenshots, and limits
+- `output/BUILD_EVIDENCE.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 
 ## Verify
 
-Run `npm run verify:build`, `npm run build`, `npm run lint`, and `npm test`.
-The preview must complete the golden path without hidden repair and reconstruct
-context -> graph -> intent -> policy -> approval -> effect -> observation.
+Run the accepted targeted tests plus repository build, lint, and test gates.
+The original vulnerable interleaving must fail closed.
 
 ## Human gate
 
-Run the golden path and edit the proposed action before approval. Accept only
-if the visible loop matches Spec and a mutation creates a new intent.
+Accept only after reviewing the migration and running the complete authority
+path with the deterministic race harness.
 
 ## Failure routing
 
-Data defects return to Stage 02. Implementation defects remain here. Never
-weaken an accepted contract or truth label to make the path pass.
+Correct Build or return a contract defect upstream. Never weaken the invariant.
