@@ -1,7 +1,7 @@
 ---
 type: pipeline-contract
 form: pipeline
-unit: persisted-graph-executor-correction
+unit: fixture-runtime-source-of-truth-correction
 ---
 
 # Company Flight Recorder - build factory
@@ -11,7 +11,8 @@ The flow in one line: specify the slice -> make its data executable -> build it
 
 This is the same MWP lifecycle used for Whipoff: every meaningful vertical
 slice makes one sequential pass through `spec -> data -> build -> verify ->
-ship`. The current run is the bounded L06 persisted-graph executor correction.
+ship`. The current run is the bounded L20 fixture/runtime source-of-truth
+correction.
 
 | Stage | One job | Primary output | Human check |
 |---|---|---|---|

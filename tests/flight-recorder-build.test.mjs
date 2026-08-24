@@ -9,7 +9,7 @@ import {
   DEFAULT_ONBOARDING_BODY,
   DEFAULT_ONBOARDING_RECIPIENTS,
   DEFAULT_ONBOARDING_SUBJECT,
-  STAGE_03_SPENDING_CAP_USD,
+  FLIGHT_RECORDER_SPENDING_CAP_USD,
 } from "../db/flight-recorder-demo.ts";
 import {
   assertExecutionAuthority,
@@ -21,7 +21,7 @@ import {
 } from "../db/flight-recorder-contracts.ts";
 import {
   DIRECT_DATABASE_ATTACKS as L06_DATABASE_ATTACKS,
-} from "../factory/02_data/fixtures/persisted-graph-executor.fixture.mjs";
+} from "./fixtures/persisted-graph-executor.fixture.mjs";
 const AUTHORITY_ERRORS = Object.freeze({
   staleAuthorization: "l08_stale_or_superseded_intent",
   activationRejected: "l08_intent_activation_rejected",
@@ -455,7 +455,7 @@ test("builds a control-first pending action with no grant or effect", async () =
   assert.equal(database.prepare("SELECT COUNT(*) count FROM approval_grants").get().count, 0);
   assert.equal(database.prepare("SELECT COUNT(*) count FROM effect_attempts").get().count, 0);
   assert.equal(JSON.parse(database.prepare("SELECT recipients_json FROM action_intents").get().recipients_json).length, 3);
-  assert.equal(demo.intentBundle.spendingCapUsd, STAGE_03_SPENDING_CAP_USD);
+  assert.equal(demo.intentBundle.spendingCapUsd, FLIGHT_RECORDER_SPENDING_CAP_USD);
   assert.equal(database.prepare("SELECT COUNT(*) count FROM reasoning_nodes WHERE current_state='succeeded'").get().count, 6);
   database.close();
 });
@@ -1026,10 +1026,17 @@ test("L06 preserves an expired claimed attempt before completing a later attempt
       },
     });
     const request = harness.request(traceId);
-    assert.deepEqual(await claimPersistedReasoningNode(request, "planner"), {
-      status: "busy",
-      attempt: 1,
+    const uninstallBusyClock = installReasoningRuntimeHooksForTest({
+      now: () => clock,
     });
+    try {
+      assert.deepEqual(await claimPersistedReasoningNode(request, "planner"), {
+        status: "busy",
+        attempt: 1,
+      });
+    } finally {
+      uninstallBusyClock();
+    }
     clock = "2026-08-24T12:00:31.000Z";
     const uninstall = installReasoningRuntimeHooksForTest({
       now: () => clock,

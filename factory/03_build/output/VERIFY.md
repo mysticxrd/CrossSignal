@@ -1,52 +1,40 @@
 ---
-type: verification-report
+type: verification-record
 stage: 03_build
+unit: fixture-runtime-source-of-truth-correction
 status: passed
-unit: persisted-graph-executor-correction
-verified_at: 2026-08-23T19:54:31.7711878Z
 ---
 
-# Stage 03 verification
+# L20 Stage 03 verification record
 
-## Environment
+Run `node factory/03_build/verify.mjs` from the repository root.
 
-- Windows / PowerShell
-- Node.js `v22.15.0`
-- `tsx` `4.22.1`
-- SQLite through Node's deterministic in-memory `DatabaseSync` test adapter
-- No network, model, provider, timer sleep, or probabilistic race
+The verifier fails closed on:
 
-## Commands
+- drift in the accepted Stage 02 package/gate or either shared reference;
+- drift in any of the eight durable Stage 03 outputs;
+- an unaccepted Stage 02 gate;
+- any failing import, projection, reset, or seal-transition case;
+- a product/archive or durable-test/numbered-fixture dependency;
+- more than one durable graph registry definition;
+- a remaining stage-numbered public export;
+- loss of any of the fourteen durable L06 database-attack cases;
+- any failure in the 66-test durable Flight Recorder suite;
+- focused lint failure; or
+- a missing, stale, or prematurely closed Stage 03 human gate.
 
-| Command | Result |
-|---|---|
-| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs` | passed |
-| `node_modules/.bin/vinext.cmd build` | passed |
-| `node_modules/.bin/eslint.cmd app db worker tests/*.mjs factory/01_spec/*.mjs factory/02_data/*.mjs factory/02_data/fixtures/*.mjs factory/03_build/verify.mjs factory/_lib/*.mjs` | passed |
-| `node --test factory/_lib/factory-tools.test.mjs` | passed |
-| `git diff --check` | passed |
-| `node_modules/.bin/tsx.cmd factory/03_build/verify.mjs` | passed |
+Expected passing summary:
 
-## Results
+```text
+Stage 03 build verification passed.
+Bound inputs: 5
+Bound durable outputs: 8
+Stage 02 cases: 16
+Durable product tests: 66 passed
+Graph authority definitions: 1
+```
 
-- Six fixed nodes execute through product runtime handlers and durable database
-  attempts.
-- Five between-node boundaries preserve completed evidence and avoid replay.
-- Expired claims retain immutable interrupted history before a later success.
-- Concurrent calls, wrong tokens, same-token duplication, handler failure,
-  secret content, undeclared citations, tenant mismatch, and input drift all
-  fail or converge according to the accepted contract.
-- Fourteen L06 direct database attacks and ten L08 direct database attacks pass
-  with zero rejected-write residue.
-- Both sealed L08 production race schedules pass.
-- Migration `0007` passes empty/current/interrupted/completed/invalid cases.
-- Build and scoped lint pass. Unknown executor cost remains explicit.
-
-## Scope notes
-
-Repository-wide lint was also attempted. Its only failures were three existing
-unused-variable findings under the user's out-of-scope untracked `benchmarks/`
-work. Those files were preserved. The stale legacy data test remains assigned
-to L20; it is not counted as L06 runtime evidence.
-
-L20, L04, and L14 remain open.
+The production build is separately recorded in `BUILD_EVIDENCE.md` because its
+Vite cache writes depend on the installed workspace dependency location. The
+verifier itself remains deterministic and read-only apart from isolated test
+databases created by the product suite.

@@ -4,10 +4,20 @@ import {
   sealCanonical,
   stableStringify,
 } from "./flight-recorder-contracts";
+import {
+  REASONING_ARTIFACT_SCHEMA_VERSION,
+  REASONING_GRAPH_VERSION,
+  REASONING_NODE_REGISTRY,
+} from "./flight-recorder-graph-definition";
 
-export const STAGE_03_FIXTURE_KEY = "onboarding-rescue:stage03-v1";
-export const STAGE_03_TRACE_KEY = "onboarding-rescue-stage03-v1";
-export const STAGE_03_SPENDING_CAP_USD = 0.15;
+export const FLIGHT_RECORDER_FIXTURE_KEY = "onboarding-rescue:stage03-v1";
+export const FLIGHT_RECORDER_TRACE_KEY = "onboarding-rescue-stage03-v1";
+export const FLIGHT_RECORDER_SPENDING_CAP_USD = 0.15;
+export const FLIGHT_RECORDER_FIXTURE_IDENTITY = Object.freeze({
+  fixtureKey: FLIGHT_RECORDER_FIXTURE_KEY,
+  traceKey: FLIGHT_RECORDER_TRACE_KEY,
+  truthMode: "FIXTURE" as const,
+});
 
 export const DEFAULT_ONBOARDING_SUBJECT =
   "A clearer first step for your workspace";
@@ -99,7 +109,7 @@ export async function buildDemoIntent(input: IntentInput) {
     policyVersion: "email-test-v1",
     approvalRequired: true,
     maxRecipients: 3,
-    maxSpendUsd: STAGE_03_SPENDING_CAP_USD,
+    maxSpendUsd: FLIGHT_RECORDER_SPENDING_CAP_USD,
     providerMode: "TEST",
     blindRetryAfterAmbiguousDispatch: false,
   });
@@ -146,7 +156,7 @@ export async function buildDemoIntent(input: IntentInput) {
       evaluatorVersion: "deterministic-policy-v1",
       decidedAt: now,
     },
-    spendingCapUsd: STAGE_03_SPENDING_CAP_USD,
+    spendingCapUsd: FLIGHT_RECORDER_SPENDING_CAP_USD,
   };
 }
 
@@ -228,7 +238,7 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
       payload: {
         truthMode: "FIXTURE",
         maxRecipients: 3,
-        maxSpendUsd: STAGE_03_SPENDING_CAP_USD,
+        maxSpendUsd: FLIGHT_RECORDER_SPENDING_CAP_USD,
         approvalRequired: true,
         providerMode: "TEST",
         blindRetryAfterAmbiguousDispatch: false,
@@ -266,7 +276,7 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
         capturedAt: now,
         payloadJson: sealed.canonicalJson,
         contentHash: sealed.sha256,
-        idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${input.workspaceId}:${source.sourceId}`,
+        idempotencyKey: `${FLIGHT_RECORDER_FIXTURE_KEY}:${input.workspaceId}:${source.sourceId}`,
         createdBy: input.userId,
         label: source.label,
         summary: source.summary,
@@ -300,8 +310,8 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
   const trace = {
     id: ids.traceId,
     workspaceId: input.workspaceId,
-    traceKey: STAGE_03_TRACE_KEY,
-    fixtureKey: STAGE_03_FIXTURE_KEY,
+    traceKey: FLIGHT_RECORDER_TRACE_KEY,
+    fixtureKey: FLIGHT_RECORDER_FIXTURE_KEY,
     truthMode: "FIXTURE" as const,
     currentState: "context_frozen" as const,
     retentionClass: "review_evidence" as const,
@@ -332,16 +342,8 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
       stableStringify,
     };
   }
-  const graph = [
-    ["planner", "Scopes the reviewed onboarding-rescue playbook", ["evidence:activation-drop", "evidence:onboarding-feedback"]],
-    ["quantitative", "Checks the activation movement and cohort", ["evidence:activation-drop", "metric:activation-72h"]],
-    ["qualitative", "Summarizes approved, redacted feedback", ["evidence:onboarding-feedback", "context:brand"]],
-    ["experiment_design", "Pre-registers the TEST cohort and outcome", ["context:email-policy", "metric:activation-72h"]],
-    ["skeptic", "Challenges causality and the traffic-quality alternative", ["evidence:activation-drop", "evidence:onboarding-feedback"]],
-    ["synthesizer", "Drafts one bounded email action", sourcePayloads.map((source) => source.sourceId)],
-  ] as const;
   const reasoningNodes = await Promise.all(
-    graph.map(async ([nodeKey, role, citations], index) => {
+    REASONING_NODE_REGISTRY.map(async ({ nodeKey, role, citations, artifactKind }, index) => {
       const content =
         nodeKey === "skeptic"
           ? {
@@ -379,15 +381,8 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
           workspaceId: input.workspaceId,
           traceId: ids.traceId,
           nodeId,
-          artifactKind:
-            nodeKey === "planner"
-              ? "plan"
-              : nodeKey === "skeptic"
-                ? "critique"
-                : nodeKey === "synthesizer"
-                  ? "intent_draft"
-                  : "analysis",
-          schemaVersion: "reasoning-artifact-v1",
+          artifactKind,
+          schemaVersion: REASONING_ARTIFACT_SCHEMA_VERSION,
           contentJson: artifact.canonicalJson,
           contentHash: artifact.sha256,
           evidenceCitationsJson: JSON.stringify(citations),
@@ -410,9 +405,9 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
   });
 
   const eventDescriptors = [
-    ["trace.collecting", null, "collecting", "human", input.userId, { fixtureKey: STAGE_03_FIXTURE_KEY }],
+    ["trace.collecting", null, "collecting", "human", input.userId, { fixtureKey: FLIGHT_RECORDER_FIXTURE_KEY }],
     ["trace.context_frozen", "collecting", "context_frozen", "system", "crosssignal-context-v1", { manifestHash: context.manifestHash }],
-    ["trace.reasoning", "context_frozen", "reasoning", "agent", "crosssignal-reviewed-playbook-v1", { nodeCount: reasoningNodes.length }],
+    ["trace.reasoning", "context_frozen", "reasoning", "agent", REASONING_GRAPH_VERSION, { nodeCount: reasoningNodes.length }],
     ["trace.awaiting_approval", "reasoning", "awaiting_approval", "system", "crosssignal-authority-v1", { intentId: intentBundle.intent.id }],
   ] as const;
   const flightTraceEvents = await Promise.all(
@@ -433,7 +428,7 @@ async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
         actorId,
         payloadJson: sealed.canonicalJson,
         payloadHash: sealed.sha256,
-        idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${input.workspaceId}:trace-event:${sequence}`,
+        idempotencyKey: `${FLIGHT_RECORDER_FIXTURE_KEY}:${input.workspaceId}:trace-event:${sequence}`,
         occurredAt: addMilliseconds(now, index * 2_000),
       };
     }),

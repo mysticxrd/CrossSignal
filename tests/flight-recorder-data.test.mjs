@@ -12,10 +12,11 @@ import {
   validateReasoningArtifact,
 } from "../db/flight-recorder-contracts.ts";
 import {
-  FIXTURE_KEY,
-  buildGoldenFixture,
-} from "../factory/02_data/fixtures/onboarding-rescue.fixture.mjs";
-import { buildResetPackage } from "../factory/02_data/fixtures/reset.mjs";
+  FLIGHT_RECORDER_FIXTURE_IDENTITY,
+  FLIGHT_RECORDER_FIXTURE_KEY,
+  buildPendingFlightRecorderDemo,
+} from "../db/flight-recorder-demo.ts";
+import { REASONING_NODE_REGISTRY } from "../db/flight-recorder-graph-definition.ts";
 
 const projectRoot = new URL("../", import.meta.url);
 
@@ -123,10 +124,25 @@ test("intent sealing binds recipients, evidence, context, policy, nonce, and exp
 });
 
 test("execution authority fails closed on tenant drift, mutation, replay, expiry, and ambiguity", async () => {
-  const fixture = await buildGoldenFixture();
-  const intent = fixture.intent;
-  const policy = fixture.policyDecision;
-  const grant = fixture.approvalGrant;
+  const fixture = await buildPendingFlightRecorderDemo({
+    userId: "fixture-authority-owner",
+    workspaceId: "fixture-authority-workspace",
+    now: "2026-08-13T08:00:10.000Z",
+  });
+  const intent = fixture.intentBundle.intent;
+  const policy = fixture.intentBundle.policyDecision;
+  const grant = {
+    workspaceId: intent.workspaceId,
+    intentId: intent.id,
+    decision: "approved",
+    boundPayloadHash: intent.canonicalPayloadHash,
+    boundContextHash: intent.contextManifestHash,
+    boundPolicyHash: intent.policyHash,
+    boundRecipientSetHash: intent.recipientSetHash,
+    nonce: intent.nonce,
+    expiresAt: intent.expiresAt,
+    approvedBy: fixture.trace.createdBy,
+  };
   const request = {
     workspaceId: intent.workspaceId,
     traceId: intent.traceId,
@@ -250,44 +266,37 @@ test("reasoning and outcome contracts reject undeclared evidence, secrets, and o
 });
 
 test("golden fixture is deterministic, fully labeled, reconstructable, and narrowly resettable", async () => {
-  const first = await buildGoldenFixture();
-  const second = await buildGoldenFixture();
-  assert.equal(stableStringify(first), stableStringify(second));
-  assert.equal(first.fixtureKey, FIXTURE_KEY);
+  const identity = {
+    userId: "fixture-owner",
+    workspaceId: "fixture-workspace",
+    now: "2026-08-13T08:00:10.000Z",
+  };
+  const first = await buildPendingFlightRecorderDemo(identity);
+  const second = await buildPendingFlightRecorderDemo(identity);
+  const { stableStringify: firstHelper, ...firstCanonical } = first;
+  const { stableStringify: secondHelper, ...secondCanonical } = second;
+  assert.equal(firstHelper, secondHelper);
+  assert.equal(stableStringify(firstCanonical), stableStringify(secondCanonical));
+  assert.equal(first.trace.fixtureKey, FLIGHT_RECORDER_FIXTURE_KEY);
+  assert.deepEqual(FLIGHT_RECORDER_FIXTURE_IDENTITY, {
+    fixtureKey: "onboarding-rescue:stage03-v1",
+    traceKey: "onboarding-rescue-stage03-v1",
+    truthMode: "FIXTURE",
+  });
   assert.equal(first.trace.truthMode, "FIXTURE");
-  assert.equal(first.intent.truthMode, "TEST");
-  assert.equal(first.intent.cohortCap, 3);
-  assert.deepEqual(first.workspaceMember, {
-    workspaceId: first.workspace.id,
-    userId: first.user.id,
-    role: "owner",
-    joinedAt: "2026-08-13T08:00:00.000Z",
-  });
-  assert.deepEqual(first.workspaceAuthorityControl, {
-    workspaceId: first.workspace.id,
-    killSwitchEngaged: false,
-    updatedBy: first.user.id,
-    updatedAt: "2026-08-13T08:00:00.000Z",
-  });
+  assert.equal(first.intentBundle.intent.truthMode, "TEST");
+  assert.equal(first.intentBundle.intent.cohortCap, 3);
   assert.equal(first.contextSnapshot.currentState, "frozen");
-  assert.equal(first.reasoningNodes.length, 6);
+  assert.equal(first.reasoningNodes.length, REASONING_NODE_REGISTRY.length);
+  assert.deepEqual(
+    first.reasoningNodes.map(({ node }) => node.nodeKey),
+    REASONING_NODE_REGISTRY.map(({ nodeKey }) => nodeKey),
+  );
+  assert.deepEqual(
+    first.reasoningNodes.map(({ artifact }) => JSON.parse(artifact.evidenceCitationsJson)),
+    REASONING_NODE_REGISTRY.map(({ citations }) => [...citations]),
+  );
   assert.equal(first.evidence.length, first.contextSnapshot.sourceCount);
-  assert.equal(first.effectAttempt.events.length, 3);
-  assert.equal(first.effectAttempt.reservedBy, first.user.id);
-  for (const [index, event] of first.effectAttempt.events.entries()) {
-    assert.equal(event.workspaceId, first.workspace.id);
-    assert.equal(event.traceId, first.trace.id);
-    assert.equal(event.effectAttemptId, first.effectAttempt.id);
-    assert.equal(event.sequence, index + 1);
-    assert.match(event.id, /^effect_event_/);
-    assert.match(event.idempotencyKey, /:effect-event:\d+$/);
-    assert.ok(Number.isFinite(Date.parse(event.occurredAt)));
-    assert.equal(typeof event.payloadJson, "string");
-    assert.ok("providerReceiptId" in event);
-    assert.ok("providerResponseHash" in event);
-    assert.ok("errorCode" in event);
-  }
-  assert.equal(first.effectAttempt.events.at(-1).currentState, "confirmed");
   assert.deepEqual(
     first.flightTraceEvents.map((event) => event.currentState),
     [
@@ -295,13 +304,10 @@ test("golden fixture is deterministic, fully labeled, reconstructable, and narro
       "context_frozen",
       "reasoning",
       "awaiting_approval",
-      "executing",
-      "observing",
-      "assessed",
     ],
   );
   for (const [index, event] of first.flightTraceEvents.entries()) {
-    assert.equal(event.workspaceId, first.workspace.id);
+    assert.equal(event.workspaceId, identity.workspaceId);
     assert.equal(event.traceId, first.trace.id);
     assert.equal(event.sequence, index + 1);
     assert.equal(event.subjectType, "trace");
@@ -310,18 +316,8 @@ test("golden fixture is deterministic, fully labeled, reconstructable, and narro
     assert.match(event.idempotencyKey, /:trace-event:\d+$/);
     assert.ok(Number.isFinite(Date.parse(event.occurredAt)));
   }
-  assert.equal(first.outcomeAssessment.label, "correlated");
-  assert.match(first.outcomeAssessment.limitationsJson, /FIXTURE|TEST|causal/);
-
-  const reset = await buildResetPackage(first.workspace.id);
-  assert.deepEqual(reset.deleteBindings, [first.workspace.id, FIXTURE_KEY, "FIXTURE"]);
-  assert.equal(
-    reset.deleteSql,
-    "DELETE FROM flight_traces WHERE workspace_id = ? AND fixture_key = ? AND truth_mode = ?",
-  );
-  assert.equal(reset.traceId, first.trace.id);
-  assert.equal(reset.truthMode, "FIXTURE");
-  await assert.rejects(buildResetPackage("ws_not_fixture"), /refuses any workspace/);
+  assert.equal(first.trace.currentState, "awaiting_approval");
+  assert.equal(first.outcomeDefinition.workspaceId, identity.workspaceId);
 });
 
 test("migration enforces workspace ownership, immutable authority, and append-only evidence", async () => {

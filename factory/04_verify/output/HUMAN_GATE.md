@@ -1,34 +1,35 @@
 ---
 type: human-gate
 stage: 04_verify
+unit: fixture-runtime-source-of-truth-correction
 gate_status: closed
 decision: accepted
-reviewer: owner
-reviewed_at: 2026-08-23T20:08:30.3047985Z
-verification_report_sha256: 86d4fb838cc0c3b52c6c27cbcc2cef1fddb4c92629d3c4f98bdb7a2e32bd5ce0
-verification_sha256: a52397c1066c73d4ea2d9e8e9ba972ba4a6adfd9915fe5417e08e075a1e90a9d
+reviewer: project-owner
+reviewed_at: 2026-08-25T00:36:13.1974280+05:30
+primary_sha256: 430438f0b2149e3e695ce585a64919f1b07ced2ef766c3531578f36ef8f29b53
+verification_sha256: be1d025a9be4c989d989037e0dea4f933e681faa2592f432d8df3699eede9989
 ---
 
-# Stage 04 human gate
+# L20 verification human gate
 
-Stage 04 verification is accepted by the owner.
+Stage 04 verification is complete and waiting for a human decision. Do not
+begin Stage 05 until this record is closed with `decision: accepted`.
 
 ## Review checklist
 
-- [x] All fourteen L06 acceptance criteria resolve to persisted runtime or
-  direct database evidence.
-- [x] The independent probe is distinct from the Stage 02 oracle and Stage 03
-  test-object construction.
-- [x] Cold execution, every resume boundary, lease recovery, concurrency, and
-  fail-closed schedules pass.
-- [x] All fourteen L06 attacks, both L08 races, and all ten L08 attacks pass.
-- [x] Migration, build, relevant lint/tests, factory tests, and diff inspection
-  pass.
-- [x] Runtime execution remains explicitly separate from `FIXTURE` truth.
-- [x] Cost remains unknown and no lease token appears in user-visible evidence.
-- [x] L20, L04, and L14 remain open.
+- [x] The accepted Stage 03 gate and evidence hashes are fresh.
+- [x] All eight durable L20 outputs match their reviewed hashes.
+- [x] The durable product tests pass: 66 passed and 0 failed.
+- [x] Focused lint and the production Vinext build pass.
+- [x] Durable outputs contain no active-factory or archive dependency.
+- [x] There is one graph registry definition and no stage-numbered public name.
+- [x] Compatibility identity, FIXTURE/TEST labels, and all 14 durable attack IDs remain intact.
+- [x] No L04, L14, migration, archive, or benchmark-stash scope entered.
+- [x] `node factory/04_verify/verify.mjs` passes against the hashes above.
 
-## Reviewer action
+## Reviewer record
 
-The owner accepted the bound verification report and command evidence. The
-bound hashes remain unchanged.
+- Decision: `accepted`
+- Reviewer: `project-owner`
+- Reviewed at: `2026-08-25T00:36:13.1974280+05:30`
+- Corrections: `none recorded`

@@ -1,329 +1,194 @@
 ---
-type: stage-output
+type: build-specification
 stage: 01_spec
-status: review-ready
-unit: persisted-graph-executor-correction
-finding: L06
+unit: fixture-runtime-source-of-truth-correction
+finding: L20
+status: proposed
 ---
 
-# L06 persisted graph executor specification
+# L20 fixture/runtime source-of-truth correction
 
 ## Decision
 
-Replace the demo's precomputed reasoning-node materialization with one bounded
-runtime executor for the approved six-node CrossSignal graph. The executor
-must claim runnable work in durable state, invoke the node handler, validate
-and persist its artifact, append trace evidence, and resume safely after an
-interruption. It is not a generic DAG engine or a general agent platform.
+CrossSignal's durable product tree owns executable fixture truth. Run-scoped
+factory artifacts may project, verify, and explain that truth, but application
+code, workers, and durable product tests must never import a numbered factory
+stage or rely on an active run retaining a particular fixture file.
 
-This correction proves actual orchestration while retaining honest truth
-labels: the current demo's sources, node handlers, provider, and outcomes remain
-`FIXTURE`. Running fixture handlers through a real executor does not make their
-business evidence `LIVE`.
+`db/flight-recorder-demo.ts` remains the canonical owner of the onboarding
+fixture's evidence, policy, outcome, intent, deterministic identity/time
+materialization, and exact reset identity. `db/flight-recorder-graph.ts` (or a
+pure durable `db/` definition module extracted from it) owns the one fixed graph
+topology, citations, handler version, and runtime execution semantics. A
+factory data fixture may only be a thin executable projection of these durable
+owners; it may not carry an independently editable copy.
 
-## Baseline finding
+## Finding and baseline evidence
 
-Finding L06 is confirmed by three cooperating shortcuts:
+The sealed L06 tree proves three incompatible ownership signals:
 
-1. `buildPendingFlightRecorderDemo` in `db/flight-recorder-demo.ts` constructs
-   the complete six-node graph in memory, seals every artifact, and returns
-   every node already marked `succeeded`.
-2. `materializePendingDemo` in `db/flight-recorder.ts` consumes those completed
-   objects and batches `pending -> running -> succeeded` writes plus artifact
-   inserts without invoking a node runner or scheduling dependencies.
-3. `AC-06` in `tests/flight-recorder-release.test.mjs` calls
-   `planReasoningRecovery` over fixture-built objects. It proves classification
-   logic, but not persisted interruption and resumed runtime execution.
+1. `db/flight-recorder.ts` imports `buildFlightRecorderSeed` and fixture keys
+   from `db/flight-recorder-demo.ts`, then persists the seed and invokes the
+   L06 graph runtime. This is the actual product path.
+2. `tests/flight-recorder-release.test.mjs` also imports the durable demo
+   builder, while `tests/flight-recorder-data.test.mjs` and
+   `tests/flight-recorder-build.test.mjs` import separate builders from
+   `factory/02_data/fixtures/*`.
+3. A normal factory seal archives and replaces the numbered stage folders.
+   Those durable tests then fail at module resolution even though product code
+   is unchanged. The factory lifecycle therefore changes the apparent product
+   proof surface, and the independently editable fixture definitions can drift
+   from the persisted runtime executor.
 
-The schema already models the six permitted node keys, attempts, node states,
-artifacts, hashes, workspace ownership, and graph transitions. Those primitives
-are necessary but are not themselves an executor.
+There is a second, narrower duplication inside the durable tree:
+`buildPendingFlightRecorderDemo` constructs a precomputed six-node graph while
+the L06 runtime owns `REASONING_NODE_REGISTRY`. Precomputed legacy/migration
+fixtures may remain, but their topology, citations, and version identifiers
+must be derived from the runtime-owned definition or checked for exact parity.
 
-## User-visible promise
-
-For one authenticated workspace owner and one frozen onboarding-rescue trace,
-CrossSignal can execute the fixed reasoning graph, stop or fail visibly,
-resume only eligible incomplete work, and reconstruct which runtime node
-produced each artifact. The trace may enter `awaiting_approval` only after the
-synthesizer succeeds and the exact intent and policy rows are derived from its
-persisted artifact.
-
-The evaluator can distinguish:
-
-- actual runtime graph execution from fixture preconstruction;
-- a logical node from its individual execution attempts;
-- completed work from pending, leased, interrupted, failed, or skipped work;
-- executor truth from the truth mode of the evidence and generated content;
-- reasoning execution from later human approval and external effects.
-
-## Fixed graph contract
-
-The topology is code-owned, versioned as `crosssignal-fixed-graph-v1`, and
-cannot be supplied or changed by a request, model, fixture, or database row.
-The deterministic topological order is the table order below.
-
-| Node key | Required predecessors | Artifact kind | Bounded responsibility |
-|---|---|---|---|
-| `planner` | none | `plan` | Scope the reviewed onboarding-rescue question and name the evidence needed by later nodes. |
-| `quantitative` | `planner` | `analysis` | Analyze the declared activation evidence without inventing causal certainty. |
-| `qualitative` | `planner` | `analysis` | Analyze approved, redacted feedback and brand context. |
-| `experiment_design` | `planner` | `analysis` | Define the capped TEST cohort and pre-registered outcome rule. |
-| `skeptic` | `quantitative`, `qualitative`, `experiment_design` | `critique` | Challenge alternatives, missing evidence, and causal overreach. |
-| `synthesizer` | `planner`, `quantitative`, `qualitative`, `experiment_design`, `skeptic` | `intent_draft` | Produce the single bounded action draft consumed by deterministic intent construction. |
-
-Stage 03 may execute independent workers concurrently only if it proves the
-same persisted results and deterministic dependency checks. Sequential
-topological execution is acceptable and preferred for the first correction.
-
-## Runtime boundary
-
-### Entry
-
-The public runtime entry receives authenticated actor and workspace authority,
-then an exact `trace_id`. The database lookup must bind all three. The trace
-must own one frozen context snapshot and be in `context_frozen`, `reasoning`, or
-an explicitly recoverable graph state. A caller cannot submit node definitions,
-handler names, dependency edges, truth mode, policy, or filesystem paths.
-
-Starting execution creates or confirms the six logical nodes as `pending` and
-appends the transition from `context_frozen` to `reasoning`. Initialization is
-idempotent for `{workspace_id, trace_id, graph_version}`.
-
-### Logical identity and attempts
-
-The logical node identity is `{workspace_id, trace_id, graph_version,
-node_key}`. Each execution attempt has a stable identity including a positive
-attempt number. A retry or expired-lease recovery never overwrites a terminal
-attempt; it appends a new attempt or equivalent immutable attempt evidence.
-
-The input hash for an attempt is the canonical SHA-256 of:
-
-- workspace and trace identity;
-- frozen context manifest hash and trace truth mode;
-- graph version, node key, node contract/handler version;
-- ordered predecessor node keys and their persisted output hashes.
-
-The executor must reject context drift, predecessor drift, missing artifacts,
-undeclared citations, cross-workspace rows, and an input hash that does not
-recompute exactly.
-
-### Claim, invoke, and finalize
-
-Runnable means every required predecessor has one succeeded canonical attempt
-with a valid persisted artifact and no required predecessor is failed. The
-executor uses a database compare-and-set claim with an opaque run/lease token
-and deterministic expiry. Only the claim owner may finalize that attempt.
-
-After claiming, the runtime invokes the code-owned handler. The handler receives
-only the frozen context sources and persisted predecessor artifacts declared by
-the fixed registry. It returns structured content, evidence citations, handler
-version, timing, and measured usage/cost when available. Missing cost data is
-stored and presented as unknown; it is never invented.
-
-Success finalization is atomic across the canonical reasoning artifact, the
-attempt's `succeeded` projection, and its append-only trace event. Content hash
-and citations are validated before the write. A duplicate finalization with
-the same identity and content is a no-op; different content fails closed.
-
-### Completion and authority handoff
-
-Only a successfully persisted synthesizer artifact may be used to construct an
-action intent. After all six nodes succeed, one transaction or guarded batch:
-
-1. confirms the exact synthesizer artifact and graph version;
-2. creates the immutable intent and deterministic policy decision through the
-   existing trusted contracts;
-3. promotes that intent as the trace's active intent; and
-4. transitions the trace from `reasoning` to `awaiting_approval` with an
-   append-only event.
-
-No approval grant or effect attempt is created by graph execution. The sealed
-L08 active-intent authority rules remain unchanged and must pass in full.
-
-## Interruption, duplication, and failure
-
-### Interruption between nodes
-
-On restart, succeeded attempts and their artifacts are preserved byte-for-byte.
-The executor recomputes readiness from persisted state and claims only pending
-nodes whose predecessors succeeded. It does not rebuild completed fixture
-objects or replay their handlers.
-
-### Interruption while running
-
-An unexpired claim is busy and cannot be stolen. Once a deterministic lease has
-expired, recovery compare-and-sets the abandoned running attempt to terminal
-`failed` with stable code `l06_interrupted_attempt`, appends recovery evidence,
-and creates the next pending attempt with a recomputed input hash. Reasoning
-handlers have no external side effects; this recovery rule must never be reused
-for approval or effect dispatch.
-
-### Duplicate and concurrent invocation
-
-Two invocations against the same workspace and trace may observe progress, but
-only one claim may win for a logical node. They must converge to one canonical
-successful artifact per node, one completion event per successful attempt, one
-intent/policy pair, and no duplicate canonical sequence or idempotency key.
-
-### Handler or contract failure
-
-A handler exception, invalid artifact, secret-like value, undeclared citation,
-or finalize CAS loss is persisted visibly. Non-recoverable handler failure
-marks the attempt and trace `failed`; downstream nodes become `skipped` or stay
-non-runnable according to the accepted data contract. It creates no intent,
-policy, approval, grant, effect, or outcome. There is no blind retry. A new
-human-authorized run or an explicitly defined recovery action is required.
-
-## Persistence and trace evidence
-
-At minimum, the durable trace must reconstruct:
-
-- graph version and fixed topology;
-- logical node key, attempt identity, input hash, handler version, state, and
-  claim/recovery disposition;
-- predecessor identities and exact output hashes used as inputs;
-- start/completion/failure timestamps and stable error code;
-- canonical artifact kind, content hash, evidence citations, and inherited
-  truth mode;
-- append-only graph events with workspace, trace, subject, actor, idempotency
-  key, and ordered sequence;
-- whether cost/usage was measured or remains unknown.
-
-Schema changes are permitted only when Stage 02 proves existing rows cannot
-represent the claim, attempt, or event invariants. Migration must preserve all
-valid L08 data, fail atomically on invalid history, and prepare idempotently.
-
-## Truth and claims
-
-- `FIXTURE` evidence and deterministic fixture handlers stay `FIXTURE` in the
-  database, API snapshot, UI, verification report, and demo script.
-- "Runtime executed" describes the executor path, not the truth of the
-  business evidence or a claim that a production model/provider ran.
-- `TEST` and `LIVE` are permitted only when their real adapters and provenance
-  are directly observed and independently verified.
-- Fixture-built golden objects remain valid test oracles but cannot satisfy an
-  acceptance criterion requiring persisted runtime execution.
-- Comprehensive authority/cost-history repair remains L04; this run records
-  executor evidence honestly but does not claim to close L04.
-
-## Acceptance criteria
-
-- **AC-L06-01 — runtime replacement:** the product path no longer materializes
-  precomputed succeeded reasoning nodes and artifacts as execution. A test
-  proves each persisted success came from an invoked runtime handler.
-- **AC-L06-02 — fixed topology:** exactly the six registered nodes execute with
-  the dependencies and topological order declared above; caller-supplied nodes,
-  edges, handlers, graph versions, or arbitrary DAGs fail closed.
-- **AC-L06-03 — exact inputs:** every attempt input hash recomputes from the
-  frozen context, node/handler version, truth mode, and ordered predecessor
-  hashes. Context or predecessor drift blocks execution with zero artifact.
-- **AC-L06-04 — durable lifecycle:** persisted evidence shows pending, claimed
-  running, and terminal state transitions plus one validated artifact and
-  append-only event for each successful attempt.
-- **AC-L06-05 — between-node resume:** an injected stop after any completed node
-  resumes from the database, preserves completed IDs/hashes/timestamps, and
-  invokes only remaining eligible handlers.
-- **AC-L06-06 — running-node recovery:** an injected crash after claim leaves a
-  visible running attempt; an unexpired claim is not stolen; deterministic
-  expiry closes it as `l06_interrupted_attempt` and a later attempt completes
-  without overwriting history or duplicating the canonical artifact.
-- **AC-L06-07 — concurrent idempotency:** two barrier-controlled executor calls
-  converge to six canonical successful artifacts, one intent/policy pair, and
-  unique ordered/idempotent events with no partial duplicate writes.
-- **AC-L06-08 — fail closed:** an injected handler error, invalid artifact,
-  secret-like content, or undeclared citation records a visible failure,
-  prevents downstream synthesis, and leaves zero intent, policy, grant, effect,
-  or outcome rows.
-- **AC-L06-09 — workspace authority:** exact actor/workspace/trace lookup and
-  database constraints reject cross-workspace reads, claims, artifacts, events,
-  and direct writes without changing either workspace.
-- **AC-L06-10 — truth-mode honesty:** every runtime, API, UI, report, and demo
-  surface distinguishes actual executor activity from `FIXTURE` evidence and
-  makes no production-model, integration, exactly-once, or causal claim.
-- **AC-L06-11 — guarded handoff:** only the persisted successful synthesizer
-  artifact creates the immutable active intent and policy; incomplete or failed
-  graphs cannot reach `awaiting_approval`; graph execution never grants approval
-  or dispatches an effect.
-- **AC-L06-12 — migration safety:** if persistence changes, empty, current L08,
-  interrupted, completed, and invalid-history databases are covered; invalid
-  history rolls back atomically and cold preparation is idempotent.
-- **AC-L06-13 — regression safety:** L08 deterministic races and ten direct
-  database attacks still pass, along with build, lint, full relevant tests,
-  migrations, and diff inspection.
-- **AC-L06-14 — claim discipline:** release evidence corrects only L06, states
-  measured versus unknown executor cost honestly, and leaves L20, L04, and L14
-  open for separate governed runs.
-
-## Required deterministic schedules
-
-1. **Cold success:** initialize from frozen context, invoke six handlers,
-   persist six artifacts/events, derive the synthesizer-bound active intent,
-   and stop at `awaiting_approval` with zero grant/effect.
-2. **Stop and resume:** stop after each possible successful node boundary;
-   rerun; previously completed handler counts remain one and final hashes match
-   the uninterrupted run.
-3. **Claim and crash:** pause after a worker claim; duplicate call observes busy;
-   advance deterministic time past expiry; recovery closes the old attempt and
-   completes a later attempt exactly once.
-4. **Concurrent calls:** pause the first call before claim/finalize and start a
-   second call; every interleaving converges without duplicate canonical rows.
-5. **Skeptic failure:** upstream work remains visible, skeptic fails,
-   synthesizer does not run, trace fails, and no authority/effect rows exist.
-6. **Input drift:** mutate context or predecessor hash through an accepted test
-   seam; execution fails before handler invocation and artifact creation.
-7. **Tenant attack:** attempt cross-workspace invocation and direct database
-   insertion/update for node, artifact, claim, and event relations; all fail
-   closed with no foreign mutation.
-8. **L08 regression:** run both edit/authorization race schedules and all ten
-   L08 direct-database attacks unchanged.
-
-Tests must use explicit promise barriers or deterministic clocks. Wall-clock
-sleeps and probabilistic races are not acceptable evidence.
-
-## Scope and non-goals
-
-### In scope
-
-- The fixed six-node runtime registry and executor.
-- Persisted readiness, claim, attempt, artifact, event, failure, and recovery
-  behavior required by the acceptance criteria.
-- Minimal schema/migration and UI/API changes needed to expose truthful runtime
-  evidence.
-- Deterministic FIXTURE handlers that prove orchestration without claiming a
-  production model integration.
-- Preservation of the sealed L08 authority correction.
-
-### Out of scope
-
-- Arbitrary DAG definitions, dynamic node registration, agent swarms, generic
-  queues, workflow builders, or user-authored prompts.
-- New external connectors, production model/provider claims, background fleet
-  scheduling, or production-scale observability.
-- Approval redesign, effect retries, causal inference, or self-modifying policy.
-- L20 fixture/runtime drift, L04 complete authority/cost history, and L14
-  unresolvable-trace repair except for explicit non-regression.
-
-## Declared input hashes
+## Input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/01_spec/CONTEXT.md` | `e4341599a1d85f531806381787f9fa15bc5cee9e827ec9a113cae9d3f37488d0` |
+| `factory/01_spec/CONTEXT.md` | `f1a29a11777dc7d4b9b7bdf44d0f5159e5b4db320778de853dcbf0b357727047` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `db/flight-recorder.ts` | `ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6` |
-| `db/flight-recorder-demo.ts` | `74a8d6b28ddab26e1392e3bf43318ff3e7290ba4950d2806ab98efbb5387c369` |
-| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
-| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
-| `tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
-| `tests/flight-recorder-release.test.mjs` | `65d341700d5378e79be376656ee0a8380108c3891ff560ea5ae912985ddc1e8c` |
+| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
+| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
+| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
+| `tests/flight-recorder-data.test.mjs` | `18ea70aead27579460bcf01157953a3f8337f3a5eafde523b9b55b36a774f2b1` |
+| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
+| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
 
-## Review questions
+The delegated human directive supplies the L20 label and sequencing. Read-only
+benchmark-stash inspection corroborated the lifecycle failure; no stash is an
+active dependency and no stash content is copied into this run.
 
-1. Is the fixed dependency topology above the intended bounded graph?
-2. Is deterministic lease expiry plus immutable attempt history acceptable for
-   recovery from a claimed node?
-3. Is sequential topological execution acceptable for the first release, with
-   concurrency treated only as an optional implementation that must preserve
-   identical persisted behavior?
-4. Does the FIXTURE truth boundary make the runtime claim precise enough?
-5. Are the explicit deferrals of L20, L04, and L14 acceptable?
+## Ownership contract
+
+| Concern | Durable authority | Allowed factory role | Forbidden dependency |
+|---|---|---|---|
+| Fixture keys, truth labels, evidence, policy, outcome, recipient cap, replay identity | `db/flight-recorder-demo.ts` or one extracted durable fixture module consumed by it | Import and verify the durable definition; record provenance and hashes | A runtime or durable test importing `factory/NN_stage/**` |
+| Fixed graph topology, citations, handler/schema versions | `db/flight-recorder-graph.ts` or one extracted pure durable graph-definition module | Assert exact projection/parity | A second independently editable node registry in a factory fixture or demo builder |
+| Persistence and exact tenant-scoped reset | `db/flight-recorder.ts` | Exercise through a controlled adapter/harness | A factory-owned SQL/reset package treated as runtime authority |
+| Legacy `precomputed_fixture` compatibility | Durable migration/test helper derived from the same definitions | Supply labeled migration vectors | Presenting precomputed rows as runtime execution proof |
+| Factory evidence | Current numbered stage outputs | Bind canonical inputs and observed results | Application, worker, or product module loading factory outputs at runtime |
+
+Factory artifacts remain durable review records after acceptance, but they are
+not product dependencies. Archiving or replacing an active run must be
+behaviorally irrelevant to application startup, runtime execution, reset, and
+the durable fixture/data/build/release test suites.
+
+## Observable behavior
+
+For the same `userId`, `workspaceId`, and ISO time, the durable fixture builder
+produces byte-stable canonical JSON, hashes, identities, ordered evidence,
+context manifest, outcome definition, intent inputs, and truth labels. Runtime
+materialization persists that seed and the L06 executor creates graph attempts
+from the one registered topology. UI and evidence continue to distinguish
+`FIXTURE`, `TEST`, runtime execution, and legacy `precomputed_fixture` rows.
+
+Reset remains authenticated by its caller, workspace-scoped, and exact: it may
+delete only the canonical FIXTURE trace matching the durable fixture and trace
+keys, preserves workspace membership and authority controls, and rebuilds via
+the same durable source. Missing, renamed, or archived factory directories do
+not affect the result.
+
+## Compatibility and migration
+
+- No database migration is expected for L20. Existing L06/L08 rows and the
+  `execution_mode = 'precomputed_fixture' | 'runtime'` distinction remain valid.
+- Export renames must use an intentional compatibility window or update every
+  durable consumer atomically; stage-numbered names such as `STAGE_03_*` must
+  not remain the public source-of-truth vocabulary after the correction.
+- Existing persisted fixture keys must remain stable unless Stage 02 proves an
+  explicit reset/migration plan. Silent key or hash changes are rejected.
+- Benchmark stashes remain untouched and outside release-head coverage.
+
+## Failure behavior
+
+- Any import from `app/`, `db/`, or `worker/` into `factory/` is a release
+  blocker.
+- Any import by the durable fixture/data/build/release suites into numbered
+  factory fixture paths is a release blocker. Factory-contract tests may still
+  inspect the factory as factory infrastructure.
+- A factory projection whose declared durable-source hash or exported values
+  do not match fails closed with an L20-named verification error.
+- Duplicate graph topology, citation, handler-version, fixture-key, truth-mode,
+  or reset-scope definitions without an exact parity assertion fail review.
+- Determinism, truth labeling, tenant isolation, or exact reset regressions fail
+  before build acceptance; no fallback silently loads an archived fixture.
+
+## Acceptance criteria
+
+- **AC-L20-01 — dependency direction:** `app/`, `db/`, and `worker/` contain no
+  imports from `factory/`; the durable data, build, and release suites contain
+  no imports from `factory/02_data/fixtures`.
+- **AC-L20-02 — one fixture authority:** fixture keys, evidence payloads,
+  policy/outcome inputs, truth modes, caps, and deterministic seed construction
+  have one durable product owner consumed by runtime and durable tests.
+- **AC-L20-03 — one graph authority:** runtime and any labeled legacy
+  `precomputed_fixture` builder derive topology, citations, and versions from
+  one durable graph definition, with a negative parity test for drift.
+- **AC-L20-04 — deterministic contract:** two builds with identical actor,
+  tenant, and clock inputs are deeply equal and retain stable hashes, ordering,
+  FIXTURE/TEST labels, and bounded recipient/cost policy.
+- **AC-L20-05 — runtime proof:** an isolated migrated database materializes the
+  canonical seed through `db/flight-recorder.ts`, runs the persisted graph, and
+  resolves six succeeded runtime nodes and their artifacts under one tenant and
+  trace without reading a factory file.
+- **AC-L20-06 — reset safety:** exact reset removes and reconstructs only the
+  caller's canonical FIXTURE trace; another tenant, authority control,
+  membership, non-fixture trace, and prior release evidence remain unchanged.
+- **AC-L20-07 — seal-transition resilience:** in an isolated copy with numbered
+  factory fixtures absent or replaced by fresh templates, application build
+  and durable L20 tests still resolve and pass.
+- **AC-L20-08 — projection drift fails closed:** the Stage 02 executable data
+  package binds the durable source hashes and demonstrates a named failure when
+  fixture or graph projections disagree; it is never a second authority.
+- **AC-L20-09 — compatibility and scope:** legacy precomputed rows remain
+  explicitly labeled, no schema/history rewrite occurs, benchmark stashes are
+  preserved, and the release makes no L04 authority-history or L14 endpoint
+  change.
+
+## Verification matrix
+
+| Case | Required observation |
+|---|---|
+| Canonical deterministic build | Repeated identical inputs produce deep-equal fixture output and hashes |
+| Runtime materialization | Persisted seed and six runtime graph nodes resolve under one trace |
+| Missing factory fixture | Durable imports, targeted tests, and application build still resolve |
+| Projection mutation | Named L20 verifier error; zero fallback to archive or stale copy |
+| Graph-definition mutation | Parity check fails before handler execution |
+| Cross-tenant reset | Access denied or zero mutation in both tenants |
+| Exact reset | Canonical tenant trace rebuilds; authority/workspace/non-fixture rows persist |
+| Truth-label regression | FIXTURE/TEST/precomputed/runtime distinction test fails |
+| Legacy migration fixture | Existing precomputed history remains readable and explicitly non-runtime |
+| Secret and archive scan | No secret-like fixture value and no active `_archive/` import |
+
+## Delivery sequence
+
+1. Stage 02 creates the executable ownership/projection contract and negative
+   drift fixtures, binding the durable baseline without changing runtime code.
+2. Stage 03 moves all durable consumers to the canonical product source,
+   removes duplicate definitions, and proves runtime/reset behavior.
+3. Stage 04 runs the full L20 matrix, build, lint, migration compatibility,
+   tenant isolation, archive-independence, and secret scans.
+4. Stage 05 binds reviewer-ready evidence to the final head and cold-runs the
+   fixture without hidden repair.
+
+## Non-goals
+
+- Do not implement L04 append-only authority-control history or trace
+  projection completeness.
+- Do not implement the L14 authenticated trace-resolution endpoint.
+- Do not redesign the fixed graph, add arbitrary DAG control, add a live
+  provider, change authority semantics, rewrite persisted history, or broaden
+  the fixture into production data.
+- Do not pop, apply, rewrite, or delete any benchmark stash.
+
+## Human decision requested
+
+Accept this specification only if durable product code is clearly authoritative,
+factory projections cannot become a second source, seal transitions cannot
+break product proof, and the L20 boundary stays separate from L04 and L14.

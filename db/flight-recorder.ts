@@ -11,11 +11,11 @@ import {
 import {
   buildDemoIntent,
   buildFlightRecorderSeed,
-  STAGE_03_FIXTURE_KEY,
-  STAGE_03_SPENDING_CAP_USD,
-  STAGE_03_TRACE_KEY,
+  FLIGHT_RECORDER_FIXTURE_KEY,
+  FLIGHT_RECORDER_SPENDING_CAP_USD,
+  FLIGHT_RECORDER_TRACE_KEY,
 } from "./flight-recorder-demo";
-import { runPersistedReasoningGraph } from "./flight-recorder-graph";
+import { reasoningRuntimeNow, runPersistedReasoningGraph } from "./flight-recorder-graph";
 import { getD1 } from ".";
 import { ensureDatabaseCompatibility } from "./migrations";
 import { ownerCanAccessWorkspace } from "./workspaces";
@@ -158,7 +158,7 @@ async function findTrace(workspaceId: string): Promise<TraceRow | null> {
       FROM flight_traces
       WHERE workspace_id = ? AND fixture_key = ? AND trace_key = ?
       LIMIT 1`)
-    .bind(workspaceId, STAGE_03_FIXTURE_KEY, STAGE_03_TRACE_KEY)
+    .bind(workspaceId, FLIGHT_RECORDER_FIXTURE_KEY, FLIGHT_RECORDER_TRACE_KEY)
     .first<TraceRow>();
 }
 
@@ -220,8 +220,12 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
     return;
   }
   const d1 = getD1();
-  const demo = await buildFlightRecorderSeed({ userId, workspaceId });
-  const collectingPayload = await sealCanonical({ fixtureKey: STAGE_03_FIXTURE_KEY });
+  const demo = await buildFlightRecorderSeed({
+    userId,
+    workspaceId,
+    now: reasoningRuntimeNow(),
+  });
+  const collectingPayload = await sealCanonical({ fixtureKey: FLIGHT_RECORDER_FIXTURE_KEY });
   const frozenPayload = await sealCanonical({
     manifestHash: demo.contextSnapshot.manifestHash,
   });
@@ -260,7 +264,7 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
       actorId: userId,
       payloadJson: collectingPayload.canonicalJson,
       payloadHash: collectingPayload.sha256,
-      idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${workspaceId}:trace-event:1`,
+      idempotencyKey: `${FLIGHT_RECORDER_FIXTURE_KEY}:${workspaceId}:trace-event:1`,
       occurredAt: demo.now,
     }),
     d1
@@ -303,7 +307,7 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
       actorId: "crosssignal-context-v1",
       payloadJson: frozenPayload.canonicalJson,
       payloadHash: frozenPayload.sha256,
-      idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${workspaceId}:trace-event:2`,
+      idempotencyKey: `${FLIGHT_RECORDER_FIXTURE_KEY}:${workspaceId}:trace-event:2`,
       occurredAt: demo.now,
     }),
   ];
@@ -681,7 +685,7 @@ export async function readFlightRecorderSnapshot(
       subject: intentRow.subject,
       body: intentRow.body,
       cohortCap: Number(intentRow.cohort_cap),
-      spendingCapUsd: STAGE_03_SPENDING_CAP_USD,
+      spendingCapUsd: FLIGHT_RECORDER_SPENDING_CAP_USD,
       expiresAt: intentRow.expires_at,
       canonicalPayloadHash: intentRow.canonical_payload_hash,
       recipientSetHash: intentRow.recipient_set_hash,
@@ -691,7 +695,7 @@ export async function readFlightRecorderSnapshot(
     },
     policy: {
       verdict: policy.verdict,
-      plainEnglish: `Send this email to these ${recipients.length} people. Cost is capped at $${STAGE_03_SPENDING_CAP_USD.toFixed(2)}. Do you authorize this action?`,
+      plainEnglish: `Send this email to these ${recipients.length} people. Cost is capped at $${FLIGHT_RECORDER_SPENDING_CAP_USD.toFixed(2)}. Do you authorize this action?`,
       evaluatorVersion: policy.evaluator_version,
     },
     approval: grant
@@ -970,7 +974,7 @@ export async function authorizeAndExecute(input: {
           providerMode: "TEST",
           accepted: intent.cohortCap,
           receiptId: `fixture-email-${effectId.slice(0, 8)}`,
-          spendUsd: STAGE_03_SPENDING_CAP_USD,
+          spendUsd: FLIGHT_RECORDER_SPENDING_CAP_USD,
         }
       : {
           truthMode: "FIXTURE",
@@ -1222,7 +1226,7 @@ export async function resetFlightRecorderFixture(
     const deleted = await getD1()
       .prepare(`DELETE FROM flight_traces
         WHERE id = ? AND workspace_id = ? AND fixture_key = ? AND truth_mode = 'FIXTURE'`)
-      .bind(trace.id, workspaceId, STAGE_03_FIXTURE_KEY)
+      .bind(trace.id, workspaceId, FLIGHT_RECORDER_FIXTURE_KEY)
       .run();
     if (!deleted.success) throw new Error("The exact fixture trace could not be reset.");
   }

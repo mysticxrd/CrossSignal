@@ -1,33 +1,34 @@
 ---
 type: human-gate
 stage: 03_build
+unit: fixture-runtime-source-of-truth-correction
 gate_status: closed
 decision: accepted
-reviewer: owner
-reviewed_at: 2026-08-23T19:58:47.9565396Z
-build_evidence_sha256: f196e33acd0961016cd2a6b5857f9d09781ee72896fc156c8c22f50f577b67bc
-verification_sha256: 501653819f12cae784ef879e93c431f2cdead33a7f8bf88ac0d2667faaa335d2
+reviewer: project-owner
+reviewed_at: 2026-08-25T00:07:28.3720439+05:30
+build_evidence_sha256: 58ad6f35dc65a5f82ef219d9cd01522cb282bc64a4de548e8134890689aba3d2
+verification_sha256: 725dcbbdca783739446e714fbaecf605f1662ca2b6d69c1d0cfc0ec87df5aadf
 ---
 
-# Stage 03 human gate
+# L20 build human gate
 
-The owner accepted Stage 03 after reviewing the bound build and verification
-evidence.
+Stage 03 is complete and waiting for a human decision. Do not begin Stage 04
+until this record is closed with `decision: accepted`.
 
 ## Review checklist
 
-- [x] The product seed path no longer materializes precomputed succeeded nodes.
-- [x] All six fixed nodes execute through durable runtime attempts and FIXTURE
-  handlers with predecessor-derived input hashes.
-- [x] Resume, expiry recovery, concurrency, handler failure, invalid artifact,
-  tenant, and input-drift schedules match the accepted contract.
-- [x] Legacy rows remain `precomputed_fixture`; runtime rows are explicitly
-  `runtime`.
-- [x] Synthesizer success creates one intent/policy and zero grant/effect rows.
-- [x] The two L08 races and ten L08 direct attacks remain passing.
-- [x] Unknown executor cost and the FIXTURE truth boundary are explicit.
-- [x] L20, L04, and L14 remain open.
+- [x] The durable product, not a numbered factory fixture, owns fixture identity.
+- [x] Runtime and precomputed projections derive from one six-node graph definition.
+- [x] Persisted fixture keys, spending cap, and FIXTURE/TEST labels are preserved.
+- [x] Durable product tests remain runnable after the active factory is sealed.
+- [x] Exact reset scope and runtime persistence are proven through product tests.
+- [x] The fourteen L06 database-attack cases live under durable test fixtures.
+- [x] No migration, L04 authority-history, L14 endpoint, archive, or benchmark stash changed.
+- [x] `node factory/03_build/verify.mjs` passes against the hashes above.
 
-## Reviewer action
+## Reviewer record
 
-Accepted by the owner. The bound hashes were not changed.
+- Decision: `accepted`
+- Reviewer: `project-owner`
+- Reviewed at: `2026-08-25T00:07:28.3720439+05:30`
+- Corrections: `none recorded`

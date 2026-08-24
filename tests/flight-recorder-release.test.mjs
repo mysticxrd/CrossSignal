@@ -336,17 +336,19 @@ test("AC-07 rejects injection, undeclared context, duplicate order, and ambiguou
 });
 
 test("AC-08 keeps truth modes and cold replay instructions unmistakable", async () => {
-  const [ui, evidence, graph] = await Promise.all([
+  const [ui, demo, graph, graphDefinition] = await Promise.all([
     readFile(new URL("app/CrossSignalApp.tsx", root), "utf8"),
-    readFile(new URL("factory/03_build/output/BUILD_EVIDENCE.md", root), "utf8"),
+    readFile(new URL("db/flight-recorder-demo.ts", root), "utf8"),
     readFile(new URL("db/flight-recorder-graph.ts", root), "utf8"),
+    readFile(new URL("db/flight-recorder-graph-definition.ts", root), "utf8"),
   ]);
   assert.match(ui, /TruthBadge mode="FIXTURE"/);
   assert.match(ui, /TruthBadge mode="TEST"/);
   assert.match(ui, /correlated, not proven/i);
-  assert.match(evidence, /persisted runtime executor/i);
-  assert.match(evidence, /FIXTURE/);
-  assert.match(evidence, /unknown cost/i);
+  assert.match(demo, /truthMode: "FIXTURE"/);
+  assert.match(demo, /providerMode: "TEST"/);
+  assert.match(graphDefinition, /crosssignal-fixed-graph-v1/);
+  assert.equal((graphDefinition.match(/nodeKey:/g) ?? []).length, 6);
   assert.match(graph, /executionMode: "runtime"/);
   assert.match(graph, /measuredCostUsd: null/);
 });

@@ -1,128 +1,90 @@
 ---
-type: stage-output
+type: build-evidence
 stage: 03_build
-status: review-ready
-unit: persisted-graph-executor-correction
-finding: L06
+unit: fixture-runtime-source-of-truth-correction
+finding: L20
+status: proposed
 ---
 
-# L06 persisted graph executor build evidence
+# L20 durable fixture ownership build evidence
 
 ## Outcome
 
-The product path now uses a persisted runtime executor for the fixed six-node
-CrossSignal graph. It no longer writes precomputed succeeded reasoning objects
-as execution. The seed path persists only the FIXTURE evidence, frozen context,
-trace, and pre-registered outcome definition; the executor then creates,
-claims, invokes, validates, and finalizes each runnable attempt from durable
-state.
+The durable product tree is now the sole source of runtime fixture identity and
+fixed-graph topology. Numbered factory fixtures are projections used only by
+the governed run; application code and durable Flight Recorder tests no longer
+import them. Persisted fixture keys and truth labels remain unchanged.
 
-The executor is real orchestration over deterministic FIXTURE handlers. It is
-not evidence of a production model or provider. Executor cost is unknown: each
-artifact persists `usage.status: unknown` and `measuredCostUsd: null`.
-
-## Implemented slice
-
-- `db/flight-recorder-graph.ts` owns the versioned code registry,
-  predecessor-derived inputs, runtime handler invocation, lease claims,
-  finalization, recovery, failure, and guarded handoff.
-- `db/flight-recorder.ts` seeds frozen context and calls the executor; the old
-  batch loop over `demo.reasoningNodes` is absent from the product path.
-- `db/flight-recorder-demo.ts` exposes a seed-only builder while retaining the
-  precomputed builder solely as a legacy test oracle.
-- `drizzle/0007_l06_persisted_graph_executor.sql` adds runtime provenance,
-  predecessor inputs, leases, completion-token hashes, partial uniqueness,
-  stable database errors, legacy backfill, and migration assertions.
-- The snapshot playbook exposes `runtime` versus `precomputed_fixture`, graph
-  version, handler version, and attempt number. It never exposes lease tokens.
-
-## Persisted runtime proof
-
-The cold product schedule persists exactly six successful runtime attempts and
-six canonical artifacts under `crosssignal-fixed-graph-v1`. Every attempt has a
-stable logical identity, handler version, canonical predecessor-output JSON,
-attempt-specific input hash, timestamps, and terminal output hash. Every
-artifact records FIXTURE truth mode and unknown cost explicitly.
-
-The successful synthesizer artifact is the only source accepted by the intent
-handoff. Graph completion creates one intent and one deterministic policy,
-promotes the active intent through the sealed L08 trigger, and stops at
-`awaiting_approval`. It creates zero grants, effects, observations, or
-assessments.
-
-## Deterministic schedules
-
-| Schedule | Product/database evidence |
-|---|---|
-| Cold success | Six handler invocations, attempts, artifacts, and graph events; one intent/policy; zero grant/effect/outcome rows. |
-| Stop and resume | Boundaries 1–5 preserve completed rows byte-for-byte and invoke every handler exactly once. |
-| Claim and crash | An unexpired claim is busy; expiry leaves attempt 1 failed with `l06_interrupted_attempt`; attempt 2 succeeds. |
-| Concurrent calls | Two barrier-controlled calls converge to six artifacts, one intent/policy pair, gap-free sequences, and unique idempotency keys. |
-| Skeptic failure | Four upstream artifacts remain; handler, secret, and undeclared-citation variants fail visibly with no synthesizer or authority. |
-| Input drift | The database rejects persisted input mutation with `l06_input_drift` before handler invocation or artifact creation. |
-| Tenant attack | Runtime scope and database ownership reject foreign workspace/trace operations without mutation. |
-| L08 regression | Both production race schedules and all ten L08 direct attacks pass on the current product path. |
-
-All fourteen Stage 02 direct-database attacks execute against an in-memory
-SQLite database with the checked-in migration chain. Each produces its named
-stable L06 error and an exact before/after projection proves zero partial
-mutation.
-
-## Migration proof
-
-Migration `0007` covers empty, current L08, interrupted, completed, and invalid
-history. Existing reasoning rows backfill as `precomputed_fixture` with a
-legacy graph/handler version. A legacy running row becomes a visible failed
-`l06_interrupted_attempt`; it is never relabeled runtime. Duplicate canonical
-success history aborts atomically as `migration_l06_invalid_history`, and the
-schema remains unchanged after rollback.
-
-## Authority and regression boundary
-
-The approval grant, external-effect, kill-switch, payload-binding, and active
-intent paths were not weakened. The sealed L08 migration matrix, two
-barrier-controlled production races, and ten direct database attacks pass in
-the same Stage 03-owned test file as L06.
-
-The unscoped workspace lint command also sees three existing unused-variable
-errors in the user's out-of-scope, untracked `benchmarks/` work. Those files
-were not changed. Scoped lint over the product, worker, owned tests, and active
-factory scripts passes.
-
-The legacy `tests/flight-recorder-data.test.mjs` still imports the archived
-onboarding fixture. That is the already-open L20 fixture/runtime drift and is
-not used as L06 runtime evidence. The current Stage 02 executable oracle still
-passes at its accepted gate; its baseline file hashes are expected to differ
-after this downstream build.
-
-## Claim discipline
-
-This stage corrects L06 only. L20, L04, and L14 remain open for separate
-governed runs. It makes no arbitrary-DAG, production-model, live-integration,
-exactly-once delivery, production-scale scheduling, or causal claim.
-
-## Declared input bindings
+## Accepted input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/03_build/CONTEXT.md` | `8471a47ce278431b010eea0084b74c5e37d4e6ac173535952f44fc2573ffbd23` |
-| `factory/02_data/output/DATA_PACKAGE.md` | `9fbda72f20659df210d95a6be5b1a13dbe4fde288461d5f435fcfdc8164bbaa6` |
-| `factory/02_data/output/HUMAN_GATE.md` | `965ecd2509782de2a1ecabaf18eee311d9c7bb2c75980711d2da6648d4291c29` |
-| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
+| `factory/03_build/CONTEXT.md` | `a07fae976105a3828daf955bd690ca0aae5f6876befed3f081148b6dd739072f` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `c59eca1d8f968d7b103f9f2bebc7bd44e066d52baf7747220078c077273b33da` |
+| `factory/02_data/output/HUMAN_GATE.md` | `5a1b649ae622d76f0f960e8a7da2afb6964004978393ec8e0273a8f5a5d2adbc` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
 
-## Implementation bindings
+## Durable output bindings
 
-| File | SHA-256 |
+| Output | SHA-256 |
 |---|---|
-| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
-| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
-| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
-| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
-| `db/flight-recorder-schema.ts` | `aaf5a11d3f8e2a77c1d358891248c246551f9670493a4b0e8fb32b1e579ae9cb` |
-| `db/migrations.ts` | `7d7512db9c1e49eeffa2089b6fb6ffee1c5071b899958d66ff3c8e198d5b1062` |
-| `drizzle/0007_l06_persisted_graph_executor.sql` | `4649dc761eb877d4fc708bd6e8928e04375ccc1021486024b893eb62bec1cf1c` |
-| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
-| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
-| `app/flight-recorder-types.ts` | `599890454757b677593540167c9359d2a6bd03b40bb361fc446128b58b4a1c24` |
+| `db/flight-recorder-demo.ts` | `40e489216a9dcb2d5ec9721ab70eae85c40cf39173a0e72a34dceaa63b6dd1ae` |
+| `db/flight-recorder-graph-definition.ts` | `31c0e55b72d2e4712b94c77e4e7cbd7b7d92638f9e0178979d16e952e4d30b39` |
+| `db/flight-recorder-graph.ts` | `248137ac1b37e252895ae4d4138a12062bd5c3bae8244c978f266c92de120cfd` |
+| `db/flight-recorder.ts` | `5f173de447f77c2eafa6aad607b3a4ce5d43836523453be292fb8961d5a5659a` |
+| `tests/fixtures/persisted-graph-executor.fixture.mjs` | `3c9f911d80704616ef926aff69e85334514ebf620021553845da738f4e2580f9` |
+| `tests/flight-recorder-data.test.mjs` | `09ccb1926136f3611d618f62742be8e08a2ac399d2a67e70515af7c381d25624` |
+| `tests/flight-recorder-build.test.mjs` | `0997721d66d69d8b66ee79f577ac1047a7d5af6f01ccba07d9fafa045c55b2a8` |
+| `tests/flight-recorder-release.test.mjs` | `4e406531692b62dfd506099e92107b05935bc191ac2795bb036de956b76b26d8` |
+
+## Implementation proof
+
+- `db/flight-recorder-graph-definition.ts` owns the graph, handler, artifact
+  versions and the ordered six-node registry.
+- Runtime execution and precomputed demo rows both derive from that registry;
+  the durable product contains exactly one registry definition.
+- Public TypeScript names no longer contain `STAGE_03_`; persisted values remain
+  `onboarding-rescue:stage03-v1` and `onboarding-rescue-stage03-v1` for row
+  compatibility.
+- The fourteen L06 direct-database attack vectors now live under
+  `tests/fixtures/` and survive factory seal/archive transitions.
+- Durable data, build, and release tests read durable product truth. They have
+  no numbered fixture, active factory evidence, or archive import.
+- Seed and runtime graph execution use one injectable runtime clock, preserving
+  deterministic lease behavior without changing production semantics.
+- Reset coverage still proves exact same-tenant FIXTURE deletion, cross-tenant
+  denial, and non-FIXTURE preservation through the existing authenticated
+  runtime boundary.
+
+## Executed verification
+
+| Check | Result |
+|---|---|
+| Durable Flight Recorder data/build/release suite | PASS — 66 tests, 0 failures |
+| Stage 02 executable import/projection/reset/seal cases | PASS — replayed by Stage 03 verifier |
+| Focused ESLint over all eight durable outputs | PASS — 0 errors |
+| Production `vinext build` | PASS — five environments built; route `/` emitted |
+| Product/test dependency scan | PASS — no active factory or archive imports |
+| Graph authority scan | PASS — one registry definition |
+| L04/L14 and migration scope | PASS — no endpoint, authority-history, or migration change |
+
+The repository-wide raw TypeScript diagnostic was also inspected. It remains
+unsuitable as an L20 gate because the project configuration includes excluded
+historical Eve sources and lacks the Cloudflare ambient declarations used by
+unmodified baseline files. It reported no error in any L20-owned product or
+test file. The production build and focused lint are the applicable compile and
+static checks for this stage.
+
+## Scope preservation
+
+No database migration, L04 authority-history implementation, L14 endpoint,
+archived release content, or benchmark stash was changed. The three benchmark
+stashes remain present and un-applied.
+
+## Human review requested
+
+Review the single graph definition, the durable fixture/test dependency
+direction, the persisted compatibility values and truth labels, and the exact
+reset/runtime test evidence. Stage 04 must not begin until this gate is
+accepted.

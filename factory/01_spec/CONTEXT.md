@@ -1,68 +1,68 @@
 ---
 type: stage-contract
-status: blank
 stage: 01_spec
-unit: persisted-graph-executor-correction
+unit: fixture-runtime-source-of-truth-correction
+status: active
 ---
 
-# 01_spec - specify actual bounded graph execution
+# 01_spec - bind fixture ownership to durable runtime truth
 
-One job: turn finding L06 into an accepted specification for executing the
-fixed reasoning graph at runtime instead of presenting fixture-built graph
-records as execution proof.
+One job: turn L20 fixture/runtime source-of-truth drift into one accepted,
+observable correction specification without changing product code or data.
 
 ## Inputs
 
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Observed baseline: `../../db/flight-recorder.ts`
 - Observed baseline: `../../db/flight-recorder-demo.ts`
-- Observed baseline: `../../db/flight-recorder-contracts.ts`
-- Observed baseline: `../../db/flight-recorder-schema.ts`
+- Observed baseline: `../../db/flight-recorder.ts`
+- Observed baseline: `../../db/flight-recorder-graph.ts`
+- Observed baseline: `../../tests/flight-recorder-data.test.mjs`
 - Observed baseline: `../../tests/flight-recorder-build.test.mjs`
 - Observed baseline: `../../tests/flight-recorder-release.test.mjs`
+- Stage-owned surface: `CONTEXT.md`
+- Stage-owned surface: `verify.mjs`
 - Stage-owned surface: `output/SPEC.md`
 - Stage-owned surface: `output/VERIFY.md`
 - Stage-owned surface: `output/HUMAN_GATE.md`
-- Stage-owned surface: `verify.mjs`
 
-The contract must stay inside the approved fixed planner / workers / skeptic /
-synthesizer graph. It must not introduce an arbitrary DAG engine, general
-agent orchestrator, new authority path, or unlabeled simulated execution.
-
-Do not load later stages, `_archive/`, unrelated product areas, or the source
-vault.
+The human task directive supplies the finding label and required sequence. The
+repository baseline supplies the observable defect and correction boundary.
+Do not load later stages, `_archive/`, dependency folders, generated build
+output, benchmark stash contents beyond read-only finding provenance, or the
+whole repository.
 
 ## Process
 
-1. Establish precisely where the current demo constructs graph evidence
-   without a runtime executor.
-2. Define the bounded runtime contract: node identities, dependencies, durable
-   state, resumability, failure behavior, evidence, costs, and truth labels.
-3. State observable acceptance criteria and explicit non-goals.
-4. Write the specification and verification record, then stop.
+1. Hash the contract, two shared references, and six observed baseline files.
+2. Specify one durable fixture source of truth and the allowed factory
+   projection boundary.
+3. Resolve ownership, compatibility, failure behavior, migration expectations,
+   acceptance criteria, verification cases, and explicit non-goals.
+4. Write `SPEC.md`, run the stage verifier, record evidence, and stop.
 
 ## Outputs
 
 - `output/SPEC.md`
 - `output/VERIFY.md`
-- `output/HUMAN_GATE.md`
+- `output/HUMAN_GATE.md` - reviewer-owned decision record
 
 ## Verify
 
-Create `verify.mjs` from the stage template conventions and import helpers from
-`../_lib/verify-kit.mjs`. Verification must prove declared-input coverage,
-stable acceptance-criterion identifiers, explicit interruption and duplicate
-handling, persisted evidence requirements, truth-mode honesty, and the bounded
-non-goals. Record exact commands, hashes, environment, results, and
-`status: passed | failed` in `output/VERIFY.md`.
+Run `node factory/01_spec/verify.mjs`. The verifier must bind every declared
+input and the specification by SHA-256, reject missing ownership or acceptance
+sections, reject `_archive/` as an active dependency, and leave the gate open
+for a person.
 
 ## Human gate
 
-The reviewer binds `SPEC.md` and `VERIFY.md` hashes and records `accepted`,
-`changes-requested`, or `rejected`. Do not begin Stage 02 without `accepted`.
+The reviewer confirms that the correction eliminates run-scoped imports from
+durable runtime/tests, retains fixture truth labeling and deterministic replay,
+and does not broaden into L04 or L14. Record reviewed hashes and choose
+`accepted`, `changes-requested`, or `rejected`. Do not begin Stage 02 without
+`accepted`.
 
 ## Failure routing
 
-Correct this specification or an approved shared source. Never defer an
-unresolved execution invariant to a later stage.
+Correct this specification or a declared baseline. Never edit product code,
+data contracts, later stages, archives, or benchmark stashes from Stage 01.

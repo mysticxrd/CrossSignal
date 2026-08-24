@@ -1,110 +1,62 @@
 ---
-type: stage-output
+type: evaluator-demo-script
 stage: 05_ship
-status: ready-for-review
-unit: persisted-graph-executor-correction
+unit: fixture-runtime-source-of-truth-correction
+finding: L20
+status: candidate
 ---
 
-# CrossSignal cold reviewer script
+# L20 cold evaluator script
 
-This walkthrough demonstrates a fixed six-node graph whose handlers execute at
-runtime and persist their attempts and artifacts. The handler inputs and all
-business evidence are `FIXTURE`; the email adapter is `TEST`. Runtime execution
-does not make the evidence live, and the observed outcome is correlated, not
-proven. No blind retry is permitted after an ambiguous dispatch.
+## Preconditions
 
-## Cold setup
+- Start on branch `codex/l20-fixture-runtime-source-of-truth` with dependencies
+  installed and Node 22 available.
+- Do not inspect `_archive/` and do not apply or alter any Git stash.
+- Treat all showcased evidence as FIXTURE and the bounded email action as TEST.
 
-Use Node.js 22.13 or newer from the repository root:
+## Cold run
 
-```bash
-npm install
-npm run demo:prepare
-npm run dev
-```
+1. Print the candidate metadata:
 
-Open `http://localhost:3000/`. `demo:prepare` only applies checked-in migrations
-to the local D1 database; it is idempotent and does not seed successful graph
-rows. If no local workspace exists, create the prefilled **Atlas Foundry**
-workspace. Loading the workspace then creates the frozen context and invokes the
-product-owned persisted graph executor.
+   `node factory/05_ship/prepare.mjs`
 
-If a completed trace is already present, open **Outcome** and choose **Reset
-exact FIXTURE trace for replay**. The reset removes only the exact demo trace;
-it preserves workspace membership and the Global Pause setting. The next load
-recreates the context and runs the graph through the runtime executor.
+   Confirm sealed base `bed7f21a19d3b71abc0e3c58e13fd8e30ed5a2dd`,
+   the expected L20 branch, 22 release bindings, and all three preserved stashes.
 
-## Reviewer walkthrough
+2. Run the complete release verifier through the approved Windows execution
+   path when the dependency junction requires it:
 
-1. On **Action control**, confirm the page labels the evidence `FIXTURE`, the
-   exact email preview `TEST`, and the proposed action **NOT AUTHORIZED**. The
-   reviewed playbook must contain six completed durable nodes, including the
-   skeptic, before an intent is available.
-2. Expand **Inspect playbook proof**. The UI reports six durable nodes over one
-   frozen five-source snapshot. The release verification independently proves
-   these are `runtime` attempts for `crosssignal-fixed-graph-v1`, not seeded
-   success rows; the underlying evidence remains `FIXTURE`.
-3. Choose **Pause all actions**. Confirm the page says new actions are paused
-   and that **Authorize exact action** is disabled. Resume actions before the
-   next step.
-4. Choose **Edit proposed action**, change the subject, and select **Save as new
-   intent**. Confirm the intent version advances and the page still says **NOT
-   AUTHORIZED**. This demonstrates that a mutation creates a new immutable
-   proposal instead of inheriting authority.
-5. In **DEMO EXECUTION RESULT**, select **Provider times out after dispatch**,
-   then choose **Authorize exact action**. Confirm the terminal banner reads
-   **INDETERMINATE · NO RETRY**. Open **Narrative trace** and inspect the
-   execution detail: attempt count is one and blind retry count is zero.
-6. Open **Outcome**, choose **Reset exact FIXTURE trace for replay**, return to
-   **Action control**, leave **Provider confirms** selected, and choose
-   **Authorize exact action**.
-7. Open **Narrative trace**. Copy the displayed trace ID and expand **Inspect
-   trace proof** to see the context, intent, and policy hashes. The narrative
-   separates evidence, skeptic challenge, proposal, human authorization, TEST
-   execution, and outcome.
-8. Open **Outcome**. Confirm the result says **Correlated, not proven** and that
-   `Proven` remains **NO CLAIM**.
+   `node factory/05_ship/verify.mjs`
 
-## What the cold run establishes
+   Expected result: 66 passed, 0 failed; focused lint passes; the five-part
+   production Vinext build completes; one graph registry exists; no durable
+   output imports the active factory or archive; three benchmark stashes remain.
 
-- The product calls the fixed graph executor and persists six runtime attempts
-  and six canonical artifacts before creating one intent and one policy.
-- Exact human authority remains downstream of synthesis; graph execution alone
-  creates no grant, effect, observation, or assessment.
-- Completed work is resumable and expired claims retain a failed attempt before
-  a later attempt succeeds; these schedules are independently exercised by
-  `npm run verify:ship`.
-- `FIXTURE` evidence, a `TEST` effect, unknown measured cost, and the absence of
-  causal proof remain explicit throughout the release.
+3. Inspect governed status:
 
-## 90-second narrative
+   `node factory/status.mjs`
 
-**0–15 seconds:** “CrossSignal is a human control layer for consequential agent
-actions. This is a standalone portfolio project. The business evidence is
-FIXTURE and the provider is TEST.”
+   Before review, Stages 01-04 are complete and accepted and Stage 05 is waiting
+   only on its human gate. No release seal is claimed yet.
 
-**15–35 seconds:** “Before this proposal appears, the product executes a fixed
-planner, three workers, skeptic, and synthesizer graph. Each node has a durable
-runtime attempt and content-addressed artifact over one frozen context. It is a
-bounded sequential graph, not a generic agent platform.”
+4. Review the durable ownership proof:
 
-**35–55 seconds:** “The graph may propose this exact action, but it cannot
-authorize it. Editing creates a new immutable intent, Global Pause blocks new
-effects, and approval binds the displayed recipients, payload, context, policy,
-nonce, expiry, and spending cap.”
+   - `db/flight-recorder-graph-definition.ts` contains the single ordered
+     planner/workers/skeptic/synthesizer registry.
+   - `db/flight-recorder-demo.ts` derives its precomputed projection from that
+     registry and owns the compatible fixture identity.
+   - `db/flight-recorder-graph.ts` consumes the same registry at runtime.
+   - Durable tests and the fourteen L06 attack identities live under `tests/`.
 
-**55–75 seconds:** “An ambiguous post-dispatch result becomes INDETERMINATE · NO
-RETRY. CrossSignal records uncertainty instead of inventing success or silently
-replaying a potentially completed write.”
+5. Confirm exclusions: no migration, L04 authority-history implementation, or
+   L14 authenticated trace-resolution endpoint appears in the candidate.
 
-**75–90 seconds:** “A confirmed TEST effect can be followed by a recorded
-FIXTURE outcome, but the claim remains correlated, not proven. The trace keeps
-evidence, reasoning, authority, effect, and outcome inspectable under one
-identity.”
+## After human acceptance only
 
-## Stop conditions
+Commit the complete candidate, confirm the worktree is clean, then run:
 
-Stop and record a failure if migration preparation requires manual repair, the
-playbook has fewer than six completed nodes, the action is already authorized
-after reset, a paused workspace can authorize, an indeterminate action retries,
-truth labels disappear, or the outcome claims causality.
+`node factory/seal.mjs`
+
+Expected result: `sealed <commit>`. Stop if any stage, binding, Git state, or
+stash-preservation check differs; do not repair the release silently.

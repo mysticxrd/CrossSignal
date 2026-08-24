@@ -1,0 +1,16 @@
+export const DIRECT_DATABASE_ATTACKS = Object.freeze([
+  Object.freeze({ id: "DB-L06-01", attack: "cross-tenant runtime summary" }),
+  Object.freeze({ id: "DB-L06-02", attack: "cross-workspace node attempt" }),
+  Object.freeze({ id: "DB-L06-03", attack: "artifact bound to a foreign trace" }),
+  Object.freeze({ id: "DB-L06-04", attack: "unregistered graph node" }),
+  Object.freeze({ id: "DB-L06-05", attack: "caller-controlled predecessor edge" }),
+  Object.freeze({ id: "DB-L06-06", attack: "early skeptic execution" }),
+  Object.freeze({ id: "DB-L06-07", attack: "drifted predecessor output" }),
+  Object.freeze({ id: "DB-L06-08", attack: "foreign lease finalization" }),
+  Object.freeze({ id: "DB-L06-09", attack: "expired lease finalization" }),
+  Object.freeze({ id: "DB-L06-10", attack: "artifact citation mismatch" }),
+  Object.freeze({ id: "DB-L06-11", attack: "secret-bearing artifact" }),
+  Object.freeze({ id: "DB-L06-12", attack: "conflicting second artifact" }),
+  Object.freeze({ id: "DB-L06-13", attack: "intent before graph handoff" }),
+  Object.freeze({ id: "DB-L06-14", attack: "trace handoff before graph completion" }),
+]);

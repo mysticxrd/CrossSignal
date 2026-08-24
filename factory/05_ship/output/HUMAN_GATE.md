@@ -1,39 +1,36 @@
 ---
 type: human-gate
 stage: 05_ship
+unit: fixture-runtime-source-of-truth-correction
 gate_status: closed
 decision: accepted
-reviewer: owner
-reviewed_at: 2026-08-24T06:27:47.4253832Z
-release_manifest_sha256: b352fe59de15b97da9e52e5ec8f4a2eee8b2dba1a3726946025e0269daa1f7a9
-demo_script_sha256: 070c87134b82f913d5b56dd083b358b3a413b61f324e02f699686a97cf39b0fd
-verification_sha256: e5456ac0e87eafd43bde87aae1f6c7ef521bb9710e42f54463706e11ae4c9887
+reviewer: project-owner
+reviewed_at: 2026-08-25T00:49:03.9264831+05:30
+release_manifest_sha256: ecc71671e89023f9ee0d7fc9bc88a9d755bc7614c506f94ee2d928ab54724ed9
+demo_script_sha256: 024e0afecf1634adf2724df707fae80bfa7f7fe900c5bd5b6b31eea24c445683
+verification_sha256: 64fc01550a10d7ce130a05f130650600b28d5dd024c52ac18024cdcd38d41e95
 ---
 
-# Stage 05 human gate
+# L20 final ship human gate
 
-Stage 05 is accepted by the owner. Acceptance does not commit or seal the
-release.
+Stage 05 packaging and verification are complete. This gate must be accepted
+before any release commit or seal command is run.
 
 ## Review checklist
 
-- [x] `npm run demo:prepare` succeeds from a cold local database and succeeds
-  again without hidden repair.
-- [x] Workspace load visibly produces the six-node reviewed playbook before the
-  proposal, while evidence remains labeled `FIXTURE` and the adapter `TEST`.
-- [x] Global Pause, intent replacement, exact authorization, and the
-  indeterminate no-retry path behave as documented.
-- [x] The confirmed path ends in an explicitly correlated, not proven outcome.
-- [x] The manifest binds the accepted Stage 04 proof and all fifteen declared
-  release-head inputs with matching hashes.
-- [x] Build, scoped lint, active L06/L08 tests, migration preparation, factory
-  mechanics, and diff inspection pass.
-- [x] The release claims only L06 correction; L20, L04, and L14 remain open.
-- [x] The candidate is reviewed as uncommitted and unsealed; final sealing is
-  attempted only after this gate is accepted and the complete release is
-  committed with a clean Git state.
+- [x] The manifest binds the accepted Stage 04 evidence and all 22 declared release surfaces.
+- [x] The 33-path Git candidate inventory is complete and includes transition deletions as metadata.
+- [x] Archived L06 contents were not loaded; only the archive directory path was inventoried.
+- [x] The cold verifier passes 66 tests, focused lint, production build, scans, and diff hygiene.
+- [x] Fixture identity, one graph registry, truth labels, and 14 durable attack IDs remain intact.
+- [x] All three benchmark stashes are present, unapplied, and explicitly protected.
+- [x] L04 and L14 remain excluded from the L20 release.
+- [x] The demo script is runnable without hidden repair and makes no premature seal claim.
+- [x] Commit and `node factory/seal.mjs` occur only after this gate is accepted.
 
-## Reviewer action
+## Reviewer record
 
-The owner accepted the bound manifest, demo script, and `VERIFY.md`. The three
-reviewed hashes remain unchanged. Commit and seal remain separate actions.
+- Decision: `accepted`
+- Reviewer: `project-owner`
+- Reviewed at: `2026-08-25T00:49:03.9264831+05:30`
+- Corrections: `none recorded`

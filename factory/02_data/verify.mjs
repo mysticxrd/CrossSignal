@@ -1,228 +1,187 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import {
+  ACCEPTANCE_COVERAGE,
+  DURABLE_PROJECTION,
+  IMPORT_CASES,
+  L20_ERRORS,
+  PROJECTION_MUTATIONS,
+  RESET_CASES,
+  SEAL_TRANSITION_CASE,
+  assertDurableProjection,
+  evaluateImport,
+  evaluateResetCase,
+} from "./fixtures/fixture-runtime-ownership.fixture.mjs";
 import {
   fileHash,
   frontmatterValue,
   markdownHashBindings,
   markdownSection,
-  repositoryPath,
 } from "../_lib/verify-kit.mjs";
-import {
-  ACCEPTED_SCHEDULES,
-  DIRECT_DATABASE_ATTACKS,
-  FIXTURE_TRUTH_MODE,
-  GRAPH_VERSION,
-  NODE_ORDER,
-  NODE_REGISTRY,
-  STABLE_ERRORS,
-  advanceClockPastLease,
-  assertRuntimeRequest,
-  buildExecutorFixture,
-  claimNode,
-  finalizeNode,
-  recoverExpiredAttempt,
-  runReadyGraph,
-  summarizeFixture,
-} from "./fixtures/persisted-graph-executor.fixture.mjs";
 
-const projectRoot = resolve(import.meta.dirname, "../..");
-const packagePath = resolve(import.meta.dirname, "output/DATA_PACKAGE.md");
-const fixturePath = resolve(import.meta.dirname, "fixtures/persisted-graph-executor.fixture.mjs");
+const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
+const packagePath = resolve(projectRoot, "factory/02_data/output/DATA_PACKAGE.md");
+const gatePath = resolve(projectRoot, "factory/02_data/output/HUMAN_GATE.md");
 
-const expectedBindings = new Map(Object.entries({
-  "factory/02_data/CONTEXT.md": "c4e7c6e44af8e0abe82aca39ce48754066caf1b3114f3aa51925bba766e37888",
-  "factory/01_spec/output/SPEC.md": "f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c",
-  "factory/01_spec/output/HUMAN_GATE.md": "beb2466f7082e9cca93550db9be7c3bf06c43caa184422d9c1b6ad8700f74664",
-  "factory/_shared/ARCHITECTURE_SNAPSHOT.md": "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084",
-  "factory/_shared/QUALITY_GATES.md": "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f",
-  "db/flight-recorder-contracts.ts": "5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799",
-  "db/flight-recorder-schema.ts": "b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11",
-  "db/flight-recorder-demo.ts": "74a8d6b28ddab26e1392e3bf43318ff3e7290ba4950d2806ab98efbb5387c369",
-  "factory/02_data/fixtures/persisted-graph-executor.fixture.mjs": "fb2d985e76b6f05bfdda04cfa42b6effbf1dd75d96e1756947e7f555463f9051",
-}));
+const boundPaths = [
+  "factory/02_data/CONTEXT.md",
+  "factory/01_spec/output/SPEC.md",
+  "factory/01_spec/output/HUMAN_GATE.md",
+  "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
+  "factory/_shared/QUALITY_GATES.md",
+  "db/flight-recorder-demo.ts",
+  "db/flight-recorder.ts",
+  "db/flight-recorder-graph.ts",
+  "tests/flight-recorder-data.test.mjs",
+  "tests/flight-recorder-build.test.mjs",
+  "tests/flight-recorder-release.test.mjs",
+  "factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs",
+];
 
-function ids(rows, key = "id") {
-  return rows.map((row) => row[key]);
+function quotedConstant(source, name) {
+  const match = source.match(new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*\"([^\"]+)\"`));
+  assert.ok(match, `missing ${name}`);
+  return match[1];
 }
 
-function assertUnique(values, label) {
-  assert.equal(new Set(values).size, values.length, `${label} must be unique`);
+function numericConstant(source, name) {
+  const match = source.match(new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*([0-9.]+)`));
+  assert.ok(match, `missing ${name}`);
+  return Number(match[1]);
 }
 
-function expectCode(fn, code) {
-  return assert.rejects(fn, new RegExp(code));
+function assertNamedFailure(operation, code) {
+  assert.throws(operation, new RegExp(`(?:^|Error: )${code}:`));
 }
 
-const [dataPackage, stageOneGate, schema, demo] = await Promise.all([
-  readFile(packagePath, "utf8"),
-  readFile(resolve(projectRoot, "factory/01_spec/output/HUMAN_GATE.md"), "utf8"),
-  readFile(resolve(projectRoot, "db/flight-recorder-schema.ts"), "utf8"),
-  readFile(resolve(projectRoot, "db/flight-recorder-demo.ts"), "utf8"),
-]);
+export async function validateDataPackage() {
+  const [dataPackage, gate, spec, specGate, demo, store, graph, dataTest, buildTest, releaseTest, fixtureSource] =
+    await Promise.all([
+      readFile(packagePath, "utf8"),
+      readFile(gatePath, "utf8"),
+      readFile(resolve(projectRoot, "factory/01_spec/output/SPEC.md"), "utf8"),
+      readFile(resolve(projectRoot, "factory/01_spec/output/HUMAN_GATE.md"), "utf8"),
+      readFile(resolve(projectRoot, "db/flight-recorder-demo.ts"), "utf8"),
+      readFile(resolve(projectRoot, "db/flight-recorder.ts"), "utf8"),
+      readFile(resolve(projectRoot, "db/flight-recorder-graph.ts"), "utf8"),
+      readFile(resolve(projectRoot, "tests/flight-recorder-data.test.mjs"), "utf8"),
+      readFile(resolve(projectRoot, "tests/flight-recorder-build.test.mjs"), "utf8"),
+      readFile(resolve(projectRoot, "tests/flight-recorder-release.test.mjs"), "utf8"),
+      readFile(resolve(projectRoot, "factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs"), "utf8"),
+    ]);
 
-assert.equal(frontmatterValue(stageOneGate, "gate_status"), "closed");
-assert.equal(frontmatterValue(stageOneGate, "decision"), "accepted");
-assert.equal(frontmatterValue(stageOneGate, "spec_sha256"), expectedBindings.get("factory/01_spec/output/SPEC.md"));
+  assert.equal(frontmatterValue(specGate, "decision"), "accepted");
+  assert.equal(frontmatterValue(specGate, "gate_status"), "closed");
+  assert.equal(frontmatterValue(dataPackage, "finding"), "L20");
+  assert.equal(frontmatterValue(dataPackage, "status"), "proposed");
+  for (const heading of [
+    "Transformation",
+    "Executable schema",
+    "Canonical projection",
+    "Case inventory",
+    "State and authority",
+    "Provenance and truth labels",
+    "Stage 03 handoff",
+    "Acceptance mapping",
+    "Non-goals",
+    "Human decision requested",
+  ]) assert.ok(markdownSection(dataPackage, new RegExp(`^## ${heading}$`)).length > 60, `missing ${heading}`);
 
-const bindingSection = markdownSection(dataPackage, /^## Declared input bindings$/);
-const bindings = markdownHashBindings(bindingSection);
-assert.equal(bindings.length, expectedBindings.size, "binding count changed");
-assert.deepEqual(new Set(bindings.map(({ input }) => input)), new Set(expectedBindings.keys()));
-for (const { input, expected } of bindings) {
-  assert.equal(expected, expectedBindings.get(input), `binding constant drifted: ${input}`);
-  assert.equal(await fileHash(projectRoot, resolve(projectRoot, input)), expected, `binding drifted: ${input}`);
-}
-
-assert.equal(GRAPH_VERSION, "crosssignal-fixed-graph-v1");
-assert.equal(FIXTURE_TRUTH_MODE, "FIXTURE");
-assert.deepEqual(NODE_ORDER, [
-  "planner",
-  "quantitative",
-  "qualitative",
-  "experiment_design",
-  "skeptic",
-  "synthesizer",
-]);
-assert.deepEqual(NODE_REGISTRY.map(({ nodeKey, predecessors }) => [nodeKey, [...predecessors]]), [
-  ["planner", []],
-  ["quantitative", ["planner"]],
-  ["qualitative", ["planner"]],
-  ["experiment_design", ["planner"]],
-  ["skeptic", ["quantitative", "qualitative", "experiment_design"]],
-  ["synthesizer", ["planner", "quantitative", "qualitative", "experiment_design", "skeptic"]],
-]);
-assert.equal(ACCEPTED_SCHEDULES.length, 8);
-assert.deepEqual(ids(ACCEPTED_SCHEDULES), Array.from({ length: 8 }, (_, index) => `S-L06-${String(index + 1).padStart(2, "0")}`));
-assert.equal(DIRECT_DATABASE_ATTACKS.length, 14);
-assert.deepEqual(ids(DIRECT_DATABASE_ATTACKS), Array.from({ length: 14 }, (_, index) => `DB-L06-${String(index + 1).padStart(2, "0")}`));
-assertUnique(DIRECT_DATABASE_ATTACKS.map(({ attack }) => attack), "attack descriptions");
-
-for (const nodeKey of NODE_ORDER) assert.match(schema, new RegExp(`"${nodeKey}"`));
-assert.match(schema, /idx_reasoning_nodes_trace_identity/);
-assert.match(schema, /currentState[\s\S]+"pending"[\s\S]+"running"[\s\S]+"succeeded"[\s\S]+"failed"[\s\S]+"skipped"/);
-assert.match(demo, /currentState: "succeeded" as const/);
-assert.match(dataPackage, /existing rows backfill to `precomputed_fixture`/);
-assert.match(dataPackage, /create an attempt row only when all predecessor\s+artifacts exist/s);
-assert.match(dataPackage, /Passing Stage 02\s+does not prove a database executor exists/s);
-assert.match(dataPackage, /L20, L04, and L14 remain open/);
-
-const first = await buildExecutorFixture();
-const second = await buildExecutorFixture();
-assert.deepEqual(summarizeFixture(first), summarizeFixture(second), "fixture identities are not stable");
-assert.equal(first.attempts.length, 1);
-assert.equal(first.attempts[0].nodeKey, "planner");
-assert.equal(first.attempts[0].currentState, "pending");
-
-const cold = await buildExecutorFixture();
-await runReadyGraph(cold);
-const coldSummary = summarizeFixture(cold);
-assert.equal(coldSummary.traceState, "awaiting_approval");
-assert.equal(coldSummary.attempts.length, 6);
-assert.ok(coldSummary.attempts.every(({ currentState }) => currentState === "succeeded"));
-assert.equal(coldSummary.artifacts.length, 6);
-assert.ok(coldSummary.artifacts.every(({ truthMode }) => truthMode === "FIXTURE"));
-assert.deepEqual(coldSummary.handlerInvocations, Object.fromEntries(NODE_ORDER.map((nodeKey) => [nodeKey, 1])));
-assert.deepEqual(coldSummary.authorityCounts, { intents: 1, policies: 1, grants: 0, effects: 0, outcomes: 0 });
-assertUnique(coldSummary.events.map(({ sequence }) => sequence), "event sequences");
-assertUnique(coldSummary.events.map(({ idempotencyKey }) => idempotencyKey), "event idempotency keys");
-assert.equal(cold.authority.intents[0].sourceArtifactId, cold.artifacts.find(({ logicalNodeId }) => logicalNodeId.endsWith("_synthesizer")).id);
-
-for (let boundary = 1; boundary <= 5; boundary += 1) {
-  const resumed = await buildExecutorFixture({ traceId: `trace_resume_${boundary}` });
-  await runReadyGraph(resumed, { stopAfter: boundary });
-  const preserved = new Map(resumed.artifacts.map(({ logicalNodeId, contentHash }) => [logicalNodeId, contentHash]));
-  await runReadyGraph(resumed);
-  assert.equal(resumed.traceState, "awaiting_approval");
-  assert.deepEqual(resumed.handlerInvocations, Object.fromEntries(NODE_ORDER.map((nodeKey) => [nodeKey, 1])));
-  for (const [logicalNodeId, contentHash] of preserved) {
-    assert.equal(resumed.artifacts.find((artifact) => artifact.logicalNodeId === logicalNodeId).contentHash, contentHash);
+  const bindings = markdownHashBindings(dataPackage);
+  assert.deepEqual(bindings.map(({ input }) => input).sort(), [...boundPaths].sort());
+  for (const binding of bindings) {
+    assert.equal(
+      await fileHash(projectRoot, resolve(projectRoot, binding.input)),
+      binding.expected,
+      `stale data binding: ${binding.input}`,
+    );
   }
+
+  for (const importCase of IMPORT_CASES) {
+    assert.deepEqual(evaluateImport(importCase), importCase.expected, importCase.id);
+  }
+  assert.equal(assertDurableProjection(DURABLE_PROJECTION), true);
+  for (const mutation of PROJECTION_MUTATIONS) {
+    assertNamedFailure(() => assertDurableProjection(mutation.value), mutation.error);
+  }
+  for (const resetCase of RESET_CASES) {
+    const actual = evaluateResetCase(resetCase);
+    assert.equal(actual.deletedTraces, resetCase.expectedDeletedTraces, resetCase.id);
+    assert.equal(actual.error, resetCase.error ?? null, resetCase.id);
+  }
+
+  const knownCaseIds = new Set([
+    ...IMPORT_CASES.map(({ id }) => id),
+    ...PROJECTION_MUTATIONS.map(({ id }) => id),
+    ...RESET_CASES.map(({ id }) => id),
+    SEAL_TRANSITION_CASE.id,
+  ]);
+  for (let index = 1; index <= 9; index += 1) {
+    const criterion = `AC-L20-${String(index).padStart(2, "0")}`;
+    assert.ok(ACCEPTANCE_COVERAGE[criterion]?.length > 0, `missing coverage: ${criterion}`);
+    for (const caseId of ACCEPTANCE_COVERAGE[criterion]) {
+      assert.ok(knownCaseIds.has(caseId), `unknown ${criterion} case: ${caseId}`);
+    }
+  }
+
+  const registryStart = graph.indexOf("export const REASONING_NODE_REGISTRY");
+  const registryEnd = graph.indexOf("] as const);", registryStart);
+  assert.ok(registryStart >= 0 && registryEnd > registryStart, "missing bounded graph registry");
+  const registrySource = graph.slice(registryStart, registryEnd);
+  const actualProjection = {
+    fixtureKey: quotedConstant(demo, "STAGE_03_FIXTURE_KEY"),
+    traceKey: quotedConstant(demo, "STAGE_03_TRACE_KEY"),
+    spendingCapUsd: numericConstant(demo, "STAGE_03_SPENDING_CAP_USD"),
+    fixtureTruthMode: "FIXTURE",
+    intentTruthMode: "TEST",
+    graphVersion: quotedConstant(graph, "REASONING_GRAPH_VERSION"),
+    handlerVersion: quotedConstant(graph, "REASONING_HANDLER_VERSION"),
+    artifactSchemaVersion: quotedConstant(graph, "REASONING_ARTIFACT_SCHEMA_VERSION"),
+    nodes: [...registrySource.matchAll(/nodeKey:\s*"([^"]+)"/g)].map((match) => {
+      const expected = DURABLE_PROJECTION.nodes.find(({ nodeKey }) => nodeKey === match[1]);
+      return { nodeKey: match[1], predecessors: [...(expected?.predecessors ?? [])] };
+    }),
+  };
+  assert.equal(assertDurableProjection(actualProjection), true);
+  assert.match(store, /buildFlightRecorderSeed/);
+  assert.match(store, /runPersistedReasoningGraph/);
+  assert.match(dataTest, /factory\/02_data\/fixtures\/onboarding-rescue\.fixture/);
+  assert.match(buildTest, /factory\/02_data\/fixtures\/persisted-graph-executor\.fixture/);
+  assert.match(releaseTest, /db\/flight-recorder-demo\.ts/);
+  assert.doesNotMatch(fixtureSource, /(?:sk_(?:live|test)|Bearer\s+[A-Za-z0-9._-]{20,}|BEGIN PRIVATE KEY)/i);
+  assert.equal(SEAL_TRANSITION_CASE.activeNumberedFixturePresent, false);
+  assert.equal(SEAL_TRANSITION_CASE.expectedRuntimeBehavior, "unchanged");
+
+  const decision = frontmatterValue(gate, "decision");
+  assert.ok(["pending", "accepted"].includes(decision));
+  assert.equal(frontmatterValue(gate, "gate_status"), decision === "accepted" ? "closed" : "open");
+  if (decision === "accepted") {
+    assert.notEqual(frontmatterValue(gate, "reviewer"), "pending");
+    assert.match(frontmatterValue(gate, "reviewed_at") ?? "", /^\d{4}-\d{2}-\d{2}T/);
+  }
+  assert.equal(frontmatterValue(gate, "data_package_sha256"), await fileHash(projectRoot, packagePath));
+
+  return {
+    status: "passed",
+    finding: "L20",
+    inputs: Object.fromEntries(
+      await Promise.all(boundPaths.map(async (path) => [path, await fileHash(projectRoot, resolve(projectRoot, path))])),
+    ),
+    dataPackage: await fileHash(projectRoot, packagePath),
+    caseCounts: {
+      imports: IMPORT_CASES.length,
+      projectionMutations: PROJECTION_MUTATIONS.length,
+      resets: RESET_CASES.length,
+      sealTransitions: 1,
+      acceptanceCriteria: Object.keys(ACCEPTANCE_COVERAGE).length,
+    },
+    namedErrors: Object.values(L20_ERRORS).length,
+    gate: decision,
+  };
 }
 
-const crashed = await buildExecutorFixture({ traceId: "trace_claim_crash" });
-await runReadyGraph(crashed, { stopAfter: 1 });
-const crashToken = "lease_crash_quantitative_1";
-assert.equal((await claimNode(crashed, "quantitative", crashToken)).status, "claimed");
-assert.equal((await claimNode(crashed, "quantitative", "lease_competitor")).status, "busy");
-advanceClockPastLease(crashed, "quantitative");
-const recovery = await recoverExpiredAttempt(crashed, "quantitative");
-assert.equal(recovery.priorAttempt.errorCode, STABLE_ERRORS.interruptedAttempt);
-assert.equal(recovery.nextAttempt.attempt, 2);
-await runReadyGraph(crashed);
-assert.equal(crashed.traceState, "awaiting_approval");
-assert.deepEqual(crashed.attempts.filter(({ nodeKey }) => nodeKey === "quantitative").map(({ attempt, currentState }) => [attempt, currentState]), [[1, "failed"], [2, "succeeded"]]);
-assert.equal(crashed.handlerInvocations.quantitative, 1);
-
-const concurrent = await buildExecutorFixture({ traceId: "trace_concurrent" });
-const ownerToken = "lease_owner_planner";
-assert.equal((await claimNode(concurrent, "planner", ownerToken)).status, "claimed");
-assert.equal((await claimNode(concurrent, "planner", "lease_loser_planner")).status, "busy");
-await expectCode(() => finalizeNode(concurrent, "planner", "lease_loser_planner"), STABLE_ERRORS.claimOwnership);
-assert.equal((await finalizeNode(concurrent, "planner", ownerToken)).status, "succeeded");
-assert.equal((await finalizeNode(concurrent, "planner", ownerToken)).status, "idempotent");
-await runReadyGraph(concurrent);
-assert.equal(concurrent.handlerInvocations.planner, 1);
-assert.equal(concurrent.artifacts.filter(({ logicalNodeId }) => logicalNodeId.endsWith("_planner")).length, 1);
-
-const failed = await buildExecutorFixture({ traceId: "trace_skeptic_failure" });
-await runReadyGraph(failed, { failAt: "skeptic" });
-assert.equal(failed.traceState, "failed");
-assert.equal(failed.artifacts.length, 4);
-assert.equal(failed.handlerInvocations.skeptic, 1);
-assert.equal(failed.attempts.some(({ nodeKey }) => nodeKey === "synthesizer"), false);
-assert.deepEqual(summarizeFixture(failed).authorityCounts, { intents: 0, policies: 0, grants: 0, effects: 0, outcomes: 0 });
-
-const drifted = await buildExecutorFixture({ traceId: "trace_input_drift" });
-await runReadyGraph(drifted, { stopAfter: 1 });
-drifted.artifacts[0].contentHash = "b".repeat(64);
-await expectCode(() => claimNode(drifted, "quantitative", "lease_drift"), STABLE_ERRORS.inputDrift);
-assert.equal(drifted.handlerInvocations.quantitative, 0);
-assert.equal(drifted.artifacts.length, 1);
-
-const tenant = await buildExecutorFixture({ traceId: "trace_tenant" });
-const tenantBefore = summarizeFixture(tenant);
-await expectCode(
-  () => claimNode(tenant, "planner", "lease_foreign", {
-    actorWorkspaceId: "workspace_foreign",
-    workspaceId: tenant.workspaceId,
-    traceId: tenant.traceId,
-  }),
-  STABLE_ERRORS.tenantMismatch,
-);
-assert.throws(
-  () => assertRuntimeRequest(tenant, {
-    actorWorkspaceId: tenant.workspaceId,
-    workspaceId: tenant.workspaceId,
-    traceId: tenant.traceId,
-    nodes: ["attacker"],
-  }),
-  new RegExp(STABLE_ERRORS.arbitraryGraph),
-);
-assert.deepEqual(summarizeFixture(tenant), tenantBefore);
-
-for (const mutation of [{ undeclaredCitation: true }, { secret: true }]) {
-  const invalid = await buildExecutorFixture({ traceId: `trace_invalid_${Object.keys(mutation)[0]}` });
-  const token = `lease_invalid_${Object.keys(mutation)[0]}`;
-  await claimNode(invalid, "planner", token);
-  await expectCode(() => finalizeNode(invalid, "planner", token, mutation), STABLE_ERRORS.invalidArtifact);
-  assert.equal(invalid.artifacts.length, 0);
-  assert.equal(invalid.authority.intents.length, 0);
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  console.log(JSON.stringify(await validateDataPackage(), null, 2));
 }
-
-process.stdout.write(`${JSON.stringify({
-  status: "passed",
-  stage: "02_data",
-  unit: "persisted-graph-executor-correction",
-  graphVersion: GRAPH_VERSION,
-  fixedNodes: NODE_ORDER.length,
-  schedules: ACCEPTED_SCHEDULES.length,
-  resumeBoundaries: 5,
-  directDatabaseAttacks: DIRECT_DATABASE_ATTACKS.length,
-  stableErrors: Object.keys(STABLE_ERRORS).length,
-  truthMode: FIXTURE_TRUTH_MODE,
-  coldAuthorityCounts: coldSummary.authorityCounts,
-  remainingFindings: ["L20", "L04", "L14"],
-  fixture: repositoryPath(projectRoot, fixturePath),
-  dataPackage: repositoryPath(projectRoot, packagePath),
-}, null, 2)}\n`);

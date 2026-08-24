@@ -1,245 +1,150 @@
 ---
-type: stage-output
+type: executable-data-package
 stage: 02_data
-status: review-ready
-unit: persisted-graph-executor-correction
-finding: L06
-fixture: persisted-graph-executor.fixture.mjs
+unit: fixture-runtime-source-of-truth-correction
+finding: L20
+status: proposed
 ---
 
-# L06 persisted graph executor data package
+# L20 fixture/runtime ownership data package
 
-## Decision
+## Transformation
 
-Represent the approved graph as a code-owned logical registry plus immutable
-execution attempts. Persist the graph version and six-node topology in the
-initialization event, but create an attempt row only when all predecessor
-artifacts exist and its canonical input hash can be computed exactly.
+The accepted specification is represented as deterministic executable cases in
+`fixtures/fixture-runtime-ownership.fixture.mjs`. The fixture is a hash-bound
+factory projection of the current durable product owners. It supplies no
+runtime data and exports no builder consumed by application or durable tests.
 
-This avoids fake placeholder input hashes. A logical node with no attempt is
-still visibly pending in the graph projection; its first durable attempt is
-created when it becomes runnable. The executable fixture is a reference model
-and oracle for Stage 03, not the product executor.
+Stage 03 receives a closed set of dependency-direction, projection, graph,
+reset, and seal-transition cases. Product changes pass only when the durable
+tree satisfies these cases and numbered factory fixtures can disappear without
+changing runtime behavior.
 
-## Existing-model gap
-
-The current `reasoning_nodes` relation can store node keys, attempt numbers,
-state, input/output hashes, errors, and timestamps. It cannot yet prove:
-
-- whether a row was fixture-precomputed or produced by a runtime handler;
-- graph and handler versions;
-- ordered predecessor outputs used to compute the input hash;
-- durable lease ownership and expiry;
-- one active attempt and one canonical success per logical node; or
-- immutable interrupted-attempt history with a later attempt.
-
-Stage 03 must add only the persistence needed for these L06 facts. Existing L08
-rows remain valid and must be backfilled as legacy precomputed fixture evidence,
-never relabeled as runtime execution.
-
-## Fixed logical registry
-
-| Order | Node | Predecessors | Artifact |
-|---:|---|---|---|
-| 1 | `planner` | none | `plan` |
-| 2 | `quantitative` | `planner` | `analysis` |
-| 3 | `qualitative` | `planner` | `analysis` |
-| 4 | `experiment_design` | `planner` | `analysis` |
-| 5 | `skeptic` | `quantitative`, `qualitative`, `experiment_design` | `critique` |
-| 6 | `synthesizer` | all prior nodes | `intent_draft` |
-
-Registry version: `crosssignal-fixed-graph-v1`.
-
-The runtime request contains authenticated workspace, actor, and trace identity
-only. `nodes`, `edges`, `handler`, `graphVersion`, and `truthMode` are forbidden
-request fields and map to `l06_arbitrary_graph_rejected`.
-
-## Attempt persistence contract
-
-Stage 03 may implement equivalent normalized tables, but the persisted fields
-and constraints below are mandatory.
-
-| Field | Contract |
-|---|---|
-| `logical_node_id` | Stable for workspace + trace + graph version + node key. |
-| `id` | Stable attempt identity including logical node and positive attempt number. |
-| `graph_version` | Exact code-owned registry version. Legacy rows use an explicit legacy value. |
-| `execution_mode` | `runtime` or `precomputed_fixture`; existing rows backfill to `precomputed_fixture`. |
-| `handler_version` | Exact code-owned handler contract version. |
-| `predecessor_outputs_json` | Ordered node keys and persisted output hashes; valid JSON and canonical order. |
-| `input_hash` | SHA-256 of workspace, trace, truth mode, context hash, versions, node, attempt, and predecessor outputs. |
-| `current_state` | `pending`, `running`, `succeeded`, `failed`, or `skipped` under existing graph transitions. |
-| `lease_token` | Opaque claim-owner token; required only while `running` and never emitted to user-visible evidence. |
-| `lease_expires_at` | Deterministic expiry; required only while `running`. |
-| `output_hash` | Required only for `succeeded`; equals the canonical artifact content hash. |
-| `error_code` | Required for `failed`; stable L06 codes are preserved. |
-| timestamps | Pending has none; running has start; terminal has completion. |
-
-Required database uniqueness:
-
-- existing `{workspace_id, trace_id, node_key, attempt}` identity remains unique;
-- at most one `pending` or `running` attempt per logical node;
-- at most one `running` attempt per logical node;
-- at most one `succeeded` canonical attempt per logical node;
-- artifact identity is unique for a node attempt and a conflicting content hash
-  cannot replace the canonical artifact;
-- graph event sequence and idempotency keys remain unique per workspace/trace.
-
-Terminal attempts are immutable. Expired recovery changes the abandoned
-`running` attempt to `failed` with `l06_interrupted_attempt`, then inserts a new
-pending attempt with the next number. It never rewrites the prior attempt.
-
-## Canonical input payload
-
-The fixture executes the following canonical shape through the repository's
-`sealCanonical` contract:
-
-```json
-{
-  "workspaceId": "workspace_l06_fixture",
-  "traceId": "trace_l06_fixture",
-  "truthMode": "FIXTURE",
-  "contextManifestHash": "<sha256>",
-  "graphVersion": "crosssignal-fixed-graph-v1",
-  "nodeKey": "skeptic",
-  "handlerVersion": "crosssignal-fixture-handlers-v1",
-  "attempt": 1,
-  "predecessorOutputs": [
-    { "nodeKey": "quantitative", "outputHash": "<sha256>" },
-    { "nodeKey": "qualitative", "outputHash": "<sha256>" },
-    { "nodeKey": "experiment_design", "outputHash": "<sha256>" }
-  ]
-}
-```
-
-Predecessor order comes from the fixed registry. A missing, reordered, foreign,
-or changed output blocks claim before handler invocation.
-
-## Artifact contract
-
-Every successful handler returns structured content with:
-
-- `truthMode: FIXTURE`;
-- graph, node, and handler versions;
-- ordered predecessor outputs;
-- declared evidence citations;
-- a bounded summary with no hidden chain-of-thought;
-- usage status and measured cost, or `unknown` with `null` cost.
-
-The existing `validateReasoningArtifact` and `sealCanonical` contracts run
-before persistence. Secret-like content, undeclared citations, invalid JSON, or
-conflicting duplicate content maps to `l06_invalid_artifact`. The artifact,
-attempt success projection, and completion event commit atomically.
-
-## Lifecycle oracle
-
-1. Initialization appends `graph.initialized` with the fixed topology and
-   creates only the runnable planner attempt.
-2. A claim recomputes the exact input hash, compare-and-sets pending to running,
-   and stores a lease token/expiry.
-3. Finalization requires the exact unexpired token, validates and seals the
-   runtime-produced artifact, marks the attempt succeeded, and appends
-   `graph.node_succeeded`.
-4. Success materializes newly runnable attempts in registry order.
-5. Synthesizer success confirms all six canonical artifacts, creates one
-   intent/policy pair bound to the synthesizer artifact, and transitions the
-   trace to `awaiting_approval`.
-6. Graph execution always leaves grant, effect, and outcome counts at zero.
-
-## Stable errors
-
-| Code | Meaning |
-|---|---|
-| `l06_arbitrary_graph_rejected` | Caller attempted to control topology, handlers, version, or truth mode. |
-| `l06_claim_busy` | An unexpired owner already holds the logical node. |
-| `l06_claim_expired` | A caller attempted finalization after deterministic expiry. |
-| `l06_claim_ownership_mismatch` | The finalize/recovery token does not own the attempt. |
-| `l06_dependency_blocked` | A required predecessor or completion invariant is absent. |
-| `l06_input_drift` | Recomputed context/predecessor input differs from the stored hash. |
-| `l06_interrupted_attempt` | An expired running attempt was closed visibly before a later attempt. |
-| `l06_invalid_artifact` | Artifact content, citations, secret scan, or duplicate hash failed. |
-| `l06_handler_failed` | The bounded handler failed without blind retry. |
-| `l06_workspace_trace_mismatch` | Actor, workspace, trace, row, or relation ownership disagrees. |
-
-## Executable schedules
-
-| ID | Schedule | Executable oracle |
-|---|---|---|
-| `S-L06-01` | Cold success | Six succeeded runtime attempts/artifacts, one intent and policy, zero grants/effects/outcomes. |
-| `S-L06-02` | Stop and resume | Stop after boundaries 1–5; completed IDs/hashes remain and each handler count is one. |
-| `S-L06-03` | Claim and crash | Duplicate observes busy; expiry retains failed attempt 1 and succeeds attempt 2. |
-| `S-L06-04` | Concurrent calls | Wrong token fails; one token finalizes; duplicate same-token finalize is idempotent. |
-| `S-L06-05` | Skeptic failure | Four upstream artifacts remain, skeptic fails, synthesizer is absent, and authority/effects remain empty. |
-| `S-L06-06` | Input drift | Mutated predecessor hash blocks claim before handler invocation or artifact creation. |
-| `S-L06-07` | Tenant attack | Foreign workspace/trace and caller-controlled graph fields fail before mutation. |
-| `S-L06-08` | L08 regression | Stage 03 must run the existing two L08 race schedules and ten direct attacks unchanged. |
-
-The fixture uses deterministic timestamps and explicit operations. It contains
-no sleep, timer, network, model, provider, or random race.
-
-## Direct-database attack package
-
-The fixture exports fourteen stable attacks, `DB-L06-01` through `DB-L06-14`,
-covering cross-workspace/trace writes, unregistered nodes and edges,
-out-of-order claims, predecessor drift, lease theft/expiry, undeclared or
-secret artifacts, conflicting duplicates, early authority handoff, and direct
-trace transition. Stage 03 must implement them against the real database and
-prove zero partial mutation.
-
-## Fixture truth boundary
-
-`persisted-graph-executor.fixture.mjs` is an executable reference model. It
-imports repository canonical hashing and artifact validation, but its state is
-in memory and every evidence/handler artifact is `FIXTURE`. Passing Stage 02
-does not prove a database executor exists. Only Stage 03 product tests and Stage
-04 independent persisted-runtime probes may make that claim.
-
-## Acceptance mapping
-
-| Stage 01 criterion | Stage 02 contract |
-|---|---|
-| AC-L06-01/02 | Fixed registry, forbidden request fields, and handler invocation counters. |
-| AC-L06-03/04 | Canonical input payload, attempt fields, lifecycle, events, and artifacts. |
-| AC-L06-05/06 | Boundary stop/resume and expired-running attempt oracle. |
-| AC-L06-07 | Claim-owner/idempotent-finalize schedule. |
-| AC-L06-08 | Failure and artifact-validation schedules with zero authority rows. |
-| AC-L06-09 | Fourteen attack cases and exact scope checks. |
-| AC-L06-10 | FIXTURE truth boundary and explicit `execution_mode`. |
-| AC-L06-11 | Synthesizer-only intent/policy handoff; grant/effect remain empty. |
-| AC-L06-12 | Legacy precomputed backfill plus empty/current/interrupted/completed/invalid migration cases. |
-| AC-L06-13 | Existing L08 schedule delegated unchanged to Stage 03. |
-| AC-L06-14 | Unknown cost is explicit; L20, L04, and L14 remain open. |
-
-## Stage 03 handoff
-
-Stage 03 must implement the fixture semantics in durable product code. It must
-not import this reference model into runtime code or pass by replaying fixture
-objects. Tests may import it only as an oracle. Any implementation that labels
-legacy rows as runtime, creates child input hashes before predecessors exist,
-exposes lease tokens, or creates authority before synthesizer success violates
-this data package.
-
-## Declared input bindings
+## Input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/02_data/CONTEXT.md` | `c4e7c6e44af8e0abe82aca39ce48754066caf1b3114f3aa51925bba766e37888` |
-| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
-| `factory/01_spec/output/HUMAN_GATE.md` | `beb2466f7082e9cca93550db9be7c3bf06c43caa184422d9c1b6ad8700f74664` |
+| `factory/02_data/CONTEXT.md` | `98183d21218902525ead8bc31677e61e9010b04a1a6be5b862e5588337b1c547` |
+| `factory/01_spec/output/SPEC.md` | `2b4acd7fecccf0c952de54ca8ac81bcc3511353e27ed9d34e75640599bc40ca0` |
+| `factory/01_spec/output/HUMAN_GATE.md` | `74390b5ce66fa24d6d068decc2fb7105dbf49e164ccbda47a57fd608ba8b7bcb` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
-| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
-| `db/flight-recorder-demo.ts` | `74a8d6b28ddab26e1392e3bf43318ff3e7290ba4950d2806ab98efbb5387c369` |
-| `factory/02_data/fixtures/persisted-graph-executor.fixture.mjs` | `fb2d985e76b6f05bfdda04cfa42b6effbf1dd75d96e1756947e7f555463f9051` |
+| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
+| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
+| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
+| `tests/flight-recorder-data.test.mjs` | `18ea70aead27579460bcf01157953a3f8337f3a5eafde523b9b55b36a774f2b1` |
+| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
+| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
+| `factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs` | `ca07b39075bb92c760b4f5876b46b80268c4acdbe560dbb6c160cf73bb2b464e` |
 
-## Review questions
+## Executable schema
 
-1. Accept creating attempt rows only when their exact predecessor-derived input
-   hash is computable, while projecting not-yet-runnable logical nodes from the
-   fixed registry and initialization event?
-2. Accept explicit `precomputed_fixture` backfill for all legacy reasoning rows?
-3. Accept the mandatory attempt/lease/version fields and partial uniqueness
-   constraints as the minimum L06 schema delta?
-4. Accept fourteen direct-database attacks and the eight schedule oracles as
-   the Stage 03 executable contract?
+The fixture exports these immutable structures and evaluators:
+
+| Export | Contract |
+|---|---|
+| `L20_ERRORS` | Eight stable named failure codes for archive authority, dependency direction, fixture/graph projection, duplicate graph authority, truth modes, and reset scope |
+| `DURABLE_PROJECTION` | Current fixture keys, cap, truth modes, graph/handler/schema versions, and ordered six-node topology |
+| `IMPORT_CASES` / `evaluateImport` | Six allowed/forbidden dependency-direction cases |
+| `PROJECTION_MUTATIONS` / `assertDurableProjection` | One positive projection and five named drift mutations |
+| `RESET_CASES` / `evaluateResetCase` | Exact same-tenant reset, cross-tenant denial, and non-FIXTURE preservation |
+| `SEAL_TRANSITION_CASE` | Missing numbered fixture with unchanged durable runtime/test expectations |
+| `ACCEPTANCE_COVERAGE` | Explicit mapping for all nine accepted criteria |
+
+## Canonical projection
+
+- Fixture key: `onboarding-rescue:stage03-v1` (preserved for row compatibility)
+- Trace key: `onboarding-rescue-stage03-v1`
+- Spending cap: `$0.15`
+- Evidence/trace truth: `FIXTURE`
+- Intended effect truth: `TEST`
+- Graph: `crosssignal-fixed-graph-v1`
+- Handler: `crosssignal-fixture-handlers-v1`
+- Artifact schema: `reasoning-artifact-v2`
+- Ordered nodes: planner; quantitative, qualitative, experiment design;
+  skeptic; synthesizer
+
+These values describe the current accepted durable baseline. Stage 03 may
+rename stage-numbered exports while preserving persisted values. Any value
+change requires an explicit compatibility decision rather than silent drift.
+
+## Case inventory
+
+### Dependency direction
+
+- `IMP-L20-01`: durable runtime importing durable demo is allowed.
+- `IMP-L20-02`: durable runtime importing a factory fixture fails with
+  `l20_forbidden_product_factory_import`.
+- `IMP-L20-03`: a durable Flight Recorder test importing a numbered fixture
+  fails with `l20_forbidden_test_fixture_import`.
+- `IMP-L20-04`: any active archive import fails with
+  `l20_active_archive_dependency`.
+- `IMP-L20-05`: the factory verifier reading durable product truth is allowed.
+- `IMP-L20-06`: the factory infrastructure test inspecting a factory verifier
+  remains allowed.
+
+### Projection drift
+
+- `DRIFT-L20-01`: fixture-key drift fails.
+- `DRIFT-L20-02`: graph-version drift fails.
+- `DRIFT-L20-03`: FIXTURE → LIVE truth-mode drift fails.
+- `DRIFT-L20-04`: duplicate graph-node authority fails.
+- `DRIFT-L20-05`: predecessor topology drift fails.
+
+### Reset and transition
+
+- `RESET-L20-01`: exact same-tenant FIXTURE reset deletes one trace and
+  preserves workspace, membership, authority, other-tenant/non-fixture traces,
+  and prior evidence.
+- `RESET-L20-02`: cross-tenant reset deletes zero and returns the named reset
+  scope error.
+- `RESET-L20-03`: same-tenant TEST trace deletes zero.
+- `SEAL-L20-01`: runtime resolves solely from durable sources when numbered
+  factory fixtures are absent.
+
+## State and authority
+
+The data fixture is pure and performs no database, filesystem, network,
+authentication, approval, or effect mutation. It describes expected results;
+Stage 03 must prove them through authenticated runtime entry points and an
+isolated migrated database. Actor/workspace identity remains server-derived,
+and factory case fields never become trusted runtime input.
+
+## Provenance and truth labels
+
+Every value is either bound to the accepted specification or extracted from
+the declared durable baseline. `FIXTURE`, `TEST`, `precomputed_fixture`, and
+runtime execution remain distinct. The package contains no LIVE claim, secret,
+provider credential, copied benchmark data, or archive dependency.
+
+## Stage 03 handoff
+
+Stage 03 must:
+
+1. remove the two durable test imports from `factory/02_data/fixtures/*`;
+2. keep application/runtime/worker imports directed only into durable product
+   modules;
+3. consolidate the demo's precomputed topology with the runtime graph
+   definition without introducing a circular runtime dependency;
+4. rename stage-numbered TypeScript exports while preserving persisted key
+   values or provide an explicit compatibility adapter;
+5. add executable deterministic, projection-drift, runtime persistence,
+   cross-tenant reset, and missing-factory tests;
+6. leave L04, L14, migrations, archives, and benchmark stashes unchanged.
+
+## Acceptance mapping
+
+All `AC-L20-01` through `AC-L20-09` keys have at least one executable case.
+The data verifier rejects missing keys, unknown case identifiers, a non-named
+negative result, input hash drift, secrets, or an open Stage 01 gate.
+
+## Non-goals
+
+No product code, migration, L04 history, L14 endpoint, general graph, provider,
+archive, or benchmark change belongs to this data stage.
+
+## Human decision requested
+
+Accept only if the package is a projection rather than a second authority, the
+negative errors are stable and specific, reset and seal-transition cases are
+complete, and the Stage 03 handoff is sufficiently unambiguous to build.
