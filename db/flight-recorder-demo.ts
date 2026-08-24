@@ -51,6 +51,47 @@ async function workspaceScope(workspaceId: string): Promise<string> {
   return sealed.sha256.slice(0, 16);
 }
 
+async function buildOutcomeDefinition(input: {
+  id: string;
+  workspaceId: string;
+  traceId: string;
+  userId: string;
+  now: string;
+}) {
+  const outcomeRule = await sealCanonical({
+    metric: "activation_within_72h",
+    minimumEligibleAccounts: 3,
+    allowedLabels: ["supported", "unsupported", "correlated", "inconclusive"],
+    causalClaimAllowed: false,
+  });
+  const cohort = await sealCanonical({
+    accountIds: ["acct_fixture_01", "acct_fixture_02", "acct_fixture_03"],
+    truthMode: "FIXTURE",
+  });
+  const baseline = await sealCanonical({
+    activationRate: 0.31,
+    eligibleAccounts: 42,
+    sourceEvidenceId: "evidence:activation-drop",
+  });
+  return {
+    id: input.id,
+    workspaceId: input.workspaceId,
+    traceId: input.traceId,
+    definitionKey: "activation-within-72h-v1",
+    metricName: "activation_within_72h",
+    cohortJson: cohort.canonicalJson,
+    cohortHash: cohort.sha256,
+    baselineJson: baseline.canonicalJson,
+    baselineHash: baseline.sha256,
+    windowStartsAt: input.now,
+    windowEndsAt: addMilliseconds(input.now, 72 * 60 * 60 * 1_000),
+    assessmentRuleJson: outcomeRule.canonicalJson,
+    assessmentRuleHash: outcomeRule.sha256,
+    registeredBy: input.userId,
+    registeredAt: input.now,
+  };
+}
+
 export async function buildDemoIntent(input: IntentInput) {
   const now = requireIso(input.now ?? new Date().toISOString());
   const scope = await workspaceScope(input.workspaceId);
@@ -109,7 +150,15 @@ export async function buildDemoIntent(input: IntentInput) {
   };
 }
 
+export async function buildFlightRecorderSeed(input: DemoIdentity) {
+  return buildFlightRecorderDemo(input, true);
+}
+
 export async function buildPendingFlightRecorderDemo(input: DemoIdentity) {
+  return buildFlightRecorderDemo(input, false);
+}
+
+async function buildFlightRecorderDemo(input: DemoIdentity, seedOnly: boolean) {
   const requestedNow = requireIso(input.now ?? new Date().toISOString());
   const now = addMilliseconds(requestedNow, -10_000);
   const scope = await workspaceScope(input.workspaceId);
@@ -241,6 +290,48 @@ export async function buildPendingFlightRecorderDemo(input: DemoIdentity) {
   const context = await createContextManifest(
     evidence.map((item) => item.contextSource),
   );
+  const outcomeDefinition = await buildOutcomeDefinition({
+    id: ids.outcomeDefinitionId,
+    workspaceId: input.workspaceId,
+    traceId: ids.traceId,
+    userId: input.userId,
+    now,
+  });
+  const trace = {
+    id: ids.traceId,
+    workspaceId: input.workspaceId,
+    traceKey: STAGE_03_TRACE_KEY,
+    fixtureKey: STAGE_03_FIXTURE_KEY,
+    truthMode: "FIXTURE" as const,
+    currentState: "context_frozen" as const,
+    retentionClass: "review_evidence" as const,
+    retentionUntil: addMilliseconds(now, 365 * 24 * 60 * 60 * 1_000),
+    createdBy: input.userId,
+  };
+  const contextSnapshot = {
+    id: ids.contextSnapshotId,
+    workspaceId: input.workspaceId,
+    traceId: ids.traceId,
+    snapshotKey: "onboarding-rescue-context-v1",
+    truthMode: "FIXTURE" as const,
+    currentState: "frozen" as const,
+    sourceCount: context.sourceCount,
+    orderedManifestJson: context.orderedManifestJson,
+    manifestHash: context.manifestHash,
+    createdBy: input.userId,
+    frozenAt: now,
+  };
+  if (seedOnly) {
+    return {
+      ids,
+      now,
+      trace,
+      evidence,
+      contextSnapshot,
+      outcomeDefinition,
+      stableStringify,
+    };
+  }
   const graph = [
     ["planner", "Scopes the reviewed onboarding-rescue playbook", ["evidence:activation-drop", "evidence:onboarding-feedback"]],
     ["quantitative", "Checks the activation movement and cohort", ["evidence:activation-drop", "metric:activation-72h"]],
@@ -304,21 +395,6 @@ export async function buildPendingFlightRecorderDemo(input: DemoIdentity) {
       };
     }),
   );
-  const outcomeRule = await sealCanonical({
-    metric: "activation_within_72h",
-    minimumEligibleAccounts: 3,
-    allowedLabels: ["supported", "unsupported", "correlated", "inconclusive"],
-    causalClaimAllowed: false,
-  });
-  const cohort = await sealCanonical({
-    accountIds: ["acct_fixture_01", "acct_fixture_02", "acct_fixture_03"],
-    truthMode: "FIXTURE",
-  });
-  const baseline = await sealCanonical({
-    activationRate: 0.31,
-    eligibleAccounts: 42,
-    sourceEvidenceId: "evidence:activation-drop",
-  });
   const intentBundle = await buildDemoIntent({
     ...input,
     now: addMilliseconds(now, 7_000),
@@ -366,49 +442,11 @@ export async function buildPendingFlightRecorderDemo(input: DemoIdentity) {
   return {
     ids,
     now,
-    trace: {
-      id: ids.traceId,
-      workspaceId: input.workspaceId,
-      traceKey: STAGE_03_TRACE_KEY,
-      fixtureKey: STAGE_03_FIXTURE_KEY,
-      truthMode: "FIXTURE" as const,
-      currentState: "awaiting_approval" as const,
-      retentionClass: "review_evidence" as const,
-      retentionUntil: addMilliseconds(now, 365 * 24 * 60 * 60 * 1_000),
-      createdBy: input.userId,
-    },
+    trace: { ...trace, currentState: "awaiting_approval" as const },
     evidence,
-    contextSnapshot: {
-      id: ids.contextSnapshotId,
-      workspaceId: input.workspaceId,
-      traceId: ids.traceId,
-      snapshotKey: "onboarding-rescue-context-v1",
-      truthMode: "FIXTURE" as const,
-      currentState: "frozen" as const,
-      sourceCount: context.sourceCount,
-      orderedManifestJson: context.orderedManifestJson,
-      manifestHash: context.manifestHash,
-      createdBy: input.userId,
-      frozenAt: now,
-    },
+    contextSnapshot,
     reasoningNodes,
-    outcomeDefinition: {
-      id: ids.outcomeDefinitionId,
-      workspaceId: input.workspaceId,
-      traceId: ids.traceId,
-      definitionKey: "activation-within-72h-v1",
-      metricName: "activation_within_72h",
-      cohortJson: cohort.canonicalJson,
-      cohortHash: cohort.sha256,
-      baselineJson: baseline.canonicalJson,
-      baselineHash: baseline.sha256,
-      windowStartsAt: now,
-      windowEndsAt: addMilliseconds(now, 72 * 60 * 60 * 1_000),
-      assessmentRuleJson: outcomeRule.canonicalJson,
-      assessmentRuleHash: outcomeRule.sha256,
-      registeredBy: input.userId,
-      registeredAt: now,
-    },
+    outcomeDefinition,
     intentBundle,
     flightTraceEvents,
     stableStringify,

@@ -1,72 +1,74 @@
 ---
-type: stage-verification
-stage: 01
+type: verification-record
+stage: 01_spec
 status: passed
-verified_at: 2026-08-22T15:53:35+05:30
-environment: Windows; Node.js v22.15.0; vinext v1.0.0-beta.2; FIXTURE/TEST only
-spec_sha256: 8a9a4c93f8fc2e8418d0d733e327d4d64d906261c0e65c82989ff6211a2de492
+verified_at: 2026-08-23T19:04:47.7450324Z
+verifier_sha256: ee077b1454126b36234d117b79d67fcf9f6f8015d6c69f143417d70cb783f2c1
 ---
 
-# Stage 01 verification - L08 authority correction
+# Stage 01 verification
 
 ## Result
 
-The proposed specification is bounded to L08, binds all ten declared repository
-inputs, preserves the sealed release, chooses a database-atomic active-intent
-invariant, and defines deterministic red/green interleaving evidence. No runtime,
-schema, migration, worker, application, or provider code changed in Stage 01.
+The L06 specification is review-ready. Its declared inputs are fresh, the
+baseline shortcut is confirmed from product source and tests, all fourteen
+acceptance criteria are unique and executable, and the fixed graph, recovery,
+failure, truth, authority, and non-goal boundaries are explicit.
+
+## Environment
+
+| Field | Value |
+|---|---|
+| Branch | `codex/l06-graph-executor` |
+| Sealed base commit | `464df6be405307f4412894e0d24d1569bf3036b6` |
+| Node.js | `v22.15.0` |
+| Platform | Windows / PowerShell |
+| Verification time | `2026-08-23T19:04:47.7450324Z` |
 
 ## Commands
 
-| Command | Exit | Relevant result |
+| Command | Exit | Result |
 |---|---:|---|
-| `node factory/01_spec/verify.mjs` | 0 | Passed 13 required sections, 8 acceptance criteria, 10 fresh input bindings, sealed-commit existence, secret scan, scope scan, and product-diff guard. |
-| `node_modules/.bin/eslint.cmd . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | 0 | No lint findings. |
-| `node_modules/.bin/vinext.cmd build` | 0 | Five build phases completed; route `/` produced successfully. |
-| `node_modules/.bin/tsx.cmd --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs` | 0 | 41 tests passed; 0 failed, skipped, cancelled, or todo. |
+| `node factory/01_spec/verify.mjs` | 0 | Passed: 9 declared hashes, 14 criteria, 6 fixed nodes, 8 deterministic schedules, and the source-level L06 gap. |
+| `node --test factory/_lib/factory-tools.test.mjs` | 0 | Passed 3/3 factory hashing, freshness, and seal regressions. |
 | `git diff --check` | 0 | No whitespace errors. |
-| `node factory/status.mjs` | 0 | Active stage remains `01_spec`; its verified gate is open and later stages cannot advance. |
 
-The shell's user-level `npm` shim points to a missing global `npm-cli.js`, so the
-named package scripts were executed through their exact installed binaries.
-No dependency installation or network access was required. A pnpm fallback was
-attempted once, stopped before installation, and its generated cache removed;
-the original npm-managed `node_modules` packages were restored and tool versions
-were checked before verification continued.
+## Verified requirements
 
-## Pre-gate corrections
+- The specification names the exact shortcut: fixture construction returns
+  succeeded nodes, repository materialization batches artificial transitions,
+  and the old recovery test operates only on fixture objects.
+- The graph is the fixed planner, three workers, skeptic, and synthesizer
+  topology. Caller-authored nodes, edges, and handlers are forbidden.
+- Logical identity, attempt identity, canonical input hashing, database claims,
+  lease ownership, atomic finalization, and append-only evidence are required.
+- Both between-node and claimed-running interruption schedules are defined.
+- Duplicate/concurrent calls, invalid artifacts, input drift, handler failure,
+  and cross-workspace attacks fail closed.
+- Only a successful persisted synthesizer artifact may create the active intent
+  and policy. Graph execution creates no grant or effect and preserves L08.
+- Actual executor activity remains visibly distinct from `FIXTURE` business
+  evidence and handler content.
+- L20, L04, and L14 remain explicitly open.
 
-The first full-suite run passed 39 of 41 tests, including all product, authority,
-migration, release, and rendering cases. The only failures were two factory
-self-tests coupled to the previously sealed live pipeline state. Stage 01
-corrected only that harness behavior:
+## Negative coverage in the verifier
 
-- `factory/_lib/factory-tools.test.mjs` now proves historical downstream drift
-  in a synthetic two-stage factory instead of requiring the live factory to be
-  complete.
-- `tests/icm-workspace.test.mjs` now accepts a valid open/pending human gate and
-  still enforces allowed gate/decision combinations.
-- The fresh later-stage contracts put `_archive/` first in their `Do not load`
-  clauses to preserve the existing cold-load contract.
+The verifier fails if any declared hash drifts, an input disappears, acceptance
+IDs are missing/duplicated/non-contiguous, the fixed topology or arbitrary-DAG
+prohibition disappears, interruption/duplicate/failure schedules are absent,
+the truth-mode boundary weakens, or the remaining findings are claimed fixed.
 
-These changes do not alter product behavior or relax factory acceptance. They
-make the factory's own tests runnable during the active state they are meant to
-govern.
+## Artifact hashes
 
-## Negative checks
+| Artifact | SHA-256 |
+|---|---|
+| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
+| `factory/01_spec/verify.mjs` | `ee077b1454126b36234d117b79d67fcf9f6f8015d6c69f143417d70cb783f2c1` |
 
-- A specification without `active_intent_id`, an in-batch raising assertion,
-  deterministic barrier, migration abort behavior, rollback limits, or the L08
-  scope boundary fails `verify.mjs`.
-- A stale declared input hash fails verification.
-- Any Stage 01 change under `app/`, `db/`, `drizzle/`, or `worker/` fails the
-  product-diff guard.
-- Any test change other than the exact workspace meta-test fails the scoped
-  test-diff guard.
-- Secret-like bearer, payment, GitHub, or private-key patterns fail the scan.
+## Stage boundary
 
-## Human review focus
-
-Review the chosen linearization point, pointer transition rules, zero-row batch
-sentinel, legacy backfill abort conditions, deterministic production-path test,
-and rollback boundary. Verification opens this gate; it does not accept it.
+No application, database, migration, worker, or product-test file was changed
+by Stage 01. Product build, migration, cold-runtime, and end-to-end execution
+evidence are therefore deferred to the stages that own implementation and
+release verification; they cannot be inferred from this passed specification
+check.

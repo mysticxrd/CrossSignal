@@ -1,247 +1,245 @@
 ---
 type: stage-output
-stage: 02
-status: ready-for-review
-unit: superseded-intent-authority-correction
-finding: L08
-fixture_key: l08-superseded-intent:2026-08-22.1
+stage: 02_data
+status: review-ready
+unit: persisted-graph-executor-correction
+finding: L06
+fixture: persisted-graph-executor.fixture.mjs
 ---
 
-# L08 executable data package
+# L06 persisted graph executor data package
 
-This package turns the accepted superseded-intent specification into the exact
-schema, migration, transaction, fixture, and failure contracts Stage 03 must
-implement. It does not change product code or claim that L08 is fixed yet.
+## Decision
 
-## Data decision
+Represent the approved graph as a code-owned logical registry plus immutable
+execution attempts. Persist the graph version and six-node topology in the
+initialization event, but create an attempt row only when all predecessor
+artifacts exist and its canonical input hash can be computed exactly.
 
-`flight_traces.active_intent_id` is the sole database-owned authority head.
-Runtime reads, replacement, grant insertion, effect reservation, trace
-projection, and the visible snapshot resolve the same explicit identity.
+This avoids fake placeholder input hashes. A logical node with no attempt is
+still visibly pending in the graph projection; its first durable attempt is
+created when it becomes runnable. The executable fixture is a reference model
+and oracle for Stage 03, not the product executor.
 
-Each new `action_intents` row also carries nullable
-`supersedes_intent_id`. This internal immutable predecessor edge is required to
-make pointer movement monotonic without treating timestamps or `rowid` as
-authority. Initial v1 has no predecessor. Replacement v2 must name the current
-v1. A partial unique index permits at most one successor for a predecessor.
-This is an implementation constraint, not a new user-visible authority event.
+## Existing-model gap
 
-## Schema manifest
+The current `reasoning_nodes` relation can store node keys, attempt numbers,
+state, input/output hashes, errors, and timestamps. It cannot yet prove:
 
-| Object | Contract |
+- whether a row was fixture-precomputed or produced by a runtime handler;
+- graph and handler versions;
+- ordered predecessor outputs used to compute the input hash;
+- durable lease ownership and expiry;
+- one active attempt and one canonical success per logical node; or
+- immutable interrupted-attempt history with a later attempt.
+
+Stage 03 must add only the persistence needed for these L06 facts. Existing L08
+rows remain valid and must be backfilled as legacy precomputed fixture evidence,
+never relabeled as runtime execution.
+
+## Fixed logical registry
+
+| Order | Node | Predecessors | Artifact |
+|---:|---|---|---|
+| 1 | `planner` | none | `plan` |
+| 2 | `quantitative` | `planner` | `analysis` |
+| 3 | `qualitative` | `planner` | `analysis` |
+| 4 | `experiment_design` | `planner` | `analysis` |
+| 5 | `skeptic` | `quantitative`, `qualitative`, `experiment_design` | `critique` |
+| 6 | `synthesizer` | all prior nodes | `intent_draft` |
+
+Registry version: `crosssignal-fixed-graph-v1`.
+
+The runtime request contains authenticated workspace, actor, and trace identity
+only. `nodes`, `edges`, `handler`, `graphVersion`, and `truthMode` are forbidden
+request fields and map to `l06_arbitrary_graph_rejected`.
+
+## Attempt persistence contract
+
+Stage 03 may implement equivalent normalized tables, but the persisted fields
+and constraints below are mandatory.
+
+| Field | Contract |
 |---|---|
-| `flight_traces.active_intent_id` | Nullable text. Null is allowed before a first intent or forever on a terminal trace that never produced one. Once non-null it cannot be cleared. |
-| `action_intents.supersedes_intent_id` | Nullable immutable text. Null for the first intent; every replacement points to the exact prior active intent in the same workspace and trace. |
-| `idx_flight_traces_workspace_active_intent` | Index on `(workspace_id, active_intent_id)` for exact tenant-scoped head resolution. |
-| `idx_action_intents_one_successor` | Partial unique index on `(workspace_id, trace_id, supersedes_intent_id)` where the predecessor is non-null. |
+| `logical_node_id` | Stable for workspace + trace + graph version + node key. |
+| `id` | Stable attempt identity including logical node and positive attempt number. |
+| `graph_version` | Exact code-owned registry version. Legacy rows use an explicit legacy value. |
+| `execution_mode` | `runtime` or `precomputed_fixture`; existing rows backfill to `precomputed_fixture`. |
+| `handler_version` | Exact code-owned handler contract version. |
+| `predecessor_outputs_json` | Ordered node keys and persisted output hashes; valid JSON and canonical order. |
+| `input_hash` | SHA-256 of workspace, trace, truth mode, context hash, versions, node, attempt, and predecessor outputs. |
+| `current_state` | `pending`, `running`, `succeeded`, `failed`, or `skipped` under existing graph transitions. |
+| `lease_token` | Opaque claim-owner token; required only while `running` and never emitted to user-visible evidence. |
+| `lease_expires_at` | Deterministic expiry; required only while `running`. |
+| `output_hash` | Required only for `succeeded`; equals the canonical artifact content hash. |
+| `error_code` | Required for `failed`; stable L06 codes are preserved. |
+| timestamps | Pending has none; running has start; terminal has completion. |
 
-Drizzle exposes both nullable fields. The migration and database triggers own
-cross-row validity because a nullable foreign key alone cannot express state,
-same-trace membership, monotonic promotion, or the required policy.
+Required database uniqueness:
 
-## Database guard manifest
+- existing `{workspace_id, trace_id, node_key, attempt}` identity remains unique;
+- at most one `pending` or `running` attempt per logical node;
+- at most one `running` attempt per logical node;
+- at most one `succeeded` canonical attempt per logical node;
+- artifact identity is unique for a node attempt and a conflicting content hash
+  cannot replace the canonical artifact;
+- graph event sequence and idempotency keys remain unique per workspace/trace.
 
-The 0006 migration installs or replaces these named guards:
+Terminal attempts are immutable. Expired recovery changes the abandoned
+`running` attempt to `failed` with `l06_interrupted_attempt`, then inserts a new
+pending attempt with the next number. It never rewrites the prior attempt.
 
-| Guard | Required behavior and named abort |
-|---|---|
-| `trg_flight_traces_active_intent_transition` | Reject clearing, cross-workspace/cross-trace assignment, missing exact policy, initial activation outside `reasoning`, replacement outside `awaiting_approval`, a predecessor other than the current head, or movement after a grant/effect. Abort `l08_active_intent_pointer_rejected`. |
-| `trg_policy_decisions_activate_intent` | After an exact policy insert, promote its intent through the guarded pointer transition. Then assert the trace head equals that intent. A zero-row promotion raises `l08_intent_activation_rejected`, rolling back the intent-plus-policy batch. |
-| `trg_flight_traces_required_active_intent` | Require a valid non-null head when entering or remaining in `awaiting_approval`, `executing`, `observing`, or `assessed`. |
-| `trg_approval_grants_bind_active_intent` | At the grant-insert linearization point require the existing exact grant bindings, trace state `awaiting_approval`, and `trace.active_intent_id = NEW.intent_id`. Stale authorization raises `l08_stale_or_superseded_intent`. |
-| `trg_effect_attempts_bind_active_intent` | Repeat the active-head predicate in addition to exact grant, actor, kill-switch, expiry, cap, request, replay, and intended-effect checks. |
-| `trg_flight_trace_events_executing_projection` | An executing trace event must observe the persisted trace in `executing` and `json_extract(payload_json, '$.intentId') = trace.active_intent_id`; otherwise raise `l08_trace_execution_projection_mismatch`. |
+## Canonical input payload
 
-Existing immutable, tenant, canonical-payload, policy, grant, kill-switch,
-replay, event-sequence, outcome, and deletion guards stay installed. New guards
-strengthen them; they do not replace exact binding checks.
+The fixture executes the following canonical shape through the repository's
+`sealCanonical` contract:
 
-## Intent and policy transaction
-
-The production batch is ordered:
-
-```text
-INSERT action_intents(vN, supersedes_intent_id = prior active head or NULL)
-INSERT policy_decisions(policy-vN)
-  -> trg_policy_decisions_activate_intent attempts guarded promotion
-  -> the same trigger asserts persisted active_intent_id = vN
+```json
+{
+  "workspaceId": "workspace_l06_fixture",
+  "traceId": "trace_l06_fixture",
+  "truthMode": "FIXTURE",
+  "contextManifestHash": "<sha256>",
+  "graphVersion": "crosssignal-fixed-graph-v1",
+  "nodeKey": "skeptic",
+  "handlerVersion": "crosssignal-fixture-handlers-v1",
+  "attempt": 1,
+  "predecessorOutputs": [
+    { "nodeKey": "quantitative", "outputHash": "<sha256>" },
+    { "nodeKey": "qualitative", "outputHash": "<sha256>" },
+    { "nodeKey": "experiment_design", "outputHash": "<sha256>" }
+  ]
+}
 ```
 
-The policy insert is the activation sentinel required by the accepted Spec.
-The trigger sees the newly inserted exact policy, so a direct pointer update
-without policy fails. If replacement loses to authorization, the trigger raises
-and D1 rolls back both the v2 intent and v2 policy. Direct movement can only
-follow the immutable predecessor edge under the same state/authority guards.
+Predecessor order comes from the fixed registry. A missing, reordered, foreign,
+or changed output blocks claim before handler invocation.
 
-## Authorization transaction
+## Artifact contract
 
-`authorizeAndExecute` loads the intent by the trace's explicit head, not by
-ordering. Its real D1 batch retains the existing writes and adds these
-boundaries:
+Every successful handler returns structured content with:
 
-1. Grant insert checks exact active identity and awaiting state. This is the
-   authorization linearization point.
-2. Effect reservation repeats active identity plus existing policy, grant,
-   actor, payload, context, recipients, expiry, cap, kill-switch, replay, and
-   intended-effect checks.
-3. The trace compare-and-swap includes
-   `active_intent_id = :authorized_intent_id`.
-4. The immediately following executing event includes `intentId` in canonical
-   payload and is guarded by `trg_flight_trace_events_executing_projection`.
+- `truthMode: FIXTURE`;
+- graph, node, and handler versions;
+- ordered predecessor outputs;
+- declared evidence citations;
+- a bounded summary with no hidden chain-of-thought;
+- usage status and measured cost, or `unknown` with `null` cost.
 
-A zero-row compare-and-swap therefore cannot commit surrounding grant, effect,
-effect-event, outcome, cost, receipt, or trace-event writes: the executing event
-raises inside the same batch. Post-commit inspection is not an authority check.
+The existing `validateReasoningArtifact` and `sealCanonical` contracts run
+before persistence. Secret-like content, undeclared citations, invalid JSON, or
+conflicting duplicate content maps to `l06_invalid_artifact`. The artifact,
+attempt success projection, and completion event commit atomically.
 
-The application maps the database abort to the stable expected error
-`l08_stale_or_superseded_intent`. It does not retry authorization against v2;
-the owner must inspect and authorize v2 explicitly.
+## Lifecycle oracle
 
-## Runtime read contract
+1. Initialization appends `graph.initialized` with the fixed topology and
+   creates only the runnable planner attempt.
+2. A claim recomputes the exact input hash, compare-and-sets pending to running,
+   and stores a lease token/expiry.
+3. Finalization requires the exact unexpired token, validates and seals the
+   runtime-produced artifact, marks the attempt succeeded, and appends
+   `graph.node_succeeded`.
+4. Success materializes newly runnable attempts in registry order.
+5. Synthesizer success confirms all six canonical artifacts, creates one
+   intent/policy pair bound to the synthesizer artifact, and transitions the
+   trace to `awaiting_approval`.
+6. Graph execution always leaves grant, effect, and outcome counts at zero.
 
-`findTrace` selects `active_intent_id`. The replacement, snapshot, and
-authorization paths fetch the intent with all three predicates:
+## Stable errors
 
-```sql
-intent.id = trace.active_intent_id
-AND intent.workspace_id = trace.workspace_id
-AND intent.trace_id = trace.id
-```
-
-No normal runtime query infers current intent from `created_at`, timestamp
-coincidence, `rowid`, `MAX`, or insertion order. Snapshot output must expose v2
-immediately after a successful edit-wins promotion.
-
-## Migration 0006 contract
-
-The migration is one atomic expand/validate/backfill/guard transaction from an
-empty database or complete 0005 database:
-
-1. Add nullable `active_intent_id` and `supersedes_intent_id`; add the two
-   indexes. Temporarily replace the action-intent immutability trigger only
-   inside this migration so legacy predecessor edges can be backfilled.
-2. For legacy rows only, order each trace with the sealed rule
-   `created_at ASC, rowid ASC`, set each intent's predecessor to the prior row,
-   and derive the candidate as `created_at DESC, rowid DESC LIMIT 1`.
-3. Use a migration-local assertion table and raising trigger so every invalid
-   case aborts with a named error rather than leaving a zero-row check.
-4. Validate workspace/trace ownership, required-state candidate and policy,
-   no grant/effect on an awaiting trace, one authority intent per trace, and
-   agreement between all grants/effects and the derived candidate.
-5. A derived v2 combined with v1 authority raises
-   `migration_l08_historical_authority_mismatch`. Missing required heads raise
-   `migration_l08_required_state_missing_active_intent`. No historical row is
-   deleted, rewritten as valid, or silently quarantined.
-6. Backfill valid heads, reinstall the immutable trigger, install all new
-   guards, drop the migration-local assertion objects, and assert no required
-   state lacks a valid head.
-7. Add both columns, both indexes, and every new/replaced guard to
-   `db/migrations.ts` compatibility checks and update the Drizzle snapshot and
-   journal as one generated migration.
-
-If any assertion fails, the migration transaction restores the entire 0005
-schema/data state, including the old immutable trigger. The resettable FIXTURE
-may use its existing exact scoped reset before retry. Non-fixture mismatches
-require forensic handling outside this run.
-
-The migration sort is compatibility logic only. It must not appear in runtime
-head selection or post-migration activation.
-
-## Executable race fixture
-
-`factory/02_data/fixtures/superseded-intent-authority.fixture.mjs` defines:
-
-- stable workspace, trace, actor, v1/v2, and policy identities;
-- the production barrier phase
-  `after-active-intent-and-policy-load-before-write-batch`;
-- an edit-wins schedule whose stale v1 batch persists zero writes;
-- an authorization-wins schedule whose v2 intent and policy both roll back;
-- five migration databases; and
-- ten direct database attacks.
-
-No timer, random scheduler, copied SQL, or test-only authority validator is
-allowed. Stage 03 attaches a manual promise barrier or two controlled database
-connections to the real `authorizeAndExecute`, `replacePendingIntent`, and D1
-batch paths.
-
-### Canonical migration matrix
-
-| Case | Expected result |
+| Code | Meaning |
 |---|---|
-| `empty` | Migrates; no trace head exists. |
-| `pending-v1` | Migrates; awaiting trace head is v1. |
-| `pending-v2` | Migrates; awaiting trace head is v2 and v2 explicitly supersedes v1. |
-| `completed-v1` | Migrates; assessed trace head and authority remain v1. |
-| `invalid-historical-race` | Aborts with `migration_l08_historical_authority_mismatch`; no partial schema/data changes. |
+| `l06_arbitrary_graph_rejected` | Caller attempted to control topology, handlers, version, or truth mode. |
+| `l06_claim_busy` | An unexpired owner already holds the logical node. |
+| `l06_claim_expired` | A caller attempted finalization after deterministic expiry. |
+| `l06_claim_ownership_mismatch` | The finalize/recovery token does not own the attempt. |
+| `l06_dependency_blocked` | A required predecessor or completion invariant is absent. |
+| `l06_input_drift` | Recomputed context/predecessor input differs from the stored hash. |
+| `l06_interrupted_attempt` | An expired running attempt was closed visibly before a later attempt. |
+| `l06_invalid_artifact` | Artifact content, citations, secret scan, or duplicate hash failed. |
+| `l06_handler_failed` | The bounded handler failed without blind retry. |
+| `l06_workspace_trace_mismatch` | Actor, workspace, trace, row, or relation ownership disagrees. |
 
-### Post-race assertions
+## Executable schedules
 
-Edit wins: trace remains `awaiting_approval`, head and visible snapshot are v2,
-v1/v2 have no grant or effect, and the rejected v1 batch adds no effect event,
-executing/terminal trace event, outcome, cost, provider call, or receipt. Exact
-authorization of v2 then succeeds once.
+| ID | Schedule | Executable oracle |
+|---|---|---|
+| `S-L06-01` | Cold success | Six succeeded runtime attempts/artifacts, one intent and policy, zero grants/effects/outcomes. |
+| `S-L06-02` | Stop and resume | Stop after boundaries 1–5; completed IDs/hashes remain and each handler count is one. |
+| `S-L06-03` | Claim and crash | Duplicate observes busy; expiry retains failed attempt 1 and succeeds attempt 2. |
+| `S-L06-04` | Concurrent calls | Wrong token fails; one token finalizes; duplicate same-token finalize is idempotent. |
+| `S-L06-05` | Skeptic failure | Four upstream artifacts remain, skeptic fails, synthesizer is absent, and authority/effects remain empty. |
+| `S-L06-06` | Input drift | Mutated predecessor hash blocks claim before handler invocation or artifact creation. |
+| `S-L06-07` | Tenant attack | Foreign workspace/trace and caller-controlled graph fields fail before mutation. |
+| `S-L06-08` | L08 regression | Stage 03 must run the existing two L08 race schedules and ten direct attacks unchanged. |
 
-Authorization wins: the committed v1 effect remains exactly once; the losing
-replacement leaves no v2 intent or policy and raises
-`l08_intent_activation_rejected`.
+The fixture uses deterministic timestamps and explicit operations. It contains
+no sleep, timer, network, model, provider, or random race.
 
-Direct attacks cover stale grants/effects, cross-workspace/cross-trace heads,
-pointer clearing, missing policy, backward/non-predecessor movement, kill
-switch, replay, and an intentionally zero-row executing compare-and-swap.
+## Direct-database attack package
+
+The fixture exports fourteen stable attacks, `DB-L06-01` through `DB-L06-14`,
+covering cross-workspace/trace writes, unregistered nodes and edges,
+out-of-order claims, predecessor drift, lease theft/expiry, undeclared or
+secret artifacts, conflicting duplicates, early authority handoff, and direct
+trace transition. Stage 03 must implement them against the real database and
+prove zero partial mutation.
+
+## Fixture truth boundary
+
+`persisted-graph-executor.fixture.mjs` is an executable reference model. It
+imports repository canonical hashing and artifact validation, but its state is
+in memory and every evidence/handler artifact is `FIXTURE`. Passing Stage 02
+does not prove a database executor exists. Only Stage 03 product tests and Stage
+04 independent persisted-runtime probes may make that claim.
 
 ## Acceptance mapping
 
-| Spec criterion | Data proof required from Stage 03 |
+| Stage 01 criterion | Stage 02 contract |
 |---|---|
-| `AC-L08-01` | Production barrier reproduces sealed 0005 stale-v1 success before the fix. |
-| `AC-L08-02` | Schema, migration, exact lookup, required-state, and predecessor contracts establish one explicit head. |
-| `AC-L08-03` | Edit-wins schedule returns the named stale error and zero rejected-batch writes. |
-| `AC-L08-04` | Authorization-wins schedule rolls the complete v2 replacement back and keeps one v1 effect. |
-| `AC-L08-05` | Active v1/v2 still completes confirmed, failed, and indeterminate scenarios exactly once. |
-| `AC-L08-06` | Ten direct SQL attacks and zero-row projection transition abort inside the transaction. |
-| `AC-L08-07` | Five migration databases match the canonical matrix and compatibility snapshot. |
-| `AC-L08-08` | Full build, lint, tests, migration, tenant, authority, kill-switch, replay, and no-retry evidence passes with only L08 claimed. |
+| AC-L06-01/02 | Fixed registry, forbidden request fields, and handler invocation counters. |
+| AC-L06-03/04 | Canonical input payload, attempt fields, lifecycle, events, and artifacts. |
+| AC-L06-05/06 | Boundary stop/resume and expired-running attempt oracle. |
+| AC-L06-07 | Claim-owner/idempotent-finalize schedule. |
+| AC-L06-08 | Failure and artifact-validation schedules with zero authority rows. |
+| AC-L06-09 | Fourteen attack cases and exact scope checks. |
+| AC-L06-10 | FIXTURE truth boundary and explicit `execution_mode`. |
+| AC-L06-11 | Synthesizer-only intent/policy handoff; grant/effect remain empty. |
+| AC-L06-12 | Legacy precomputed backfill plus empty/current/interrupted/completed/invalid migration cases. |
+| AC-L06-13 | Existing L08 schedule delegated unchanged to Stage 03. |
+| AC-L06-14 | Unknown cost is explicit; L20, L04, and L14 remain open. |
 
-## Build handoff
+## Stage 03 handoff
 
-Stage 03 must begin with the deterministic red test, capture the sealed 0005
-failure, implement migration/schema/guards/runtime exact lookup, then capture
-the green schedules and attack matrix. It must update the existing canonical
-FIXTURE materialization to set v1 as active without changing its truth labels,
-reset scope, public routes, form shape, UI promise, provider payload, or outcome
-semantics.
+Stage 03 must implement the fixture semantics in durable product code. It must
+not import this reference model into runtime code or pass by replaying fixture
+objects. Tests may import it only as an oracle. Any implementation that labels
+legacy rows as runtime, creates child input hashes before predecessors exist,
+exposes lease tokens, or creates authority before synthesizer success violates
+this data package.
 
-Migration-first deployment is fail-closed for the old application: old
-replacement attempts lacking the predecessor edge abort at policy activation;
-old authorization is accepted only if its selected intent equals the database
-head. Rollback keeps 0006 columns and guards. Dropping them is prohibited.
-
-## Scope boundary
-
-This package fixes only L08. It does not implement L06, reconcile L20, add L04
-authority-history surfaces, add the L14 endpoint, enable post-approval editing,
-or add providers, retries, arbitrary actions, UI features, or public API
-changes. Ambiguity in these contracts routes back to Spec; Build must not weaken
-or broaden them.
-
-## Declared input hashes
-
-Text is normalized to LF before SHA-256.
+## Declared input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/02_data/CONTEXT.md` | `63d2a52967f887368b8a1ac61e53a29826d8e98f7eee1cb95df08e8ee01e42d1` |
-| `factory/01_spec/output/SPEC.md` | `8a9a4c93f8fc2e8418d0d733e327d4d64d906261c0e65c82989ff6211a2de492` |
-| `factory/01_spec/output/HUMAN_GATE.md` | `9a3fe61b35e0b628619ed0e4df616d8df6109125fbaeca8cb80194f025d55ce2` |
+| `factory/02_data/CONTEXT.md` | `c4e7c6e44af8e0abe82aca39ce48754066caf1b3114f3aa51925bba766e37888` |
+| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
+| `factory/01_spec/output/HUMAN_GATE.md` | `beb2466f7082e9cca93550db9be7c3bf06c43caa184422d9c1b6ad8700f74664` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `db/flight-recorder-schema.ts` | `48efbdb2b7223d795428abe01c5857e2b92aecabb8edefde4f543d37e73246f3` |
-| `db/migrations.ts` | `500fad78aacc994880a0e6fa8ed8923bf866c7f22a94aa9f22b56ee86044ddd5` |
-| `db/flight-recorder.ts` | `41f248e8e6bc0134552ff75b20f3f8f31f079bb319c05e6af5a28d5a722b70f7` |
-| `drizzle/0005_flight_recorder_guards.sql` | `17f5a4ffb041d4a3851c9ff441fe61a44274d687c1cbc917356bd247fe6094a7` |
-| `drizzle/meta/0005_snapshot.json` | `3c4dc79f1dc972a2b3f497e87138baee7265f7063daa079d06c7af05c29baded` |
-| `tests/flight-recorder-data.test.mjs` | `18ea70aead27579460bcf01157953a3f8337f3a5eafde523b9b55b36a774f2b1` |
-| `tests/flight-recorder-build.test.mjs` | `79bc737e6f5844410b92ae1d0a8f286a1c7de003955c40e5432210dcb9b67d68` |
-| `factory/02_data/fixtures/onboarding-rescue.fixture.mjs` | `aeb7e0d1b977f90682d473efdbe88dafdb82d498682578f26a894c682cf0083d` |
-| `factory/02_data/fixtures/reset.mjs` | `79e3261492955e78cfa708d25b503865d033f06b7d308d5b65790009d4068a2e` |
-| `package.json` | `c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972` |
+| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
+| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
+| `db/flight-recorder-demo.ts` | `74a8d6b28ddab26e1392e3bf43318ff3e7290ba4950d2806ab98efbb5387c369` |
+| `factory/02_data/fixtures/persisted-graph-executor.fixture.mjs` | `fb2d985e76b6f05bfdda04cfa42b6effbf1dd75d96e1756947e7f555463f9051` |
+
+## Review questions
+
+1. Accept creating attempt rows only when their exact predecessor-derived input
+   hash is computable, while projecting not-yet-runnable logical nodes from the
+   fixed registry and initialization event?
+2. Accept explicit `precomputed_fixture` backfill for all legacy reasoning rows?
+3. Accept the mandatory attempt/lease/version fields and partial uniqueness
+   constraints as the minimum L06 schema delta?
+4. Accept fourteen direct-database attacks and the eight schedule oracles as
+   the Stage 03 executable contract?

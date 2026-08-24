@@ -1,214 +1,114 @@
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { resolve } from "node:path";
 import {
+  fileHash,
   markdownHashBindings,
   markdownSection,
-  pathHash,
-  runChecked,
+  repositoryPath,
 } from "../_lib/verify-kit.mjs";
 
-const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const specPath = resolve(projectRoot, "factory/01_spec/output/SPEC.md");
-const sealedRelease = "7b07ff62b2c0de605c86b378a1b90639f4b90547";
+const projectRoot = resolve(import.meta.dirname, "../..");
+const specPath = resolve(import.meta.dirname, "output/SPEC.md");
+const contextPath = resolve(import.meta.dirname, "CONTEXT.md");
 
-// Durable workspace tests exercise the original generic validator as a
-// factory fail-closed contract, so this export remains compatible.
-const legacyHeadings = [
-  "## Relationship to Result",
-  "## Public evidence",
-  "## Product definition",
-  "## Primary user and problem",
-  "## Golden path",
-  "## Scope",
-  "## Acceptance criteria",
-  "## Current repository truth",
-  "## Evaluator thesis",
-  "## Explicit non-claims",
-];
-const legacySources = [
-  "https://www.result.dev/",
-  "https://www.result.dev/thesis",
-  "https://www.ycombinator.com/companies/result",
-  "https://lab.result.dev/",
-];
-const unsupportedClaims = [
-  /\bResult-native\b/i,
-  /\bResult (?:Postgres|Function|Email|Analytics|AI|SDK\/CLI)\b/,
-  /docs\.result\.dev/i,
-  /owner-authorized Result test workspace/i,
-];
-const secretPatterns = [
-  /\bBearer\s+[A-Za-z0-9._~+/=-]{12,}/i,
-  /\b(?:sk|pk)_(?:live|test)_[A-Za-z0-9]{12,}/,
-  /\b(?:sk|rk|pk)-[A-Za-z0-9_-]{16,}/,
-  /\bgh[oprsu]_[A-Za-z0-9]{20,}/,
-  /-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/,
-];
+const expectedInputs = new Map(Object.entries({
+  "factory/01_spec/CONTEXT.md": "e4341599a1d85f531806381787f9fa15bc5cee9e827ec9a113cae9d3f37488d0",
+  "factory/_shared/ARCHITECTURE_SNAPSHOT.md": "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084",
+  "factory/_shared/QUALITY_GATES.md": "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f",
+  "db/flight-recorder.ts": "ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6",
+  "db/flight-recorder-demo.ts": "74a8d6b28ddab26e1392e3bf43318ff3e7290ba4950d2806ab98efbb5387c369",
+  "db/flight-recorder-contracts.ts": "5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799",
+  "db/flight-recorder-schema.ts": "b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11",
+  "tests/flight-recorder-build.test.mjs": "98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9",
+  "tests/flight-recorder-release.test.mjs": "65d341700d5378e79be376656ee0a8380108c3891ff560ea5ae912985ddc1e8c",
+}));
 
-export function validateSpec(text) {
-  const errors = [];
-  if (typeof text !== "string" || text.trim().length === 0) {
-    return ["specification must be non-empty Markdown"];
-  }
-  for (const heading of legacyHeadings) {
-    if (!text.includes(heading)) errors.push(`missing heading: ${heading}`);
-  }
-  for (const source of legacySources) {
-    if (!text.includes(source)) errors.push(`missing public source: ${source}`);
-  }
-  for (const label of ["Public fact", "Inference", "Unknown / non-claim"]) {
-    if (!text.includes(label)) errors.push(`missing evidence label: ${label}`);
-  }
-  for (const required of [
-    /target company and evaluation audience/i,
-    /standalone/i,
-    /Company Brain/i,
-    /FIXTURE/i,
-    /02_data/i,
-    /AC-01/,
-    /AC-08/,
-  ]) {
-    if (!required.test(text)) errors.push(`missing required specification statement: ${required}`);
-  }
-  for (const forbidden of unsupportedClaims) {
-    if (forbidden.test(text)) errors.push(`contains unsupported Result claim: ${forbidden}`);
-  }
-  for (const secret of secretPatterns) {
-    if (secret.test(text)) errors.push(`contains forbidden secret pattern: ${secret}`);
-  }
-  return errors;
+function requireText(text, pattern, label) {
+  assert.match(text, pattern, `missing specification requirement: ${label}`);
 }
 
-const correctionHeadings = [
-  "## Declared input hashes",
-  "## Executive decision",
-  "## Confirmed defect",
-  "## Authority invariant",
-  "## Atomic enforcement boundary",
-  "## Data model and runtime reads",
-  "## Migration and backfill",
-  "## Deterministic interleaving test",
-  "## Acceptance criteria",
-  "## Compatibility and rollback",
-  "## Scope and non-goals",
-  "## External evidence",
-  "## Risks resolved by this specification",
-];
+const [spec, context, repository, demo, contracts, schema, releaseTests] = await Promise.all([
+  readFile(specPath, "utf8"),
+  readFile(contextPath, "utf8"),
+  readFile(resolve(projectRoot, "db/flight-recorder.ts"), "utf8"),
+  readFile(resolve(projectRoot, "db/flight-recorder-demo.ts"), "utf8"),
+  readFile(resolve(projectRoot, "db/flight-recorder-contracts.ts"), "utf8"),
+  readFile(resolve(projectRoot, "db/flight-recorder-schema.ts"), "utf8"),
+  readFile(resolve(projectRoot, "tests/flight-recorder-release.test.mjs"), "utf8"),
+]);
 
-const requiredBindings = [
-  "factory/01_spec/CONTEXT.md",
-  "factory/_lib/factory-tools.test.mjs",
-  "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
-  "factory/_shared/QUALITY_GATES.md",
-  "db/flight-recorder.ts",
-  "db/flight-recorder-schema.ts",
-  "db/migrations.ts",
-  "drizzle/",
-  "tests/",
-  "package.json",
-];
+assert.match(context, /^unit: persisted-graph-executor-correction$/m);
+assert.match(context, /output\/SPEC\.md/);
+assert.match(context, /output\/VERIFY\.md/);
+assert.match(context, /output\/HUMAN_GATE\.md/);
 
-export function validateCorrectionSpec(text) {
-  const errors = [];
-  if (typeof text !== "string" || text.trim().length === 0) {
-    return ["correction specification must be non-empty Markdown"];
-  }
-  for (const heading of correctionHeadings) {
-    if (!text.includes(heading)) errors.push(`missing heading: ${heading}`);
-  }
-  for (const required of [
-    /flight_traces\.active_intent_id/,
-    /current_state = 'awaiting_approval'/,
-    /grant insert is the authorization linearization point/i,
-    /zero-row\s+compare-and-swap is not sufficient/i,
-    /rolls? back/i,
-    /created_at DESC, rowid DESC/,
-    /manual promise barrier or two controlled database connections/i,
-    /no sleeps or probabilistic race loops/i,
-    /AC-L08-01/,
-    /AC-L08-08/,
-    /L06 runtime reasoning-graph executor/,
-    /L20 fixture\/runtime source-of-truth drift/,
-    /L14 trace endpoint/,
-    /2026-08-22/,
-    /https:\/\/developers\.cloudflare\.com\/d1\/worker-api\/d1-database\/#batch/,
-    /https:\/\/www\.sqlite\.org\/foreignkeys\.html/,
-  ]) {
-    if (!required.test(text)) errors.push(`missing required correction statement: ${required}`);
-  }
-  if (/another pre-batch “latest intent” query is (?:allowed|required)/i.test(text)) {
-    errors.push("specification permits the rejected check-then-act design");
-  }
-  for (const secret of secretPatterns) {
-    if (secret.test(text)) errors.push(`contains forbidden secret pattern: ${secret}`);
-  }
-  return errors;
+const bindingSection = markdownSection(spec, /^## Declared input hashes$/);
+const bindings = markdownHashBindings(bindingSection);
+assert.equal(bindings.length, expectedInputs.size, "declared input count changed");
+assert.deepEqual(new Set(bindings.map(({ input }) => input)), new Set(expectedInputs.keys()));
+for (const { input, expected } of bindings) {
+  assert.equal(expected, expectedInputs.get(input), `declared hash constant drifted: ${input}`);
+  const path = resolve(projectRoot, input);
+  assert.equal(await fileHash(projectRoot, path), expected, `declared input drifted: ${input}`);
 }
 
-async function validateBindings(text) {
-  const section = markdownSection(text, /^## Declared input hashes$/);
-  const bindings = markdownHashBindings(section);
-  const byPath = new Map(bindings.map((binding) => [binding.input, binding.expected]));
-  const errors = [];
-  for (const input of requiredBindings) {
-    const expected = byPath.get(input);
-    if (!expected) {
-      errors.push(`missing declared input hash: ${input}`);
-      continue;
-    }
-    const cleaned = input.replace(/[\\/]$/, "");
-    const actual = await pathHash(projectRoot, resolve(projectRoot, cleaned));
-    if (actual !== expected) errors.push(`stale declared input hash: ${input}`);
-  }
-  for (const input of byPath.keys()) {
-    if (!requiredBindings.includes(input)) errors.push(`undeclared or unexpected input binding: ${input}`);
-  }
-  return errors;
-}
+const acceptanceIds = [...spec.matchAll(/\*\*(AC-L06-\d{2})\s+—/g)].map((match) => match[1]);
+assert.deepEqual(
+  acceptanceIds,
+  Array.from({ length: 14 }, (_, index) => `AC-L06-${String(index + 1).padStart(2, "0")}`),
+  "acceptance criteria must be unique and contiguous",
+);
 
-async function main() {
-  const spec = await readFile(specPath, "utf8");
-  const errors = [
-    ...validateCorrectionSpec(spec),
-    ...(await validateBindings(spec)),
-  ];
-  if (!spec.includes(sealedRelease)) errors.push("missing sealed release binding");
+for (const [pattern, label] of [
+  [/crosssignal-fixed-graph-v1/, "fixed graph version"],
+  [/caller-supplied nodes,\s+edges, handlers, graph versions, or arbitrary DAGs fail closed/s, "no arbitrary graph"],
+  [/planner[\s\S]+quantitative[\s\S]+qualitative[\s\S]+experiment_design[\s\S]+skeptic[\s\S]+synthesizer/, "six-node topology"],
+  [/compare-and-set claim[\s\S]+lease token[\s\S]+Only the claim owner may finalize/i, "durable claim ownership"],
+  [/l06_interrupted_attempt/, "stable interruption error"],
+  [/preserves completed IDs\/hashes\/timestamps/, "between-node preservation"],
+  [/two barrier-controlled executor calls[\s\S]+no partial duplicate writes/i, "concurrent schedule"],
+  [/zero intent, policy, grant, effect,\s+or outcome rows/s, "fail-closed downstream authority"],
+  [/Running fixture handlers through a real executor does not make their\s+business evidence `LIVE`/s, "truth-mode boundary"],
+  [/leaves L20, L04, and L14\s+open/s, "remaining findings"],
+  [/Wall-clock\s+sleeps and probabilistic races are not acceptable evidence/s, "deterministic tests"],
+]) requireText(spec, pattern, label);
 
-  runChecked("git", ["cat-file", "-e", `${sealedRelease}^{commit}`], { cwd: projectRoot });
-  const productDiff = runChecked(
-    "git",
-    ["diff", "--name-only", "--", "app", "db", "drizzle", "worker"],
-    { cwd: projectRoot },
-  ).stdout.trim();
-  if (productDiff) errors.push(`Stage 01 changed product paths: ${productDiff}`);
-  const testDiff = runChecked(
-    "git",
-    ["diff", "--name-only", "--", "tests"],
-    { cwd: projectRoot },
-  ).stdout.trim().split(/\r?\n/).filter(Boolean);
-  const unexpectedTests = testDiff.filter((path) => path !== "tests/icm-workspace.test.mjs");
-  if (unexpectedTests.length > 0) {
-    errors.push(`Stage 01 changed unexpected test paths: ${unexpectedTests.join(", ")}`);
-  }
+for (const heading of [
+  "Decision",
+  "Baseline finding",
+  "Fixed graph contract",
+  "Runtime boundary",
+  "Interruption, duplication, and failure",
+  "Persistence and trace evidence",
+  "Truth and claims",
+  "Acceptance criteria",
+  "Required deterministic schedules",
+  "Scope and non-goals",
+  "Declared input hashes",
+  "Review questions",
+]) assert.match(spec, new RegExp(`^## ${heading}$`, "m"), `missing section: ${heading}`);
 
-  if (errors.length > 0) throw new Error(errors.join("\n"));
-  process.stdout.write(`${JSON.stringify({
-    status: "passed",
-    artifact: "factory/01_spec/output/SPEC.md",
-    finding: "L08",
-    acceptanceCriteria: 8,
-    declaredInputs: requiredBindings.length,
-    productPathsChanged: 0,
-    factoryHarnessCorrections: 2,
-    sealedRelease,
-  }, null, 2)}\n`);
-}
+assert.match(demo, /const graph = \[/);
+assert.match(demo, /currentState: "succeeded" as const/);
+assert.match(repository, /for \(const \{ node, artifact \} of demo\.reasoningNodes\)/);
+assert.match(repository, /SET current_state = 'running'/);
+assert.match(repository, /SET current_state = 'succeeded'/);
+assert.match(releaseTests, /planReasoningRecovery\(interrupted/);
+assert.match(contracts, /graph:\s*\{\s*pending: \["running", "skipped"\]/s);
+assert.match(schema, /"reasoning_nodes"/);
+assert.match(schema, /"planner"[\s\S]+"quantitative"[\s\S]+"qualitative"[\s\S]+"experiment_design"[\s\S]+"skeptic"[\s\S]+"synthesizer"/);
 
-const invokedUrl = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;
-if (invokedUrl === import.meta.url) {
-  main().catch((error) => {
-    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
-    process.exitCode = 1;
-  });
-}
+process.stdout.write(`${JSON.stringify({
+  status: "passed",
+  stage: "01_spec",
+  unit: "persisted-graph-executor-correction",
+  finding: "L06",
+  declaredInputs: Object.fromEntries(bindings.map(({ input, expected }) => [input, expected])),
+  acceptanceCriteria: acceptanceIds.length,
+  fixedNodes: 6,
+  deterministicSchedules: 8,
+  baselineGap: "fixture-built succeeded nodes are batch-materialized without a runtime executor",
+  remainingFindings: ["L20", "L04", "L14"],
+  spec: repositoryPath(projectRoot, specPath),
+}, null, 2)}\n`);

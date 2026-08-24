@@ -365,6 +365,13 @@ export const reasoningNodes = sqliteTable(
         "synthesizer",
       ],
     }).notNull(),
+    logicalNodeId: text("logical_node_id").notNull(),
+    graphVersion: text("graph_version").notNull(),
+    executionMode: text("execution_mode", {
+      enum: ["runtime", "precomputed_fixture"],
+    }).notNull(),
+    handlerVersion: text("handler_version").notNull(),
+    predecessorOutputsJson: text("predecessor_outputs_json").notNull(),
     attempt: integer("attempt").notNull().default(1),
     currentState: text("current_state", {
       enum: ["pending", "running", "succeeded", "failed", "skipped"],
@@ -374,6 +381,9 @@ export const reasoningNodes = sqliteTable(
     inputHash: text("input_hash").notNull(),
     outputHash: text("output_hash"),
     errorCode: text("error_code"),
+    leaseToken: text("lease_token"),
+    leaseExpiresAt: text("lease_expires_at"),
+    completionTokenHash: text("completion_token_hash"),
     startedAt: text("started_at"),
     completedAt: text("completed_at"),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -390,6 +400,20 @@ export const reasoningNodes = sqliteTable(
       table.nodeKey,
       table.attempt,
     ),
+    uniqueIndex("idx_reasoning_nodes_logical_attempt").on(
+      table.workspaceId,
+      table.logicalNodeId,
+      table.attempt,
+    ),
+    uniqueIndex("idx_reasoning_nodes_active")
+      .on(table.workspaceId, table.logicalNodeId)
+      .where(sql`${table.currentState} IN ('pending', 'running')`),
+    uniqueIndex("idx_reasoning_nodes_running")
+      .on(table.workspaceId, table.logicalNodeId)
+      .where(sql`${table.currentState} = 'running'`),
+    uniqueIndex("idx_reasoning_nodes_succeeded")
+      .on(table.workspaceId, table.logicalNodeId)
+      .where(sql`${table.currentState} = 'succeeded'`),
     foreignKey({
       name: "fk_reasoning_nodes_workspace_trace",
       columns: [table.workspaceId, table.traceId],
@@ -404,6 +428,14 @@ export const reasoningNodes = sqliteTable(
       sql`${table.currentState} IN ('pending', 'running', 'succeeded', 'failed', 'skipped')`,
     ),
     check("chk_reasoning_nodes_attempt", sql`${table.attempt} >= 1`),
+    check(
+      "chk_reasoning_nodes_execution_mode",
+      sql`${table.executionMode} IN ('runtime', 'precomputed_fixture')`,
+    ),
+    check(
+      "chk_reasoning_nodes_predecessor_outputs_json",
+      sql`json_valid(${table.predecessorOutputsJson}) AND json_type(${table.predecessorOutputsJson}) = 'array'`,
+    ),
     check("chk_reasoning_nodes_input_hash", hashCheck(table.inputHash)),
     check(
       "chk_reasoning_nodes_output_hash",
@@ -417,28 +449,43 @@ export const reasoningNodes = sqliteTable(
         AND ${table.completedAt} IS NULL
         AND ${table.outputHash} IS NULL
         AND ${table.errorCode} IS NULL
+        AND ${table.leaseToken} IS NULL
+        AND ${table.leaseExpiresAt} IS NULL
+        AND ${table.completionTokenHash} IS NULL
       ) OR (
         ${table.currentState} = 'running'
         AND ${table.startedAt} IS NOT NULL
         AND ${table.completedAt} IS NULL
         AND ${table.outputHash} IS NULL
         AND ${table.errorCode} IS NULL
+        AND ${table.leaseToken} IS NOT NULL
+        AND unixepoch(${table.leaseExpiresAt}) > unixepoch(${table.startedAt})
+        AND ${table.completionTokenHash} IS NULL
       ) OR (
         ${table.currentState} = 'succeeded'
         AND ${table.startedAt} IS NOT NULL
         AND ${table.completedAt} IS NOT NULL
         AND ${table.outputHash} IS NOT NULL
         AND ${table.errorCode} IS NULL
+        AND ${table.leaseToken} IS NULL
+        AND ${table.leaseExpiresAt} IS NULL
+        AND (${table.completionTokenHash} IS NULL OR (${hashCheck(table.completionTokenHash)}))
       ) OR (
         ${table.currentState} = 'failed'
         AND ${table.startedAt} IS NOT NULL
         AND ${table.completedAt} IS NOT NULL
         AND ${table.outputHash} IS NULL
         AND ${table.errorCode} IS NOT NULL
+        AND ${table.leaseToken} IS NULL
+        AND ${table.leaseExpiresAt} IS NULL
+        AND ${table.completionTokenHash} IS NULL
       ) OR (
         ${table.currentState} = 'skipped'
         AND ${table.completedAt} IS NOT NULL
         AND ${table.outputHash} IS NULL
+        AND ${table.leaseToken} IS NULL
+        AND ${table.leaseExpiresAt} IS NULL
+        AND ${table.completionTokenHash} IS NULL
       )`,
     ),
   ],

@@ -1,76 +1,91 @@
 ---
-type: verification
-stage: 05
+type: verification-evidence
+stage: 05_ship
 status: passed
-verified_at: 2026-08-23T02:05:05.9766718+05:30
-release_id: crosssignal-l08-authority-correction-v1
-corrected_finding: L08
+unit: persisted-graph-executor-correction
+verified_at: 2026-08-23T20:18:37.4808413Z
 ---
 
-# Stage 05 L08 correction release verification
+# Stage 05 verification
 
-The accepted Verify evidence is packaged as a cold, command-runnable authority
-correction. The complete current release head is hash-bound, migration 0006 is
-prepared without hidden deletion or repair, and the manifest leaves L06, L20,
-L04, and L14 explicitly open. Verification opens the Ship gate; it does not
-accept it.
+## Environment
 
-## Artifact bindings
+- Platform: Windows / PowerShell
+- Node.js: `v22.15.0`
+- Branch: `codex/l06-graph-executor`
+- Review-candidate base commit:
+  `464df6be405307f4412894e0d24d1569bf3036b6`
+- Release state: uncommitted and unsealed; the final commit is intentionally
+  deferred until the human gate is accepted.
 
-Text hashes normalize CRLF to LF before SHA-256.
+## Commands and results
 
-| Artifact | SHA-256 |
-|---|---|
-| `RELEASE_MANIFEST.md` | `7646ceee2a351225403f0e07479686227701ab585c3084fefcc42283cdc0b797` |
-| `DEMO_SCRIPT.md` | `a13a3dec87df61d8babf36aefb5813961a509d89dab282c771a037f88a802b62` |
-| `../verify.mjs` | `e555ccb190c9a9c85bbc0eaa11dfc1011b7c031c058a5c05dbcafa8f502f9d82` |
-| `../prepare.mjs` | `517ecde6b946bddc9861aa156e2e17b2ae3baa4e8268a23271e492e3043988f1` |
-| `../../../README.md` | `7e140c6ebeb75777e9302af506d710ff74444633b5fa2744f61553ec959bf192` |
-| `../../../package.json` | `c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972` |
-| `../../../tests/flight-recorder-ship.test.mjs` | `9c500880b1237f28cdfeb3efd8f5b67d4db2644b951b9db709d42a1a48db2a11` |
-
-## Cold release result
-
-- The first tightened preflight correctly identified the project-local 0005
-  schema with an empty Wrangler ledger; blindly applying migration 0000 would
-  collide with existing tables.
-- The corrected preparation path proves every runtime-required pre-0006 object,
-  records only the 0000–0005 migration baseline, deletes no data, applies only
-  migration 0006, and verifies both columns, both indexes, and all six L08
-  triggers.
-- The immediate idempotent rerun reports the schema ready through migration
-  0006 and performs no migration replay.
-- The Ship verifier independently reruns Stage 04, the 15 Build tests, and the
-  5 Ship tests, while checking every declared product-head hash.
-- No earlier-release screenshot is used as evidence for the L08 race fix.
-
-## Command results
-
-Environment: Windows PowerShell, Node.js `22.15.0`, Wrangler `4.92.0`, ESLint
-`9.39.4`, Vinext `1.0.0-beta.2`, Vite `8.0.13`, Drizzle Kit `0.31.10`, and
-project-local D1/Node SQLite.
-
-| Command | Exit | Relevant result |
+| Command | Exit | Result |
 |---|---:|---|
-| `node factory/05_ship/prepare.mjs` from verified legacy local state | `0` | Complete 0005 schema baselined without deletion; migration 0006 applied; 21 commands succeeded; postflight passed. |
-| Immediate `node factory/05_ship/prepare.mjs` rerun | `0` | Schema already ready through 0006; both columns, both indexes, and six guards present. |
-| `node factory/05_ship/verify.mjs` | `0` | Accepted Verify gate, complete head bindings, 2 schedules, 10 attacks, 5 migration cases, 15 Build tests, and 5 Ship tests passed. |
-| Exact ESLint command | `0` | Active repository lint passed without diagnostics. |
-| `node_modules/.bin/vinext.cmd build` | `0` | All five build environments passed; dynamic `/` route emitted. |
-| Complete seven-file test command | `0` | 50 tests passed; 0 failed, cancelled, skipped, or todo. |
-| `git diff --check` | `0` | No whitespace errors. |
+| `node_modules/.bin/tsx.cmd factory/05_ship/verify.mjs` | 0 | PASS — all Stage 05 assertions and nested checks passed. |
+| `node factory/05_ship/prepare.mjs --persist-to <isolated-cold-path>` (first run) | 0 | PASS — migrations `0000`–`0007`, eight L06 reasoning columns, and six L06 runtime triggers present. |
+| `node factory/05_ship/prepare.mjs --persist-to <same-isolated-cold-path>` (second run) | 0 | PASS — no migrations to apply; schema counts unchanged. |
+| `node <tsx-cli> factory/04_verify/verify.mjs` | 0 | PASS — independent in-memory SQLite/D1 probe invoked six runtime handlers, recomputed six input hashes, and retained interruption history. |
+| `node <tsx-cli> --test tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs` | 0 | PASS — five resume boundaries, concurrency, fourteen L06 database attacks, two L08 races, and ten L08 database attacks. |
+| `node <vinext-cli> build` | 0 | PASS — production build completed. |
+| `node <eslint-cli> app db worker tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs factory/05_ship/prepare.mjs factory/05_ship/verify.mjs` | 0 | PASS — active product and Ship scope clean. |
+| `node --test factory/_lib/factory-tools.test.mjs` | 0 | PASS — hashing, freshness, and seal mechanics passed. |
+| `git diff --check` | 0 | PASS — no whitespace errors. |
 
-## Release truth
+`<tsx-cli>`, `<vinext-cli>`, and `<eslint-cli>` resolve to their installed local
+Node entry points. The verifier uses those entry points directly so Windows
+shell wrappers do not affect the result.
 
-- Corrected: `L08` only.
-- Remaining: `L06`, `L20`, `L04`, and `L14`.
-- Evidence/data mode: `FIXTURE`; effect mode: `TEST`.
-- No live provider, production-scale, exactly-once-delivery, causal-outcome,
-  or private Result integration claim is made.
-- Failed and indeterminate effects retain no blind retry and no silent retry.
+## Cold-path observations
 
-## Gate state
+```json
+{
+  "coldPreparationRuns": 2,
+  "migrationsApplied": 8,
+  "reasoningColumns": 8,
+  "l06RuntimeTriggers": 6,
+  "secondPreparationWasNoop": true,
+  "coldRuntimeAttempts": 6,
+  "recoveredPlannerAttempts": 2,
+  "executionMode": "runtime",
+  "truthMode": "FIXTURE",
+  "effectMode": "TEST",
+  "measuredCost": "unknown"
+}
+```
 
-Verification passed. The Stage 05 Ship gate is open and owner-controlled. The
-run is not sealed until this exact release is accepted, committed, and the
-clean-tree seal check passes.
+The cold migration path does not seed successful reasoning rows. Stage 04's
+separate product-runtime probe supplies the execution evidence: six attempts,
+six artifacts, exact input-hash recomputation, terminal lease clearing,
+resume preservation, expired-claim recovery, concurrency convergence, and
+fail-closed synthesis/authority behavior.
+
+## Release-head coverage
+
+The release manifest binds fifteen inputs: the Stage 05 contract; accepted
+Stage 04 report and gate; both shared references; README and package commands;
+the complete `app/`, `db/`, `drizzle/`, `worker/`, and `tests/` trees; the two
+Ship scripts; and the reviewer demo script. Every normalized SHA-256 binding
+matched during verification.
+
+| Primary artifact | SHA-256 |
+|---|---|
+| `factory/05_ship/output/RELEASE_MANIFEST.md` | `b352fe59de15b97da9e52e5ec8f4a2eee8b2dba1a3726946025e0269daa1f7a9` |
+| `factory/05_ship/output/DEMO_SCRIPT.md` | `070c87134b82f913d5b56dd083b358b3a413b61f324e02f699686a97cf39b0fd` |
+
+## Scope note
+
+The active release evidence deliberately runs the L06/L08 product suites named
+above. The repository-wide legacy data/visual Ship assertions are not used as
+proof because they still reference superseded fixtures and screenshots under
+open finding L20. Likewise, unrelated untracked benchmark lint is outside this
+release. This exclusion is explicit rather than represented as a passing full
+suite.
+
+## Verdict
+
+PASS. The accepted Stage 04 proof is fresh, the cold setup is idempotent, the
+bounded graph executes through persisted runtime attempts, interruption and
+adversarial schedules pass, and all declared release-head hashes match.
+Verification opens the Stage 05 gate; it does not accept, commit, or seal it.
+L06 is corrected. L20, L04, and L14 remain open.

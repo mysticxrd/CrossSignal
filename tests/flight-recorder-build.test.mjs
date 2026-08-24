@@ -20,10 +20,37 @@ import {
   validatePersistedActionIntent,
 } from "../db/flight-recorder-contracts.ts";
 import {
-  AUTHORITY_ERRORS,
-  MIGRATION_CASES,
-  buildAuthorityRaceFixture,
-} from "../factory/02_data/fixtures/superseded-intent-authority.fixture.mjs";
+  DIRECT_DATABASE_ATTACKS as L06_DATABASE_ATTACKS,
+} from "../factory/02_data/fixtures/persisted-graph-executor.fixture.mjs";
+const AUTHORITY_ERRORS = Object.freeze({
+  staleAuthorization: "l08_stale_or_superseded_intent",
+  activationRejected: "l08_intent_activation_rejected",
+  pointerRejected: "l08_active_intent_pointer_rejected",
+  projectionMismatch: "l08_trace_execution_projection_mismatch",
+  migrationHistoricalMismatch: "migration_l08_historical_authority_mismatch",
+  migrationMissingHead: "migration_l08_required_state_missing_active_intent",
+});
+
+const MIGRATION_CASES = Object.freeze([
+  { name: "empty", expected: "migrated" },
+  { name: "pending-v1", expected: "migrated" },
+  { name: "pending-v2", expected: "migrated" },
+  { name: "completed-v1", expected: "migrated" },
+  { name: "invalid-historical-race", expected: "aborted" },
+]);
+
+const L08_DATABASE_ATTACKS = Object.freeze([
+  "grant-superseded-v1",
+  "reserve-effect-for-superseded-v1",
+  "cross-workspace-active-head",
+  "cross-trace-active-head",
+  "clear-active-head-after-activation",
+  "move-active-head-without-an-exact-policy",
+  "move-active-head-against-the-immutable-predecessor-edge",
+  "authorize-with-kill-switch-engaged",
+  "replay-grant-or-intended-effect",
+  "commit-after-zero-row-trace-executing-compare-and-swap",
+]);
 
 const root = new URL("../", import.meta.url);
 
@@ -46,6 +73,18 @@ registerHooks({
   },
 });
 
+const {
+  REASONING_ERRORS,
+  REASONING_GRAPH_VERSION,
+  REASONING_NODE_REGISTRY,
+  claimPersistedReasoningNode,
+  finalizePersistedReasoningNode,
+  installReasoningRuntimeHooksForTest,
+  runPersistedReasoningGraph,
+  summarizePersistedReasoningGraph,
+} = await import("../db/flight-recorder-graph.ts");
+const { getOrCreateFlightRecorderSnapshot } = await import("../db/flight-recorder.ts");
+
 const migrationNames = [
   "0000_dry_chat.sql",
   "0001_gigantic_shriek.sql",
@@ -54,6 +93,10 @@ const migrationNames = [
   "0004_typical_omega_red.sql",
   "0005_flight_recorder_guards.sql",
   "0006_l08_active_intent_authority.sql",
+];
+const runtimeMigrationNames = [
+  ...migrationNames,
+  "0007_l06_persisted_graph_executor.sql",
 ];
 
 class TestD1Statement {
@@ -492,7 +535,7 @@ test("a superseded intent cannot acquire a grant after replacement wins", async 
 });
 
 test("production operations fail closed in both deterministic L08 schedules", async () => {
-  const database = await freshDatabase();
+  const database = await freshDatabase(runtimeMigrationNames);
   const userId = "l08-runtime-owner";
   const workspaceId = "l08-runtime-workspace";
   insert(database, "users", { id: userId, email: "l08-runtime@example.test", display_name: "L08 Runtime Owner" });
@@ -695,7 +738,7 @@ test("direct database guards reject the ten accepted L08 attacks", async () => {
     database.close();
   }
 
-  assert.deepEqual(observed, buildAuthorityRaceFixture().directDatabaseAttacks);
+  assert.deepEqual(observed, L08_DATABASE_ATTACKS);
 });
 
 test("kill switch denies effect authority before reservation", async () => {
@@ -828,4 +871,754 @@ test("fixture outcome can only be correlated, never proven by provenance", () =>
     invalidSignatureCount: 0,
     observationTruthModes: ["FIXTURE"],
   }).includes("FIXTURE observations cannot support an outcome"));
+});
+
+async function freshRuntimeHarness(suffix) {
+  const database = await freshDatabase(runtimeMigrationNames);
+  const userId = `l06-owner-${suffix}`;
+  const workspaceId = `l06-workspace-${suffix}`;
+  insert(database, "users", {
+    id: userId,
+    email: `${userId}@example.test`,
+    display_name: "L06 Runtime Owner",
+  });
+  insert(database, "workspaces", {
+    id: workspaceId,
+    name: `L06 ${suffix}`,
+    slug: workspaceId,
+    owner_user_id: userId,
+  });
+  insert(database, "workspace_members", {
+    workspace_id: workspaceId,
+    user_id: userId,
+    role: "owner",
+  });
+  globalThis.__cfrCloudflareEnv.DB = new TestD1Database(database);
+  return {
+    database,
+    userId,
+    workspaceId,
+    request(traceId) {
+      return { userId, actorWorkspaceId: workspaceId, workspaceId, traceId };
+    },
+  };
+}
+
+test("L06 cold product path invokes six runtime handlers and stops before authority", async () => {
+  const harness = await freshRuntimeHarness("cold");
+  const invocations = Object.fromEntries(REASONING_NODE_REGISTRY.map((node) => [node.nodeKey, 0]));
+  const uninstall = installReasoningRuntimeHooksForTest({
+    now: () => "2026-08-24T12:00:00.000Z",
+    leaseToken: (nodeKey, attempt) => `lease-l06-cold-${nodeKey}-${attempt}`,
+    onHandlerInvocation: (nodeKey) => {
+      invocations[nodeKey] += 1;
+    },
+  });
+  try {
+    const snapshot = await getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId);
+    const summary = await summarizePersistedReasoningGraph(harness.request(snapshot.traceId));
+    assert.equal(snapshot.traceState, "awaiting_approval");
+    assert.equal(snapshot.truthMode, "FIXTURE");
+    assert.equal(summary.graphVersion, REASONING_GRAPH_VERSION);
+    assert.equal(summary.attempts.length, 6);
+    assert.equal(summary.artifacts.length, 6);
+    assert.ok(summary.attempts.every((node) => node.current_state === "succeeded"));
+    assert.ok(summary.attempts.every((node) => node.execution_mode === "runtime"));
+    assert.ok(summary.artifacts.every((artifact) => JSON.parse(artifact.content_json).truthMode === "FIXTURE"));
+    assert.deepEqual(invocations, Object.fromEntries(REASONING_NODE_REGISTRY.map((node) => [node.nodeKey, 1])));
+    assert.deepEqual(summary.authorityCounts, {
+      action_intents: 1,
+      policy_decisions: 1,
+      approval_grants: 0,
+      effect_attempts: 0,
+      outcome_observations: 0,
+      outcome_assessments: 0,
+    });
+    assert.ok(snapshot.playbook.every((node) => node.executionMode === "runtime"));
+    assert.ok(snapshot.playbook.every((node) => node.role.startsWith("Runtime executor")));
+  } finally {
+    uninstall();
+    harness.database.close();
+  }
+});
+
+async function seedRuntimeBoundary(harness, hooks) {
+  const uninstall = installReasoningRuntimeHooksForTest({
+    now: () => "2026-08-24T12:00:00.000Z",
+    leaseToken: (nodeKey, attempt) => `lease-l06-boundary-${nodeKey}-${attempt}`,
+    ...hooks,
+  });
+  try {
+    await assert.rejects(
+      getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId),
+    );
+  } finally {
+    uninstall();
+  }
+  const trace = harness.database.prepare(
+    "SELECT id FROM flight_traces WHERE workspace_id=? LIMIT 1",
+  ).get(harness.workspaceId);
+  assert.ok(trace?.id);
+  return trace.id;
+}
+
+test("L06 resumes after every completed-node boundary without replay", async (t) => {
+  for (let boundary = 1; boundary <= 5; boundary += 1) {
+    await t.test(`boundary-${boundary}`, async () => {
+      const harness = await freshRuntimeHarness(`resume-${boundary}`);
+      const invocations = Object.fromEntries(REASONING_NODE_REGISTRY.map((node) => [node.nodeKey, 0]));
+      try {
+        const traceId = await seedRuntimeBoundary(harness, {
+          stopAfterCompletions: boundary,
+          onHandlerInvocation: (nodeKey) => {
+            invocations[nodeKey] += 1;
+          },
+        });
+        const request = harness.request(traceId);
+        const before = await summarizePersistedReasoningGraph(request);
+        const preserved = before.attempts
+          .filter((node) => node.current_state === "succeeded")
+          .map((node) => ({ ...node }));
+        assert.equal(preserved.length, boundary);
+        const uninstall = installReasoningRuntimeHooksForTest({
+          now: () => "2026-08-24T12:00:01.000Z",
+          leaseToken: (nodeKey, attempt) => `lease-l06-resume-${boundary}-${nodeKey}-${attempt}`,
+          onHandlerInvocation: (nodeKey) => {
+            invocations[nodeKey] += 1;
+          },
+        });
+        let after;
+        try {
+          after = await runPersistedReasoningGraph(request);
+        } finally {
+          uninstall();
+        }
+        assert.equal(after.traceState, "awaiting_approval");
+        assert.equal(after.artifacts.length, 6);
+        assert.deepEqual(
+          after.attempts
+            .filter((node) => node.current_state === "succeeded")
+            .slice(0, boundary)
+            .map((node) => ({ ...node })),
+          preserved,
+        );
+        assert.deepEqual(
+          invocations,
+          Object.fromEntries(REASONING_NODE_REGISTRY.map((node) => [node.nodeKey, 1])),
+        );
+      } finally {
+        harness.database.close();
+      }
+    });
+  }
+});
+
+test("L06 preserves an expired claimed attempt before completing a later attempt", async () => {
+  const harness = await freshRuntimeHarness("claim-crash");
+  let clock = "2026-08-24T12:00:00.000Z";
+  const invocations = { planner: 0 };
+  try {
+    const traceId = await seedRuntimeBoundary(harness, {
+      now: () => clock,
+      afterClaim: async (nodeKey) => nodeKey === "planner" ? "stop" : "continue",
+      onHandlerInvocation: (nodeKey) => {
+        if (nodeKey === "planner") invocations.planner += 1;
+      },
+    });
+    const request = harness.request(traceId);
+    assert.deepEqual(await claimPersistedReasoningNode(request, "planner"), {
+      status: "busy",
+      attempt: 1,
+    });
+    clock = "2026-08-24T12:00:31.000Z";
+    const uninstall = installReasoningRuntimeHooksForTest({
+      now: () => clock,
+      leaseToken: (nodeKey, attempt) => `lease-l06-recovered-${nodeKey}-${attempt}`,
+      onHandlerInvocation: (nodeKey) => {
+        if (nodeKey === "planner") invocations.planner += 1;
+      },
+    });
+    let summary;
+    try {
+      summary = await runPersistedReasoningGraph(request);
+    } finally {
+      uninstall();
+    }
+    const plannerAttempts = summary.attempts.filter((node) => node.node_key === "planner");
+    assert.equal(plannerAttempts.length, 2);
+    assert.equal(plannerAttempts[0].current_state, "failed");
+    assert.equal(plannerAttempts[0].error_code, REASONING_ERRORS.interruptedAttempt);
+    assert.equal(plannerAttempts[1].attempt, 2);
+    assert.equal(plannerAttempts[1].current_state, "succeeded");
+    assert.equal(invocations.planner, 1);
+    assert.equal(summary.artifacts.length, 6);
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L06 rejects a foreign claim token and makes same-token finalize idempotent", async () => {
+  const harness = await freshRuntimeHarness("finalize-owner");
+  const leaseToken = "lease-l06-owned-planner-1";
+  try {
+    const traceId = await seedRuntimeBoundary(harness, {
+      leaseToken: () => leaseToken,
+      afterClaim: async (nodeKey) => nodeKey === "planner" ? "stop" : "continue",
+    });
+    const request = harness.request(traceId);
+    const uninstall = installReasoningRuntimeHooksForTest({
+      now: () => "2026-08-24T12:00:01.000Z",
+      leaseToken: (nodeKey, attempt) => `lease-l06-finalize-rest-${nodeKey}-${attempt}`,
+    });
+    try {
+      await assert.rejects(
+        finalizePersistedReasoningNode(request, "planner", "lease-l06-foreign-token"),
+        new RegExp(REASONING_ERRORS.claimOwnership),
+      );
+      const first = await finalizePersistedReasoningNode(request, "planner", leaseToken);
+      const second = await finalizePersistedReasoningNode(request, "planner", leaseToken);
+      assert.equal(first.status, "succeeded");
+      assert.equal(second.status, "idempotent");
+      assert.equal(second.artifactId, first.artifactId);
+      assert.equal(second.outputHash, first.outputHash);
+      const summary = await runPersistedReasoningGraph(request);
+      assert.equal(summary.artifacts.length, 6);
+      assert.equal(summary.authorityCounts.action_intents, 1);
+    } finally {
+      uninstall();
+    }
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L06 concurrent executor calls converge on one canonical graph", async () => {
+  const harness = await freshRuntimeHarness("concurrent");
+  try {
+    const traceId = await seedRuntimeBoundary(harness, { stopAfterCompletions: 1 });
+    const request = harness.request(traceId);
+    const gate = deferred();
+    let arrivals = 0;
+    const uninstall = installReasoningRuntimeHooksForTest({
+      now: () => "2026-08-24T12:00:02.000Z",
+      leaseToken: (nodeKey, attempt) => `lease-l06-concurrent-${nodeKey}-${attempt}-${arrivals}`,
+      beforeClaimCommit: async (nodeKey) => {
+        if (nodeKey !== "quantitative") return;
+        arrivals += 1;
+        if (arrivals === 2) gate.resolve();
+        await gate.promise;
+      },
+    });
+    try {
+      await Promise.all([
+        runPersistedReasoningGraph(request),
+        runPersistedReasoningGraph(request),
+      ]);
+    } finally {
+      uninstall();
+    }
+    const summary = await runPersistedReasoningGraph(request);
+    assert.equal(arrivals, 2);
+    assert.equal(summary.traceState, "awaiting_approval");
+    assert.equal(summary.artifacts.length, 6);
+    assert.equal(new Set(summary.artifacts.map((artifact) => artifact.node_id)).size, 6);
+    assert.equal(summary.authorityCounts.action_intents, 1);
+    assert.equal(summary.authorityCounts.policy_decisions, 1);
+    assert.equal(summary.authorityCounts.approval_grants, 0);
+    assert.deepEqual(
+      summary.events.map((event) => event.sequence),
+      summary.events.map((_, index) => index + 1),
+    );
+    assert.equal(
+      new Set(summary.events.map((event) => event.idempotency_key)).size,
+      summary.events.length,
+    );
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L06 handler and artifact failures stop before synthesizer authority", async (t) => {
+  for (const failure of ["handler", "secret", "citation"]) {
+    await t.test(failure, async () => {
+      const harness = await freshRuntimeHarness(`failure-${failure}`);
+      const invocations = Object.fromEntries(REASONING_NODE_REGISTRY.map((node) => [node.nodeKey, 0]));
+      const uninstall = installReasoningRuntimeHooksForTest({
+        now: () => "2026-08-24T12:00:00.000Z",
+        leaseToken: (nodeKey, attempt) => `lease-l06-failure-${failure}-${nodeKey}-${attempt}`,
+        failNode: failure === "handler" ? "skeptic" : undefined,
+        mutateArtifact: failure === "secret"
+          ? (nodeKey, content) => {
+              if (nodeKey === "skeptic") content.apiKey = "sk_live_1234567890abcdef";
+            }
+          : failure === "citation"
+            ? (nodeKey, _content, citations) => {
+                if (nodeKey === "skeptic") citations.push("evidence:not-declared");
+              }
+            : undefined,
+        onHandlerInvocation: (nodeKey) => {
+          invocations[nodeKey] += 1;
+        },
+      });
+      try {
+        await assert.rejects(
+          getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId),
+          new RegExp(failure === "handler" ? REASONING_ERRORS.handlerFailed : REASONING_ERRORS.invalidArtifact),
+        );
+      } finally {
+        uninstall();
+      }
+      const trace = harness.database.prepare("SELECT id FROM flight_traces WHERE workspace_id=?").get(harness.workspaceId);
+      const summary = await summarizePersistedReasoningGraph(harness.request(trace.id));
+      assert.equal(summary.traceState, "failed");
+      assert.equal(summary.artifacts.length, 4);
+      assert.equal(invocations.synthesizer, 0);
+      assert.deepEqual(summary.authorityCounts, {
+        action_intents: 0,
+        policy_decisions: 0,
+        approval_grants: 0,
+        effect_attempts: 0,
+        outcome_observations: 0,
+        outcome_assessments: 0,
+      });
+      harness.database.close();
+    });
+  }
+});
+
+test("migration 0007 preserves legacy truth labels and aborts invalid history atomically", async (t) => {
+  const migration = await readFile(
+    new URL("drizzle/0007_l06_persisted_graph_executor.sql", root),
+    "utf8",
+  );
+  for (const migrationCase of ["empty", "current-l08", "interrupted", "completed", "invalid-history"]) {
+    await t.test(migrationCase, async () => {
+      const database = await freshDatabase(migrationNames);
+      let demo = null;
+      if (migrationCase !== "empty") {
+        demo = await materializePending(database, {
+          userId: `l06-migration-${migrationCase}-owner`,
+          workspaceId: `l06-migration-${migrationCase}-workspace`,
+        });
+      }
+      if (migrationCase === "completed") assessLegacyTrace(database, demo.trace.id);
+      if (migrationCase === "interrupted" || migrationCase === "invalid-history") {
+        const planner = demo.reasoningNodes[0].node;
+        insert(database, "reasoning_nodes", {
+          id: `${planner.id}-attempt-2`,
+          workspace_id: planner.workspaceId,
+          trace_id: planner.traceId,
+          node_key: planner.nodeKey,
+          attempt: 2,
+          current_state: "pending",
+          input_hash: planner.inputHash,
+          output_hash: null,
+          error_code: null,
+          started_at: null,
+          completed_at: null,
+        });
+        database.prepare(`UPDATE reasoning_nodes SET current_state='running', started_at=?
+          WHERE id=?`).run("2026-08-13T16:02:00.000Z", `${planner.id}-attempt-2`);
+        if (migrationCase === "invalid-history") {
+          database.prepare(`UPDATE reasoning_nodes SET current_state='succeeded', output_hash=?, completed_at=?
+            WHERE id=?`).run(planner.outputHash, "2026-08-13T16:02:01.000Z", `${planner.id}-attempt-2`);
+        }
+      }
+
+      if (migrationCase === "invalid-history") {
+        assert.throws(
+          () => applyMigrationAtomically(database, migration),
+          /migration_l06_invalid_history/,
+        );
+        assert.equal(
+          database.prepare(`SELECT COUNT(*) count FROM pragma_table_info('reasoning_nodes')
+            WHERE name='execution_mode'`).get().count,
+          0,
+        );
+      } else {
+        assert.doesNotThrow(() => applyMigrationAtomically(database, migration));
+        if (demo) {
+          assert.equal(
+            database.prepare("SELECT COUNT(*) count FROM reasoning_nodes WHERE execution_mode='precomputed_fixture'").get().count,
+            migrationCase === "interrupted" ? 7 : 6,
+          );
+          assert.equal(
+            database.prepare("SELECT COUNT(*) count FROM reasoning_nodes WHERE execution_mode='runtime'").get().count,
+            0,
+          );
+        }
+        if (migrationCase === "interrupted") {
+          const row = database.prepare(`SELECT current_state, error_code FROM reasoning_nodes
+            WHERE attempt=2 AND node_key='planner'`).get();
+          assert.deepEqual({ ...row }, {
+            current_state: "failed",
+            error_code: REASONING_ERRORS.interruptedAttempt,
+          });
+        }
+        assert.deepEqual(database.prepare("PRAGMA foreign_key_check").all(), []);
+      }
+      database.close();
+    });
+  }
+});
+
+test("L06 rejects caller graph control, tenant mismatch, and persisted input drift before handlers", async () => {
+  const harness = await freshRuntimeHarness("boundary-attacks");
+  let invocationCount = 0;
+  try {
+    const traceId = await seedRuntimeBoundary(harness, { stopAfterCompletions: 1 });
+    const request = harness.request(traceId);
+    const before = await summarizePersistedReasoningGraph(request);
+    await assert.rejects(
+      runPersistedReasoningGraph({ ...request, nodes: ["attacker"] }),
+      new RegExp(REASONING_ERRORS.arbitraryGraph),
+    );
+    await assert.rejects(
+      runPersistedReasoningGraph({ ...request, actorWorkspaceId: "foreign-workspace" }),
+      new RegExp(REASONING_ERRORS.tenantMismatch),
+    );
+    const uninstall = installReasoningRuntimeHooksForTest({
+      now: () => "2026-08-24T12:00:01.000Z",
+      leaseToken: (nodeKey, attempt) => `lease-l06-input-drift-${nodeKey}-${attempt}`,
+      beforeClaimCommit: async (nodeKey) => {
+        if (nodeKey !== "quantitative") return;
+        harness.database.prepare(`UPDATE reasoning_nodes SET input_hash=?
+          WHERE workspace_id=? AND trace_id=? AND node_key='quantitative'`).run(
+          "f".repeat(64),
+          harness.workspaceId,
+          traceId,
+        );
+      },
+      onHandlerInvocation: () => {
+        invocationCount += 1;
+      },
+    });
+    try {
+      await assert.rejects(
+        runPersistedReasoningGraph(request),
+        new RegExp(REASONING_ERRORS.inputDrift),
+      );
+    } finally {
+      uninstall();
+    }
+    const after = await summarizePersistedReasoningGraph(request);
+    assert.equal(invocationCount, 0);
+    assert.equal(after.artifacts.length, before.artifacts.length);
+    assert.equal(after.authorityCounts.action_intents, 0);
+    assert.equal(after.authorityCounts.effect_attempts, 0);
+    assert.equal(L06_DATABASE_ATTACKS.length, 14);
+  } finally {
+    harness.database.close();
+  }
+});
+
+function runtimeProjection(database, workspaceId) {
+  const trace = database.prepare(`SELECT id, current_state, active_intent_id FROM flight_traces
+    WHERE workspace_id=? LIMIT 1`).get(workspaceId);
+  const count = (table) => database.prepare(`SELECT COUNT(*) count FROM ${table}
+    WHERE workspace_id=?`).get(workspaceId).count;
+  return {
+    trace: trace ? { ...trace } : null,
+    nodes: count("reasoning_nodes"),
+    artifacts: count("reasoning_artifacts"),
+    events: count("flight_trace_events"),
+    intents: count("action_intents"),
+    policies: count("policy_decisions"),
+    grants: count("approval_grants"),
+    effects: count("effect_attempts"),
+    observations: count("outcome_observations"),
+    assessments: count("outcome_assessments"),
+  };
+}
+
+function directRuntimeAttempt(database, input) {
+  insert(database, "reasoning_nodes", {
+    id: input.id,
+    workspace_id: input.workspaceId,
+    trace_id: input.traceId,
+    node_key: input.nodeKey,
+    logical_node_id: input.logicalNodeId,
+    graph_version: REASONING_GRAPH_VERSION,
+    execution_mode: "runtime",
+    handler_version: "crosssignal-fixture-handlers-v1",
+    predecessor_outputs_json: input.predecessorOutputsJson,
+    attempt: input.attempt ?? 1,
+    current_state: "pending",
+    input_hash: input.inputHash ?? "a".repeat(64),
+    output_hash: null,
+    error_code: null,
+    lease_token: null,
+    lease_expires_at: null,
+    completion_token_hash: null,
+    started_at: null,
+    completed_at: null,
+  });
+}
+
+test("all fourteen L06 direct-database attacks fail with zero partial mutation", async (t) => {
+  for (const attack of L06_DATABASE_ATTACKS) {
+    await t.test(`${attack.id} ${attack.attack}`, async () => {
+      const harness = await freshRuntimeHarness(attack.id.toLowerCase());
+      let uninstall = null;
+      try {
+        let traceId;
+        let operation;
+        if (["DB-L06-08", "DB-L06-09", "DB-L06-10", "DB-L06-11"].includes(attack.id)) {
+          const ownedToken = `lease-${attack.id.toLowerCase()}-owned-planner`;
+          traceId = await seedRuntimeBoundary(harness, {
+            leaseToken: () => ownedToken,
+            afterClaim: async (nodeKey) => nodeKey === "planner" ? "stop" : "continue",
+          });
+          if (attack.id === "DB-L06-08") {
+            uninstall = installReasoningRuntimeHooksForTest({
+              now: () => "2026-08-24T12:00:01.000Z",
+            });
+            operation = () => finalizePersistedReasoningNode(
+              harness.request(traceId),
+              "planner",
+              "lease-db-l06-08-foreign-token",
+            );
+          } else if (attack.id === "DB-L06-09") {
+            uninstall = installReasoningRuntimeHooksForTest({
+              now: () => "2026-08-24T12:00:31.000Z",
+            });
+            operation = () => finalizePersistedReasoningNode(
+              harness.request(traceId),
+              "planner",
+              ownedToken,
+            );
+          } else {
+            const planner = harness.database.prepare(`SELECT * FROM reasoning_nodes
+              WHERE workspace_id=? AND node_key='planner'`).get(harness.workspaceId);
+            const citations = ["evidence:activation-drop", "evidence:onboarding-feedback"];
+            const content = {
+              truthMode: "FIXTURE",
+              graphVersion: REASONING_GRAPH_VERSION,
+              nodeKey: "planner",
+              handlerVersion: "crosssignal-fixture-handlers-v1",
+              summary: "direct attack payload",
+              predecessorOutputs: [],
+              evidenceCitations: citations,
+              usage: { status: "unknown", measuredCostUsd: null },
+              ...(attack.id === "DB-L06-11" ? { apiKey: "sk_live_1234567890abcdef" } : {}),
+            };
+            const sealed = await sealCanonical(content);
+            harness.database.prepare(`UPDATE reasoning_nodes SET current_state='succeeded',
+              output_hash=?, lease_token=NULL, lease_expires_at=NULL,
+              completion_token_hash=?, completed_at=? WHERE id=?`).run(
+              sealed.sha256,
+              "c".repeat(64),
+              "2026-08-24T12:00:01.000Z",
+              planner.id,
+            );
+            operation = () => insert(harness.database, "reasoning_artifacts", {
+              id: `artifact-${attack.id}`,
+              workspace_id: harness.workspaceId,
+              trace_id: traceId,
+              node_id: planner.id,
+              artifact_kind: "plan",
+              schema_version: "reasoning-artifact-v2",
+              content_json: sealed.canonicalJson,
+              content_hash: sealed.sha256,
+              evidence_citations_json: attack.id === "DB-L06-10"
+                ? stableStringify([...citations, "metric:activation-72h"])
+                : stableStringify(citations),
+            });
+          }
+        } else if (["DB-L06-03", "DB-L06-12"].includes(attack.id)) {
+          const runtimeUninstall = installReasoningRuntimeHooksForTest({
+            now: () => "2026-08-24T12:00:00.000Z",
+            leaseToken: (nodeKey, attempt) => `lease-${attack.id}-${nodeKey}-${attempt}`,
+          });
+          try {
+            const snapshot = await getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId);
+            traceId = snapshot.traceId;
+          } finally {
+            runtimeUninstall();
+          }
+          const artifact = harness.database.prepare(`SELECT artifact.*, node.node_key
+            FROM reasoning_artifacts artifact JOIN reasoning_nodes node ON node.id=artifact.node_id
+            WHERE artifact.workspace_id=? AND node.node_key='planner'`).get(harness.workspaceId);
+          if (attack.id === "DB-L06-03") {
+            operation = () => insert(harness.database, "reasoning_artifacts", {
+              id: `${artifact.id}-foreign-trace`,
+              workspace_id: harness.workspaceId,
+              trace_id: "foreign-trace",
+              node_id: artifact.node_id,
+              artifact_kind: artifact.artifact_kind,
+              schema_version: artifact.schema_version,
+              content_json: artifact.content_json,
+              content_hash: artifact.content_hash,
+              evidence_citations_json: artifact.evidence_citations_json,
+            });
+          } else {
+            operation = () => insert(harness.database, "reasoning_artifacts", {
+              id: `${artifact.id}-conflict`,
+              workspace_id: harness.workspaceId,
+              trace_id: traceId,
+              node_id: artifact.node_id,
+              artifact_kind: artifact.artifact_kind,
+              schema_version: artifact.schema_version,
+              content_json: "{}",
+              content_hash: "f".repeat(64),
+              evidence_citations_json: artifact.evidence_citations_json,
+            });
+          }
+        } else {
+          traceId = await seedRuntimeBoundary(harness, { stopAfterCompletions: 1 });
+          const planner = harness.database.prepare(`SELECT * FROM reasoning_nodes
+            WHERE workspace_id=? AND node_key='planner'`).get(harness.workspaceId);
+          const plannerArtifact = harness.database.prepare(`SELECT * FROM reasoning_artifacts
+            WHERE workspace_id=? AND node_id=?`).get(harness.workspaceId, planner.id);
+          if (attack.id === "DB-L06-01") {
+            operation = () => summarizePersistedReasoningGraph({
+              ...harness.request(traceId),
+              actorWorkspaceId: "foreign-workspace",
+            });
+          } else if (attack.id === "DB-L06-02") {
+            operation = () => directRuntimeAttempt(harness.database, {
+              id: "foreign-workspace-attempt",
+              workspaceId: "foreign-workspace",
+              traceId,
+              nodeKey: "quantitative",
+              logicalNodeId: "foreign-logical-node",
+              predecessorOutputsJson: stableStringify([
+                { nodeKey: "planner", outputHash: planner.output_hash },
+              ]),
+            });
+          } else if (attack.id === "DB-L06-04") {
+            operation = () => directRuntimeAttempt(harness.database, {
+              id: "unregistered-node-attempt",
+              workspaceId: harness.workspaceId,
+              traceId,
+              nodeKey: "attacker_node",
+              logicalNodeId: "unregistered-logical-node",
+              predecessorOutputsJson: "[]",
+            });
+          } else if (attack.id === "DB-L06-05") {
+            operation = () => directRuntimeAttempt(harness.database, {
+              id: "caller-edge-attempt",
+              workspaceId: harness.workspaceId,
+              traceId,
+              nodeKey: "planner",
+              logicalNodeId: planner.logical_node_id,
+              predecessorOutputsJson: stableStringify([
+                { nodeKey: "qualitative", outputHash: planner.output_hash },
+              ]),
+              attempt: 2,
+            });
+          } else if (attack.id === "DB-L06-06") {
+            operation = () => directRuntimeAttempt(harness.database, {
+              id: "early-skeptic-attempt",
+              workspaceId: harness.workspaceId,
+              traceId,
+              nodeKey: "skeptic",
+              logicalNodeId: "early-skeptic-logical",
+              predecessorOutputsJson: stableStringify([
+                { nodeKey: "quantitative", outputHash: "a".repeat(64) },
+                { nodeKey: "qualitative", outputHash: "b".repeat(64) },
+                { nodeKey: "experiment_design", outputHash: "c".repeat(64) },
+              ]),
+            });
+          } else if (attack.id === "DB-L06-07") {
+            operation = () => directRuntimeAttempt(harness.database, {
+              id: "drifted-quantitative-attempt",
+              workspaceId: harness.workspaceId,
+              traceId,
+              nodeKey: "quantitative",
+              logicalNodeId: "drifted-quantitative-logical",
+              predecessorOutputsJson: stableStringify([
+                { nodeKey: "planner", outputHash: "f".repeat(64) },
+              ]),
+            });
+          } else if (attack.id === "DB-L06-10" || attack.id === "DB-L06-11") {
+            const citations = ["evidence:activation-drop", "evidence:onboarding-feedback"];
+            const content = {
+              truthMode: "FIXTURE",
+              graphVersion: REASONING_GRAPH_VERSION,
+              nodeKey: "planner",
+              handlerVersion: "crosssignal-fixture-handlers-v1",
+              summary: "direct attack payload",
+              predecessorOutputs: [],
+              evidenceCitations: citations,
+              usage: { status: "unknown", measuredCostUsd: null },
+              ...(attack.id === "DB-L06-11" ? { apiKey: "sk_live_1234567890abcdef" } : {}),
+            };
+            const sealed = await sealCanonical(content);
+            harness.database.prepare(`UPDATE reasoning_nodes SET current_state='running',
+              lease_token=?, lease_expires_at=?, started_at=? WHERE id=?`).run(
+              "lease-direct-artifact-attack",
+              "2026-08-24T12:00:30.000Z",
+              "2026-08-24T12:00:00.000Z",
+              planner.id,
+            );
+            harness.database.prepare(`UPDATE reasoning_nodes SET current_state='succeeded',
+              output_hash=?, lease_token=NULL, lease_expires_at=NULL,
+              completion_token_hash=?, completed_at=? WHERE id=?`).run(
+              sealed.sha256,
+              "c".repeat(64),
+              "2026-08-24T12:00:01.000Z",
+              planner.id,
+            );
+            harness.database.prepare("DELETE FROM reasoning_artifacts WHERE id=?").run(plannerArtifact.id);
+            operation = () => insert(harness.database, "reasoning_artifacts", {
+              id: `artifact-${attack.id}`,
+              workspace_id: harness.workspaceId,
+              trace_id: traceId,
+              node_id: planner.id,
+              artifact_kind: "plan",
+              schema_version: "reasoning-artifact-v2",
+              content_json: sealed.canonicalJson,
+              content_hash: sealed.sha256,
+              evidence_citations_json: attack.id === "DB-L06-10"
+                ? stableStringify([...citations, "metric:activation-72h"])
+                : stableStringify(citations),
+            });
+          } else if (attack.id === "DB-L06-13") {
+            operation = () => insert(harness.database, "action_intents", {
+              id: "early-intent",
+              workspace_id: harness.workspaceId,
+              trace_id: traceId,
+              context_snapshot_id: harness.database.prepare("SELECT id FROM context_snapshots WHERE trace_id=?").get(traceId).id,
+              source_artifact_id: plannerArtifact.id,
+              supersedes_intent_id: null,
+              intent_key: "early-intent-v1",
+              action_kind: "email_test",
+              truth_mode: "TEST",
+              recipients_json: '["test@example.test"]',
+              recipient_set_hash: "a".repeat(64),
+              subject: "blocked",
+              body: "blocked",
+              cohort_cap: 1,
+              evidence_ids_json: '["evidence:activation-drop"]',
+              metric_definition_id: harness.database.prepare("SELECT id FROM outcome_definitions WHERE trace_id=?").get(traceId).id,
+              context_manifest_hash: "b".repeat(64),
+              policy_version: "blocked",
+              policy_hash: "c".repeat(64),
+              nonce: "blocked",
+              expires_at: "2026-08-25T12:00:00.000Z",
+              canonical_payload_json: "{}",
+              canonical_payload_hash: "d".repeat(64),
+              created_by: harness.userId,
+              created_at: "2026-08-24T12:00:00.000Z",
+            });
+          } else if (attack.id === "DB-L06-14") {
+            operation = () => harness.database.prepare(`UPDATE flight_traces
+              SET current_state='awaiting_approval' WHERE workspace_id=? AND id=?`).run(
+              harness.workspaceId,
+              traceId,
+            );
+          }
+        }
+
+        const before = runtimeProjection(harness.database, harness.workspaceId);
+        const expected = new RegExp(attack.expectedError);
+        await assert.rejects(Promise.resolve().then(operation), expected);
+        assert.deepEqual(runtimeProjection(harness.database, harness.workspaceId), before);
+      } finally {
+        uninstall?.();
+        harness.database.close();
+      }
+    });
+  }
 });

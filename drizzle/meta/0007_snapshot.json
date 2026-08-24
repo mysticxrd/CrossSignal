@@ -1,0 +1,4587 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "b3fbc29b-73f8-4146-848d-6fb4d3f4ab74",
+  "prevId": "e11aa2c1-da5e-4288-98f1-527946e66531",
+  "tables": {
+    "approvals": {
+      "name": "approvals",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "case_id": {
+          "name": "case_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cycle": {
+          "name": "cycle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "gate": {
+          "name": "gate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_receipt_id": {
+          "name": "external_receipt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_approvals_case_cycle_gate": {
+          "name": "idx_approvals_case_cycle_gate",
+          "columns": [
+            "workspace_id",
+            "case_id",
+            "cycle",
+            "gate"
+          ],
+          "isUnique": true
+        },
+        "idx_approvals_case_id": {
+          "name": "idx_approvals_case_id",
+          "columns": [
+            "case_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "approvals_workspace_id_workspaces_id_fk": {
+          "name": "approvals_workspace_id_workspaces_id_fk",
+          "tableFrom": "approvals",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "approvals_approved_by_users_id_fk": {
+          "name": "approvals_approved_by_users_id_fk",
+          "tableFrom": "approvals",
+          "tableTo": "users",
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_approvals_workspace_case": {
+          "name": "fk_approvals_workspace_case",
+          "tableFrom": "approvals",
+          "tableTo": "cases",
+          "columnsFrom": [
+            "workspace_id",
+            "case_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_approvals_workspace_approver_membership": {
+          "name": "fk_approvals_workspace_approver_membership",
+          "tableFrom": "approvals",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "approved_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_approvals_cycle": {
+          "name": "chk_approvals_cycle",
+          "value": "\"approvals\".\"cycle\" >= 1"
+        },
+        "chk_approvals_gate": {
+          "name": "chk_approvals_gate",
+          "value": "\"approvals\".\"gate\" IN ('evidence', 'intervention', 'learning')"
+        }
+      }
+    },
+    "case_events": {
+      "name": "case_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "case_id": {
+          "name": "case_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cycle": {
+          "name": "cycle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_case_events_workspace_idempotency": {
+          "name": "idx_case_events_workspace_idempotency",
+          "columns": [
+            "workspace_id",
+            "idempotency_key"
+          ],
+          "isUnique": true
+        },
+        "idx_case_events_case_created_at": {
+          "name": "idx_case_events_case_created_at",
+          "columns": [
+            "case_id",
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "case_events_workspace_id_workspaces_id_fk": {
+          "name": "case_events_workspace_id_workspaces_id_fk",
+          "tableFrom": "case_events",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "case_events_actor_user_id_users_id_fk": {
+          "name": "case_events_actor_user_id_users_id_fk",
+          "tableFrom": "case_events",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_case_events_workspace_case": {
+          "name": "fk_case_events_workspace_case",
+          "tableFrom": "case_events",
+          "tableTo": "cases",
+          "columnsFrom": [
+            "workspace_id",
+            "case_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_case_events_workspace_actor_membership": {
+          "name": "fk_case_events_workspace_actor_membership",
+          "tableFrom": "case_events",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_case_events_cycle": {
+          "name": "chk_case_events_cycle",
+          "value": "\"case_events\".\"cycle\" >= 1"
+        }
+      }
+    },
+    "case_evidence": {
+      "name": "case_evidence",
+      "columns": {
+        "case_id": {
+          "name": "case_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_id": {
+          "name": "evidence_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "relation": {
+          "name": "relation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "linked_at": {
+          "name": "linked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_case_evidence_workspace_case": {
+          "name": "idx_case_evidence_workspace_case",
+          "columns": [
+            "workspace_id",
+            "case_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "case_evidence_workspace_id_workspaces_id_fk": {
+          "name": "case_evidence_workspace_id_workspaces_id_fk",
+          "tableFrom": "case_evidence",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_case_evidence_workspace_case": {
+          "name": "fk_case_evidence_workspace_case",
+          "tableFrom": "case_evidence",
+          "tableTo": "cases",
+          "columnsFrom": [
+            "workspace_id",
+            "case_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_case_evidence_workspace_evidence": {
+          "name": "fk_case_evidence_workspace_evidence",
+          "tableFrom": "case_evidence",
+          "tableTo": "evidence_observations",
+          "columnsFrom": [
+            "workspace_id",
+            "evidence_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "case_evidence_case_id_evidence_id_pk": {
+          "columns": [
+            "case_id",
+            "evidence_id"
+          ],
+          "name": "case_evidence_case_id_evidence_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_case_evidence_relation": {
+          "name": "chk_case_evidence_relation",
+          "value": "\"case_evidence\".\"relation\" IN ('supports', 'contradicts')"
+        },
+        "chk_case_evidence_position": {
+          "name": "chk_case_evidence_position",
+          "value": "\"case_evidence\".\"position\" >= 1"
+        }
+      }
+    },
+    "cases": {
+      "name": "cases",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "case_key": {
+          "name": "case_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stage": {
+          "name": "stage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "cycle": {
+          "name": "cycle",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "issue_title": {
+          "name": "issue_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_receipt_id": {
+          "name": "external_receipt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_cases_workspace_case_key": {
+          "name": "idx_cases_workspace_case_key",
+          "columns": [
+            "workspace_id",
+            "case_key"
+          ],
+          "isUnique": true
+        },
+        "idx_cases_workspace_id": {
+          "name": "idx_cases_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_cases_workspace_stage": {
+          "name": "idx_cases_workspace_stage",
+          "columns": [
+            "workspace_id",
+            "stage"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "cases_workspace_id_workspaces_id_fk": {
+          "name": "cases_workspace_id_workspaces_id_fk",
+          "tableFrom": "cases",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "cases_created_by_users_id_fk": {
+          "name": "cases_created_by_users_id_fk",
+          "tableFrom": "cases",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_cases_workspace_creator_membership": {
+          "name": "fk_cases_workspace_creator_membership",
+          "tableFrom": "cases",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_cases_stage": {
+          "name": "chk_cases_stage",
+          "value": "\"cases\".\"stage\" BETWEEN 0 AND 5"
+        },
+        "chk_cases_cycle": {
+          "name": "chk_cases_cycle",
+          "value": "\"cases\".\"cycle\" >= 1"
+        }
+      }
+    },
+    "evidence_observations": {
+      "name": "evidence_observations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_key": {
+          "name": "evidence_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_class": {
+          "name": "source_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "eyebrow": {
+          "name": "eyebrow",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_value": {
+          "name": "display_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "delta": {
+          "name": "delta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "detail": {
+          "name": "detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "query_text": {
+          "name": "query_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "observed_window": {
+          "name": "observed_window",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ingested_at": {
+          "name": "ingested_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "identity_level": {
+          "name": "identity_level",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_evidence_observations_workspace_key": {
+          "name": "idx_evidence_observations_workspace_key",
+          "columns": [
+            "workspace_id",
+            "evidence_key"
+          ],
+          "isUnique": true
+        },
+        "idx_evidence_observations_workspace_id": {
+          "name": "idx_evidence_observations_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "evidence_observations_workspace_id_workspaces_id_fk": {
+          "name": "evidence_observations_workspace_id_workspaces_id_fk",
+          "tableFrom": "evidence_observations",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "evidence_observations_created_by_users_id_fk": {
+          "name": "evidence_observations_created_by_users_id_fk",
+          "tableFrom": "evidence_observations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_evidence_workspace_creator_membership": {
+          "name": "fk_evidence_workspace_creator_membership",
+          "tableFrom": "evidence_observations",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_evidence_source_class": {
+          "name": "chk_evidence_source_class",
+          "value": "\"evidence_observations\".\"source_class\" IN ('source-posthog', 'source-stripe', 'source-support', 'source-github')"
+        }
+      }
+    },
+    "users": {
+      "name": "users",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "workspace_members": {
+      "name": "workspace_members",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "joined_at": {
+          "name": "joined_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_workspace_members_user_id": {
+          "name": "idx_workspace_members_user_id",
+          "columns": [
+            "user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "workspace_members_workspace_id_workspaces_id_fk": {
+          "name": "workspace_members_workspace_id_workspaces_id_fk",
+          "tableFrom": "workspace_members",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspace_members_user_id_users_id_fk": {
+          "name": "workspace_members_user_id_users_id_fk",
+          "tableFrom": "workspace_members",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "workspace_members_workspace_id_user_id_pk": {
+          "columns": [
+            "workspace_id",
+            "user_id"
+          ],
+          "name": "workspace_members_workspace_id_user_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_workspace_members_role": {
+          "name": "chk_workspace_members_role",
+          "value": "\"workspace_members\".\"role\" = 'owner'"
+        }
+      }
+    },
+    "workspaces": {
+      "name": "workspaces",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_workspaces_slug": {
+          "name": "idx_workspaces_slug",
+          "columns": [
+            "slug"
+          ],
+          "isUnique": true
+        },
+        "idx_workspaces_owner_user_id": {
+          "name": "idx_workspaces_owner_user_id",
+          "columns": [
+            "owner_user_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "workspaces_owner_user_id_users_id_fk": {
+          "name": "workspaces_owner_user_id_users_id_fk",
+          "tableFrom": "workspaces",
+          "tableTo": "users",
+          "columnsFrom": [
+            "owner_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "action_intents": {
+      "name": "action_intents",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "context_snapshot_id": {
+          "name": "context_snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_artifact_id": {
+          "name": "source_artifact_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "supersedes_intent_id": {
+          "name": "supersedes_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intent_key": {
+          "name": "intent_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "action_kind": {
+          "name": "action_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "truth_mode": {
+          "name": "truth_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipients_json": {
+          "name": "recipients_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "recipient_set_hash": {
+          "name": "recipient_set_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject": {
+          "name": "subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cohort_cap": {
+          "name": "cohort_cap",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_ids_json": {
+          "name": "evidence_ids_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metric_definition_id": {
+          "name": "metric_definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "context_manifest_hash": {
+          "name": "context_manifest_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_version": {
+          "name": "policy_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_hash": {
+          "name": "policy_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonical_payload_json": {
+          "name": "canonical_payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonical_payload_hash": {
+          "name": "canonical_payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_action_intents_workspace_id": {
+          "name": "idx_action_intents_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_action_intents_trace_key": {
+          "name": "idx_action_intents_trace_key",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "intent_key"
+          ],
+          "isUnique": true
+        },
+        "idx_action_intents_workspace_payload": {
+          "name": "idx_action_intents_workspace_payload",
+          "columns": [
+            "workspace_id",
+            "canonical_payload_hash"
+          ],
+          "isUnique": true
+        },
+        "idx_action_intents_workspace_nonce": {
+          "name": "idx_action_intents_workspace_nonce",
+          "columns": [
+            "workspace_id",
+            "nonce"
+          ],
+          "isUnique": true
+        },
+        "idx_action_intents_one_successor": {
+          "name": "idx_action_intents_one_successor",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "supersedes_intent_id"
+          ],
+          "isUnique": true,
+          "where": "\"action_intents\".\"supersedes_intent_id\" IS NOT NULL"
+        }
+      },
+      "foreignKeys": {
+        "action_intents_workspace_id_workspaces_id_fk": {
+          "name": "action_intents_workspace_id_workspaces_id_fk",
+          "tableFrom": "action_intents",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "action_intents_created_by_users_id_fk": {
+          "name": "action_intents_created_by_users_id_fk",
+          "tableFrom": "action_intents",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_action_intents_workspace_trace": {
+          "name": "fk_action_intents_workspace_trace",
+          "tableFrom": "action_intents",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_action_intents_workspace_context": {
+          "name": "fk_action_intents_workspace_context",
+          "tableFrom": "action_intents",
+          "tableTo": "context_snapshots",
+          "columnsFrom": [
+            "workspace_id",
+            "context_snapshot_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_action_intents_workspace_artifact": {
+          "name": "fk_action_intents_workspace_artifact",
+          "tableFrom": "action_intents",
+          "tableTo": "reasoning_artifacts",
+          "columnsFrom": [
+            "workspace_id",
+            "source_artifact_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_action_intents_workspace_metric_definition": {
+          "name": "fk_action_intents_workspace_metric_definition",
+          "tableFrom": "action_intents",
+          "tableTo": "outcome_definitions",
+          "columnsFrom": [
+            "workspace_id",
+            "metric_definition_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_action_intents_workspace_creator_membership": {
+          "name": "fk_action_intents_workspace_creator_membership",
+          "tableFrom": "action_intents",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_action_intents_kind": {
+          "name": "chk_action_intents_kind",
+          "value": "\"action_intents\".\"action_kind\" = 'email_test'"
+        },
+        "chk_action_intents_truth_mode": {
+          "name": "chk_action_intents_truth_mode",
+          "value": "\"action_intents\".\"truth_mode\" = 'TEST'"
+        },
+        "chk_action_intents_recipients_json": {
+          "name": "chk_action_intents_recipients_json",
+          "value": "json_valid(\"action_intents\".\"recipients_json\") AND json_type(\"action_intents\".\"recipients_json\") = 'array' AND json_array_length(\"action_intents\".\"recipients_json\") = \"action_intents\".\"cohort_cap\""
+        },
+        "chk_action_intents_evidence_json": {
+          "name": "chk_action_intents_evidence_json",
+          "value": "json_valid(\"action_intents\".\"evidence_ids_json\") AND json_type(\"action_intents\".\"evidence_ids_json\") = 'array' AND json_array_length(\"action_intents\".\"evidence_ids_json\") > 0"
+        },
+        "chk_action_intents_canonical_json": {
+          "name": "chk_action_intents_canonical_json",
+          "value": "json_valid(\"action_intents\".\"canonical_payload_json\")"
+        },
+        "chk_action_intents_cohort_cap": {
+          "name": "chk_action_intents_cohort_cap",
+          "value": "\"action_intents\".\"cohort_cap\" BETWEEN 1 AND 3"
+        },
+        "chk_action_intents_recipient_hash": {
+          "name": "chk_action_intents_recipient_hash",
+          "value": "length(\"action_intents\".\"recipient_set_hash\") = 64 AND \"action_intents\".\"recipient_set_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_action_intents_context_hash": {
+          "name": "chk_action_intents_context_hash",
+          "value": "length(\"action_intents\".\"context_manifest_hash\") = 64 AND \"action_intents\".\"context_manifest_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_action_intents_policy_hash": {
+          "name": "chk_action_intents_policy_hash",
+          "value": "length(\"action_intents\".\"policy_hash\") = 64 AND \"action_intents\".\"policy_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_action_intents_payload_hash": {
+          "name": "chk_action_intents_payload_hash",
+          "value": "length(\"action_intents\".\"canonical_payload_hash\") = 64 AND \"action_intents\".\"canonical_payload_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_action_intents_expiry": {
+          "name": "chk_action_intents_expiry",
+          "value": "unixepoch(\"action_intents\".\"expires_at\") IS NOT NULL AND unixepoch(\"action_intents\".\"expires_at\") > unixepoch(\"action_intents\".\"created_at\")"
+        }
+      }
+    },
+    "approval_grants": {
+      "name": "approval_grants",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "intent_id": {
+          "name": "intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_decision_id": {
+          "name": "policy_decision_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "decision": {
+          "name": "decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bound_payload_hash": {
+          "name": "bound_payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bound_context_hash": {
+          "name": "bound_context_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bound_policy_hash": {
+          "name": "bound_policy_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bound_recipient_set_hash": {
+          "name": "bound_recipient_set_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "nonce": {
+          "name": "nonce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_approval_grants_workspace_id": {
+          "name": "idx_approval_grants_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_approval_grants_workspace_intent": {
+          "name": "idx_approval_grants_workspace_intent",
+          "columns": [
+            "workspace_id",
+            "intent_id"
+          ],
+          "isUnique": true
+        },
+        "idx_approval_grants_workspace_nonce": {
+          "name": "idx_approval_grants_workspace_nonce",
+          "columns": [
+            "workspace_id",
+            "nonce"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "approval_grants_workspace_id_workspaces_id_fk": {
+          "name": "approval_grants_workspace_id_workspaces_id_fk",
+          "tableFrom": "approval_grants",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "approval_grants_approved_by_users_id_fk": {
+          "name": "approval_grants_approved_by_users_id_fk",
+          "tableFrom": "approval_grants",
+          "tableTo": "users",
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_approval_grants_workspace_trace": {
+          "name": "fk_approval_grants_workspace_trace",
+          "tableFrom": "approval_grants",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_approval_grants_workspace_intent": {
+          "name": "fk_approval_grants_workspace_intent",
+          "tableFrom": "approval_grants",
+          "tableTo": "action_intents",
+          "columnsFrom": [
+            "workspace_id",
+            "intent_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_approval_grants_workspace_policy_decision": {
+          "name": "fk_approval_grants_workspace_policy_decision",
+          "tableFrom": "approval_grants",
+          "tableTo": "policy_decisions",
+          "columnsFrom": [
+            "workspace_id",
+            "policy_decision_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_approval_grants_workspace_approver_membership": {
+          "name": "fk_approval_grants_workspace_approver_membership",
+          "tableFrom": "approval_grants",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "approved_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_approval_grants_decision": {
+          "name": "chk_approval_grants_decision",
+          "value": "\"approval_grants\".\"decision\" IN ('approved', 'rejected')"
+        },
+        "chk_approval_grants_payload_hash": {
+          "name": "chk_approval_grants_payload_hash",
+          "value": "length(\"approval_grants\".\"bound_payload_hash\") = 64 AND \"approval_grants\".\"bound_payload_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_approval_grants_context_hash": {
+          "name": "chk_approval_grants_context_hash",
+          "value": "length(\"approval_grants\".\"bound_context_hash\") = 64 AND \"approval_grants\".\"bound_context_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_approval_grants_policy_hash": {
+          "name": "chk_approval_grants_policy_hash",
+          "value": "length(\"approval_grants\".\"bound_policy_hash\") = 64 AND \"approval_grants\".\"bound_policy_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_approval_grants_recipient_hash": {
+          "name": "chk_approval_grants_recipient_hash",
+          "value": "length(\"approval_grants\".\"bound_recipient_set_hash\") = 64 AND \"approval_grants\".\"bound_recipient_set_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_approval_grants_expiry": {
+          "name": "chk_approval_grants_expiry",
+          "value": "unixepoch(\"approval_grants\".\"expires_at\") IS NOT NULL AND unixepoch(\"approval_grants\".\"approved_at\") IS NOT NULL AND unixepoch(\"approval_grants\".\"expires_at\") > unixepoch(\"approval_grants\".\"approved_at\")"
+        }
+      }
+    },
+    "context_snapshot_sources": {
+      "name": "context_snapshot_sources",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_kind": {
+          "name": "source_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_ref": {
+          "name": "source_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "access_decision": {
+          "name": "access_decision",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "retrieval_json": {
+          "name": "retrieval_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_context_sources_snapshot_source": {
+          "name": "idx_context_sources_snapshot_source",
+          "columns": [
+            "workspace_id",
+            "snapshot_id",
+            "source_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "context_snapshot_sources_workspace_id_workspaces_id_fk": {
+          "name": "context_snapshot_sources_workspace_id_workspaces_id_fk",
+          "tableFrom": "context_snapshot_sources",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_context_sources_workspace_snapshot": {
+          "name": "fk_context_sources_workspace_snapshot",
+          "tableFrom": "context_snapshot_sources",
+          "tableTo": "context_snapshots",
+          "columnsFrom": [
+            "workspace_id",
+            "snapshot_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "context_snapshot_sources_snapshot_id_position_pk": {
+          "columns": [
+            "snapshot_id",
+            "position"
+          ],
+          "name": "context_snapshot_sources_snapshot_id_position_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_context_sources_position": {
+          "name": "chk_context_sources_position",
+          "value": "\"context_snapshot_sources\".\"position\" >= 1"
+        },
+        "chk_context_sources_content_hash": {
+          "name": "chk_context_sources_content_hash",
+          "value": "length(\"context_snapshot_sources\".\"content_hash\") = 64 AND \"context_snapshot_sources\".\"content_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_context_sources_access_decision": {
+          "name": "chk_context_sources_access_decision",
+          "value": "\"context_snapshot_sources\".\"access_decision\" IN ('allowed', 'redacted')"
+        },
+        "chk_context_sources_retrieval_json": {
+          "name": "chk_context_sources_retrieval_json",
+          "value": "json_valid(\"context_snapshot_sources\".\"retrieval_json\")"
+        }
+      }
+    },
+    "context_snapshot_supersessions": {
+      "name": "context_snapshot_supersessions",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prior_snapshot_id": {
+          "name": "prior_snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_snapshot_id": {
+          "name": "current_snapshot_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "context_snapshot_supersessions_workspace_id_workspaces_id_fk": {
+          "name": "context_snapshot_supersessions_workspace_id_workspaces_id_fk",
+          "tableFrom": "context_snapshot_supersessions",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_context_supersessions_workspace_prior": {
+          "name": "fk_context_supersessions_workspace_prior",
+          "tableFrom": "context_snapshot_supersessions",
+          "tableTo": "context_snapshots",
+          "columnsFrom": [
+            "workspace_id",
+            "prior_snapshot_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id",
+            "trace_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_context_supersessions_workspace_current": {
+          "name": "fk_context_supersessions_workspace_current",
+          "tableFrom": "context_snapshot_supersessions",
+          "tableTo": "context_snapshots",
+          "columnsFrom": [
+            "workspace_id",
+            "current_snapshot_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id",
+            "trace_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "context_snapshot_supersessions_workspace_id_current_snapshot_id_pk": {
+          "columns": [
+            "workspace_id",
+            "current_snapshot_id"
+          ],
+          "name": "context_snapshot_supersessions_workspace_id_current_snapshot_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_context_supersessions_distinct": {
+          "name": "chk_context_supersessions_distinct",
+          "value": "\"context_snapshot_supersessions\".\"prior_snapshot_id\" <> \"context_snapshot_supersessions\".\"current_snapshot_id\""
+        }
+      }
+    },
+    "context_snapshots": {
+      "name": "context_snapshots",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "snapshot_key": {
+          "name": "snapshot_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "truth_mode": {
+          "name": "truth_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_state": {
+          "name": "current_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'collecting'"
+        },
+        "source_count": {
+          "name": "source_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ordered_manifest_json": {
+          "name": "ordered_manifest_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "manifest_hash": {
+          "name": "manifest_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "frozen_at": {
+          "name": "frozen_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_context_snapshots_workspace_id": {
+          "name": "idx_context_snapshots_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_context_snapshots_workspace_id_trace": {
+          "name": "idx_context_snapshots_workspace_id_trace",
+          "columns": [
+            "workspace_id",
+            "id",
+            "trace_id"
+          ],
+          "isUnique": true
+        },
+        "idx_context_snapshots_trace_key": {
+          "name": "idx_context_snapshots_trace_key",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "snapshot_key"
+          ],
+          "isUnique": true
+        },
+        "idx_context_snapshots_workspace_manifest": {
+          "name": "idx_context_snapshots_workspace_manifest",
+          "columns": [
+            "workspace_id",
+            "manifest_hash"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "context_snapshots_workspace_id_workspaces_id_fk": {
+          "name": "context_snapshots_workspace_id_workspaces_id_fk",
+          "tableFrom": "context_snapshots",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "context_snapshots_created_by_users_id_fk": {
+          "name": "context_snapshots_created_by_users_id_fk",
+          "tableFrom": "context_snapshots",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_context_snapshots_workspace_trace": {
+          "name": "fk_context_snapshots_workspace_trace",
+          "tableFrom": "context_snapshots",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_context_snapshots_workspace_creator_membership": {
+          "name": "fk_context_snapshots_workspace_creator_membership",
+          "tableFrom": "context_snapshots",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_context_snapshots_truth_mode": {
+          "name": "chk_context_snapshots_truth_mode",
+          "value": "\"context_snapshots\".\"truth_mode\" IN ('LIVE', 'TEST', 'FIXTURE')"
+        },
+        "chk_context_snapshots_state": {
+          "name": "chk_context_snapshots_state",
+          "value": "\"context_snapshots\".\"current_state\" IN ('collecting', 'frozen', 'superseded')"
+        },
+        "chk_context_snapshots_state_time": {
+          "name": "chk_context_snapshots_state_time",
+          "value": "(\"context_snapshots\".\"current_state\" = 'collecting' AND \"context_snapshots\".\"frozen_at\" IS NULL) OR (\"context_snapshots\".\"current_state\" IN ('frozen', 'superseded') AND unixepoch(\"context_snapshots\".\"frozen_at\") IS NOT NULL)"
+        },
+        "chk_context_snapshots_source_count": {
+          "name": "chk_context_snapshots_source_count",
+          "value": "\"context_snapshots\".\"source_count\" > 0"
+        },
+        "chk_context_snapshots_manifest_json": {
+          "name": "chk_context_snapshots_manifest_json",
+          "value": "json_valid(\"context_snapshots\".\"ordered_manifest_json\") AND json_type(\"context_snapshots\".\"ordered_manifest_json\") = 'array' AND json_array_length(\"context_snapshots\".\"ordered_manifest_json\") = \"context_snapshots\".\"source_count\""
+        },
+        "chk_context_snapshots_manifest_hash": {
+          "name": "chk_context_snapshots_manifest_hash",
+          "value": "length(\"context_snapshots\".\"manifest_hash\") = 64 AND \"context_snapshots\".\"manifest_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "effect_attempt_events": {
+      "name": "effect_attempt_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "effect_attempt_id": {
+          "name": "effect_attempt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prior_state": {
+          "name": "prior_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "current_state": {
+          "name": "current_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_receipt_id": {
+          "name": "provider_receipt_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "provider_response_hash": {
+          "name": "provider_response_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_effect_attempt_events_workspace_id": {
+          "name": "idx_effect_attempt_events_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_effect_attempt_events_sequence": {
+          "name": "idx_effect_attempt_events_sequence",
+          "columns": [
+            "workspace_id",
+            "effect_attempt_id",
+            "sequence"
+          ],
+          "isUnique": true
+        },
+        "idx_effect_attempt_events_idempotency": {
+          "name": "idx_effect_attempt_events_idempotency",
+          "columns": [
+            "workspace_id",
+            "idempotency_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "effect_attempt_events_workspace_id_workspaces_id_fk": {
+          "name": "effect_attempt_events_workspace_id_workspaces_id_fk",
+          "tableFrom": "effect_attempt_events",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempt_events_workspace_trace": {
+          "name": "fk_effect_attempt_events_workspace_trace",
+          "tableFrom": "effect_attempt_events",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempt_events_workspace_attempt": {
+          "name": "fk_effect_attempt_events_workspace_attempt",
+          "tableFrom": "effect_attempt_events",
+          "tableTo": "effect_attempts",
+          "columnsFrom": [
+            "workspace_id",
+            "effect_attempt_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id",
+            "trace_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_effect_attempt_events_sequence": {
+          "name": "chk_effect_attempt_events_sequence",
+          "value": "\"effect_attempt_events\".\"sequence\" >= 1"
+        },
+        "chk_effect_attempt_events_prior_state": {
+          "name": "chk_effect_attempt_events_prior_state",
+          "value": "\"effect_attempt_events\".\"prior_state\" IS NULL OR \"effect_attempt_events\".\"prior_state\" IN ('reserved', 'dispatching', 'confirmed', 'failed', 'indeterminate', 'reconciled_confirmed', 'reconciled_failed')"
+        },
+        "chk_effect_attempt_events_current_state": {
+          "name": "chk_effect_attempt_events_current_state",
+          "value": "\"effect_attempt_events\".\"current_state\" IN ('reserved', 'dispatching', 'confirmed', 'failed', 'indeterminate', 'reconciled_confirmed', 'reconciled_failed')"
+        },
+        "chk_effect_attempt_events_payload_json": {
+          "name": "chk_effect_attempt_events_payload_json",
+          "value": "json_valid(\"effect_attempt_events\".\"payload_json\")"
+        },
+        "chk_effect_attempt_events_response_hash": {
+          "name": "chk_effect_attempt_events_response_hash",
+          "value": "\"effect_attempt_events\".\"provider_response_hash\" IS NULL OR (length(\"effect_attempt_events\".\"provider_response_hash\") = 64 AND \"effect_attempt_events\".\"provider_response_hash\" NOT GLOB '*[^0-9a-f]*')"
+        },
+        "chk_effect_attempt_events_occurred_time": {
+          "name": "chk_effect_attempt_events_occurred_time",
+          "value": "unixepoch(\"effect_attempt_events\".\"occurred_at\") IS NOT NULL"
+        }
+      }
+    },
+    "effect_attempts": {
+      "name": "effect_attempts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "intent_id": {
+          "name": "intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "approval_grant_id": {
+          "name": "approval_grant_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "intended_effect_key": {
+          "name": "intended_effect_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "adapter_kind": {
+          "name": "adapter_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "provider_mode": {
+          "name": "provider_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "initial_state": {
+          "name": "initial_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'reserved'"
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reserved_by": {
+          "name": "reserved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reserved_at": {
+          "name": "reserved_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_effect_attempts_workspace_id": {
+          "name": "idx_effect_attempts_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_effect_attempts_workspace_id_trace": {
+          "name": "idx_effect_attempts_workspace_id_trace",
+          "columns": [
+            "workspace_id",
+            "id",
+            "trace_id"
+          ],
+          "isUnique": true
+        },
+        "idx_effect_attempts_intended_effect": {
+          "name": "idx_effect_attempts_intended_effect",
+          "columns": [
+            "workspace_id",
+            "intended_effect_key"
+          ],
+          "isUnique": true
+        },
+        "idx_effect_attempts_one_grant_use": {
+          "name": "idx_effect_attempts_one_grant_use",
+          "columns": [
+            "workspace_id",
+            "approval_grant_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "effect_attempts_workspace_id_workspaces_id_fk": {
+          "name": "effect_attempts_workspace_id_workspaces_id_fk",
+          "tableFrom": "effect_attempts",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "effect_attempts_reserved_by_users_id_fk": {
+          "name": "effect_attempts_reserved_by_users_id_fk",
+          "tableFrom": "effect_attempts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "reserved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempts_workspace_trace": {
+          "name": "fk_effect_attempts_workspace_trace",
+          "tableFrom": "effect_attempts",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempts_workspace_intent": {
+          "name": "fk_effect_attempts_workspace_intent",
+          "tableFrom": "effect_attempts",
+          "tableTo": "action_intents",
+          "columnsFrom": [
+            "workspace_id",
+            "intent_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempts_workspace_grant": {
+          "name": "fk_effect_attempts_workspace_grant",
+          "tableFrom": "effect_attempts",
+          "tableTo": "approval_grants",
+          "columnsFrom": [
+            "workspace_id",
+            "approval_grant_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_effect_attempts_workspace_reserver_membership": {
+          "name": "fk_effect_attempts_workspace_reserver_membership",
+          "tableFrom": "effect_attempts",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "reserved_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_effect_attempts_adapter": {
+          "name": "chk_effect_attempts_adapter",
+          "value": "\"effect_attempts\".\"adapter_kind\" = 'email_test'"
+        },
+        "chk_effect_attempts_provider_mode": {
+          "name": "chk_effect_attempts_provider_mode",
+          "value": "\"effect_attempts\".\"provider_mode\" IN ('TEST', 'FIXTURE')"
+        },
+        "chk_effect_attempts_initial_state": {
+          "name": "chk_effect_attempts_initial_state",
+          "value": "\"effect_attempts\".\"initial_state\" = 'reserved'"
+        },
+        "chk_effect_attempts_request_hash": {
+          "name": "chk_effect_attempts_request_hash",
+          "value": "length(\"effect_attempts\".\"request_hash\") = 64 AND \"effect_attempts\".\"request_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_effect_attempts_reserved_time": {
+          "name": "chk_effect_attempts_reserved_time",
+          "value": "unixepoch(\"effect_attempts\".\"reserved_at\") IS NOT NULL"
+        }
+      }
+    },
+    "flight_evidence": {
+      "name": "flight_evidence",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_key": {
+          "name": "evidence_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "truth_mode": {
+          "name": "truth_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_kind": {
+          "name": "source_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_ref": {
+          "name": "source_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "captured_at": {
+          "name": "captured_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_flight_evidence_workspace_id": {
+          "name": "idx_flight_evidence_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_evidence_trace_key": {
+          "name": "idx_flight_evidence_trace_key",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "evidence_key"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_evidence_idempotency": {
+          "name": "idx_flight_evidence_idempotency",
+          "columns": [
+            "workspace_id",
+            "idempotency_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "flight_evidence_workspace_id_workspaces_id_fk": {
+          "name": "flight_evidence_workspace_id_workspaces_id_fk",
+          "tableFrom": "flight_evidence",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "flight_evidence_created_by_users_id_fk": {
+          "name": "flight_evidence_created_by_users_id_fk",
+          "tableFrom": "flight_evidence",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_flight_evidence_workspace_trace": {
+          "name": "fk_flight_evidence_workspace_trace",
+          "tableFrom": "flight_evidence",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_flight_evidence_workspace_creator_membership": {
+          "name": "fk_flight_evidence_workspace_creator_membership",
+          "tableFrom": "flight_evidence",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_flight_evidence_truth_mode": {
+          "name": "chk_flight_evidence_truth_mode",
+          "value": "\"flight_evidence\".\"truth_mode\" IN ('LIVE', 'TEST', 'FIXTURE')"
+        },
+        "chk_flight_evidence_payload_json": {
+          "name": "chk_flight_evidence_payload_json",
+          "value": "json_valid(\"flight_evidence\".\"payload_json\")"
+        },
+        "chk_flight_evidence_content_hash": {
+          "name": "chk_flight_evidence_content_hash",
+          "value": "length(\"flight_evidence\".\"content_hash\") = 64 AND \"flight_evidence\".\"content_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "flight_trace_events": {
+      "name": "flight_trace_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sequence": {
+          "name": "sequence",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "event_type": {
+          "name": "event_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject_type": {
+          "name": "subject_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subject_id": {
+          "name": "subject_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prior_state": {
+          "name": "prior_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "current_state": {
+          "name": "current_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_type": {
+          "name": "actor_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "actor_id": {
+          "name": "actor_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "payload_json": {
+          "name": "payload_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "idempotency_key": {
+          "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "occurred_at": {
+          "name": "occurred_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_flight_trace_events_workspace_id": {
+          "name": "idx_flight_trace_events_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_trace_events_sequence": {
+          "name": "idx_flight_trace_events_sequence",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "sequence"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_trace_events_idempotency": {
+          "name": "idx_flight_trace_events_idempotency",
+          "columns": [
+            "workspace_id",
+            "idempotency_key"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_trace_events_subject": {
+          "name": "idx_flight_trace_events_subject",
+          "columns": [
+            "workspace_id",
+            "subject_type",
+            "subject_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "flight_trace_events_workspace_id_workspaces_id_fk": {
+          "name": "flight_trace_events_workspace_id_workspaces_id_fk",
+          "tableFrom": "flight_trace_events",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_flight_trace_events_workspace_trace": {
+          "name": "fk_flight_trace_events_workspace_trace",
+          "tableFrom": "flight_trace_events",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_flight_trace_events_sequence": {
+          "name": "chk_flight_trace_events_sequence",
+          "value": "\"flight_trace_events\".\"sequence\" >= 1"
+        },
+        "chk_flight_trace_events_subject_type": {
+          "name": "chk_flight_trace_events_subject_type",
+          "value": "\"flight_trace_events\".\"subject_type\" IN ('trace', 'context', 'graph', 'intent', 'policy', 'approval', 'effect', 'outcome')"
+        },
+        "chk_flight_trace_events_actor_type": {
+          "name": "chk_flight_trace_events_actor_type",
+          "value": "\"flight_trace_events\".\"actor_type\" IN ('human', 'system', 'agent', 'adapter')"
+        },
+        "chk_flight_trace_events_payload_json": {
+          "name": "chk_flight_trace_events_payload_json",
+          "value": "json_valid(\"flight_trace_events\".\"payload_json\")"
+        },
+        "chk_flight_trace_events_payload_hash": {
+          "name": "chk_flight_trace_events_payload_hash",
+          "value": "length(\"flight_trace_events\".\"payload_hash\") = 64 AND \"flight_trace_events\".\"payload_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_flight_trace_events_occurred_time": {
+          "name": "chk_flight_trace_events_occurred_time",
+          "value": "unixepoch(\"flight_trace_events\".\"occurred_at\") IS NOT NULL"
+        }
+      }
+    },
+    "flight_traces": {
+      "name": "flight_traces",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_key": {
+          "name": "trace_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fixture_key": {
+          "name": "fixture_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "truth_mode": {
+          "name": "truth_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_state": {
+          "name": "current_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'collecting'"
+        },
+        "active_intent_id": {
+          "name": "active_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "retention_class": {
+          "name": "retention_class",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "retention_until": {
+          "name": "retention_until",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_flight_traces_workspace_key": {
+          "name": "idx_flight_traces_workspace_key",
+          "columns": [
+            "workspace_id",
+            "trace_key"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_traces_workspace_id": {
+          "name": "idx_flight_traces_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_flight_traces_workspace_state": {
+          "name": "idx_flight_traces_workspace_state",
+          "columns": [
+            "workspace_id",
+            "current_state"
+          ],
+          "isUnique": false
+        },
+        "idx_flight_traces_workspace_active_intent": {
+          "name": "idx_flight_traces_workspace_active_intent",
+          "columns": [
+            "workspace_id",
+            "active_intent_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "flight_traces_workspace_id_workspaces_id_fk": {
+          "name": "flight_traces_workspace_id_workspaces_id_fk",
+          "tableFrom": "flight_traces",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "flight_traces_created_by_users_id_fk": {
+          "name": "flight_traces_created_by_users_id_fk",
+          "tableFrom": "flight_traces",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_flight_traces_workspace_creator_membership": {
+          "name": "fk_flight_traces_workspace_creator_membership",
+          "tableFrom": "flight_traces",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "created_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_flight_traces_truth_mode": {
+          "name": "chk_flight_traces_truth_mode",
+          "value": "\"flight_traces\".\"truth_mode\" IN ('LIVE', 'TEST', 'FIXTURE')"
+        },
+        "chk_flight_traces_state": {
+          "name": "chk_flight_traces_state",
+          "value": "\"flight_traces\".\"current_state\" IN ('collecting', 'context_frozen', 'reasoning', 'awaiting_approval', 'executing', 'observing', 'assessed', 'failed', 'cancelled')"
+        },
+        "chk_flight_traces_retention": {
+          "name": "chk_flight_traces_retention",
+          "value": "\"flight_traces\".\"retention_class\" IN ('ephemeral_demo', 'review_evidence')"
+        },
+        "chk_flight_traces_fixture_label": {
+          "name": "chk_flight_traces_fixture_label",
+          "value": "\"flight_traces\".\"truth_mode\" <> 'FIXTURE' OR \"flight_traces\".\"fixture_key\" IS NOT NULL"
+        },
+        "chk_flight_traces_retention_time": {
+          "name": "chk_flight_traces_retention_time",
+          "value": "unixepoch(\"flight_traces\".\"retention_until\") IS NOT NULL"
+        }
+      }
+    },
+    "outcome_assessment_supersessions": {
+      "name": "outcome_assessment_supersessions",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "prior_assessment_id": {
+          "name": "prior_assessment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "current_assessment_id": {
+          "name": "current_assessment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "outcome_assessment_supersessions_workspace_id_workspaces_id_fk": {
+          "name": "outcome_assessment_supersessions_workspace_id_workspaces_id_fk",
+          "tableFrom": "outcome_assessment_supersessions",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_supersessions_workspace_prior": {
+          "name": "fk_outcome_supersessions_workspace_prior",
+          "tableFrom": "outcome_assessment_supersessions",
+          "tableTo": "outcome_assessments",
+          "columnsFrom": [
+            "workspace_id",
+            "prior_assessment_id",
+            "trace_id",
+            "definition_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id",
+            "trace_id",
+            "definition_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_supersessions_workspace_current": {
+          "name": "fk_outcome_supersessions_workspace_current",
+          "tableFrom": "outcome_assessment_supersessions",
+          "tableTo": "outcome_assessments",
+          "columnsFrom": [
+            "workspace_id",
+            "current_assessment_id",
+            "trace_id",
+            "definition_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id",
+            "trace_id",
+            "definition_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "outcome_assessment_supersessions_workspace_id_current_assessment_id_pk": {
+          "columns": [
+            "workspace_id",
+            "current_assessment_id"
+          ],
+          "name": "outcome_assessment_supersessions_workspace_id_current_assessment_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_outcome_supersessions_distinct": {
+          "name": "chk_outcome_supersessions_distinct",
+          "value": "\"outcome_assessment_supersessions\".\"prior_assessment_id\" <> \"outcome_assessment_supersessions\".\"current_assessment_id\""
+        }
+      }
+    },
+    "outcome_assessments": {
+      "name": "outcome_assessments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "assessment_version": {
+          "name": "assessment_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_ids_json": {
+          "name": "evidence_ids_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "limitations_json": {
+          "name": "limitations_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rationale_summary": {
+          "name": "rationale_summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_outcome_assessments_workspace_id": {
+          "name": "idx_outcome_assessments_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_outcome_assessments_workspace_id_trace_definition": {
+          "name": "idx_outcome_assessments_workspace_id_trace_definition",
+          "columns": [
+            "workspace_id",
+            "id",
+            "trace_id",
+            "definition_id"
+          ],
+          "isUnique": true
+        },
+        "idx_outcome_assessments_definition_version": {
+          "name": "idx_outcome_assessments_definition_version",
+          "columns": [
+            "workspace_id",
+            "definition_id",
+            "assessment_version"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "outcome_assessments_workspace_id_workspaces_id_fk": {
+          "name": "outcome_assessments_workspace_id_workspaces_id_fk",
+          "tableFrom": "outcome_assessments",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_assessments_workspace_trace": {
+          "name": "fk_outcome_assessments_workspace_trace",
+          "tableFrom": "outcome_assessments",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_assessments_workspace_definition": {
+          "name": "fk_outcome_assessments_workspace_definition",
+          "tableFrom": "outcome_assessments",
+          "tableTo": "outcome_definitions",
+          "columnsFrom": [
+            "workspace_id",
+            "definition_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_outcome_assessments_version": {
+          "name": "chk_outcome_assessments_version",
+          "value": "\"outcome_assessments\".\"assessment_version\" >= 1"
+        },
+        "chk_outcome_assessments_label": {
+          "name": "chk_outcome_assessments_label",
+          "value": "\"outcome_assessments\".\"label\" IN ('supported', 'unsupported', 'correlated', 'inconclusive')"
+        },
+        "chk_outcome_assessments_evidence_json": {
+          "name": "chk_outcome_assessments_evidence_json",
+          "value": "json_valid(\"outcome_assessments\".\"evidence_ids_json\") AND json_type(\"outcome_assessments\".\"evidence_ids_json\") = 'array' AND json_array_length(\"outcome_assessments\".\"evidence_ids_json\") > 0"
+        },
+        "chk_outcome_assessments_limitations_json": {
+          "name": "chk_outcome_assessments_limitations_json",
+          "value": "json_valid(\"outcome_assessments\".\"limitations_json\") AND json_type(\"outcome_assessments\".\"limitations_json\") = 'array' AND json_array_length(\"outcome_assessments\".\"limitations_json\") > 0"
+        },
+        "chk_outcome_assessments_content_hash": {
+          "name": "chk_outcome_assessments_content_hash",
+          "value": "length(\"outcome_assessments\".\"content_hash\") = 64 AND \"outcome_assessments\".\"content_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "outcome_definitions": {
+      "name": "outcome_definitions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_key": {
+          "name": "definition_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metric_name": {
+          "name": "metric_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cohort_json": {
+          "name": "cohort_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "cohort_hash": {
+          "name": "cohort_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "baseline_json": {
+          "name": "baseline_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "baseline_hash": {
+          "name": "baseline_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "window_starts_at": {
+          "name": "window_starts_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "window_ends_at": {
+          "name": "window_ends_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "assessment_rule_json": {
+          "name": "assessment_rule_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "assessment_rule_hash": {
+          "name": "assessment_rule_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "registered_by": {
+          "name": "registered_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "registered_at": {
+          "name": "registered_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_outcome_definitions_workspace_id": {
+          "name": "idx_outcome_definitions_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_outcome_definitions_trace_key": {
+          "name": "idx_outcome_definitions_trace_key",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "definition_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "outcome_definitions_workspace_id_workspaces_id_fk": {
+          "name": "outcome_definitions_workspace_id_workspaces_id_fk",
+          "tableFrom": "outcome_definitions",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "outcome_definitions_registered_by_users_id_fk": {
+          "name": "outcome_definitions_registered_by_users_id_fk",
+          "tableFrom": "outcome_definitions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "registered_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_definitions_workspace_trace": {
+          "name": "fk_outcome_definitions_workspace_trace",
+          "tableFrom": "outcome_definitions",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_definitions_workspace_registrar_membership": {
+          "name": "fk_outcome_definitions_workspace_registrar_membership",
+          "tableFrom": "outcome_definitions",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "registered_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_outcome_definitions_cohort_json": {
+          "name": "chk_outcome_definitions_cohort_json",
+          "value": "json_valid(\"outcome_definitions\".\"cohort_json\")"
+        },
+        "chk_outcome_definitions_baseline_json": {
+          "name": "chk_outcome_definitions_baseline_json",
+          "value": "json_valid(\"outcome_definitions\".\"baseline_json\")"
+        },
+        "chk_outcome_definitions_rule_json": {
+          "name": "chk_outcome_definitions_rule_json",
+          "value": "json_valid(\"outcome_definitions\".\"assessment_rule_json\")"
+        },
+        "chk_outcome_definitions_window": {
+          "name": "chk_outcome_definitions_window",
+          "value": "unixepoch(\"outcome_definitions\".\"window_starts_at\") IS NOT NULL AND unixepoch(\"outcome_definitions\".\"window_ends_at\") IS NOT NULL AND unixepoch(\"outcome_definitions\".\"window_starts_at\") < unixepoch(\"outcome_definitions\".\"window_ends_at\")"
+        },
+        "chk_outcome_definitions_cohort_hash": {
+          "name": "chk_outcome_definitions_cohort_hash",
+          "value": "length(\"outcome_definitions\".\"cohort_hash\") = 64 AND \"outcome_definitions\".\"cohort_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_outcome_definitions_baseline_hash": {
+          "name": "chk_outcome_definitions_baseline_hash",
+          "value": "length(\"outcome_definitions\".\"baseline_hash\") = 64 AND \"outcome_definitions\".\"baseline_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_outcome_definitions_rule_hash": {
+          "name": "chk_outcome_definitions_rule_hash",
+          "value": "length(\"outcome_definitions\".\"assessment_rule_hash\") = 64 AND \"outcome_definitions\".\"assessment_rule_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "outcome_observations": {
+      "name": "outcome_observations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "definition_id": {
+          "name": "definition_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source_evidence_id": {
+          "name": "source_evidence_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "observation_key": {
+          "name": "observation_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "truth_mode": {
+          "name": "truth_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "signature_status": {
+          "name": "signature_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value_json": {
+          "name": "value_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value_hash": {
+          "name": "value_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_outcome_observations_workspace_id": {
+          "name": "idx_outcome_observations_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_outcome_observations_definition_key": {
+          "name": "idx_outcome_observations_definition_key",
+          "columns": [
+            "workspace_id",
+            "definition_id",
+            "observation_key"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "outcome_observations_workspace_id_workspaces_id_fk": {
+          "name": "outcome_observations_workspace_id_workspaces_id_fk",
+          "tableFrom": "outcome_observations",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_observations_workspace_trace": {
+          "name": "fk_outcome_observations_workspace_trace",
+          "tableFrom": "outcome_observations",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_observations_workspace_definition": {
+          "name": "fk_outcome_observations_workspace_definition",
+          "tableFrom": "outcome_observations",
+          "tableTo": "outcome_definitions",
+          "columnsFrom": [
+            "workspace_id",
+            "definition_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_outcome_observations_workspace_evidence": {
+          "name": "fk_outcome_observations_workspace_evidence",
+          "tableFrom": "outcome_observations",
+          "tableTo": "flight_evidence",
+          "columnsFrom": [
+            "workspace_id",
+            "source_evidence_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_outcome_observations_truth_mode": {
+          "name": "chk_outcome_observations_truth_mode",
+          "value": "\"outcome_observations\".\"truth_mode\" IN ('LIVE', 'TEST', 'FIXTURE')"
+        },
+        "chk_outcome_observations_signature": {
+          "name": "chk_outcome_observations_signature",
+          "value": "\"outcome_observations\".\"signature_status\" IN ('verified', 'fixture', 'invalid')"
+        },
+        "chk_outcome_observations_truth_signature": {
+          "name": "chk_outcome_observations_truth_signature",
+          "value": "(\"outcome_observations\".\"truth_mode\" = 'FIXTURE' AND \"outcome_observations\".\"signature_status\" IN ('fixture', 'invalid')) OR (\"outcome_observations\".\"truth_mode\" IN ('LIVE', 'TEST') AND \"outcome_observations\".\"signature_status\" IN ('verified', 'invalid'))"
+        },
+        "chk_outcome_observations_value_json": {
+          "name": "chk_outcome_observations_value_json",
+          "value": "json_valid(\"outcome_observations\".\"value_json\")"
+        },
+        "chk_outcome_observations_value_hash": {
+          "name": "chk_outcome_observations_value_hash",
+          "value": "length(\"outcome_observations\".\"value_hash\") = 64 AND \"outcome_observations\".\"value_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_outcome_observations_observed_time": {
+          "name": "chk_outcome_observations_observed_time",
+          "value": "unixepoch(\"outcome_observations\".\"observed_at\") IS NOT NULL"
+        }
+      }
+    },
+    "policy_decisions": {
+      "name": "policy_decisions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "intent_id": {
+          "name": "intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_version": {
+          "name": "policy_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "policy_hash": {
+          "name": "policy_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason_codes_json": {
+          "name": "reason_codes_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evaluated_payload_hash": {
+          "name": "evaluated_payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evaluated_context_hash": {
+          "name": "evaluated_context_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evaluator_version": {
+          "name": "evaluator_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "decided_at": {
+          "name": "decided_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_policy_decisions_workspace_id": {
+          "name": "idx_policy_decisions_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_policy_decisions_intent_policy": {
+          "name": "idx_policy_decisions_intent_policy",
+          "columns": [
+            "workspace_id",
+            "intent_id",
+            "policy_hash"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "policy_decisions_workspace_id_workspaces_id_fk": {
+          "name": "policy_decisions_workspace_id_workspaces_id_fk",
+          "tableFrom": "policy_decisions",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_policy_decisions_workspace_trace": {
+          "name": "fk_policy_decisions_workspace_trace",
+          "tableFrom": "policy_decisions",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_policy_decisions_workspace_intent": {
+          "name": "fk_policy_decisions_workspace_intent",
+          "tableFrom": "policy_decisions",
+          "tableTo": "action_intents",
+          "columnsFrom": [
+            "workspace_id",
+            "intent_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_policy_decisions_verdict": {
+          "name": "chk_policy_decisions_verdict",
+          "value": "\"policy_decisions\".\"verdict\" IN ('deny', 'allow', 'approval_required')"
+        },
+        "chk_policy_decisions_reasons_json": {
+          "name": "chk_policy_decisions_reasons_json",
+          "value": "json_valid(\"policy_decisions\".\"reason_codes_json\") AND json_type(\"policy_decisions\".\"reason_codes_json\") = 'array' AND json_array_length(\"policy_decisions\".\"reason_codes_json\") > 0"
+        },
+        "chk_policy_decisions_policy_hash": {
+          "name": "chk_policy_decisions_policy_hash",
+          "value": "length(\"policy_decisions\".\"policy_hash\") = 64 AND \"policy_decisions\".\"policy_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_policy_decisions_payload_hash": {
+          "name": "chk_policy_decisions_payload_hash",
+          "value": "length(\"policy_decisions\".\"evaluated_payload_hash\") = 64 AND \"policy_decisions\".\"evaluated_payload_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_policy_decisions_context_hash": {
+          "name": "chk_policy_decisions_context_hash",
+          "value": "length(\"policy_decisions\".\"evaluated_context_hash\") = 64 AND \"policy_decisions\".\"evaluated_context_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "reasoning_artifacts": {
+      "name": "reasoning_artifacts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "node_id": {
+          "name": "node_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "artifact_kind": {
+          "name": "artifact_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "schema_version": {
+          "name": "schema_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_json": {
+          "name": "content_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "evidence_citations_json": {
+          "name": "evidence_citations_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_reasoning_artifacts_workspace_id": {
+          "name": "idx_reasoning_artifacts_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_reasoning_artifacts_node_kind": {
+          "name": "idx_reasoning_artifacts_node_kind",
+          "columns": [
+            "workspace_id",
+            "node_id",
+            "artifact_kind"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "reasoning_artifacts_workspace_id_workspaces_id_fk": {
+          "name": "reasoning_artifacts_workspace_id_workspaces_id_fk",
+          "tableFrom": "reasoning_artifacts",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_reasoning_artifacts_workspace_trace": {
+          "name": "fk_reasoning_artifacts_workspace_trace",
+          "tableFrom": "reasoning_artifacts",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_reasoning_artifacts_workspace_node": {
+          "name": "fk_reasoning_artifacts_workspace_node",
+          "tableFrom": "reasoning_artifacts",
+          "tableTo": "reasoning_nodes",
+          "columnsFrom": [
+            "workspace_id",
+            "node_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_reasoning_artifacts_kind": {
+          "name": "chk_reasoning_artifacts_kind",
+          "value": "\"reasoning_artifacts\".\"artifact_kind\" IN ('plan', 'analysis', 'critique', 'intent_draft')"
+        },
+        "chk_reasoning_artifacts_content_json": {
+          "name": "chk_reasoning_artifacts_content_json",
+          "value": "json_valid(\"reasoning_artifacts\".\"content_json\")"
+        },
+        "chk_reasoning_artifacts_citations_json": {
+          "name": "chk_reasoning_artifacts_citations_json",
+          "value": "json_valid(\"reasoning_artifacts\".\"evidence_citations_json\") AND json_type(\"reasoning_artifacts\".\"evidence_citations_json\") = 'array' AND json_array_length(\"reasoning_artifacts\".\"evidence_citations_json\") > 0"
+        },
+        "chk_reasoning_artifacts_content_hash": {
+          "name": "chk_reasoning_artifacts_content_hash",
+          "value": "length(\"reasoning_artifacts\".\"content_hash\") = 64 AND \"reasoning_artifacts\".\"content_hash\" NOT GLOB '*[^0-9a-f]*'"
+        }
+      }
+    },
+    "reasoning_nodes": {
+      "name": "reasoning_nodes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "trace_id": {
+          "name": "trace_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "node_key": {
+          "name": "node_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "logical_node_id": {
+          "name": "logical_node_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "graph_version": {
+          "name": "graph_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "execution_mode": {
+          "name": "execution_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "handler_version": {
+          "name": "handler_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "predecessor_outputs_json": {
+          "name": "predecessor_outputs_json",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attempt": {
+          "name": "attempt",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "current_state": {
+          "name": "current_state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "input_hash": {
+          "name": "input_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "output_hash": {
+          "name": "output_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error_code": {
+          "name": "error_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lease_token": {
+          "name": "lease_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "lease_expires_at": {
+          "name": "lease_expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completion_token_hash": {
+          "name": "completion_token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "idx_reasoning_nodes_workspace_id": {
+          "name": "idx_reasoning_nodes_workspace_id",
+          "columns": [
+            "workspace_id",
+            "id"
+          ],
+          "isUnique": true
+        },
+        "idx_reasoning_nodes_trace_identity": {
+          "name": "idx_reasoning_nodes_trace_identity",
+          "columns": [
+            "workspace_id",
+            "trace_id",
+            "node_key",
+            "attempt"
+          ],
+          "isUnique": true
+        },
+        "idx_reasoning_nodes_logical_attempt": {
+          "name": "idx_reasoning_nodes_logical_attempt",
+          "columns": [
+            "workspace_id",
+            "logical_node_id",
+            "attempt"
+          ],
+          "isUnique": true
+        },
+        "idx_reasoning_nodes_active": {
+          "name": "idx_reasoning_nodes_active",
+          "columns": [
+            "workspace_id",
+            "logical_node_id"
+          ],
+          "isUnique": true,
+          "where": "\"reasoning_nodes\".\"current_state\" IN ('pending', 'running')"
+        },
+        "idx_reasoning_nodes_running": {
+          "name": "idx_reasoning_nodes_running",
+          "columns": [
+            "workspace_id",
+            "logical_node_id"
+          ],
+          "isUnique": true,
+          "where": "\"reasoning_nodes\".\"current_state\" = 'running'"
+        },
+        "idx_reasoning_nodes_succeeded": {
+          "name": "idx_reasoning_nodes_succeeded",
+          "columns": [
+            "workspace_id",
+            "logical_node_id"
+          ],
+          "isUnique": true,
+          "where": "\"reasoning_nodes\".\"current_state\" = 'succeeded'"
+        }
+      },
+      "foreignKeys": {
+        "reasoning_nodes_workspace_id_workspaces_id_fk": {
+          "name": "reasoning_nodes_workspace_id_workspaces_id_fk",
+          "tableFrom": "reasoning_nodes",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "fk_reasoning_nodes_workspace_trace": {
+          "name": "fk_reasoning_nodes_workspace_trace",
+          "tableFrom": "reasoning_nodes",
+          "tableTo": "flight_traces",
+          "columnsFrom": [
+            "workspace_id",
+            "trace_id"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_reasoning_nodes_key": {
+          "name": "chk_reasoning_nodes_key",
+          "value": "\"reasoning_nodes\".\"node_key\" IN ('planner', 'quantitative', 'qualitative', 'experiment_design', 'skeptic', 'synthesizer')"
+        },
+        "chk_reasoning_nodes_state": {
+          "name": "chk_reasoning_nodes_state",
+          "value": "\"reasoning_nodes\".\"current_state\" IN ('pending', 'running', 'succeeded', 'failed', 'skipped')"
+        },
+        "chk_reasoning_nodes_attempt": {
+          "name": "chk_reasoning_nodes_attempt",
+          "value": "\"reasoning_nodes\".\"attempt\" >= 1"
+        },
+        "chk_reasoning_nodes_execution_mode": {
+          "name": "chk_reasoning_nodes_execution_mode",
+          "value": "\"reasoning_nodes\".\"execution_mode\" IN ('runtime', 'precomputed_fixture')"
+        },
+        "chk_reasoning_nodes_predecessor_outputs_json": {
+          "name": "chk_reasoning_nodes_predecessor_outputs_json",
+          "value": "json_valid(\"reasoning_nodes\".\"predecessor_outputs_json\") AND json_type(\"reasoning_nodes\".\"predecessor_outputs_json\") = 'array'"
+        },
+        "chk_reasoning_nodes_input_hash": {
+          "name": "chk_reasoning_nodes_input_hash",
+          "value": "length(\"reasoning_nodes\".\"input_hash\") = 64 AND \"reasoning_nodes\".\"input_hash\" NOT GLOB '*[^0-9a-f]*'"
+        },
+        "chk_reasoning_nodes_output_hash": {
+          "name": "chk_reasoning_nodes_output_hash",
+          "value": "\"reasoning_nodes\".\"output_hash\" IS NULL OR (length(\"reasoning_nodes\".\"output_hash\") = 64 AND \"reasoning_nodes\".\"output_hash\" NOT GLOB '*[^0-9a-f]*')"
+        },
+        "chk_reasoning_nodes_state_payload": {
+          "name": "chk_reasoning_nodes_state_payload",
+          "value": "(\n        \"reasoning_nodes\".\"current_state\" = 'pending'\n        AND \"reasoning_nodes\".\"started_at\" IS NULL\n        AND \"reasoning_nodes\".\"completed_at\" IS NULL\n        AND \"reasoning_nodes\".\"output_hash\" IS NULL\n        AND \"reasoning_nodes\".\"error_code\" IS NULL\n        AND \"reasoning_nodes\".\"lease_token\" IS NULL\n        AND \"reasoning_nodes\".\"lease_expires_at\" IS NULL\n        AND \"reasoning_nodes\".\"completion_token_hash\" IS NULL\n      ) OR (\n        \"reasoning_nodes\".\"current_state\" = 'running'\n        AND \"reasoning_nodes\".\"started_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"completed_at\" IS NULL\n        AND \"reasoning_nodes\".\"output_hash\" IS NULL\n        AND \"reasoning_nodes\".\"error_code\" IS NULL\n        AND \"reasoning_nodes\".\"lease_token\" IS NOT NULL\n        AND unixepoch(\"reasoning_nodes\".\"lease_expires_at\") > unixepoch(\"reasoning_nodes\".\"started_at\")\n        AND \"reasoning_nodes\".\"completion_token_hash\" IS NULL\n      ) OR (\n        \"reasoning_nodes\".\"current_state\" = 'succeeded'\n        AND \"reasoning_nodes\".\"started_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"completed_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"output_hash\" IS NOT NULL\n        AND \"reasoning_nodes\".\"error_code\" IS NULL\n        AND \"reasoning_nodes\".\"lease_token\" IS NULL\n        AND \"reasoning_nodes\".\"lease_expires_at\" IS NULL\n        AND (\"reasoning_nodes\".\"completion_token_hash\" IS NULL OR (length(\"reasoning_nodes\".\"completion_token_hash\") = 64 AND \"reasoning_nodes\".\"completion_token_hash\" NOT GLOB '*[^0-9a-f]*'))\n      ) OR (\n        \"reasoning_nodes\".\"current_state\" = 'failed'\n        AND \"reasoning_nodes\".\"started_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"completed_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"output_hash\" IS NULL\n        AND \"reasoning_nodes\".\"error_code\" IS NOT NULL\n        AND \"reasoning_nodes\".\"lease_token\" IS NULL\n        AND \"reasoning_nodes\".\"lease_expires_at\" IS NULL\n        AND \"reasoning_nodes\".\"completion_token_hash\" IS NULL\n      ) OR (\n        \"reasoning_nodes\".\"current_state\" = 'skipped'\n        AND \"reasoning_nodes\".\"completed_at\" IS NOT NULL\n        AND \"reasoning_nodes\".\"output_hash\" IS NULL\n        AND \"reasoning_nodes\".\"lease_token\" IS NULL\n        AND \"reasoning_nodes\".\"lease_expires_at\" IS NULL\n        AND \"reasoning_nodes\".\"completion_token_hash\" IS NULL\n      )"
+        }
+      }
+    },
+    "workspace_authority_controls": {
+      "name": "workspace_authority_controls",
+      "columns": {
+        "workspace_id": {
+          "name": "workspace_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kill_switch_engaged": {
+          "name": "kill_switch_engaged",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "updated_by": {
+          "name": "updated_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "workspace_authority_controls_workspace_id_workspaces_id_fk": {
+          "name": "workspace_authority_controls_workspace_id_workspaces_id_fk",
+          "tableFrom": "workspace_authority_controls",
+          "tableTo": "workspaces",
+          "columnsFrom": [
+            "workspace_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "workspace_authority_controls_updated_by_users_id_fk": {
+          "name": "workspace_authority_controls_updated_by_users_id_fk",
+          "tableFrom": "workspace_authority_controls",
+          "tableTo": "users",
+          "columnsFrom": [
+            "updated_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "fk_workspace_authority_controls_membership": {
+          "name": "fk_workspace_authority_controls_membership",
+          "tableFrom": "workspace_authority_controls",
+          "tableTo": "workspace_members",
+          "columnsFrom": [
+            "workspace_id",
+            "updated_by"
+          ],
+          "columnsTo": [
+            "workspace_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "chk_workspace_authority_controls_kill_switch": {
+          "name": "chk_workspace_authority_controls_kill_switch",
+          "value": "\"workspace_authority_controls\".\"kill_switch_engaged\" IN (0, 1)"
+        }
+      }
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

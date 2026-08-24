@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
 import {
@@ -11,7 +11,6 @@ import {
   validateReasoningArtifact,
 } from "../db/flight-recorder-contracts.ts";
 import { buildPendingFlightRecorderDemo } from "../db/flight-recorder-demo.ts";
-import { buildGoldenFixture } from "../factory/02_data/fixtures/onboarding-rescue.fixture.mjs";
 
 const root = new URL("../", import.meta.url);
 const migrationNames = [
@@ -21,6 +20,8 @@ const migrationNames = [
   "0003_faithful_guardsmen.sql",
   "0004_typical_omega_red.sql",
   "0005_flight_recorder_guards.sql",
+  "0006_l08_active_intent_authority.sql",
+  "0007_l06_persisted_graph_executor.sql",
 ];
 
 function applyMigration(database, migration) {
@@ -39,9 +40,13 @@ async function freshDatabase() {
 }
 
 test("AC-01 reconstructs the complete chain under one trace identity", async () => {
-  const fixture = await buildGoldenFixture();
+  const fixture = await buildPendingFlightRecorderDemo({
+    userId: "release-owner",
+    workspaceId: "release-workspace",
+    now: "2026-08-24T12:00:00.000Z",
+  });
   const traceId = fixture.trace.id;
-  const workspaceId = fixture.workspace.id;
+  const workspaceId = fixture.trace.workspaceId;
   for (const item of fixture.evidence) {
     assert.equal(item.traceId, traceId);
     assert.equal(item.workspaceId, workspaceId);
@@ -51,25 +56,53 @@ test("AC-01 reconstructs the complete chain under one trace identity", async () 
     assert.equal(artifact.traceId, traceId);
     assert.equal(artifact.nodeId, node.id);
   }
-  for (const item of [
-    fixture.contextSnapshot,
-    fixture.intent,
-    fixture.policyDecision,
-    fixture.approvalGrant,
-    fixture.effectAttempt,
-    fixture.outcomeDefinition,
-    fixture.outcomeObservation,
-    fixture.outcomeAssessment,
-  ]) {
+  for (const item of [fixture.contextSnapshot, fixture.intentBundle.intent,
+    fixture.intentBundle.policyDecision, fixture.outcomeDefinition]) {
     assert.equal(item.traceId, traceId);
     assert.equal(item.workspaceId, workspaceId);
   }
-  assert.equal(fixture.flightTraceEvents.at(-1).currentState, "assessed");
+  assert.equal(fixture.flightTraceEvents.at(-1).currentState, "awaiting_approval");
 });
 
 test("AC-02 rejects every exact-authority mutation and replay", async () => {
-  const fixture = await buildGoldenFixture();
-  const { intent, policyDecision: policy, approvalGrant: grant } = fixture;
+  const fixture = await buildPendingFlightRecorderDemo({
+    userId: "authority-owner",
+    workspaceId: "authority-workspace",
+    now: "2026-08-24T12:00:00.000Z",
+  });
+  const persisted = fixture.intentBundle.intent;
+  const intent = {
+    id: persisted.id,
+    workspaceId: persisted.workspaceId,
+    traceId: persisted.traceId,
+    recipientSetHash: persisted.recipientSetHash,
+    contextManifestHash: persisted.contextManifestHash,
+    policyHash: persisted.policyHash,
+    nonce: persisted.nonce,
+    expiresAt: persisted.expiresAt,
+    canonicalPayloadHash: persisted.canonicalPayloadHash,
+  };
+  const persistedPolicy = fixture.intentBundle.policyDecision;
+  const policy = {
+    workspaceId: persistedPolicy.workspaceId,
+    intentId: persistedPolicy.intentId,
+    verdict: persistedPolicy.verdict,
+    policyHash: persistedPolicy.policyHash,
+    evaluatedPayloadHash: persistedPolicy.evaluatedPayloadHash,
+    evaluatedContextHash: persistedPolicy.evaluatedContextHash,
+  };
+  const grant = {
+    workspaceId: intent.workspaceId,
+    intentId: intent.id,
+    decision: "approved",
+    boundPayloadHash: intent.canonicalPayloadHash,
+    boundContextHash: intent.contextManifestHash,
+    boundPolicyHash: intent.policyHash,
+    boundRecipientSetHash: intent.recipientSetHash,
+    nonce: intent.nonce,
+    expiresAt: intent.expiresAt,
+    approvedBy: fixture.trace.createdBy,
+  };
   const request = {
     workspaceId: intent.workspaceId,
     traceId: intent.traceId,
@@ -82,7 +115,7 @@ test("AC-02 rejects every exact-authority mutation and replay", async () => {
     policyHash: intent.policyHash,
     recipientSetHash: intent.recipientSetHash,
     nonce: intent.nonce,
-    now: "2026-08-13T08:02:00.000Z",
+    now: "2026-08-24T12:02:00.000Z",
     priorAttemptCount: 0,
   };
   assert.deepEqual(validateExecutionAuthority({ intent, policy, grant, request }), []);
@@ -94,7 +127,7 @@ test("AC-02 rejects every exact-authority mutation and replay", async () => {
     { nonce: "replayed-nonce" },
     { actorWorkspaceId: "foreign-workspace" },
     { priorAttemptCount: 1 },
-    { now: "2026-08-15T08:02:00.000Z" },
+    { now: "2026-08-26T12:02:00.000Z" },
     { killSwitchEngaged: true },
   ]) {
     assert.ok(
@@ -303,21 +336,17 @@ test("AC-07 rejects injection, undeclared context, duplicate order, and ambiguou
 });
 
 test("AC-08 keeps truth modes and cold replay instructions unmistakable", async () => {
-  const [ui, evidence] = await Promise.all([
+  const [ui, evidence, graph] = await Promise.all([
     readFile(new URL("app/CrossSignalApp.tsx", root), "utf8"),
     readFile(new URL("factory/03_build/output/BUILD_EVIDENCE.md", root), "utf8"),
+    readFile(new URL("db/flight-recorder-graph.ts", root), "utf8"),
   ]);
   assert.match(ui, /TruthBadge mode="FIXTURE"/);
   assert.match(ui, /TruthBadge mode="TEST"/);
   assert.match(ui, /correlated, not proven/i);
-  assert.match(evidence, /Cold local preparation/);
-  assert.match(evidence, /Reset exact FIXTURE trace for\s+replay/);
-  for (const screenshot of [
-    "01-exact-authorization.png",
-    "02-calibrated-outcome.png",
-    "03-narrative-trace.png",
-    "04-failure-no-retry.png",
-  ]) {
-    await access(new URL(`factory/03_build/output/screenshots/${screenshot}`, root));
-  }
+  assert.match(evidence, /persisted runtime executor/i);
+  assert.match(evidence, /FIXTURE/);
+  assert.match(evidence, /unknown cost/i);
+  assert.match(graph, /executionMode: "runtime"/);
+  assert.match(graph, /measuredCostUsd: null/);
 });

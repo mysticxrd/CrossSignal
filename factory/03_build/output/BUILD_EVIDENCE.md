@@ -1,148 +1,128 @@
 ---
 type: stage-output
-stage: 03
-status: ready-for-review
-unit: superseded-intent-authority-correction
-finding: L08
-fixture_key: l08-superseded-intent:2026-08-22.1
+stage: 03_build
+status: review-ready
+unit: persisted-graph-executor-correction
+finding: L06
 ---
 
-# L08 atomic authority Build evidence
+# L06 persisted graph executor build evidence
 
-Stage 03 implements the accepted database-owned active-intent contract. A
-replacement and an authorization now linearize through one persisted
-`flight_traces.active_intent_id`; stale or losing work aborts inside the D1
-batch and cannot leave partial grants, effects, events, outcomes, or policies.
+## Outcome
 
-This evidence opens the Build human gate. It does not accept the gate or begin
-Stage 04.
+The product path now uses a persisted runtime executor for the fixed six-node
+CrossSignal graph. It no longer writes precomputed succeeded reasoning objects
+as execution. The seed path persists only the FIXTURE evidence, frozen context,
+trace, and pre-registered outcome definition; the executor then creates,
+claims, invokes, validates, and finalizes each runnable attempt from durable
+state.
 
-## Captured red baseline
+The executor is real orchestration over deterministic FIXTURE handlers. It is
+not evidence of a production model or provider. Executor cost is unknown: each
+artifact persists `usage.status: unknown` and `measuredCostUsd: null`.
 
-Before product changes, the new deterministic assertion ran against the sealed
-0005 schema. It inserted v2 and its exact policy after authorization had read
-v1, then attempted the stale v1 grant. The command exited `1` with:
+## Implemented slice
 
-```text
-Subtest: a superseded intent cannot acquire a grant after replacement wins
-not ok
-error: Missing expected exception.
-```
+- `db/flight-recorder-graph.ts` owns the versioned code registry,
+  predecessor-derived inputs, runtime handler invocation, lease claims,
+  finalization, recovery, failure, and guarded handoff.
+- `db/flight-recorder.ts` seeds frozen context and calls the executor; the old
+  batch loop over `demo.reasoningNodes` is absent from the product path.
+- `db/flight-recorder-demo.ts` exposes a seed-only builder while retaining the
+  precomputed builder solely as a legacy test oracle.
+- `drizzle/0007_l06_persisted_graph_executor.sql` adds runtime provenance,
+  predecessor inputs, leases, completion-token hashes, partial uniqueness,
+  stable database errors, legacy backfill, and migration assertions.
+- The snapshot playbook exposes `runtime` versus `precomputed_fixture`, graph
+  version, handler version, and attempt number. It never exposes lease tokens.
 
-That proves the original database accepted authority for v1 after v2 became
-the runtime-selected intent. The harness setup was first corrected to persist
-canonical JSON fields; only the subsequent race-reaching failure above is the
-sealed defect evidence.
+## Persisted runtime proof
 
-## Implemented correction
+The cold product schedule persists exactly six successful runtime attempts and
+six canonical artifacts under `crosssignal-fixed-graph-v1`. Every attempt has a
+stable logical identity, handler version, canonical predecessor-output JSON,
+attempt-specific input hash, timestamps, and terminal output hash. Every
+artifact records FIXTURE truth mode and unknown cost explicitly.
 
-- `flight_traces.active_intent_id` is the only runtime authority head.
-- `action_intents.supersedes_intent_id` records the immutable predecessor, and
-  a partial unique index permits only one successor per predecessor.
-- Migration 0006 uses the legacy `created_at, rowid` ordering only for atomic
-  backfill. It validates required heads and historical authority before
-  installing the permanent guards.
-- Policy insertion is the activation sentinel. Initial v1 activation and a
-  pending v1-to-v2 promotion update the guarded head in the same batch.
-- Runtime snapshot, replacement, and authorization reads resolve an intent by
-  exact `id + workspace_id + trace_id`; the old ordering query is gone.
-- Grant insertion and effect reservation independently require exact equality
-  with the persisted active head.
-- The executing compare-and-swap includes `active_intent_id`; the immediately
-  following event verifies persisted state and the payload `intentId`, turning
-  a zero-row transition into an in-batch abort.
-- Application errors are stable: stale authorization maps to
-  `l08_stale_or_superseded_intent`; a losing replacement maps to
-  `l08_intent_activation_rejected`.
-- Database compatibility now requires both columns, both indexes, and all six
-  L08 guards. The generated snapshot and journal include migration 0006.
+The successful synthesizer artifact is the only source accepted by the intent
+handoff. Graph completion creates one intent and one deterministic policy,
+promotes the active intent through the sealed L08 trigger, and stops at
+`awaiting_approval`. It creates zero grants, effects, observations, or
+assessments.
 
-## Deterministic production schedules
+## Deterministic schedules
 
-The test D1 adapter executes the real `authorizeAndExecute`,
-`replacePendingIntent`, and batch statement paths against Node SQLite. Manual
-promise barriers pause each production operation only at the accepted
-pre-write phase; there are no timers or copied authorization validators.
-
-| Schedule | Observed result |
+| Schedule | Product/database evidence |
 |---|---|
-| Edit wins | Authorization loads v1, pauses, replacement atomically activates v2, then the real v1 batch aborts with `l08_stale_or_superseded_intent`. Grant, effect, terminal events, observation, and assessment counts remain zero. Exact v2 authorization subsequently succeeds once. |
-| Authorization wins | Replacement loads/builds v2 and pauses; exact v1 authorization commits once. The resumed v2 intent-plus-policy batch aborts with `l08_intent_activation_rejected`; both v2 rows roll back and the v1 effect remains exactly once. |
+| Cold success | Six handler invocations, attempts, artifacts, and graph events; one intent/policy; zero grant/effect/outcome rows. |
+| Stop and resume | Boundaries 1–5 preserve completed rows byte-for-byte and invoke every handler exactly once. |
+| Claim and crash | An unexpired claim is busy; expiry leaves attempt 1 failed with `l06_interrupted_attempt`; attempt 2 succeeds. |
+| Concurrent calls | Two barrier-controlled calls converge to six artifacts, one intent/policy pair, gap-free sequences, and unique idempotency keys. |
+| Skeptic failure | Four upstream artifacts remain; handler, secret, and undeclared-citation variants fail visibly with no synthesizer or authority. |
+| Input drift | The database rejects persisted input mutation with `l06_input_drift` before handler invocation or artifact creation. |
+| Tenant attack | Runtime scope and database ownership reject foreign workspace/trace operations without mutation. |
+| L08 regression | Both production race schedules and all ten L08 direct attacks pass on the current product path. |
 
-The same production path also completes confirmed v1 and v2, failed v1, and
-indeterminate v2 executions with exactly one effect per reset and no retry.
+All fourteen Stage 02 direct-database attacks execute against an in-memory
+SQLite database with the checked-in migration chain. Each produces its named
+stable L06 error and an exact before/after projection proves zero partial
+mutation.
 
-## Database and migration proof
+## Migration proof
 
-All ten accepted direct attacks fail closed: stale grants, stale effects,
-cross-workspace heads, cross-trace heads, pointer clearing, missing-policy
-movement, backward/non-predecessor movement, kill-switch execution, replay,
-and commit after a zero-row executing compare-and-swap.
+Migration `0007` covers empty, current L08, interrupted, completed, and invalid
+history. Existing reasoning rows backfill as `precomputed_fixture` with a
+legacy graph/handler version. A legacy running row becomes a visible failed
+`l06_interrupted_attempt`; it is never relabeled runtime. Duplicate canonical
+success history aborts atomically as `migration_l06_invalid_history`, and the
+schema remains unchanged after rollback.
 
-The migration matrix passes atomically:
+## Authority and regression boundary
 
-| Case | Result |
-|---|---|
-| `empty` | Migrates with no head. |
-| `pending-v1` | Backfills v1 as head. |
-| `pending-v2` | Backfills v2 and v2's predecessor edge to v1. |
-| `completed-v1` | Preserves v1 as head and authority. |
-| `invalid-historical-race` | Aborts with `migration_l08_historical_authority_mismatch`; the new columns are absent after rollback and the 0005 immutability trigger remains installed. |
+The approval grant, external-effect, kill-switch, payload-binding, and active
+intent paths were not weakened. The sealed L08 migration matrix, two
+barrier-controlled production races, and ten direct database attacks pass in
+the same Stage 03-owned test file as L06.
 
-## Verification results
+The unscoped workspace lint command also sees three existing unused-variable
+errors in the user's out-of-scope, untracked `benchmarks/` work. Those files
+were not changed. Scoped lint over the product, worker, owned tests, and active
+factory scripts passes.
 
-Environment: Windows PowerShell, Node.js `22.15.0`, ESLint `9.39.4`, Vinext
-`1.0.0-beta.2`, Vite `8.0.13`, Drizzle Kit `0.31.10`.
+The legacy `tests/flight-recorder-data.test.mjs` still imports the archived
+onboarding fixture. That is the already-open L20 fixture/runtime drift and is
+not used as L06 runtime evidence. The current Stage 02 executable oracle still
+passes at its accepted gate; its baseline file hashes are expected to differ
+after this downstream build.
 
-| Command | Result |
-|---|---|
-| `node factory/03_build/verify.mjs` | Passed; 2 schedules, 10 attacks, 5 migration cases, 7 Data tests, and 15 Build tests. |
-| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-data.test.mjs` | Passed `7/7`. |
-| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs` | Passed 15 tests including 5 migration subtests. |
-| `node node_modules/eslint/bin/eslint.js . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | Passed. |
-| `node_modules/.bin/vinext.cmd build` | Passed all five build environments; migration 0006 is present in `dist/.openai/drizzle`. |
-| Complete seven-file test command | Passed 50 tests, 0 failed. |
-| `git diff --check` | Passed. |
+## Claim discipline
 
-## Artifact bindings
+This stage corrects L06 only. L20, L04, and L14 remain open for separate
+governed runs. It makes no arbitrary-DAG, production-model, live-integration,
+exactly-once delivery, production-scale scheduling, or causal claim.
 
-Text hashes normalize CRLF to LF before SHA-256.
-
-| Artifact | SHA-256 |
-|---|---|
-| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
-| `db/migrations.ts` | `259c0cd885daaf23bccb1bf3bfc46c278240c45d3291b045a999335f97cdd47d` |
-| `db/flight-recorder.ts` | `ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6` |
-| `drizzle/0006_l08_active_intent_authority.sql` | `a97ce8f9b2a6b595197981742f80b1c4089cf05d57834921b3855fa5d2f844c5` |
-| `drizzle/meta/0006_snapshot.json` | `ed1b70151519da162b465f3bc4c82de3a296b9b32d53855a001c1287d63c0bee` |
-| `drizzle/meta/_journal.json` | `19db7a837d8b57ce6a5c6de6b10c8a599979a99a5457aa5388d0e5544defcf89` |
-| `tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
-| `factory/03_build/verify.mjs` | `4a959cf71527cd3a4d6fa9b6a9f3e1d8b1fbfcdd6f4643581beebe8c48a4e7fd` |
-
-## Accepted-input bindings
+## Declared input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/03_build/CONTEXT.md` | `56d53ce00113e80bfb58253251d939eeab8750f6787877a48cc278c2aae16a67` |
-| `factory/02_data/output/DATA_PACKAGE.md` | `ff047b6e5c3b664307ce6626f34e5c28b518b8fabd28048e442b2c99ae2d3ba8` |
-| `factory/02_data/output/VERIFY.md` | `8537680fe4c56e18540d4274cc557ddbf52af52ee604aa88581126eabe7c4927` |
-| `factory/02_data/output/HUMAN_GATE.md` | `100c332f839fea39ce67b9f8ce86f6849c0bedf4c4f2a832f530a71fa04f40a2` |
+| `factory/03_build/CONTEXT.md` | `8471a47ce278431b010eea0084b74c5e37d4e6ac173535952f44fc2573ffbd23` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `9fbda72f20659df210d95a6be5b1a13dbe4fde288461d5f435fcfdc8164bbaa6` |
+| `factory/02_data/output/HUMAN_GATE.md` | `965ecd2509782de2a1ecabaf18eee311d9c7bb2c75980711d2da6648d4291c29` |
+| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `factory/02_data/fixtures/superseded-intent-authority.fixture.mjs` | `b49748c7305ac896e8a756dd5d8ba6733a79dc89eed0dad3438db9b24cb1fea8` |
 
-## Cold local preparation
+## Implementation bindings
 
-Apply the checked-in local D1 migrations, start the application, and choose
-**Reset exact FIXTURE trace for replay** before reviewing the unchanged UI.
-This corrective Build requires the deterministic database/runtime harness for
-L08 acceptance; the local replay remains a truth-label regression check and is
-not a substitute for the two race schedules.
-
-## Scope and review boundary
-
-This Build claims only L08. It does not implement L06, reconcile L20, add L04
-authority-history surfaces, add L14, change public routes/forms/UI promises,
-or introduce providers or retries. No app or worker code changed. The four
-screenshots retained under this stage belong to the earlier sealed release and
-are not evidence for this corrective Build.
+| File | SHA-256 |
+|---|---|
+| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
+| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
+| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
+| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
+| `db/flight-recorder-schema.ts` | `aaf5a11d3f8e2a77c1d358891248c246551f9670493a4b0e8fb32b1e579ae9cb` |
+| `db/migrations.ts` | `7d7512db9c1e49eeffa2089b6fb6ffee1c5071b899958d66ff3c8e198d5b1062` |
+| `drizzle/0007_l06_persisted_graph_executor.sql` | `4649dc761eb877d4fc708bd6e8928e04375ccc1021486024b893eb62bec1cf1c` |
+| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
+| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
+| `app/flight-recorder-types.ts` | `599890454757b677593540167c9359d2a6bd03b40bb361fc446128b58b4a1c24` |

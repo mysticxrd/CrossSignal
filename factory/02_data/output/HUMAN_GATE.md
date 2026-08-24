@@ -1,36 +1,48 @@
 ---
 type: human-gate
-stage: 02
+stage: 02_data
 gate_status: closed
 decision: accepted
 reviewer: owner
-reviewed_at: 2026-08-22T16:57:15.5240957+05:30
-data_package_sha256: ff047b6e5c3b664307ce6626f34e5c28b518b8fabd28048e442b2c99ae2d3ba8
-verification_sha256: 8537680fe4c56e18540d4274cc557ddbf52af52ee604aa88581126eabe7c4927
+reviewed_at: 2026-08-23T19:19:47.2598718Z
+data_package_sha256: 9fbda72f20659df210d95a6be5b1a13dbe4fde288461d5f435fcfdc8164bbaa6
+verification_sha256: bcaa5e47cad98846bb168bd7061a3b738b6ba3914f8fb61cf06359b90ccb31ca
 ---
 
-# Stage 02 human gate - L08 executable data contract
+# Stage 02 human gate
 
-Review `DATA_PACKAGE.md` after `VERIFY.md` passes. Accept only if:
+The owner accepted Stage 02 after the bound verification passed unchanged.
 
-- `active_intent_id` remains the sole database authority head;
-- the immutable predecessor edge is a necessary internal monotonicity guard
-  and does not redefine the accepted product authority semantics;
-- intent plus policy activation rolls back completely when authorization wins;
-- stale authorization rolls back grant, effect, events, outcome, cost, and
-  receipt writes when editing wins;
-- the zero-row executing compare-and-swap is converted into an in-batch abort;
-- legacy backfill uses the old sort only during migration and aborts historical
-  authority mismatch without partial changes;
-- the deterministic schedules exercise production operations through a manual
-  barrier or controlled database connections; and
-- L06, L20, L04, and L14 remain out of scope.
+## Review checklist
 
-Verification opened this gate. Only a human may set `reviewer`, `reviewed_at`,
-`gate_status`, and `decision`. No Stage 03 product implementation may begin
-while this gate is open.
+- [x] The fixed six-node registry, dependency order, artifact kinds, and
+  canonical predecessor-hash input contract match accepted Stage 01.
+- [x] Logical nodes without computable predecessor inputs may remain projected
+  pending; attempt rows are created only when runnable.
+- [x] Existing reasoning rows are explicitly backfilled as
+  `precomputed_fixture`, never relabeled as runtime execution.
+- [x] The minimum persistence delta—logical identity, graph/handler versions,
+  execution mode, predecessor outputs, lease ownership/expiry, and partial
+  uniqueness—is acceptable.
+- [x] Expired attempts remain immutable and visible before a later attempt.
+- [x] The eight schedules, five resume boundaries, ten stable errors, and
+  fourteen direct-database attacks are sufficient for Stage 03.
+- [x] The fixture is only an in-memory oracle and cannot satisfy runtime proof.
+- [x] L08 remains a full regression requirement; L20, L04, and L14 remain out
+  of scope.
 
-## Review outcome
+## Decisions requiring owner confirmation
 
-Accepted by the owner without corrections. Stage 03 may proceed against the
-hashed Data package and verification artifact recorded above.
+1. Accept attempt creation only when exact predecessor-derived input hashes are
+   available, rather than persisting placeholder hashes for all six nodes.
+2. Accept `precomputed_fixture` as the mandatory migration label for legacy
+   reasoning rows.
+3. Accept the mandatory claim/version/execution-mode fields and partial unique
+   indexes as the smallest adequate L06 persistence change.
+4. Accept the executable fixture and attack list as the Stage 03 implementation
+   contract.
+
+## Reviewer action
+
+Accepted by the owner at `2026-08-23T19:19:47.2598718Z`. The bound hashes were
+not changed. Stage 03 may now start from this accepted, fresh gate.

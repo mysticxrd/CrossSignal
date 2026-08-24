@@ -1,33 +1,47 @@
 ---
 type: human-gate
-stage: 01
+stage: 01_spec
 gate_status: closed
 decision: accepted
 reviewer: owner
-reviewed_at: 2026-08-22T16:20:02.7817827+05:30
-spec_sha256: 8a9a4c93f8fc2e8418d0d733e327d4d64d906261c0e65c82989ff6211a2de492
-verification_sha256: cfce140a14352aa283abe89fc0871c3d5330f2f5c31b3b4449d2ad58ecc30769
+reviewed_at: 2026-08-23T19:06:32.7252329Z
+spec_sha256: f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c
+verification_sha256: 8efc701e40b617573de9fac6814747eeea1ea79b2045c54907bb0c6e32336c25
 ---
 
-# Stage 01 human gate - L08 authority correction
+# Stage 01 human gate
 
-Verification prepared this gate. A human reviewer must inspect `SPEC.md` and
-`VERIFY.md`, then set `reviewer`, `reviewed_at`, the final verification hash,
-`gate_status`, and `decision`.
+The owner accepted Stage 01 against the bound artifact hashes below.
 
-Accept only if:
+## Review checklist
 
-- `active_intent_id` is the single database-owned authority head;
-- replacement and authorization are linearizable and stale v1 fails closed;
-- a zero-row conditional update cannot commit surrounding authority writes;
-- legacy backfill aborts instead of blessing a historical mismatch;
-- the deterministic test exercises the production transaction path;
-- rollback keeps the new database guards installed; and
-- L06, L20, L04, and L14 remain outside this run.
+- [x] The baseline finding accurately distinguishes fixture-built succeeded
+  rows from actual runtime graph execution.
+- [x] The six fixed nodes and their dependencies are the intended bounded
+  CrossSignal graph.
+- [x] The persisted claim, immutable attempt history, lease-expiry recovery,
+  duplicate-call convergence, and fail-closed rules are acceptable.
+- [x] The synthesizer-to-intent handoff preserves the sealed L08 authority
+  correction and never creates approval or effect authority.
+- [x] FIXTURE inputs and outputs remain unmistakable even though the executor
+  itself runs at runtime.
+- [x] The fourteen acceptance criteria and eight deterministic schedules are
+  sufficient for Stage 02 data-contract work.
+- [x] L20, L04, and L14 remain out of scope.
 
-No work may begin in `02_data` while this gate is open.
+## Decisions requiring owner confirmation
 
-## Review outcome
+1. Accept `crosssignal-fixed-graph-v1` with planner; quantitative,
+   qualitative, and experiment-design workers; skeptic; then synthesizer.
+2. Accept deterministic lease expiry and immutable later attempts for recovery
+   from a claimed but interrupted reasoning node.
+3. Accept sequential topological execution for the first release; concurrency
+   may be implemented only if its persisted behavior is identical.
+4. Accept the claim boundary: actual runtime orchestration over explicitly
+   `FIXTURE` evidence and handlers, with no production-model claim.
 
-Accepted without corrections on 2026-08-22. Stage 02 may proceed from the
-reviewed specification and verification contract identified by the hashes above.
+## Reviewer action
+
+Accepted by the owner at `2026-08-23T19:06:32.7252329Z`. The reviewed
+specification and verification hashes remain unchanged. Stage 02 may start only
+as a separate governed stage action.

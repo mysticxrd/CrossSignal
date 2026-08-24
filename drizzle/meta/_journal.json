@@ -50,6 +50,13 @@
       "when": 1787398307678,
       "tag": "0006_l08_active_intent_authority",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1787513257703,
+      "tag": "0007_l06_persisted_graph_executor",
+      "breakpoints": true
     }
   ]
 }

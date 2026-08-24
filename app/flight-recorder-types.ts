@@ -80,6 +80,10 @@ export type FlightRecorderSnapshot = {
     label: string;
     role: string;
     state: "succeeded" | "failed" | "skipped";
+    attempt: number;
+    executionMode: "runtime" | "precomputed_fixture";
+    graphVersion: string;
+    handlerVersion: string;
     evidenceCount: number;
     outputHash: string | null;
   }>;
@@ -98,4 +102,3 @@ export type FlightRecorderActionResult =
       message: string;
     }
   | { ok: false; error: string };
-

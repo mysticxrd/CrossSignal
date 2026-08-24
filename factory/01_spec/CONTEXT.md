@@ -1,59 +1,68 @@
 ---
 type: stage-contract
-stage: 01
-job: specify-superseded-intent-authority-correction
+status: blank
+stage: 01_spec
+unit: persisted-graph-executor-correction
 ---
 
-# 01_spec - define the authority correction
+# 01_spec - specify actual bounded graph execution
 
-One job: turn the confirmed L08 edit/authorize race into one bounded, testable
-correction specification without changing product code.
+One job: turn finding L06 into an accepted specification for executing the
+fixed reasoning graph at runtime instead of presenting fixture-built graph
+records as execution proof.
 
 ## Inputs
 
-- Reference: `../_shared/ARCHITECTURE_SNAPSHOT.md`
-- Reference: `../_shared/QUALITY_GATES.md`
-- Working baseline: `../../db/flight-recorder.ts`,
-  `../../db/flight-recorder-schema.ts`, `../../db/migrations.ts`
-- Working baseline: `../../drizzle/`, `../../tests/`, `../../package.json`
-- Factory verification baseline: `../_lib/factory-tools.test.mjs`
-- Audit input: the L08 superseded-intent interleaving described by the owner
-- Historical release binding: commit
-  `7b07ff62b2c0de605c86b378a1b90639f4b90547`
-- External during this stage only: Cloudflare D1 prepared-statement and batch
-  documentation, and SQLite foreign-key documentation. Record URLs and
-  retrieval date; use only primary sources.
+- Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
+- Freshness dependency: `../_shared/QUALITY_GATES.md`
+- Observed baseline: `../../db/flight-recorder.ts`
+- Observed baseline: `../../db/flight-recorder-demo.ts`
+- Observed baseline: `../../db/flight-recorder-contracts.ts`
+- Observed baseline: `../../db/flight-recorder-schema.ts`
+- Observed baseline: `../../tests/flight-recorder-build.test.mjs`
+- Observed baseline: `../../tests/flight-recorder-release.test.mjs`
+- Stage-owned surface: `output/SPEC.md`
+- Stage-owned surface: `output/VERIFY.md`
+- Stage-owned surface: `output/HUMAN_GATE.md`
+- Stage-owned surface: `verify.mjs`
 
-Do not load: `_archive/`, later stages, dependency folders, generated build
-output, or unrelated product surfaces.
+The contract must stay inside the approved fixed planner / workers / skeptic /
+synthesizer graph. It must not introduce an arbitrary DAG engine, general
+agent orchestrator, new authority path, or unlabeled simulated execution.
+
+Do not load later stages, `_archive/`, unrelated product areas, or the source
+vault.
 
 ## Process
 
-1. Model the edit/authorize interleaving and the exact authority invariant.
-2. Decide the atomic database condition and migration/backfill behavior.
-3. Define deterministic concurrency and negative acceptance tests.
-4. Bound compatibility, rollback, non-goals, and observable completion.
-5. Write `SPEC.md`, verify it, and stop.
+1. Establish precisely where the current demo constructs graph evidence
+   without a runtime executor.
+2. Define the bounded runtime contract: node identities, dependencies, durable
+   state, resumability, failure behavior, evidence, costs, and truth labels.
+3. State observable acceptance criteria and explicit non-goals.
+4. Write the specification and verification record, then stop.
 
 ## Outputs
 
-- `output/SPEC.md` - canonical correction specification for this run
+- `output/SPEC.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 
 ## Verify
 
-Fail on a check-then-act authorization design, an unbound active intent,
-ambiguous migration behavior, a nondeterministic race test, unrelated audit
-scope, or any proposal that rewrites the sealed release.
+Create `verify.mjs` from the stage template conventions and import helpers from
+`../_lib/verify-kit.mjs`. Verification must prove declared-input coverage,
+stable acceptance-criterion identifiers, explicit interruption and duplicate
+handling, persisted evidence requirements, truth-mode honesty, and the bounded
+non-goals. Record exact commands, hashes, environment, results, and
+`status: passed | failed` in `output/VERIFY.md`.
 
 ## Human gate
 
-Accept only if the authority invariant, atomic enforcement point, migration
-behavior, deterministic failing test, and scope boundary are explicit. Product
-code must still be unchanged at this gate.
+The reviewer binds `SPEC.md` and `VERIFY.md` hashes and records `accepted`,
+`changes-requested`, or `rejected`. Do not begin Stage 02 without `accepted`.
 
 ## Failure routing
 
-Correct this specification. Do not begin Data or patch the runtime to hide a
-specification gap.
+Correct this specification or an approved shared source. Never defer an
+unresolved execution invariant to a later stage.

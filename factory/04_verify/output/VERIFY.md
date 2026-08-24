@@ -1,57 +1,45 @@
 ---
-type: verification
-stage: 04
+type: verification-evidence
+stage: 04_verify
 status: passed
-verified_at: 2026-08-23T01:49:04.6952951+05:30
-unit: superseded-intent-authority-correction
-finding: L08
+verified_at: 2026-08-23T20:05:18.4774008Z
+unit: persisted-graph-executor-correction
 ---
 
-# Stage 04 L08 verification
+# Stage 04 verification
 
-Independent verification passed. The formerly vulnerable interleaving now
-deterministically fails closed, both linearization orders preserve atomic
-state, and every accepted authority semantic remains green. This verification
-opens but does not accept the Stage 04 human gate.
+## Environment
 
-## Artifact bindings
+- OS: Microsoft Windows 10.0.26200
+- Node: v22.15.0
+- Database: Node SQLite in memory through the product-compatible D1 adapter
+- Network/provider/model: none
+- Truth mode: `FIXTURE`
 
-Text hashes normalize CRLF to LF before SHA-256.
+## Commands and results
 
-| Artifact | SHA-256 |
-|---|---|
-| `VERIFICATION_REPORT.md` | `aa42efe813a0094ec7c8e5f38b6341eb4a13af5fb8b89db5e78cf59906e3c95d` |
-| `../verify.mjs` | `3af84eca50fffcbb8d2ad994477ff3b3ecf56329affd3e4fd35845ea6aa23adc` |
-| `../../../tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
-| `../../../package.json` | `c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972` |
-
-## Executable evidence
-
-- Eight L08 acceptance criteria resolve to static bindings and executable tests.
-- The real edit-wins schedule rejects the complete stale v1 authorization batch;
-  exact v2 subsequently succeeds once.
-- The real authorization-wins schedule retains one v1 effect and atomically
-  rolls back the losing v2 intent and policy.
-- All ten direct database attacks fail closed.
-- All five migration cases pass, including complete rollback of the invalid
-  historical race.
-- Confirmed, failed, and indeterminate paths preserve one effect and no retry.
-- The exact runtime active-intent lookup contains no time, `rowid`, aggregate,
-  or ordering inference.
-
-## Command results
-
-| Command | Exit | Relevant result |
+| Command | Exit | Result |
 |---|---:|---|
-| `node factory/04_verify/verify.mjs` | `0` | 2 schedules, 10 attacks, 5 migration cases, 7 Data tests, and 15 Build tests passed. |
-| Exact ESLint command | `0` | Active repository lint passed. |
-| `node_modules/.bin/vinext.cmd build` | `0` | All five build environments passed. |
-| Complete six-file pre-Ship test command | `0` | 45 tests passed; 0 failed. |
-| Seven-file command including Stage 05 inheritance tests | `1` | 49 passed; the only failure correctly requires this human gate to be accepted before Ship. |
-| `git diff --check` | `0` | No whitespace errors. |
+| `node_modules/.bin/tsx.cmd factory/04_verify/verify.mjs` | 0 | Independent persisted-runtime probe and every bound check passed. |
+| `node node_modules/tsx/dist/cli.mjs --test tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs` | 0 | Full relevant L06/L08 suite passed with zero failures. |
+| `node node_modules/vinext/dist/cli.js build` | 0 | Production build passed. |
+| `node node_modules/eslint/bin/eslint.js app db worker tests factory/01_spec factory/02_data factory/03_build factory/04_verify factory/_lib --ignore-pattern output --ignore-pattern screenshots` | 0 | Active product, tests, and governed factory lint scope passed. |
+| `node --test factory/_lib/factory-tools.test.mjs` | 0 | Factory status/seal contract tests passed. |
+| `git diff --check` | 0 | No whitespace errors. |
 
-## Gate state
+The independent persisted-runtime probe applied eight migrations, recomputed
+all six node input hashes, inspected six runtime attempts and artifacts,
+preserved three completed nodes across resume, retained two planner attempts
+across lease expiry recovery, stopped a failed graph at four artifacts, and
+rejected three caller/scope attacks without mutation.
 
-Verification passed. The Stage 04 human gate is open and owner-controlled.
-Stage 05 remains unauthorized until the exact report and verification hashes
-are accepted.
+The relevant suite additionally exercised all five resume boundaries, the
+barrier-controlled concurrent graph schedule, handler/secret/citation failures,
+five migration histories, fourteen L06 database attacks, two L08 production
+races, and ten L08 database attacks.
+
+## Result
+
+`status: passed`. All fourteen L06 criteria resolve to persisted runtime or
+deterministic database evidence. Runtime truth remains `FIXTURE`, executor cost
+remains unknown, and L20, L04, and L14 remain open.

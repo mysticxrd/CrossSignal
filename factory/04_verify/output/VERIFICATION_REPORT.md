@@ -1,143 +1,131 @@
 ---
-type: verification-report
-stage: 04
-status: ready-for-review
-verified_at: 2026-08-23T01:49:04.6952951+05:30
-unit: superseded-intent-authority-correction
-finding: L08
+type: stage-output
+stage: 04_verify
+status: review-ready
+unit: persisted-graph-executor-correction
+finding: L06
 ---
 
-# L08 active-intent authority verification report
-
-Stage 04 independently verifies the accepted correction: only the exact intent
-identified by `flight_traces.active_intent_id` can acquire authority or reserve
-an effect. The former edit/authorize interleaving now fails closed at the
-database transaction boundary. This report opens the Verify human gate; it
-does not accept that gate or authorize Stage 05.
+# L06 persisted graph executor verification report
 
 ## Verdict
 
-Passed. Both deterministic production schedules, all ten accepted direct
-database attacks, all five migration cases, 22 targeted tests, the production
-build, repository lint, and the 45-test pre-Ship regression suite are green. No stale or
-losing operation leaves a partial grant, effect, policy, intent, terminal event,
-observation, or assessment.
+PASS. The accepted L06 implementation executes the fixed six-node graph through
+persisted runtime attempts. Independent SQLite/D1-compatible probes, the
+relevant product suites, migration cases, deterministic races, direct database
+attacks, production build, scoped lint, factory tests, and diff inspection all
+pass.
 
-## Vulnerable interleaving replay
+This verdict proves runtime orchestration over deterministic fixture handlers.
+The evidence remains in `FIXTURE` truth mode, and executor cost remains unknown.
 
-The sealed 0005 baseline had allowed authorization to read v1, replacement to
-insert v2, and then the stale v1 grant to commit. Against migration 0006 and the
-corrected runtime, the same production-path interleaving deterministically
-returns `l08_stale_or_superseded_intent`. The rejected batch leaves zero grant,
-effect, terminal-event, observation, and assessment rows; exact v2 authority
-then succeeds once.
+## Independent persisted-runtime proof
 
-The test uses manual promise barriers in the real `authorizeAndExecute` and
-`replacePendingIntent` operations. It uses no timers, copied authorization
-validator, or scheduling guess.
+Stage 04 creates a fresh in-memory SQLite database, applies all eight checked-in
+migrations, injects it through the same D1 interface used by product code, and
+calls the product entry points directly. It does not import the Stage 02 oracle
+or materialize Stage 03 test objects.
 
-## Acceptance matrix
+The probe observed:
 
-| Criterion | Resolution | Inspectable evidence |
+- six runtime handler invocations, six succeeded runtime attempts, and six
+  canonical artifacts for `crosssignal-fixed-graph-v1`;
+- an independently recomputed input hash match for every node using the frozen
+  context hash, handler/graph versions, attempt number, and ordered predecessor
+  hashes;
+- cleared terminal leases, gap-free unique events, one synthesizer-bound intent,
+  one policy, and zero grants or effects;
+- three completed nodes preserved byte-for-byte across a separate-process-style
+  resume, followed by completion of only the remaining graph;
+- an unexpired planner claim remaining busy, then an expired attempt retained as
+  failed `l06_interrupted_attempt` before attempt 2 succeeded;
+- a skeptic handler failure retaining four upstream artifacts, producing no
+  synthesizer artifact and no authority rows; and
+- caller-controlled topology, caller-controlled `LIVE` truth mode, and a foreign
+  workspace scope rejected with the exact stable error and no projection change.
+
+The user-visible snapshot contains runtime mode, graph version, handler version,
+and attempt number. It contains no lease token or terminal lease value.
+
+## Acceptance resolution
+
+| Criterion | Result | Release-grade evidence |
 |---|---|---|
-| `exact-active-head` | Passed | Runtime loads `trace.active_intent_id` and resolves it by exact `id + workspace_id + trace_id`. The accepted lookup slice contains no `ORDER BY`, timestamp, `rowid`, or aggregate inference. |
-| `edit-wins-no-partial-authority` | Passed | Replacement promotes v2; the paused real v1 authorization batch aborts with the stable stale error and leaves zero rejected writes; exact v2 succeeds once. |
-| `authorization-wins-no-partial-replacement` | Passed | Exact v1 authorization commits once; resumed v2 intent-plus-policy activation aborts with `l08_intent_activation_rejected`; both v2 rows roll back. |
-| `transactional-guard-alignment` | Passed | Grant, effect, active-head transition, executing compare-and-swap, and executing event all check the same persisted active identity inside the transaction. |
-| `runtime-order-independence` | Passed | The runtime authority lookup is exact-identity only. Legacy ordering is confined to migration backfill. |
-| `atomic-migration-matrix` | Passed | `empty`, `pending-v1`, `pending-v2`, and `completed-v1` migrate; `invalid-historical-race` aborts and restores the complete 0005 schema/data state. |
-| `direct-database-attack-matrix` | Passed | All ten accepted attacks fail closed, including stale grant/effect, cross-boundary heads, pointer corruption, invalid movement, kill-switch execution, replay, and zero-row compare-and-swap commit. |
-| `terminal-results-no-retry` | Passed | Confirmed v1/v2, failed v1, and indeterminate v2 preserve one effect per reset. Failed and indeterminate states are terminal and are not retried. |
+| AC-L06-01 — PASS | PASS | Cold product entry invokes each of six handlers once; persisted successes are `runtime`, not seeded successes. |
+| AC-L06-02 — PASS | PASS | Registry has exactly six fixed nodes; caller topology and truth controls fail with `l06_arbitrary_graph_rejected`. |
+| AC-L06-03 — PASS | PASS | Stage 04 recomputes all six canonical input hashes; product tests reject predecessor/context drift before artifact creation. |
+| AC-L06-04 — PASS | PASS | Attempts, artifacts, terminal timestamps, output hashes, and append-only success events resolve in the database. |
+| AC-L06-05 — PASS | PASS | Product tests cover boundaries 1–5; the independent three-node probe preserves completed rows byte-for-byte. |
+| AC-L06-06 — PASS | PASS | Busy-before-expiry and immutable failed attempt 1 followed by succeeded attempt 2 are independently observed. |
+| AC-L06-07 — PASS | PASS | Barrier-controlled concurrent calls converge to six artifacts, one intent/policy pair, and unique ordered events. |
+| AC-L06-08 — PASS | PASS | Handler, secret, and citation failures stop synthesis; independent skeptic failure leaves all authority/effect counts zero. |
+| AC-L06-09 — PASS | PASS | Runtime scope checks plus fourteen direct database attacks reject tenant, node, artifact, claim, event, and handoff mutation. |
+| AC-L06-10 — PASS | PASS | Runtime execution and `FIXTURE` truth are distinct on persisted, snapshot, report, and demo surfaces; lease tokens are absent. |
+| AC-L06-11 — PASS | PASS | Only completed synthesizer output creates one active intent/policy; grants, effects, observations, and assessments remain zero. |
+| AC-L06-12 — PASS | PASS | Empty, current-L08, interrupted, completed, and invalid-history migration cases pass; invalid history rolls back. |
+| AC-L06-13 — PASS | PASS | Two L08 production races, ten L08 database attacks, build, lint, relevant tests, migration chain, factory tests, and diff check pass. |
+| AC-L06-14 — PASS | PASS | Scope remains L06, usage is persisted as unknown with null measured cost, and L20, L04, and L14 remain open. |
 
-No Stage 04 criterion remains implied or deferred.
+## Schedule and negative-case matrix
 
-## Deterministic schedules
+| Required schedule | Result | Durable observation |
+|---|---|---|
+| Cold success | PASS | Six runtime attempts/artifacts; one intent/policy; zero grant/effect/outcome rows. |
+| Stop and resume | PASS | All five completion boundaries pass; independent boundary 3 retains exact completed records. |
+| Claim and crash | PASS | Claim cannot be stolen before expiry; recovery preserves failure history and advances attempt. |
+| Concurrent calls | PASS | Explicit promise barrier creates two arrivals at the same claim and converges without duplicate canonical rows. |
+| Skeptic failure | PASS | Four upstream artifacts remain; trace fails; synthesizer and authority remain absent. |
+| Input drift | PASS | Stored-input mutation is rejected before handler or artifact creation. |
+| Tenant attack | PASS | Product and database scope checks reject foreign workspace/trace operations without mutation. |
+| L08 regression | PASS | Both production races and all ten direct database attacks retain their sealed behavior. |
 
-| Schedule | Linearization and result |
-|---|---|
-| Edit wins | v1 authorization pauses after its read; replacement atomically activates v2; the complete stale v1 batch aborts; exact v2 authorization succeeds once. |
-| Authorization wins | v2 replacement pauses before its batch; v1 authorization commits one effect; the resumed v2 intent-plus-policy batch aborts and rolls back both v2 rows. |
+All fourteen `DB-L06-01` through `DB-L06-14` attacks execute against the real
+SQLite schema. Each asserts the exact L06 error and an unchanged before/after
+projection. Duplicate and out-of-order work is therefore checked below the
+application layer as well as through executor requests.
 
-## Database attack matrix
+## Migration and build evidence
 
-| # | Attack | Result |
-|---:|---|---|
-| 1 | Grant superseded v1 | Rejected |
-| 2 | Reserve effect for superseded v1 | Rejected |
-| 3 | Point a trace at another workspace's intent | Rejected |
-| 4 | Point a trace at another trace's intent | Rejected |
-| 5 | Clear a required active pointer | Rejected |
-| 6 | Move to an intent without matching policy activation | Rejected |
-| 7 | Move backward or to a non-predecessor successor | Rejected |
-| 8 | Execute while the kill switch is engaged | Rejected |
-| 9 | Replay a consumed grant/effect identity | Rejected |
-| 10 | Commit after a zero-row executing compare-and-swap | Rejected by the in-batch event projection guard |
+The independent probe applies migrations `0000` through `0007` with foreign
+keys enabled and verifies the L06 reasoning columns. The product suite also
+covers five `0007` histories, including atomic rollback on invalid duplicate
+success history. The production vinext build, active product/factory lint scope,
+factory state tests, and `git diff --check` pass.
 
-## Migration and rollback matrix
+## Truth, limitations, and remaining findings
 
-| Case | Result |
-|---|---|
-| `empty` | Migrates with no active head. |
-| `pending-v1` | Backfills v1 as the active head. |
-| `pending-v2` | Backfills v2 and records v2's predecessor edge to v1. |
-| `completed-v1` | Preserves v1 and its completed authority history. |
-| `invalid-historical-race` | Aborts with `migration_l08_historical_authority_mismatch`; new columns roll back and the 0005 immutability trigger remains installed. |
-
-## Command record
-
-Environment: Windows PowerShell, Node.js `22.15.0`, ESLint `9.39.4`, Vinext
-`1.0.0-beta.2`, Vite `8.0.13`, Drizzle Kit `0.31.10`, and Node SQLite.
-
-| Command | Timestamp (+05:30) | Exit | Relevant result |
-|---|---|---:|---|
-| `node factory/04_verify/verify.mjs` | `2026-08-23T01:38` | `0` | Eight L08 criteria, 2 schedules, 10 attacks, 5 migration cases, 7 Data tests, and 15 Build tests passed. |
-| `node node_modules/eslint/bin/eslint.js . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive` | `2026-08-23T01:39-01:41` | `0` | Active repository lint passed. |
-| `node_modules/.bin/vinext.cmd build` | `2026-08-23T01:39-01:40` | `0` | All five build environments passed; dynamic `/` route emitted. |
-| Six-file pre-Ship `node_modules/.bin/tsx.cmd --test ...` regression command | `2026-08-23T01:52` | `0` | 45 tests passed; 0 failed, cancelled, skipped, or todo. |
-| Seven-file command including Stage 05 inheritance tests | `2026-08-23T01:50` | `1` | 49 tests passed; the sole failure correctly required this Stage 04 gate to be closed and accepted. This is the intentional human gate, not a product failure. |
-| `git diff --check` | `2026-08-23T01:49` | `0` | No whitespace errors. |
-
-## Evidence-integrity correction
-
-The first Stage 04 attempt correctly stopped because the accepted Stage 03
-reports referenced a superseded hash for `factory/03_build/verify.mjs`. The
-reports were corrected to the current `4a959c...` verifier, Stage 03 verification
-passed again, and the owner reaccepted the corrected exact hashes. No product,
-migration, fixture, or behavior changed during that evidence correction.
+- Runtime execution means that durable claims invoke code-owned handlers and
+  persist their results. It does not validate the underlying business evidence.
+- Every handler artifact is labeled `FIXTURE`; no provider or live connector was
+  observed in this stage.
+- Usage is `unknown` and `measuredCostUsd` is `null`; no cost estimate is
+  invented.
+- The implementation is a sequential fixed graph, not an arbitrary workflow
+  engine or a production-scale scheduler.
+- L20 fixture/runtime drift remains intentionally outside this L06 suite; its
+  stale legacy test is not release evidence for this correction.
+- L20, L04, and L14 remain open for separate governed runs.
 
 ## Declared input bindings
 
-Text hashes normalize CRLF to LF before SHA-256.
-
 | Input | SHA-256 |
 |---|---|
-| `factory/04_verify/CONTEXT.md` | `e8e76c1435c5d8e992a9031708ef5a1178257b6a3df6f3cadd2e0da16f77603c` |
-| `factory/03_build/output/BUILD_EVIDENCE.md` | `09c0c113adbc67b0a3dced716a6637e2b44e27d042aba3aa0b97317c07d9d895` |
-| `factory/03_build/output/HUMAN_GATE.md` | `2ec7c29d02971e6ffdc96de6881be656bde1cf841a02a429202756d37324b1c8` |
+| `factory/04_verify/CONTEXT.md` | `d5b7c506760afd06e4706d9e16fadfe51a97b7ce686c15fd84587988492732fa` |
+| `factory/03_build/output/BUILD_EVIDENCE.md` | `f196e33acd0961016cd2a6b5857f9d09781ee72896fc156c8c22f50f577b67bc` |
+| `factory/03_build/output/HUMAN_GATE.md` | `cf40bdb92a0a723290563e82b61f27bbc5183cc3f6d8afb7c64f6b24bc23b2c3` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `9fbda72f20659df210d95a6be5b1a13dbe4fde288461d5f435fcfdc8164bbaa6` |
+| `factory/01_spec/output/SPEC.md` | `f90a9fa515c9e8357b12bb0374939fdeec7ba4580ffc6573d2f8384fdc67ea7c` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `factory/02_data/fixtures/superseded-intent-authority.fixture.mjs` | `b49748c7305ac896e8a756dd5d8ba6733a79dc89eed0dad3438db9b24cb1fea8` |
-
-## Observed Build bindings
-
-| Artifact | SHA-256 |
-|---|---|
-| `db/flight-recorder-schema.ts` | `b86b23ca9a079fb6b458a631e75e7371d1723677be3c23ba82d154a0c2297b11` |
-| `db/migrations.ts` | `259c0cd885daaf23bccb1bf3bfc46c278240c45d3291b045a999335f97cdd47d` |
-| `db/flight-recorder.ts` | `ab984e95650e30ff338ef8896a413267d5be6189709dd034060cf3eca31b1cc6` |
-| `drizzle/0006_l08_active_intent_authority.sql` | `a97ce8f9b2a6b595197981742f80b1c4089cf05d57834921b3855fa5d2f844c5` |
-| `drizzle/meta/0006_snapshot.json` | `ed1b70151519da162b465f3bc4c82de3a296b9b32d53855a001c1287d63c0bee` |
-| `drizzle/meta/_journal.json` | `19db7a837d8b57ce6a5c6de6b10c8a599979a99a5457aa5388d0e5544defcf89` |
-| `tests/flight-recorder-build.test.mjs` | `98a7c9232b2aa96a6fddd92e605ec07f540326876ae9020e2775602729cc57a9` |
-| `factory/03_build/verify.mjs` | `4a959cf71527cd3a4d6fa9b6a9f3e1d8b1fbfcdd6f4643581beebe8c48a4e7fd` |
-
-## Scope and residual risk
-
-- This stage verifies only L08. L06, L20, L04, and L14 remain unchanged and
-  are not claimed as resolved.
-- No application route, UI surface, worker, provider, or public behavior changed;
-  prior-release screenshots are not reused as evidence for this correction.
-- The tested adapter is TEST/FIXTURE backed. This report does not claim live
-  provider delivery, distributed exactly-once execution, or causal outcomes.
-- Migration backfill necessarily inspects legacy order once. Normal runtime
-  authority never infers the active head from order.
+| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
+| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
+| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
+| `db/flight-recorder-contracts.ts` | `5057dd60c778165f11444875c5bfb6b669e8e889d1363ec9ebf5268af3bc9799` |
+| `db/flight-recorder-schema.ts` | `aaf5a11d3f8e2a77c1d358891248c246551f9670493a4b0e8fb32b1e579ae9cb` |
+| `db/migrations.ts` | `7d7512db9c1e49eeffa2089b6fb6ffee1c5071b899958d66ff3c8e198d5b1062` |
+| `drizzle/0007_l06_persisted_graph_executor.sql` | `4649dc761eb877d4fc708bd6e8928e04375ccc1021486024b893eb62bec1cf1c` |
+| `drizzle/meta/0007_snapshot.json` | `28d211019b32ddbd8ef3316b0a16e1a7163ce1bcff7ecb09c6e6419ea5f12eae` |
+| `drizzle/meta/_journal.json` | `c8e05396284aef1f5307dcd0d6fd16a0c06cfa30a4cd227a46f7f8086ae634a7` |
+| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
+| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
+| `app/flight-recorder-types.ts` | `599890454757b677593540167c9359d2a6bd03b40bb361fc446128b58b4a1c24` |

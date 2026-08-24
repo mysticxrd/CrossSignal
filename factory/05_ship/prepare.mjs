@@ -1,111 +1,130 @@
-import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { access, rm, writeFile } from "node:fs/promises";
+import { dirname, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { runChecked } from "../_lib/verify-kit.mjs";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const root = join(here, "../..");
-const wrangler = join(root, "node_modules/wrangler/bin/wrangler.js");
-const sharedArgs = [
-  "DB",
-  "--local",
-  "--persist-to",
-  ".wrangler/state",
-  "--config",
-  "factory/02_data/wrangler.verify.jsonc",
-];
-const environment = {
-  ...process.env,
-  WRANGLER_WRITE_LOGS: "false",
-  WRANGLER_LOG_PATH: join(root, ".wrangler/logs"),
-  MINIFLARE_REGISTRY_PATH: join(root, ".wrangler/registry"),
-};
-const compatibilitySource = readFileSync(join(root, "db/migrations.ts"), "utf8");
-const compatibilityList = compatibilitySource.slice(
-  compatibilitySource.indexOf("const REQUIRED_SCHEMA_OBJECTS = ["),
-  compatibilitySource.indexOf("] as const;"),
-);
-const requiredObjects = new Set([...compatibilityList.matchAll(/^\s*"([^"]+)",$/gm)].map((match) => match[1]));
-const l08Objects = new Set([
-  "idx_flight_traces_workspace_active_intent",
-  "idx_action_intents_one_successor",
-  "trg_flight_traces_active_intent_transition",
-  "trg_policy_decisions_activate_intent",
-  "trg_flight_traces_required_active_intent",
-  "trg_approval_grants_bind_active_intent",
-  "trg_effect_attempts_bind_active_intent",
-  "trg_flight_trace_events_executing_projection",
-]);
-const baseObjects = new Set([...requiredObjects].filter((name) => !l08Objects.has(name)));
-const requiredMarkers = new Set([
-  ...requiredObjects,
-  "flight_traces.active_intent_id",
-  "action_intents.supersedes_intent_id",
-]);
-const priorMigrations = [
-  "0000_dry_chat.sql",
-  "0001_gigantic_shriek.sql",
-  "0002_funny_madripoor.sql",
-  "0003_faithful_guardsmen.sql",
-  "0004_typical_omega_red.sql",
-  "0005_flight_recorder_guards.sql",
-];
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const defaultPersistence = resolve(projectRoot, ".wrangler/state/v3");
 
-function executeJson(sql) {
-  const result = spawnSync(
-    process.execPath,
-    [wrangler, "d1", "execute", ...sharedArgs, "--json", "--command", sql],
-    { cwd: root, env: environment, encoding: "utf8" },
-  );
-  if (result.status !== 0) return null;
+function insideProject(path) {
+  const relation = relative(projectRoot, path);
+  return relation === "" || (!relation.startsWith(`..${sep}`) && relation !== "..");
+}
+
+function persistencePath(argv) {
+  const index = argv.indexOf("--persist-to");
+  if (index < 0) return defaultPersistence;
+  const value = argv[index + 1];
+  if (!value || value.startsWith("--")) {
+    throw new Error("--persist-to requires a repository-local directory.");
+  }
+  const path = resolve(projectRoot, value);
+  if (!insideProject(path) || path === projectRoot) {
+    throw new Error("Preparation persistence must stay inside the repository.");
+  }
+  return path;
+}
+
+function queryRows(stdout) {
+  const payload = JSON.parse(stdout);
+  if (!Array.isArray(payload)) throw new Error("Wrangler returned an unexpected D1 result.");
+  return payload.flatMap((entry) => entry?.results ?? []);
+}
+
+async function main() {
+  if (process.versions.node.split(".").map(Number)[0] < 22) {
+    throw new Error("The reviewer release requires Node.js 22 or newer.");
+  }
+  if (process.argv.includes("--remote") || process.argv.includes("--preview")) {
+    throw new Error("Ship preparation is local-only and never targets a remote database.");
+  }
+
+  const persistTo = persistencePath(process.argv.slice(2));
+  const wrangler = resolve(projectRoot, "node_modules/wrangler/bin/wrangler.js");
+  await access(wrangler);
+
+  const configPath = resolve(projectRoot, `.wrangler-ship-prepare-${process.pid}.jsonc`);
+  const config = {
+    name: "crosssignal-ship-local",
+    main: "worker/index.ts",
+    compatibility_date: "2026-08-23",
+    compatibility_flags: ["nodejs_compat"],
+    d1_databases: [
+      {
+        binding: "DB",
+        database_name: "crosssignal-data-verifier",
+        database_id: "00000000-0000-0000-0000-000000000000",
+        migrations_dir: "drizzle",
+      },
+    ],
+  };
+
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
   try {
-    return JSON.parse(result.stdout)[0]?.results ?? [];
-  } catch {
-    return null;
+    const common = [
+      wrangler,
+      "--config",
+      configPath,
+      "--cwd",
+      projectRoot,
+    ];
+    const migration = runChecked(
+      "node",
+      [
+        ...common,
+        "d1",
+        "migrations",
+        "apply",
+        "DB",
+        "--local",
+        "--persist-to",
+        persistTo,
+      ],
+      { cwd: projectRoot, timeout: 180_000 },
+    );
+    const inspection = runChecked(
+      "node",
+      [
+        ...common,
+        "d1",
+        "execute",
+        "DB",
+        "--local",
+        "--persist-to",
+        persistTo,
+        "--json",
+        "--command",
+        "SELECT COUNT(*) AS applied_migrations FROM d1_migrations; SELECT COUNT(*) AS reasoning_columns FROM pragma_table_info('reasoning_nodes') WHERE name IN ('logical_node_id','graph_version','execution_mode','handler_version','predecessor_outputs_json','lease_token','lease_expires_at','completion_token_hash'); SELECT COUNT(*) AS l06_runtime_triggers FROM sqlite_schema WHERE type = 'trigger' AND name LIKE 'trg_l06_%';",
+      ],
+      { cwd: projectRoot, timeout: 120_000 },
+    );
+    const rows = queryRows(inspection.stdout);
+    const applied = Number(rows.find((row) => "applied_migrations" in row)?.applied_migrations);
+    const columns = Number(rows.find((row) => "reasoning_columns" in row)?.reasoning_columns);
+    const triggers = Number(rows.find((row) => "l06_runtime_triggers" in row)?.l06_runtime_triggers);
+    if (applied !== 8 || columns !== 8 || triggers < 6) {
+      throw new Error(
+        `Cold database is incomplete (migrations=${applied}, reasoning_columns=${columns}, l06_triggers=${triggers}).`,
+      );
+    }
+    process.stdout.write(
+      `${JSON.stringify({
+        status: "prepared",
+        target: "local-d1",
+        migrationsApplied: applied,
+        reasoningColumns: columns,
+        l06RuntimeTriggers: triggers,
+        idempotentNoop: /No migrations to apply/i.test(migration.stdout),
+        truthMode: "FIXTURE",
+        effectMode: "TEST",
+      })}\n`,
+    );
+  } finally {
+    await rm(configPath, { force: true });
   }
 }
 
-function hasObjects(expected) {
-  const objectList = [...expected].map((name) => `'${name}'`).join(",");
-  const rows = executeJson(`SELECT name FROM sqlite_master WHERE name IN (${objectList}) ORDER BY name`);
-  const found = new Set(rows?.map(({ name }) => name) ?? []);
-  return [...expected].every((name) => found.has(name));
-}
-
-function preflight() {
-  if (!hasObjects(requiredObjects)) return false;
-  const columns = executeJson([
-    "SELECT 'flight_traces.active_intent_id' AS name FROM pragma_table_info('flight_traces') WHERE name = 'active_intent_id'",
-    "UNION ALL SELECT 'action_intents.supersedes_intent_id' FROM pragma_table_info('action_intents') WHERE name = 'supersedes_intent_id'",
-  ].join(" "));
-  const found = new Set(columns?.map(({ name }) => name) ?? []);
-  return [...requiredMarkers].every((name) => requiredObjects.has(name) || found.has(name));
-}
-
-if (preflight()) {
-  console.log("Local D1 release schema is ready through migration 0006; all L08 columns, indexes, and guards exist.");
-  process.exit(0);
-}
-
-const migrationLedger = executeJson("SELECT name FROM d1_migrations ORDER BY id");
-if (migrationLedger?.length === 0) {
-  if (!hasObjects(baseObjects)) {
-    throw new Error("Local D1 has an empty migration ledger and does not match the complete 0005 baseline; refusing to guess or delete local data.");
-  }
-  const values = priorMigrations.map((name) => `('${name}')`).join(",");
-  const baseline = executeJson(`INSERT INTO d1_migrations (name) VALUES ${values} RETURNING name`);
-  if (baseline?.length !== priorMigrations.length) {
-    throw new Error("Could not baseline the verified legacy local schema through migration 0005.");
-  }
-  console.log("Verified the complete legacy local schema and recorded its 0000-0005 migration baseline without deleting data.");
-}
-
-const migration = spawnSync(
-  process.execPath,
-  [wrangler, "d1", "migrations", "apply", ...sharedArgs],
-  { cwd: root, env: environment, stdio: "inherit" },
-);
-if (migration.error) throw migration.error;
-if (migration.status !== 0) process.exit(migration.status ?? 1);
-if (!preflight()) throw new Error("Local D1 release schema remains incomplete after migrations; expected migration 0006 L08 authority guards.");
-console.log("Local D1 release schema prepared and verified through migration 0006.");
+main().catch((error) => {
+  process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+  process.exitCode = 1;
+});

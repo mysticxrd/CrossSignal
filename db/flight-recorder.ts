@@ -10,11 +10,12 @@ import {
 } from "./flight-recorder-contracts";
 import {
   buildDemoIntent,
-  buildPendingFlightRecorderDemo,
+  buildFlightRecorderSeed,
   STAGE_03_FIXTURE_KEY,
   STAGE_03_SPENDING_CAP_USD,
   STAGE_03_TRACE_KEY,
 } from "./flight-recorder-demo";
+import { runPersistedReasoningGraph } from "./flight-recorder-graph";
 import { getD1 } from ".";
 import { ensureDatabaseCompatibility } from "./migrations";
 import { ownerCanAccessWorkspace } from "./workspaces";
@@ -23,7 +24,11 @@ type TraceRow = {
   id: string;
   workspace_id: string;
   trace_key: string;
-  current_state: FlightRecorderSnapshot["traceState"];
+  current_state:
+    | "collecting"
+    | "context_frozen"
+    | "reasoning"
+    | FlightRecorderSnapshot["traceState"];
   active_intent_id: string | null;
   truth_mode: "FIXTURE";
 };
@@ -157,7 +162,7 @@ async function findTrace(workspaceId: string): Promise<TraceRow | null> {
     .first<TraceRow>();
 }
 
-function sourceInsert(demo: Awaited<ReturnType<typeof buildPendingFlightRecorderDemo>>) {
+function sourceInsert(demo: Awaited<ReturnType<typeof buildFlightRecorderSeed>>) {
   const d1 = getD1();
   return demo.evidence.flatMap((item) => [
     d1
@@ -202,9 +207,24 @@ function sourceInsert(demo: Awaited<ReturnType<typeof buildPendingFlightRecorder
 }
 
 async function materializePendingDemo(userId: string, workspaceId: string): Promise<void> {
-  if (await findTrace(workspaceId)) return;
+  const existing = await findTrace(workspaceId);
+  if (existing) {
+    if (existing.current_state === "context_frozen" || existing.current_state === "reasoning") {
+      await runPersistedReasoningGraph({
+        userId,
+        actorWorkspaceId: workspaceId,
+        workspaceId,
+        traceId: existing.id,
+      });
+    }
+    return;
+  }
   const d1 = getD1();
-  const demo = await buildPendingFlightRecorderDemo({ userId, workspaceId });
+  const demo = await buildFlightRecorderSeed({ userId, workspaceId });
+  const collectingPayload = await sealCanonical({ fixtureKey: STAGE_03_FIXTURE_KEY });
+  const frozenPayload = await sealCanonical({
+    manifestHash: demo.contextSnapshot.manifestHash,
+  });
   const statements = [
     d1
       .prepare(`INSERT OR IGNORE INTO workspace_authority_controls (
@@ -226,6 +246,23 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
         demo.trace.retentionUntil,
         userId,
       ),
+    traceEventStatement({
+      id: `trace_event_${demo.ids.traceId}_1`,
+      workspaceId,
+      traceId: demo.ids.traceId,
+      sequence: 1,
+      eventType: "trace.collecting",
+      subjectType: "trace",
+      subjectId: demo.ids.traceId,
+      priorState: null,
+      currentState: "collecting",
+      actorType: "human",
+      actorId: userId,
+      payloadJson: collectingPayload.canonicalJson,
+      payloadHash: collectingPayload.sha256,
+      idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${workspaceId}:trace-event:1`,
+      occurredAt: demo.now,
+    }),
     d1
       .prepare(`INSERT INTO context_snapshots (
         id, workspace_id, trace_id, snapshot_key, truth_mode, current_state,
@@ -252,60 +289,26 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
       .prepare(`UPDATE flight_traces SET current_state = 'context_frozen', updated_at = ?
         WHERE id = ? AND workspace_id = ? AND current_state = 'collecting'`)
       .bind(demo.now, demo.trace.id, workspaceId),
+    traceEventStatement({
+      id: `trace_event_${demo.ids.traceId}_2`,
+      workspaceId,
+      traceId: demo.ids.traceId,
+      sequence: 2,
+      eventType: "trace.context_frozen",
+      subjectType: "trace",
+      subjectId: demo.ids.traceId,
+      priorState: "collecting",
+      currentState: "context_frozen",
+      actorType: "system",
+      actorId: "crosssignal-context-v1",
+      payloadJson: frozenPayload.canonicalJson,
+      payloadHash: frozenPayload.sha256,
+      idempotencyKey: `${STAGE_03_FIXTURE_KEY}:${workspaceId}:trace-event:2`,
+      occurredAt: demo.now,
+    }),
   ];
-
-  for (const { node, artifact } of demo.reasoningNodes) {
-    statements.push(
-      d1
-        .prepare(`INSERT INTO reasoning_nodes (
-          id, workspace_id, trace_id, node_key, attempt, current_state,
-          input_hash, output_hash, error_code, started_at, completed_at
-        ) VALUES (?, ?, ?, ?, ?, 'pending', ?, NULL, NULL, NULL, NULL)`)
-        .bind(
-          node.id,
-          workspaceId,
-          demo.trace.id,
-          node.nodeKey,
-          node.attempt,
-          node.inputHash,
-        ),
-      d1
-        .prepare(`UPDATE reasoning_nodes
-          SET current_state = 'running', started_at = ?, updated_at = ?
-          WHERE id = ? AND workspace_id = ? AND current_state = 'pending'`)
-        .bind(node.startedAt, node.startedAt, node.id, workspaceId),
-      d1
-        .prepare(`UPDATE reasoning_nodes
-          SET current_state = 'succeeded', output_hash = ?, completed_at = ?, updated_at = ?
-          WHERE id = ? AND workspace_id = ? AND current_state = 'running'`)
-        .bind(node.outputHash, node.completedAt, node.completedAt, node.id, workspaceId),
-      d1
-        .prepare(`INSERT INTO reasoning_artifacts (
-          id, workspace_id, trace_id, node_id, artifact_kind, schema_version,
-          content_json, content_hash, evidence_citations_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-        .bind(
-          artifact.id,
-          workspaceId,
-          demo.trace.id,
-          artifact.nodeId,
-          artifact.artifactKind,
-          artifact.schemaVersion,
-          artifact.contentJson,
-          artifact.contentHash,
-          artifact.evidenceCitationsJson,
-        ),
-    );
-  }
-
   const definition = demo.outcomeDefinition;
-  const intent = demo.intentBundle.intent;
-  const policy = demo.intentBundle.policyDecision;
   statements.push(
-    d1
-      .prepare(`UPDATE flight_traces SET current_state = 'reasoning', updated_at = ?
-        WHERE id = ? AND workspace_id = ? AND current_state = 'context_frozen'`)
-      .bind(demo.now, demo.trace.id, workspaceId),
     d1
       .prepare(`INSERT INTO outcome_definitions (
         id, workspace_id, trace_id, definition_key, metric_name, cohort_json,
@@ -330,15 +333,14 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
         userId,
         definition.registeredAt,
       ),
-    intentStatement(intent, null),
-    policyStatement(policy),
-    d1
-      .prepare(`UPDATE flight_traces SET current_state = 'awaiting_approval', updated_at = ?
-        WHERE id = ? AND workspace_id = ? AND current_state = 'reasoning'`)
-      .bind(policy.decidedAt, demo.trace.id, workspaceId),
   );
-  for (const event of demo.flightTraceEvents) statements.push(traceEventStatement(event));
   await d1.batch(statements);
+  await runPersistedReasoningGraph({
+    userId,
+    actorWorkspaceId: workspaceId,
+    workspaceId,
+    traceId: demo.trace.id,
+  });
 }
 
 function intentStatement(
@@ -561,7 +563,8 @@ export async function readFlightRecorderSnapshot(
           attribution: string | null;
         }>(),
       d1
-        .prepare(`SELECT node_key, current_state, output_hash,
+        .prepare(`SELECT node_key, attempt, current_state, output_hash,
+          execution_mode, graph_version, handler_version,
           (SELECT COUNT(*) FROM json_each(artifact.evidence_citations_json)) AS evidence_count
           FROM reasoning_nodes node
           JOIN reasoning_artifacts artifact
@@ -574,8 +577,12 @@ export async function readFlightRecorderSnapshot(
         .bind(workspaceId, trace.id)
         .all<{
           node_key: string;
+          attempt: number;
           current_state: "succeeded" | "failed" | "skipped";
           output_hash: string | null;
+          execution_mode: "runtime" | "precomputed_fixture";
+          graph_version: string;
+          handler_version: string;
           evidence_count: number;
         }>(),
       d1
@@ -652,6 +659,14 @@ export async function readFlightRecorderSnapshot(
     ? (JSON.parse(outcome.value_json) as { activatedAccounts: number; eligibleAccounts: number })
     : null;
 
+  if (
+    trace.current_state === "collecting"
+    || trace.current_state === "context_frozen"
+    || trace.current_state === "reasoning"
+  ) {
+    throw new Error("The persisted reasoning graph has not reached a readable terminal boundary.");
+  }
+
   return {
     workspaceId,
     traceId: trace.id,
@@ -726,14 +741,22 @@ export async function readFlightRecorderSnapshot(
     })),
     playbook: nodes.results.map((row: {
       node_key: string;
+      attempt: number;
       current_state: "succeeded" | "failed" | "skipped";
       output_hash: string | null;
+      execution_mode: "runtime" | "precomputed_fixture";
+      graph_version: string;
+      handler_version: string;
       evidence_count: number;
     }) => ({
       key: row.node_key,
       label: roleByNode[row.node_key]?.[0] ?? row.node_key,
-      role: roleByNode[row.node_key]?.[1] ?? "Reviewed playbook step",
+      role: `${row.execution_mode === "runtime" ? "Runtime executor" : "Precomputed fixture"} · ${roleByNode[row.node_key]?.[1] ?? "Reviewed playbook step"}`,
       state: row.current_state,
+      attempt: Number(row.attempt),
+      executionMode: row.execution_mode,
+      graphVersion: row.graph_version,
+      handlerVersion: row.handler_version,
       evidenceCount: Number(row.evidence_count),
       outputHash: row.output_hash,
     })),

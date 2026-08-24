@@ -1,13 +1,14 @@
 ---
 type: stage-contract
-stage: 02
-job: make-authority-correction-contracts-executable
+status: blank
+stage: 02_data
+unit: persisted-graph-executor-correction
 ---
 
-# 02_data - define executable authority contracts
+# 02_data - make the graph-execution contract executable
 
-One job: turn the accepted L08 specification into canonical schema, state,
-authority, migration, and deterministic interleaving contracts.
+One job: turn the accepted L06 specification into executable fixtures and data
+contracts for the fixed runtime graph.
 
 ## Inputs
 
@@ -15,18 +16,26 @@ authority, migration, and deterministic interleaving contracts.
 - Freshness dependency: `../01_spec/output/HUMAN_GATE.md`
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Observed baseline: exact schema, fixture, and test paths named by the accepted specification
-- Stage-owned surface: `fixtures/`, `output/DATA_PACKAGE.md`, and its verifier
+- Observed baseline: `../../db/flight-recorder-contracts.ts`
+- Observed baseline: `../../db/flight-recorder-schema.ts`
+- Observed baseline: `../../db/flight-recorder-demo.ts`
+- Stage-owned surface: `fixtures/persisted-graph-executor.fixture.mjs`
+- Stage-owned surface: `output/DATA_PACKAGE.md`
+- Stage-owned surface: `output/VERIFY.md`
+- Stage-owned surface: `output/HUMAN_GATE.md`
+- Stage-owned surface: `verify.mjs`
 
-Do not load: `_archive/`, later stages, dependency folders, generated build
-output, or product paths not named by the accepted specification.
+Do not load later stages, `_archive/`, unrelated product areas, or the source
+vault.
 
 ## Process
 
-1. Bind each authority decision to the active intent identity or revision.
-2. Define schema migration, backfill, and invalid-state rejection rules.
-3. Encode the deterministic authorize-v1/edit-v2 interleaving fixture.
-4. Write `DATA_PACKAGE.md`, fixtures, verification evidence, and stop.
+1. Hash the accepted specification, gate, and shared references.
+2. Define executable node, dependency, state-transition, evidence, cost, and
+   recovery cases for the one fixed graph.
+3. Include deterministic happy, interruption/resume, duplicate, out-of-order,
+   failure, and cross-workspace negative cases.
+4. Write the data package and verifier, then stop.
 
 ## Outputs
 
@@ -36,14 +45,18 @@ output, or product paths not named by the accepted specification.
 
 ## Verify
 
-Fail if identity, policy, payload, grant, kill switch, caps, or migration state
-can diverge from the active intent while authorization succeeds.
+Create `verify.mjs` using `../_lib/verify-kit.mjs`. It must execute the fixture,
+validate stable identities and expected transitions, reject forbidden graph or
+tenant mutations, and prove that FIXTURE data cannot be mistaken for runtime
+proof. Record exact commands, hashes, environment, results, and
+`status: passed | failed` in `output/VERIFY.md`.
 
 ## Human gate
 
-Accept only if the contracts implement the accepted specification without
-redefining its authority semantics.
+The reviewer binds `DATA_PACKAGE.md` and `VERIFY.md` hashes and records a gate
+decision. Do not begin Stage 03 without `accepted`.
 
 ## Failure routing
 
-Correct Data or return ambiguity to Spec. Do not patch Build around it.
+Correct this data contract or reopen Stage 01. Never patch product code to hide
+an ambiguous fixture or oracle.

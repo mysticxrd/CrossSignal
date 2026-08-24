@@ -50,6 +50,10 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "idx_context_sources_snapshot_source",
   "idx_reasoning_nodes_workspace_id",
   "idx_reasoning_nodes_trace_identity",
+  "idx_reasoning_nodes_logical_attempt",
+  "idx_reasoning_nodes_active",
+  "idx_reasoning_nodes_running",
+  "idx_reasoning_nodes_succeeded",
   "idx_reasoning_artifacts_workspace_id",
   "idx_reasoning_artifacts_node_kind",
   "idx_action_intents_workspace_id",
@@ -99,10 +103,16 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "trg_context_supersessions_immutable",
   "trg_context_supersessions_delete_guard",
   "trg_reasoning_nodes_identity_immutable",
+  "trg_l06_reasoning_nodes_input_immutable",
   "trg_reasoning_nodes_transition",
+  "trg_l06_reasoning_nodes_runtime_insert",
   "trg_reasoning_nodes_delete_guard",
   "trg_reasoning_artifacts_immutable",
   "trg_reasoning_artifacts_bindings",
+  "trg_l06_reasoning_artifact_runtime_contract",
+  "trg_l06_reasoning_artifact_scope",
+  "trg_l06_action_intent_graph_complete",
+  "trg_l06_trace_reasoning_handoff",
   "trg_reasoning_artifacts_delete_guard",
   "trg_action_intents_immutable",
   "trg_action_intents_delete_guard",
@@ -176,15 +186,30 @@ async function verifyCheckedInMigrations(): Promise<void> {
     );
   }
 
-  const [traceColumns, intentColumns] = await Promise.all([
+  const [traceColumns, intentColumns, reasoningColumns] = await Promise.all([
     d1.prepare("PRAGMA table_info('flight_traces')").all<{ name: string }>(),
     d1.prepare("PRAGMA table_info('action_intents')").all<{ name: string }>(),
+    d1.prepare("PRAGMA table_info('reasoning_nodes')").all<{ name: string }>(),
   ]);
-  if (!traceColumns.results.some((column) => column.name === "active_intent_id")) {
+  if (!traceColumns.results.some((column: { name: string }) => column.name === "active_intent_id")) {
     throw new Error("Database schema is not ready. Apply migration 0006; missing: flight_traces.active_intent_id.");
   }
-  if (!intentColumns.results.some((column) => column.name === "supersedes_intent_id")) {
+  if (!intentColumns.results.some((column: { name: string }) => column.name === "supersedes_intent_id")) {
     throw new Error("Database schema is not ready. Apply migration 0006; missing: action_intents.supersedes_intent_id.");
+  }
+  for (const name of [
+    "logical_node_id",
+    "graph_version",
+    "execution_mode",
+    "handler_version",
+    "predecessor_outputs_json",
+    "lease_token",
+    "lease_expires_at",
+    "completion_token_hash",
+  ]) {
+    if (!reasoningColumns.results.some((column: { name: string }) => column.name === name)) {
+      throw new Error(`Database schema is not ready. Apply migration 0007; missing: reasoning_nodes.${name}.`);
+    }
   }
 }
 
