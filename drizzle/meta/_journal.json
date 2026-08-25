@@ -57,6 +57,13 @@
       "when": 1787513257703,
       "tag": "0007_l06_persisted_graph_executor",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1787648842592,
+      "tag": "0008_l04_authority_history_trace_projection",
+      "breakpoints": true
     }
   ]
 }

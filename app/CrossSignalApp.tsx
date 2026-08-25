@@ -577,12 +577,32 @@ export default function CrossSignalApp({
         <div><span className="eyebrow">TECHNICAL PROVENANCE</span><h2>Available without swallowing the story.</h2></div>
         <button className="button button-secondary" onClick={() => setDetailsOpen((open) => !open)}>{detailsOpen ? "Hide trace proof" : "Inspect trace proof"}</button>
         {detailsOpen && (
-          <dl className="proof-grid wide-proof">
-            <div><dt>Trace</dt><dd><code>{snapshot.traceId}</code></dd></div>
-            <div><dt>Context manifest</dt><dd><code>{snapshot.intent.contextManifestHash}</code></dd></div>
-            <div><dt>Intent payload</dt><dd><code>{snapshot.intent.canonicalPayloadHash}</code></dd></div>
-            <div><dt>Policy</dt><dd><code>{snapshot.intent.policyHash}</code></dd></div>
-          </dl>
+          <>
+            <dl className="proof-grid wide-proof">
+              <div><dt>Trace</dt><dd><code>{snapshot.traceId}</code></dd></div>
+              <div><dt>Context manifest</dt><dd><code>{snapshot.intent.contextManifestHash}</code></dd></div>
+              <div><dt>Intent payload</dt><dd><code>{snapshot.intent.canonicalPayloadHash}</code></dd></div>
+              <div><dt>Policy</dt><dd><code>{snapshot.intent.policyHash}</code></dd></div>
+            </dl>
+            <div className="evidence-detail-list">
+              <h3>Append-only workspace authority history</h3>
+              {snapshot.authorityControlHistory.map((event) => (
+                <div key={event.id}>
+                  <strong>#{event.sequence} · {event.currentState ? "Actions paused" : "Actions available"}</strong>
+                  <span>{event.reasonCode} · {event.actorDisplay} · {formatTime(event.occurredAt)}</span>
+                  <code>{shortHash(event.contentHash)}</code>
+                </div>
+              ))}
+              <h3>Persisted FIXTURE trace · {snapshot.traceEvents.length} ordered events</h3>
+              {snapshot.traceEvents.map((event) => (
+                <div key={event.id}>
+                  <strong>#{event.sequence} · {event.eventType}</strong>
+                  <span>{event.subjectType} · {event.priorState ?? "∅"} → {event.currentState} · {event.actorDisplay} · {formatTime(event.occurredAt)}</span>
+                  <code>{shortHash(event.payloadHash)}</code>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </section>
     </div>

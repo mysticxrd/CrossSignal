@@ -4,9 +4,15 @@ import type {
 } from "../app/flight-recorder-types";
 import {
   assertExecutionAuthority,
+  projectFlightTraceEvents,
+  sealAuthorityControlEvent,
   sealCanonical,
   stableStringify,
+  validatePersistedAuthorityControlEvent,
   validatePersistedActionIntent,
+  type AuthorityControlEvent,
+  type PersistedTraceEventRow,
+  type TraceSubjectType,
 } from "./flight-recorder-contracts";
 import {
   buildDemoIntent,
@@ -82,6 +88,21 @@ type GrantRow = {
   bound_policy_hash: string;
   bound_recipient_set_hash: string;
   nonce: string;
+};
+
+type AuthorityControlRow = {
+  id: string;
+  workspace_id: string;
+  sequence: number;
+  control_kind: "kill_switch";
+  prior_state: number | null;
+  current_state: number;
+  actor_user_id: string;
+  reason_code: AuthorityControlEvent["reasonCode"];
+  idempotency_key: string;
+  payload_json: string;
+  content_hash: string;
+  occurred_at: string;
 };
 
 let authorizationBeforeWriteBarrier: (() => Promise<void>) | null = null;
@@ -162,6 +183,71 @@ async function findTrace(workspaceId: string): Promise<TraceRow | null> {
     .first<TraceRow>();
 }
 
+function mapAuthorityControl(row: AuthorityControlRow): AuthorityControlEvent {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    sequence: Number(row.sequence),
+    controlKind: row.control_kind,
+    priorState: row.prior_state === null ? null : row.prior_state === 1,
+    currentState: row.current_state === 1,
+    actorUserId: row.actor_user_id,
+    reasonCode: row.reason_code,
+    idempotencyKey: row.idempotency_key,
+    payloadJson: row.payload_json,
+    contentHash: row.content_hash,
+    occurredAt: row.occurred_at,
+  };
+}
+
+async function loadAuthorityControlHistory(workspaceId: string): Promise<AuthorityControlEvent[]> {
+  const result = await getD1().prepare(`SELECT id, workspace_id, sequence, control_kind,
+      prior_state, current_state, actor_user_id, reason_code, idempotency_key,
+      payload_json, content_hash, occurred_at
+    FROM workspace_authority_control_events
+    WHERE workspace_id = ? AND control_kind = 'kill_switch'
+    ORDER BY sequence ASC`).bind(workspaceId).all<AuthorityControlRow>();
+  const history = result.results.map(mapAuthorityControl);
+  if (history.length === 0) throw new Error("l04_missing_authority_control");
+  for (let index = 0; index < history.length; index += 1) {
+    const event = history[index];
+    const errors = await validatePersistedAuthorityControlEvent(event);
+    if (errors.length > 0
+      || event.sequence !== index + 1
+      || (index === 0 ? event.priorState !== null : event.priorState !== history[index - 1].currentState)
+      || (index > 0 && Date.parse(event.occurredAt) < Date.parse(history[index - 1].occurredAt))) {
+      throw new Error("l04_missing_authority_control");
+    }
+  }
+  return history;
+}
+
+async function latestAuthorityControl(workspaceId: string): Promise<AuthorityControlEvent> {
+  const history = await loadAuthorityControlHistory(workspaceId);
+  return history[history.length - 1];
+}
+
+function authorityControlStatement(event: AuthorityControlEvent) {
+  return getD1().prepare(`INSERT INTO workspace_authority_control_events (
+      id, workspace_id, sequence, control_kind, prior_state, current_state,
+      actor_user_id, reason_code, idempotency_key, payload_json, content_hash, occurred_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(
+      event.id,
+      event.workspaceId,
+      event.sequence,
+      event.controlKind,
+      event.priorState === null ? null : event.priorState ? 1 : 0,
+      event.currentState ? 1 : 0,
+      event.actorUserId,
+      event.reasonCode,
+      event.idempotencyKey,
+      event.payloadJson,
+      event.contentHash,
+      event.occurredAt,
+    );
+}
+
 function sourceInsert(demo: Awaited<ReturnType<typeof buildFlightRecorderSeed>>) {
   const d1 = getD1();
   return demo.evidence.flatMap((item) => [
@@ -229,12 +315,23 @@ async function materializePendingDemo(userId: string, workspaceId: string): Prom
   const frozenPayload = await sealCanonical({
     manifestHash: demo.contextSnapshot.manifestHash,
   });
+  const existingAuthority = await getD1().prepare(`SELECT COUNT(*) AS count
+    FROM workspace_authority_control_events WHERE workspace_id = ?`)
+    .bind(workspaceId).first<{ count: number }>();
+  const initializationIdentity = await sealCanonical({ kind: "workspace_initialized", workspaceId });
+  const initialization = await sealAuthorityControlEvent({
+    id: `authority_control_${initializationIdentity.sha256.slice(0, 24)}`,
+    workspaceId,
+    sequence: 1,
+    priorState: null,
+    currentState: false,
+    actorUserId: userId,
+    reasonCode: "workspace_initialized",
+    idempotencyKey: `l04:initialize:${workspaceId}:kill_switch`,
+    occurredAt: demo.now,
+  });
   const statements = [
-    d1
-      .prepare(`INSERT OR IGNORE INTO workspace_authority_controls (
-        workspace_id, kill_switch_engaged, updated_by, updated_at
-      ) VALUES (?, 0, ?, ?)`)
-      .bind(workspaceId, userId, demo.now),
+    ...(Number(existingAuthority?.count ?? 0) === 0 ? [authorityControlStatement(initialization)] : []),
     d1
       .prepare(`INSERT INTO flight_traces (
         id, workspace_id, trace_key, fixture_key, truth_mode, current_state,
@@ -417,7 +514,7 @@ function traceEventStatement(event: {
   traceId: string;
   sequence: number;
   eventType: string;
-  subjectType: "trace";
+  subjectType: TraceSubjectType;
   subjectId: string;
   priorState: string | null;
   currentState: string;
@@ -498,13 +595,9 @@ export async function readFlightRecorderSnapshot(
   const d1 = getD1();
   const intentRow = await activeIntent(workspaceId, trace.id, trace.active_intent_id);
   const policy = await activePolicy(workspaceId, intentRow.id);
-  const [control, grant, effect, context, evidence, nodes, outcome, eventCount] =
+  const [authorityHistory, grant, effect, context, evidence, nodes, outcome, traceEventRows] =
     await Promise.all([
-      d1
-        .prepare(`SELECT kill_switch_engaged FROM workspace_authority_controls
-          WHERE workspace_id = ? LIMIT 1`)
-        .bind(workspaceId)
-        .first<{ kill_switch_engaged: number }>(),
+      loadAuthorityControlHistory(workspaceId),
       d1
         .prepare(`SELECT id, decision, approved_at, approved_by, expires_at,
           bound_payload_hash, bound_context_hash, bound_policy_hash,
@@ -612,11 +705,25 @@ export async function readFlightRecorderSnapshot(
           rationale_summary: string;
         }>(),
       d1
-        .prepare(`SELECT COUNT(*) AS count FROM flight_trace_events
-          WHERE workspace_id = ? AND trace_id = ?`)
+        .prepare(`SELECT id, workspace_id AS workspaceId, trace_id AS traceId,
+          sequence, event_type AS eventType, subject_type AS subjectType,
+          subject_id AS subjectId, prior_state AS priorState,
+          current_state AS currentState, actor_type AS actorType,
+          actor_id AS actorId, payload_json AS payloadJson,
+          payload_hash AS payloadHash, occurred_at AS occurredAt
+          FROM flight_trace_events
+          WHERE workspace_id = ? AND trace_id = ?
+          ORDER BY sequence ASC`)
         .bind(workspaceId, trace.id)
-        .first<{ count: number }>(),
+        .all<PersistedTraceEventRow>(),
     ]);
+
+  const traceEvents = await projectFlightTraceEvents({
+    workspaceId,
+    traceId: trace.id,
+    rows: traceEventRows.results,
+  });
+  const control = authorityHistory[authorityHistory.length - 1];
 
   const recipients = parseStringArray(intentRow.recipients_json, "recipients");
   const labelByKey: Record<string, [string, string]> = {
@@ -677,7 +784,7 @@ export async function readFlightRecorderSnapshot(
     traceKey: trace.trace_key,
     traceState: trace.current_state,
     truthMode: trace.truth_mode,
-    killSwitchEngaged: Boolean(control?.kill_switch_engaged ?? 1),
+    killSwitchEngaged: control.currentState,
     intent: {
       id: intentRow.id,
       version: intentVersion(intentRow.intent_key),
@@ -768,7 +875,18 @@ export async function readFlightRecorderSnapshot(
       sourceCount: Number(context?.source_count ?? 0),
       manifestHash: context?.manifest_hash ?? "",
     },
-    traceEventCount: Number(eventCount?.count ?? 0),
+    authorityControlHistory: authorityHistory.map((event) => ({
+      id: event.id,
+      sequence: event.sequence,
+      priorState: event.priorState,
+      currentState: event.currentState,
+      reasonCode: event.reasonCode,
+      actorDisplay: "Workspace owner" as const,
+      occurredAt: event.occurredAt,
+      contentHash: event.contentHash,
+    })),
+    traceEvents,
+    traceEventCount: traceEvents.length,
   };
 }
 
@@ -816,10 +934,31 @@ export async function replacePendingIntent(input: {
     now: new Date().toISOString(),
   });
   await replacementBeforeWriteBarrier?.();
+  const eventInputs = [
+    { eventType: "intent.superseded", subjectType: "intent" as const, subjectId: prior.id, priorState: "approval_pending", currentState: "superseded", actorType: "human" as const, actorId: input.userId, payload: { supersededByIntentRef: next.intent.id } },
+    { eventType: "intent.drafted", subjectType: "intent" as const, subjectId: next.intent.id, priorState: null, currentState: "drafted", actorType: "human" as const, actorId: input.userId, payload: { intentVersion: intentVersion(next.intent.intentKey), supersedesIntentRef: prior.id } },
+    { eventType: "intent.sealed", subjectType: "intent" as const, subjectId: next.intent.id, priorState: "drafted", currentState: "sealed", actorType: "system" as const, actorId: "crosssignal-authority-v1", payload: { intentVersion: intentVersion(next.intent.intentKey), policyVersion: next.intent.policyVersion } },
+    { eventType: "policy.unevaluated", subjectType: "policy" as const, subjectId: next.policyDecision.id, priorState: null, currentState: "unevaluated", actorType: "system" as const, actorId: "deterministic-policy-v1", payload: { intentRef: next.intent.id } },
+    { eventType: "policy.decided", subjectType: "policy" as const, subjectId: next.policyDecision.id, priorState: "unevaluated", currentState: next.policyDecision.verdict, actorType: "system" as const, actorId: "deterministic-policy-v1", payload: { intentRef: next.intent.id, policyVersion: next.intent.policyVersion, verdict: next.policyDecision.verdict } },
+    { eventType: "intent.policy_evaluated", subjectType: "intent" as const, subjectId: next.intent.id, priorState: "sealed", currentState: "policy_evaluated", actorType: "system" as const, actorId: "deterministic-policy-v1", payload: { policyRef: next.policyDecision.id } },
+    { eventType: "intent.approval_pending", subjectType: "intent" as const, subjectId: next.intent.id, priorState: "policy_evaluated", currentState: "approval_pending", actorType: "system" as const, actorId: "crosssignal-authority-v1", payload: {} },
+  ];
+  const replacementEvents = await Promise.all(eventInputs.map((event) => nextTraceEvent({
+    workspaceId: input.workspaceId,
+    traceId: trace.id,
+    occurredAt: next.intent.createdAt,
+    ...event,
+  })));
+  const baseSequence = replacementEvents[0].sequence;
+  replacementEvents.forEach((event: Awaited<ReturnType<typeof nextTraceEvent>>, index: number) => {
+    event.sequence = baseSequence + index;
+    event.idempotencyKey = `${trace.id}:${event.eventType}:${event.sequence}`;
+  });
   try {
     await getD1().batch([
       intentStatement(next.intent, prior.id),
       policyStatement(next.policyDecision),
+      ...replacementEvents.map(traceEventStatement),
     ]);
   } catch (error) {
     if (String(error).includes("l08_intent_activation_rejected")) {
@@ -836,13 +975,34 @@ export async function setWorkspaceKillSwitch(input: {
   engaged: boolean;
 }): Promise<FlightRecorderSnapshot> {
   await requireOwner(input.userId, input.workspaceId);
-  const result = await getD1()
-    .prepare(`UPDATE workspace_authority_controls
-      SET kill_switch_engaged = ?, updated_by = ?, updated_at = ?
-      WHERE workspace_id = ?`)
-    .bind(input.engaged ? 1 : 0, input.userId, new Date().toISOString(), input.workspaceId)
-    .run();
-  if (!result.success) throw new Error("The global pause control could not be updated.");
+  const head = await latestAuthorityControl(input.workspaceId);
+  if (head.currentState === input.engaged) {
+    return readFlightRecorderSnapshot(input.userId, input.workspaceId);
+  }
+  const now = Math.max(Date.now(), Date.parse(head.occurredAt));
+  const event = await sealAuthorityControlEvent({
+    id: crypto.randomUUID(),
+    workspaceId: input.workspaceId,
+    sequence: head.sequence + 1,
+    priorState: head.currentState,
+    currentState: input.engaged,
+    actorUserId: input.userId,
+    reasonCode: "owner_transition",
+    idempotencyKey: `l04:transition:${input.workspaceId}:${head.sequence + 1}:${crypto.randomUUID()}`,
+    occurredAt: new Date(now).toISOString(),
+  });
+  try {
+    const result = await authorityControlStatement(event).run();
+    if (!result.success) throw new Error("l04_stale_authority_control");
+  } catch (error) {
+    const message = String(error);
+    if (message.includes("l04_authority_history_sequence")
+      || message.includes("idx_authority_control_events_sequence")
+      || message.includes("UNIQUE constraint failed")) {
+      throw new Error("l04_stale_authority_control");
+    }
+    throw error;
+  }
   return readFlightRecorderSnapshot(input.userId, input.workspaceId);
 }
 
@@ -850,7 +1010,9 @@ async function nextTraceEvent(input: {
   workspaceId: string;
   traceId: string;
   eventType: string;
-  priorState: string;
+  subjectType?: TraceSubjectType;
+  subjectId?: string;
+  priorState: string | null;
   currentState: string;
   actorType: "human" | "system" | "agent" | "adapter";
   actorId: string;
@@ -870,8 +1032,8 @@ async function nextTraceEvent(input: {
     traceId: input.traceId,
     sequence,
     eventType: input.eventType,
-    subjectType: "trace" as const,
-    subjectId: input.traceId,
+    subjectType: input.subjectType ?? "trace",
+    subjectId: input.subjectId ?? input.traceId,
     priorState: input.priorState,
     currentState: input.currentState,
     actorType: input.actorType,
@@ -898,13 +1060,9 @@ export async function authorizeAndExecute(input: {
   const resealErrors = await validatePersistedActionIntent(intent);
   if (resealErrors.length > 0) throw new Error(resealErrors.join("; "));
   const policy = await activePolicy(input.workspaceId, intentRow.id);
+  const control = await latestAuthorityControl(input.workspaceId);
   await authorizationBeforeWriteBarrier?.();
   const d1 = getD1();
-  const control = await d1
-    .prepare(`SELECT kill_switch_engaged FROM workspace_authority_controls
-      WHERE workspace_id = ? LIMIT 1`)
-    .bind(input.workspaceId)
-    .first<{ kill_switch_engaged: number }>();
   const priorAttempts = await d1
     .prepare(`SELECT COUNT(*) AS count FROM effect_attempts
       WHERE workspace_id = ? AND intent_id = ?`)
@@ -951,7 +1109,7 @@ export async function authorizeAndExecute(input: {
       intentId: intentRow.id,
       actorUserId: input.userId,
       actorWorkspaceId: input.workspaceId,
-      killSwitchEngaged: Boolean(control?.kill_switch_engaged ?? 1),
+      killSwitchEngaged: control.currentState,
       canonicalPayloadHash: intent.canonicalPayloadHash,
       contextManifestHash: intent.contextManifestHash,
       policyHash: intent.policyHash,
@@ -994,37 +1152,24 @@ export async function authorizeAndExecute(input: {
       : input.scenario === "indeterminate"
         ? "fixture_provider_timeout_after_dispatch"
         : null;
-  const executingEvent = await nextTraceEvent({
-    workspaceId: input.workspaceId,
-    traceId: trace.id,
-    eventType: "trace.executing",
-    priorState: "awaiting_approval",
-    currentState: "executing",
-    actorType: "human",
-    actorId: input.userId,
-    payload: { grantId, effectId, intentId: intentRow.id },
-    occurredAt: effectTime,
-  });
   const terminalTraceState = input.scenario === "confirmed" ? "observing" : "failed";
-  const terminalEvent = await nextTraceEvent({
-    workspaceId: input.workspaceId,
-    traceId: trace.id,
-    eventType:
-      input.scenario === "confirmed" ? "trace.observing" : `trace.${input.scenario}`,
-    priorState: "executing",
-    currentState: terminalTraceState,
-    actorType: "adapter",
-    actorId: "fixture-email-adapter-v1",
-    payload: {
-      effectId,
-      effectState: terminalState,
-      errorCode,
-      retryAttempted: false,
-    },
-    occurredAt: terminalTime,
+  const authorityEvents = await Promise.all([
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "approval.pending", subjectType: "approval", subjectId: grantId, priorState: null, currentState: "pending", actorType: "human", actorId: input.userId, payload: { intentRef: intentRow.id, policyRef: policy.id }, occurredAt: now }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "approval.approved", subjectType: "approval", subjectId: grantId, priorState: "pending", currentState: "approved", actorType: "human", actorId: input.userId, payload: { decision: "approved", expiresAt: grant.expiresAt, intentRef: intentRow.id, policyRef: policy.id }, occurredAt: now }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "intent.approved", subjectType: "intent", subjectId: intentRow.id, priorState: "approval_pending", currentState: "approved", actorType: "human", actorId: input.userId, payload: { grantRef: grantId }, occurredAt: now }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "effect.reserved", subjectType: "effect", subjectId: effectId, priorState: null, currentState: "reserved", actorType: "human", actorId: input.userId, payload: { authorityControlEventRef: control.id, authorityControlHash: control.contentHash, authorityControlSequence: control.sequence, effectRef: effectId, providerMode: "FIXTURE" }, occurredAt: effectTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "trace.executing", priorState: "awaiting_approval", currentState: "executing", actorType: "human", actorId: input.userId, payload: { authorityControlEventRef: control.id, effectRef: effectId, intentRef: intentRow.id, intentId: intentRow.id, grantId }, occurredAt: effectTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "effect.dispatching", subjectType: "effect", subjectId: effectId, priorState: "reserved", currentState: "dispatching", actorType: "adapter", actorId: "fixture-email-adapter-v1", payload: { effectRef: effectId, providerMode: "FIXTURE" }, occurredAt: dispatchTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: `effect.${terminalState}`, subjectType: "effect", subjectId: effectId, priorState: "dispatching", currentState: terminalState, actorType: "adapter", actorId: "fixture-email-adapter-v1", payload: { effectRef: effectId, providerMode: "FIXTURE", errorCode, retryAttempted: false }, occurredAt: terminalTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "intent.consumed", subjectType: "intent", subjectId: intentRow.id, priorState: "approved", currentState: "consumed", actorType: "system", actorId: "crosssignal-authority-v1", payload: { effectRef: effectId }, occurredAt: terminalTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "approval.consumed", subjectType: "approval", subjectId: grantId, priorState: "approved", currentState: "consumed", actorType: "system", actorId: "crosssignal-authority-v1", payload: { effectRef: effectId }, occurredAt: terminalTime }),
+    nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: input.scenario === "confirmed" ? "trace.observing" : `trace.${input.scenario}`, priorState: "executing", currentState: terminalTraceState, actorType: "adapter", actorId: "fixture-email-adapter-v1", payload: { effectRef: effectId, effectState: terminalState, errorCode, retryAttempted: false }, occurredAt: terminalTime }),
+  ]);
+  const authorityEventBase = authorityEvents[0].sequence;
+  authorityEvents.forEach((event: Awaited<ReturnType<typeof nextTraceEvent>>, index: number) => {
+    event.sequence = authorityEventBase + index;
+    event.idempotencyKey = `${trace.id}:${event.eventType}:${event.sequence}`;
   });
-  terminalEvent.sequence = executingEvent.sequence + 1;
-  terminalEvent.idempotencyKey = `${trace.id}:${terminalEvent.eventType}:${terminalEvent.sequence}`;
 
   const statements = [
     d1
@@ -1048,6 +1193,9 @@ export async function authorizeAndExecute(input: {
         input.userId,
         now,
       ),
+    traceEventStatement(authorityEvents[0]),
+    traceEventStatement(authorityEvents[1]),
+    traceEventStatement(authorityEvents[2]),
     d1
       .prepare(`INSERT INTO effect_attempts (
         id, workspace_id, trace_id, intent_id, approval_grant_id,
@@ -1066,12 +1214,33 @@ export async function authorizeAndExecute(input: {
         effectTime,
       ),
     d1
+      .prepare(`INSERT INTO effect_authority_control_bindings (
+        workspace_id, trace_id, effect_attempt_id, authority_control_event_id,
+        authority_control_sequence, authority_control_hash, bound_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .bind(
+        input.workspaceId,
+        trace.id,
+        effectId,
+        control.id,
+        control.sequence,
+        control.contentHash,
+        effectTime,
+      ),
+    d1
       .prepare(`INSERT INTO effect_attempt_events (
         id, workspace_id, trace_id, effect_attempt_id, sequence, prior_state,
         current_state, provider_receipt_id, provider_response_hash, error_code,
         payload_json, idempotency_key, occurred_at
       ) VALUES (?, ?, ?, ?, 1, NULL, 'reserved', NULL, NULL, NULL, '{}', ?, ?)`)
       .bind(crypto.randomUUID(), input.workspaceId, trace.id, effectId, `${effectId}:1`, effectTime),
+    traceEventStatement(authorityEvents[3]),
+    d1
+      .prepare(`UPDATE flight_traces SET current_state = 'executing', updated_at = ?
+        WHERE id = ? AND workspace_id = ? AND current_state = 'awaiting_approval'
+          AND active_intent_id = ?`)
+      .bind(effectTime, trace.id, input.workspaceId, intentRow.id),
+    traceEventStatement(authorityEvents[4]),
     d1
       .prepare(`INSERT INTO effect_attempt_events (
         id, workspace_id, trace_id, effect_attempt_id, sequence, prior_state,
@@ -1079,6 +1248,7 @@ export async function authorizeAndExecute(input: {
         payload_json, idempotency_key, occurred_at
       ) VALUES (?, ?, ?, ?, 2, 'reserved', 'dispatching', NULL, NULL, NULL, '{}', ?, ?)`)
       .bind(crypto.randomUUID(), input.workspaceId, trace.id, effectId, `${effectId}:2`, dispatchTime),
+    traceEventStatement(authorityEvents[5]),
     d1
       .prepare(`INSERT INTO effect_attempt_events (
         id, workspace_id, trace_id, effect_attempt_id, sequence, prior_state,
@@ -1098,17 +1268,14 @@ export async function authorizeAndExecute(input: {
         `${effectId}:3`,
         terminalTime,
       ),
-    d1
-      .prepare(`UPDATE flight_traces SET current_state = 'executing', updated_at = ?
-        WHERE id = ? AND workspace_id = ? AND current_state = 'awaiting_approval'
-          AND active_intent_id = ?`)
-      .bind(effectTime, trace.id, input.workspaceId, intentRow.id),
-    traceEventStatement(executingEvent),
+    traceEventStatement(authorityEvents[6]),
+    traceEventStatement(authorityEvents[7]),
+    traceEventStatement(authorityEvents[8]),
     d1
       .prepare(`UPDATE flight_traces SET current_state = ?, updated_at = ?
         WHERE id = ? AND workspace_id = ? AND current_state = 'executing'`)
       .bind(terminalTraceState, terminalTime, trace.id, input.workspaceId),
-    traceEventStatement(terminalEvent),
+    traceEventStatement(authorityEvents[9]),
   ];
 
   if (input.scenario === "confirmed") {
@@ -1143,24 +1310,19 @@ export async function authorizeAndExecute(input: {
     const observationId = crypto.randomUUID();
     const assessmentId = crypto.randomUUID();
     const assessedAt = new Date(Date.parse(terminalTime) + 1_000).toISOString();
-    const assessedEvent = await nextTraceEvent({
-      workspaceId: input.workspaceId,
-      traceId: trace.id,
-      eventType: "trace.assessed",
-      priorState: "observing",
-      currentState: "assessed",
-      actorType: "system",
-      actorId: "crosssignal-outcome-fixture-v1",
-      payload: {
-        observationId,
-        assessmentId,
-        assessmentLabel: "correlated",
-      },
-      occurredAt: assessedAt,
+    const outcomeEvents = await Promise.all([
+      nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "outcome.preregistered", subjectType: "outcome", subjectId: definition.id, priorState: null, currentState: "preregistered", actorType: "system", actorId: "crosssignal-outcome-v1", payload: { metricName: "activation_72h" }, occurredAt: terminalTime }),
+      nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "outcome.observed", subjectType: "outcome", subjectId: definition.id, priorState: "preregistered", currentState: "observed", actorType: "adapter", actorId: "fixture-metric-adapter-v1", payload: { metricName: "activation_72h" }, occurredAt: assessedAt }),
+      nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "outcome.assessed", subjectType: "outcome", subjectId: definition.id, priorState: "observed", currentState: "assessed", actorType: "system", actorId: "crosssignal-outcome-v1", payload: { assessmentLabel: "correlated", metricName: "activation_72h" }, occurredAt: assessedAt }),
+      nextTraceEvent({ workspaceId: input.workspaceId, traceId: trace.id, eventType: "trace.assessed", priorState: "observing", currentState: "assessed", actorType: "system", actorId: "crosssignal-outcome-fixture-v1", payload: { observationId, assessmentId, assessmentLabel: "correlated", outcomeRef: definition.id }, occurredAt: assessedAt }),
+    ]);
+    const outcomeEventBase = authorityEvents[authorityEvents.length - 1].sequence + 1;
+    outcomeEvents.forEach((event: Awaited<ReturnType<typeof nextTraceEvent>>, index: number) => {
+      event.sequence = outcomeEventBase + index;
+      event.idempotencyKey = `${trace.id}:${event.eventType}:${event.sequence}`;
     });
-    assessedEvent.sequence = terminalEvent.sequence + 1;
-    assessedEvent.idempotencyKey = `${trace.id}:trace.assessed:${assessedEvent.sequence}`;
     statements.push(
+      traceEventStatement(outcomeEvents[0]),
       d1
         .prepare(`INSERT INTO outcome_observations (
           id, workspace_id, trace_id, definition_id, source_evidence_id,
@@ -1178,6 +1340,7 @@ export async function authorizeAndExecute(input: {
           observation.sha256,
           assessedAt,
         ),
+      traceEventStatement(outcomeEvents[1]),
       d1
         .prepare(`INSERT INTO outcome_assessments (
           id, workspace_id, trace_id, definition_id, assessment_version,
@@ -1193,11 +1356,12 @@ export async function authorizeAndExecute(input: {
           "One activation followed the intervention; no causal claim is made.",
           assessment.sha256,
         ),
+      traceEventStatement(outcomeEvents[2]),
       d1
         .prepare(`UPDATE flight_traces SET current_state = 'assessed', updated_at = ?
           WHERE id = ? AND workspace_id = ? AND current_state = 'observing'`)
         .bind(assessedAt, trace.id, input.workspaceId),
-      traceEventStatement(assessedEvent),
+      traceEventStatement(outcomeEvents[3]),
     );
   }
 
@@ -1205,6 +1369,15 @@ export async function authorizeAndExecute(input: {
     await d1.batch(statements);
   } catch (error) {
     const message = String(error);
+    if (message.includes("l04_stale_authority_control")
+      || message.includes("l04_missing_authority_control")
+      || message.includes("l04_trace_authority_projection_mismatch")) {
+      throw new Error(message.includes("l04_stale_authority_control")
+        ? "l04_stale_authority_control"
+        : message.includes("l04_missing_authority_control")
+          ? "l04_missing_authority_control"
+          : "l04_trace_authority_projection_mismatch");
+    }
     if (
       message.includes("l08_stale_or_superseded_intent") ||
       message.includes("l08_trace_execution_projection_mismatch")

@@ -231,6 +231,208 @@ export function isSha256(value: unknown): value is string {
   return typeof value === "string" && SHA256_PATTERN.test(value);
 }
 
+export const AUTHORITY_CONTROL_REASONS = [
+  "workspace_initialized",
+  "migration_backfill",
+  "owner_transition",
+] as const;
+
+export type AuthorityControlReason = (typeof AUTHORITY_CONTROL_REASONS)[number];
+
+export type AuthorityControlEvent = {
+  id: string;
+  workspaceId: string;
+  sequence: number;
+  controlKind: "kill_switch";
+  priorState: boolean | null;
+  currentState: boolean;
+  actorUserId: string;
+  reasonCode: AuthorityControlReason;
+  idempotencyKey: string;
+  payloadJson: string;
+  contentHash: string;
+  occurredAt: string;
+};
+
+export async function sealAuthorityControlEvent(input: Omit<
+  AuthorityControlEvent,
+  "controlKind" | "payloadJson" | "contentHash"
+>): Promise<AuthorityControlEvent> {
+  invariant(input.id.trim().length > 0, "authority event id is required");
+  invariant(input.workspaceId.trim().length > 0, "authority workspace is required");
+  invariant(Number.isInteger(input.sequence) && input.sequence >= 1, "authority sequence is invalid");
+  invariant(input.sequence === 1 ? input.priorState === null : typeof input.priorState === "boolean", "authority prior state is invalid");
+  invariant(typeof input.currentState === "boolean", "authority current state is invalid");
+  invariant(input.sequence === 1 || input.priorState !== input.currentState, "authority transition is a no-op");
+  invariant(input.actorUserId.trim().length > 0, "authority actor is required");
+  invariant(AUTHORITY_CONTROL_REASONS.includes(input.reasonCode), "authority reason is invalid");
+  invariant(input.idempotencyKey.trim().length > 0, "authority idempotency key is required");
+  invariant(Number.isFinite(Date.parse(input.occurredAt)), "authority event time is invalid");
+
+  const sealed = await sealCanonical({
+    actorUserId: input.actorUserId,
+    controlKind: "kill_switch",
+    currentState: input.currentState,
+    eventId: input.id,
+    occurredAt: input.occurredAt,
+    priorState: input.priorState,
+    reasonCode: input.reasonCode,
+    sequence: input.sequence,
+    workspaceId: input.workspaceId,
+  });
+  return {
+    ...input,
+    controlKind: "kill_switch",
+    payloadJson: sealed.canonicalJson,
+    contentHash: sealed.sha256,
+  };
+}
+
+export async function validatePersistedAuthorityControlEvent(
+  event: AuthorityControlEvent,
+): Promise<string[]> {
+  try {
+    const resealed = await sealAuthorityControlEvent({
+      id: event.id,
+      workspaceId: event.workspaceId,
+      sequence: event.sequence,
+      priorState: event.priorState,
+      currentState: event.currentState,
+      actorUserId: event.actorUserId,
+      reasonCode: event.reasonCode,
+      idempotencyKey: event.idempotencyKey,
+      occurredAt: event.occurredAt,
+    });
+    const errors: string[] = [];
+    if (event.controlKind !== "kill_switch") errors.push("authority control kind is invalid");
+    if (event.payloadJson !== resealed.payloadJson) errors.push("authority payload does not match its fields");
+    if (event.contentHash !== resealed.contentHash) errors.push("authority payload hash is invalid");
+    return errors;
+  } catch (error) {
+    return [`authority event cannot be resealed: ${error instanceof Error ? error.message : String(error)}`];
+  }
+}
+
+export const L04_PROJECTION_DETAIL_ALLOWLIST = {
+  trace: ["assessmentLabel", "authorityControlEventRef", "effectRef", "intentRef", "outcomeRef"],
+  context: ["manifestHash", "sourceCount"],
+  graph: ["attempt", "executionMode", "graphVersion", "handlerVersion", "nodeKey", "outputHash"],
+  intent: ["effectRef", "grantRef", "intentVersion", "policyRef", "policyVersion", "supersededByIntentRef", "supersedesIntentRef"],
+  policy: ["intentRef", "policyVersion", "verdict"],
+  approval: ["decision", "effectRef", "expiresAt", "intentRef", "policyRef"],
+  effect: ["authorityControlEventRef", "authorityControlHash", "authorityControlSequence", "effectRef", "errorCode", "providerMode", "retryAttempted"],
+  outcome: ["assessmentLabel", "metricName"],
+} as const;
+
+export type TraceSubjectType = keyof typeof L04_PROJECTION_DETAIL_ALLOWLIST;
+
+export type PersistedTraceEventRow = {
+  id: string;
+  workspaceId: string;
+  traceId: string;
+  sequence: number;
+  eventType: string;
+  subjectType: TraceSubjectType;
+  subjectId: string;
+  priorState: string | null;
+  currentState: string;
+  actorType: "human" | "system" | "agent" | "adapter";
+  actorId: string | null;
+  payloadJson: string;
+  payloadHash: string;
+  occurredAt: string;
+};
+
+export type RedactedTraceEvent = {
+  id: string;
+  sequence: number;
+  eventType: string;
+  subjectType: TraceSubjectType;
+  subjectRef: string;
+  priorState: string | null;
+  currentState: string;
+  actorType: PersistedTraceEventRow["actorType"];
+  actorDisplay: string;
+  occurredAt: string;
+  payloadHash: string;
+  details: Record<string, JsonValue>;
+};
+
+const ACTOR_DISPLAY: Record<PersistedTraceEventRow["actorType"], string> = {
+  human: "Workspace owner",
+  system: "CrossSignal system",
+  agent: "Bounded reasoning agent",
+  adapter: "Labeled adapter",
+};
+
+const L04_KNOWN_EVENT_TYPES = new Set([
+  "trace.collecting", "trace.context_frozen", "trace.reasoning", "trace.awaiting_approval",
+  "trace.executing", "trace.observing", "trace.assessed", "trace.failed", "trace.indeterminate",
+  "graph.initialized", "graph.node_pending", "graph.node_claimed", "graph.node_recovered",
+  "graph.node_succeeded", "graph.node_failed",
+  "intent.drafted", "intent.sealed", "intent.policy_evaluated", "intent.approval_pending",
+  "intent.approved", "intent.consumed", "intent.superseded",
+  "policy.unevaluated", "policy.decided",
+  "approval.pending", "approval.approved", "approval.consumed",
+  "effect.reserved", "effect.dispatching", "effect.confirmed", "effect.failed", "effect.indeterminate",
+  "outcome.preregistered", "outcome.observed", "outcome.assessed",
+]);
+
+export async function projectFlightTraceEvents(input: {
+  workspaceId: string;
+  traceId: string;
+  rows: readonly PersistedTraceEventRow[];
+}): Promise<RedactedTraceEvent[]> {
+  const rows = [...input.rows].sort((left, right) => left.sequence - right.sequence);
+  const subjectHeads = new Map<string, string>();
+  const projection: RedactedTraceEvent[] = [];
+
+  try {
+    for (let index = 0; index < rows.length; index += 1) {
+      const row = rows[index];
+      invariant(row.workspaceId === input.workspaceId && row.traceId === input.traceId, "l04_trace_projection_incomplete");
+      invariant(row.sequence === index + 1, "l04_trace_projection_incomplete");
+      invariant(Number.isFinite(Date.parse(row.occurredAt)), "l04_trace_projection_incomplete");
+      const payload = JSON.parse(row.payloadJson) as unknown;
+      invariant(await sha256Hex(row.payloadJson) === row.payloadHash, "l04_trace_projection_incomplete");
+      invariant(stableStringify(payload) === row.payloadJson, "l04_trace_projection_incomplete");
+
+      const subjectKey = `${row.subjectType}:${row.subjectId}`;
+      const priorHead = subjectHeads.get(subjectKey);
+      invariant(priorHead === undefined ? row.priorState === null : row.priorState === priorHead, "l04_trace_projection_incomplete");
+      subjectHeads.set(subjectKey, row.currentState);
+
+      const record = payload && typeof payload === "object" && !Array.isArray(payload)
+        ? payload as Record<string, unknown>
+        : {};
+      const allowlist = L04_KNOWN_EVENT_TYPES.has(row.eventType)
+        ? L04_PROJECTION_DETAIL_ALLOWLIST[row.subjectType] ?? []
+        : [];
+      const details: Record<string, JsonValue> = {};
+      for (const key of allowlist) {
+        if (record[key] !== undefined) details[key] = normalizedJson(record[key], `payload.${key}`);
+      }
+      projection.push({
+        id: row.id,
+        sequence: row.sequence,
+        eventType: row.eventType,
+        subjectType: row.subjectType,
+        subjectRef: row.subjectId,
+        priorState: row.priorState,
+        currentState: row.currentState,
+        actorType: row.actorType,
+        actorDisplay: ACTOR_DISPLAY[row.actorType],
+        occurredAt: row.occurredAt,
+        payloadHash: row.payloadHash,
+        details,
+      });
+    }
+    return projection;
+  } catch {
+    throw new Error("l04_trace_projection_incomplete");
+  }
+}
+
 export type ReasoningRecoveryNode = {
   id: string;
   nodeKey: string;

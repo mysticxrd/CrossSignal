@@ -1,90 +1,111 @@
 ---
-type: build-evidence
+type: stage-primary-output
 stage: 03_build
-unit: fixture-runtime-source-of-truth-correction
-finding: L20
-status: proposed
+unit: append-only-authority-control-history-and-trace-projection-completeness
+status: ready-for-review
+truth_mode: executable-fixture
+created: 2026-08-25
 ---
 
-# L20 durable fixture ownership build evidence
+# L04 build evidence
 
 ## Outcome
 
-The durable product tree is now the sole source of runtime fixture identity and
-fixed-graph topology. Numbered factory fixtures are projections used only by
-the governed run; application code and durable Flight Recorder tests no longer
-import them. Persisted fixture keys and truth labels remain unchanged.
+Stage 03 implements L04 as one durable vertical slice. Workspace kill-switch
+authority now comes only from resealed append-only control events. Each effect
+is immutably bound to the exact latest unengaged event used at reservation, and
+the existing authenticated snapshot returns every durable trace event in one
+contiguous, tenant-bound, allowlisted projection.
 
-## Accepted input bindings
+No HTTP endpoint, route, middleware, worker, authentication protocol, provider
+behavior, or graph topology was added or changed. L14 remains out of scope.
+
+## Durable implementation
+
+- Migration `0008_l04_authority_history_trace_projection.sql` creates canonical
+  control history and exact effect-binding tables, blocks ambiguous non-FIXTURE
+  migration, reseeds only bounded FIXTURE traces, freezes legacy heads, and
+  installs append-only, sequence, actor, stale-head, reservation, and executing
+  trace guards.
+- Compatibility deterministically bootstraps every valid legacy head once,
+  preserving its workspace, value, actor, and time. New workspaces append a
+  `workspace_initialized` event directly.
+- Owner pause/resume requests append real transitions, return the existing head
+  for a same-value request, and map a losing concurrent successor to
+  `l04_stale_authority_control`.
+- Graph handoff, replacement, approval, effect, consumption, and outcome writes
+  append complete subject-state histories in the same durable batches as their
+  authority rows.
+- The snapshot reseals control history and trace payloads, validates global and
+  per-subject order, redacts actors, applies subject detail allowlists, and
+  returns unknown event types with empty details.
+- The reviewer UI labels and renders the complete collection as a
+  `Persisted FIXTURE trace` plus the surviving workspace authority history.
+
+## Acceptance evidence
+
+| Contract | Executable evidence |
+|---|---|
+| L04-AC01..04 | Canonical resealing, off/on/off append history, no-op behavior, immutable guards, deterministic legacy bootstrap, and stale-writer behavior |
+| L04-AC05..06 | Complete intent/policy/approval/effect subject chains and exact effect/control binding across pause-versus-reservation schedules |
+| L04-AC07..09 | Contiguous complete projection, tenant binding, stable hash validation, closed actor labels, detail allowlists, unknown-event empty details, and serialized leakage probes |
+| L04-AC10 | Bounded FIXTURE reset removes the trace/effect while all workspace control events survive |
+| L04-AC11 | The full L08/L06 data/build suite remains green with unchanged truth/provider labels and graph topology |
+| L04-AC12 | Diff and verifier reject route, endpoint, middleware, worker, or other L14 transport entry |
+
+All twelve accepted IDs, all twelve negative IDs, three deterministic race
+schedules, six migration cases, the 34-event reference trace, and the mixed
+tenant collision fixture validate from the durable copied fixture.
+
+## Negative evidence
+
+- Authority event update/delete and legacy head update/delete fail with stable
+  L04 errors; actor, prior-state, sequence, time, and no-op guards prevent forks.
+- Missing, malformed, hash-mismatched, or ambiguous control history fails before
+  authority can be granted.
+- A direct effect row is inert until an exact current unengaged control binding
+  exists; the first reserved event and executing trace are database guarded.
+- Pause winning after the runtime recheck rolls back grant, effect, binding, and
+  trace writes. A completed reservation retains its earlier exact proof after a
+  later pause.
+- Projection hash, sequence, subject-chain, or tenant drift fails as
+  `l04_trace_projection_incomplete`; raw payloads, idempotency keys, actor IDs,
+  recipient addresses, message body, provider body, and secret-like content are
+  absent from the client projection.
+
+## Changed product surface
+
+| Surface | Result |
+|---|---|
+| `db/flight-recorder-schema.ts` | Two L04 tables, keys, checks, and indexes |
+| `drizzle/0008_*`, `drizzle/meta/*` | Generated schema metadata plus hardened migration assertions and triggers |
+| `db/migrations.ts` | Required-object inventory and deterministic idempotent legacy bootstrap |
+| `db/flight-recorder-contracts.ts` | Canonical control sealing/validation and ordered redacted projection |
+| `db/flight-recorder-graph.ts`, `db/flight-recorder.ts` | Complete authority subject writers, append transitions, exact effect binding, fail-closed reads |
+| `app/flight-recorder-types.ts`, `app/CrossSignalApp.tsx` | Client-safe history types and minimal persisted trace/history review UI |
+| `tests/flight-recorder-*.test.mjs`, `tests/fixtures/*` | Durable fixture parity, migration/runtime/race/reset/redaction coverage and regressions |
+
+## Declared input hashes
 
 | Input | SHA-256 |
 |---|---|
-| `factory/03_build/CONTEXT.md` | `a07fae976105a3828daf955bd690ca0aae5f6876befed3f081148b6dd739072f` |
-| `factory/02_data/output/DATA_PACKAGE.md` | `c59eca1d8f968d7b103f9f2bebc7bd44e066d52baf7747220078c077273b33da` |
-| `factory/02_data/output/HUMAN_GATE.md` | `5a1b649ae622d76f0f960e8a7da2afb6964004978393ec8e0273a8f5a5d2adbc` |
+| `factory/03_build/CONTEXT.md` | `e0134c4e73046a6e3dbd87b3af6b123d8cb0b6e7e0a00b8d184705fe50021524` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `a503213bfcccd597700fe6934c365855d90d422d9c03b015bf10b2a96438979d` |
+| `factory/02_data/output/HUMAN_GATE.md` | `d9e7efd6b2084026e5ee8c7a993670df2fba89539da0bc51c460f272e2b8aaa9` |
+| `factory/02_data/fixtures/l04-authority-trace.fixture.mjs` | `cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
+| `factory/_lib/verify-kit.mjs` | `b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c` |
+| `factory/_lib/factory-state.mjs` | `72870904445d54f01eea443ed5a5de1b2af2fd19df66e085a52bf47982594d28` |
+| `package.json` | `c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972` |
+| `drizzle.config.ts` | `3ec3fe6a06a9be54bbd980ec2fc72b014bfdc7d30b5c92d02aa0aa3c95e39b1a` |
+| `eslint.config.mjs` | `6090bd544865638d8c77a3443f037b3b289596a7ec1e1dccc3a13677e6d1ca83` |
+| `tsconfig.json` | `379054f6cec60ebd0e18c47a3ce72b2cc1b3f7abd0037c668e87cb2070891147` |
 
-## Durable output bindings
+## Observed baseline hashes
 
-| Output | SHA-256 |
-|---|---|
-| `db/flight-recorder-demo.ts` | `40e489216a9dcb2d5ec9721ab70eae85c40cf39173a0e72a34dceaa63b6dd1ae` |
-| `db/flight-recorder-graph-definition.ts` | `31c0e55b72d2e4712b94c77e4e7cbd7b7d92638f9e0178979d16e952e4d30b39` |
-| `db/flight-recorder-graph.ts` | `248137ac1b37e252895ae4d4138a12062bd5c3bae8244c978f266c92de120cfd` |
-| `db/flight-recorder.ts` | `5f173de447f77c2eafa6aad607b3a4ce5d43836523453be292fb8961d5a5659a` |
-| `tests/fixtures/persisted-graph-executor.fixture.mjs` | `3c9f911d80704616ef926aff69e85334514ebf620021553845da738f4e2580f9` |
-| `tests/flight-recorder-data.test.mjs` | `09ccb1926136f3611d618f62742be8e08a2ac399d2a67e70515af7c381d25624` |
-| `tests/flight-recorder-build.test.mjs` | `0997721d66d69d8b66ee79f577ac1047a7d5af6f01ccba07d9fafa045c55b2a8` |
-| `tests/flight-recorder-release.test.mjs` | `4e406531692b62dfd506099e92107b05935bc191ac2795bb036de956b76b26d8` |
-
-## Implementation proof
-
-- `db/flight-recorder-graph-definition.ts` owns the graph, handler, artifact
-  versions and the ordered six-node registry.
-- Runtime execution and precomputed demo rows both derive from that registry;
-  the durable product contains exactly one registry definition.
-- Public TypeScript names no longer contain `STAGE_03_`; persisted values remain
-  `onboarding-rescue:stage03-v1` and `onboarding-rescue-stage03-v1` for row
-  compatibility.
-- The fourteen L06 direct-database attack vectors now live under
-  `tests/fixtures/` and survive factory seal/archive transitions.
-- Durable data, build, and release tests read durable product truth. They have
-  no numbered fixture, active factory evidence, or archive import.
-- Seed and runtime graph execution use one injectable runtime clock, preserving
-  deterministic lease behavior without changing production semantics.
-- Reset coverage still proves exact same-tenant FIXTURE deletion, cross-tenant
-  denial, and non-FIXTURE preservation through the existing authenticated
-  runtime boundary.
-
-## Executed verification
-
-| Check | Result |
-|---|---|
-| Durable Flight Recorder data/build/release suite | PASS — 66 tests, 0 failures |
-| Stage 02 executable import/projection/reset/seal cases | PASS — replayed by Stage 03 verifier |
-| Focused ESLint over all eight durable outputs | PASS — 0 errors |
-| Production `vinext build` | PASS — five environments built; route `/` emitted |
-| Product/test dependency scan | PASS — no active factory or archive imports |
-| Graph authority scan | PASS — one registry definition |
-| L04/L14 and migration scope | PASS — no endpoint, authority-history, or migration change |
-
-The repository-wide raw TypeScript diagnostic was also inspected. It remains
-unsuitable as an L20 gate because the project configuration includes excluded
-historical Eve sources and lacks the Cloudflare ambient declarations used by
-unmodified baseline files. It reported no error in any L20-owned product or
-test file. The production build and focused lint are the applicable compile and
-static checks for this stage.
-
-## Scope preservation
-
-No database migration, L04 authority-history implementation, L14 endpoint,
-archived release content, or benchmark stash was changed. The three benchmark
-stashes remain present and un-applied.
-
-## Human review requested
-
-Review the single graph definition, the durable fixture/test dependency
-direction, the persisted compatibility values and truth labels, and the exact
-reset/runtime test evidence. Stage 04 must not begin until this gate is
-accepted.
+The product baselines were read from the sealed L20 `HEAD` before Stage 03
+mutation. Their normalized hashes are the accepted values already recorded in
+the Stage 02 data package, including schema `aaf5a11d…`, contracts `5057dd60…`,
+runtime `5f173de4…`, graph `248137ac…`, migrations `7d7512db…`, UI
+`f764416e…`, data tests `09ccb192…`, and build tests `0997721d…`.

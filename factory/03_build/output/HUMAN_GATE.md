@@ -1,34 +1,29 @@
 ---
 type: human-gate
 stage: 03_build
-unit: fixture-runtime-source-of-truth-correction
 gate_status: closed
 decision: accepted
 reviewer: project-owner
-reviewed_at: 2026-08-25T00:07:28.3720439+05:30
-build_evidence_sha256: 58ad6f35dc65a5f82ef219d9cd01522cb282bc64a4de548e8134890689aba3d2
-verification_sha256: 725dcbbdca783739446e714fbaecf605f1662ca2b6d69c1d0cfc0ec87df5aadf
+reviewed_at: 2026-08-26T00:13:13.6686386+05:30
+build_evidence_sha256: 4115ea1b852b8cbebcd11cdd9da341b1406424a7140d68c7195ccfe36b5ac246
+verification_sha256: be0e44a282f52929a282bae5c034aff01ecfee81e9038067468cee9e80b8483a
 ---
 
-# L20 build human gate
+# Stage 03 human gate
 
-Stage 03 is complete and waiting for a human decision. Do not begin Stage 04
-until this record is closed with `decision: accepted`.
+The project owner accepted the bound Stage 03 build evidence and verification.
+This closes Stage 03 and authorizes Stage 04 verification only.
 
-## Review checklist
+## Review prompts
 
-- [x] The durable product, not a numbered factory fixture, owns fixture identity.
-- [x] Runtime and precomputed projections derive from one six-node graph definition.
-- [x] Persisted fixture keys, spending cap, and FIXTURE/TEST labels are preserved.
-- [x] Durable product tests remain runnable after the active factory is sealed.
-- [x] Exact reset scope and runtime persistence are proven through product tests.
-- [x] The fourteen L06 database-attack cases live under durable test fixtures.
-- [x] No migration, L04 authority-history, L14 endpoint, archive, or benchmark stash changed.
-- [x] `node factory/03_build/verify.mjs` passes against the hashes above.
+- Toggle pause off/on/off and confirm every real transition remains visible.
+- Confirm a same-value request appends nothing and a pause-winning race creates
+  no grant or effect.
+- Execute the exact TEST action and inspect its control-event binding.
+- Inspect the complete `Persisted FIXTURE trace` ordering and redacted actors.
+- Reset the FIXTURE trace and confirm workspace authority history survives.
+- Confirm no L14 endpoint or transport surface entered this release.
 
-## Reviewer record
+## Corrections
 
-- Decision: `accepted`
-- Reviewer: `project-owner`
-- Reviewed at: `2026-08-25T00:07:28.3720439+05:30`
-- Corrections: `none recorded`
+None recorded.

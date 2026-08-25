@@ -1,93 +1,83 @@
 ---
 type: stage-verification
 stage: 02_data
-unit: fixture-runtime-source-of-truth-correction
 status: passed
-verified_at: 2026-08-24T08:22:42.815Z
+verified_at: 2026-08-25T14:28:58.0677189+05:30
+command: node factory/02_data/verify.mjs
+exit_code: 0
 ---
 
-# L20 data-package verification
+# Stage 02 verification
+
+The accepted L04 specification is resolved into an executable data package and
+deterministic FIXTURE. All declared inputs are fresh, the fixture validates its
+authority and subject histories, the projection is complete and redacted, all
+accepted and negative IDs are covered, and no durable product path changed.
 
 ## Environment
 
-- Platform: Windows / PowerShell
-- Node: `v22.15.0`
-- Branch: `codex/l20-fixture-runtime-source-of-truth`
-- Sealed base: `bed7f21a19d3b71abc0e3c58e13fd8e30ed5a2dd`
-- Product mutations: none
-- Archive loads: none
-- Benchmark stash reads or mutations: none during Stage 02
-
-## Input bindings
-
-| Input | SHA-256 |
+| Property | Value |
 |---|---|
-| `factory/02_data/CONTEXT.md` | `98183d21218902525ead8bc31677e61e9010b04a1a6be5b862e5588337b1c547` |
-| `factory/01_spec/output/SPEC.md` | `2b4acd7fecccf0c952de54ca8ac81bcc3511353e27ed9d34e75640599bc40ca0` |
-| `factory/01_spec/output/HUMAN_GATE.md` | `74390b5ce66fa24d6d068decc2fb7105dbf49e164ccbda47a57fd608ba8b7bcb` |
-| `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
-| `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `db/flight-recorder-demo.ts` | `2d23a77f6ebea793650677872895c1376123a38bdeeec7f0dc6109a1bdbc08db` |
-| `db/flight-recorder.ts` | `2cea63997ca52a5404fb02287297371c0a32d17d53a28512f7147243c01c6b39` |
-| `db/flight-recorder-graph.ts` | `7ccfdf3bd101ec3152da9bf3eb3b366197e0fc7bc708a81ea24275e33d334061` |
-| `tests/flight-recorder-data.test.mjs` | `18ea70aead27579460bcf01157953a3f8337f3a5eafde523b9b55b36a774f2b1` |
-| `tests/flight-recorder-build.test.mjs` | `7c5be086037e7dcb293ea6e76db17297d38ae1542c07231024ebe53e00359974` |
-| `tests/flight-recorder-release.test.mjs` | `fda88e925e632e4d4aa25dc365712f2a14ae2074440d625c4974a145fe6c3b88` |
+| Platform | `win32` |
+| Architecture | `x64` |
+| Node | `v22.15.0` |
+| Working directory | repository root |
 
-## Output bindings
+## Command result
 
-| Output | SHA-256 |
+```text
+$ node factory/02_data/verify.mjs
+Stage 02 data verification passed.
+Declared inputs: 21
+Fixture: l04-authority-trace-v1
+Control events: 3
+Trace events/projected events: 34/34
+Race schedules: 3
+Migration cases: 6
+Acceptance/negative coverage: 12/12
+Durable product changes: none
+Human gate: open / pending
+```
+
+Exit code: `0`.
+
+## Verified artifact hashes
+
+| Artifact | Normalized SHA-256 |
 |---|---|
-| `factory/02_data/output/DATA_PACKAGE.md` | `c59eca1d8f968d7b103f9f2bebc7bd44e066d52baf7747220078c077273b33da` |
-| `factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs` | `ca07b39075bb92c760b4f5876b46b80268c4acdbe560dbb6c160cf73bb2b464e` |
-| `factory/02_data/verify.mjs` | `d323ccb7ce7a197ad9fa0aa1fcc05759696a948389789e1d029247933432d289` |
+| `factory/02_data/CONTEXT.md` | `5db9abd329345ef96b5c6bb0ea3714d693610c6e3263386b4875b6f4de03ffe3` |
+| `factory/02_data/verify.mjs` | `f7e897e1a8ec5808189528a201824e6dbc25472bcc917070ca0b671a921b9ec7` |
+| `factory/02_data/fixtures/l04-authority-trace.fixture.mjs` | `cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `a503213bfcccd597700fe6934c365855d90d422d9c03b015bf10b2a96438979d` |
+| `factory/02_data/output/HUMAN_GATE.md` (open) | `82f277c3cf8f04b14ddf9bb7e851240de35643c744a1c5ac096faacf9914ee31` |
 
-## Command evidence
+The complete 21-input hash set is recorded in `DATA_PACKAGE.md` and recomputed
+by the verifier.
 
-### Development failures
+## Fixture assertions
 
-- Command: `node factory/02_data/verify.mjs`
-- Exit code: `1`
-- First result: the named-error matcher anchored before Node's standard
-  `Error:` prefix. The matcher was corrected to require the exact L20 code and
-  separator within the standard error rendering.
-- Second result: projection extraction scanned all `nodeKey` occurrences in
-  `db/flight-recorder-graph.ts`, correctly triggering duplicate-node rejection.
-  Extraction was bounded to `REASONING_NODE_REGISTRY`; no case data or product
-  source changed.
+- Three canonical control events form off/on/off history with valid hashes,
+  gap-free workspace sequence, matching prior states, and no no-op event.
+- Thirty-four subject-bound trace events form valid trace, graph, intent,
+  policy, approval, effect, and outcome chains.
+- Reversed mixed-tenant input projects exactly the 34 primary-tenant events in
+  contiguous sequence order.
+- Serialized projection contains no raw payload, idempotency key, actor ID,
+  email address/body, recipient field, or bearer-token value.
+- Three race schedules and six migration cases are present.
+- All `L04-AC01..12` and `L04-N01..12` identifiers map to executable evidence.
+- The authorized Stage 03 map contains no endpoint, route, middleware, worker,
+  or new authentication surface.
 
-### Final executable verifier
+## Negative verification behavior
 
-- Command: `node factory/02_data/verify.mjs`
-- Exit code: `0`
-- Result: `status: passed`; 6 import cases, 5 projection mutations, 3 reset
-  cases, 1 seal-transition case, all 9 acceptance criteria, and 8 named errors.
-- All 12 package bindings were current, including the executable fixture hash.
-
-### Diff hygiene and factory state
-
-- Command: `git diff --check -- factory/02_data`
-- Exit code: `0`
-- Result: no whitespace errors.
-- Command: `node factory/status.mjs`
-- Exit code: `0`
-- Result before this record existed: Stage 01 complete/accepted/fresh; Stage 02
-  active and missing only `VERIFY.md`; Stages 03-05 `never-run`.
-
-## Negative evidence
-
-- Product → factory, durable test → numbered fixture, and active archive
-  dependencies fail with distinct named codes.
-- Fixture key, graph version, truth mode, duplicate node, and predecessor drift
-  each fail closed.
-- Cross-tenant reset deletes zero; non-FIXTURE reset deletes zero.
-- Fixture source secret scan passed.
-- Stage 01 gate is closed and accepted; package inputs are current.
-- L04, L14, migrations, product code, archives, and benchmark stashes were not
-  changed.
+The verifier fails closed on stale upstream hashes; undeclared product inputs;
+missing schema objects or stable error codes; control/subject chain gaps;
+payload-hash mismatch; cross-tenant projection; redaction leakage; missing
+migration/race/criterion coverage; L14 scope entry; or any Stage 02 product-tree
+modification.
 
 ## Result
 
-`status: passed`. The executable data package is ready for human review.
-Verification opens but does not accept the Stage 02 gate; Stage 03 remains
-prohibited until the current package and verification hashes are accepted.
+`status: passed`. Verification opens the Stage 02 human gate and does not accept
+it.

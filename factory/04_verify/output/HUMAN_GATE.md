@@ -1,35 +1,40 @@
 ---
 type: human-gate
 stage: 04_verify
-unit: fixture-runtime-source-of-truth-correction
+unit: append-only-authority-control-history-and-trace-projection-completeness
 gate_status: closed
 decision: accepted
 reviewer: project-owner
-reviewed_at: 2026-08-25T00:36:13.1974280+05:30
-primary_sha256: 430438f0b2149e3e695ce585a64919f1b07ced2ef766c3531578f36ef8f29b53
-verification_sha256: be1d025a9be4c989d989037e0dea4f933e681faa2592f432d8df3699eede9989
+reviewed_at: 2026-08-26T00:38:43.1970271+05:30
+verification_report_sha256: 08517d722b9da7140174549b3279bbc9d4bd0335ec21237b6efb7212c8cb4b7a
+verification_sha256: 03b5076c97c56d00daae7b7bb2ff13e12d07a14255b1cc8b0e714c6531d84b9a
 ---
 
-# L20 verification human gate
+# Stage 04 human gate
 
-Stage 04 verification is complete and waiting for a human decision. Do not
-begin Stage 05 until this record is closed with `decision: accepted`.
+The project owner accepted the bound Stage 04 verification report and evidence.
+This closes Stage 04 and authorizes Stage 05 shipping only.
 
 ## Review checklist
 
-- [x] The accepted Stage 03 gate and evidence hashes are fresh.
-- [x] All eight durable L20 outputs match their reviewed hashes.
-- [x] The durable product tests pass: 66 passed and 0 failed.
-- [x] Focused lint and the production Vinext build pass.
-- [x] Durable outputs contain no active-factory or archive dependency.
-- [x] There is one graph registry definition and no stage-numbered public name.
-- [x] Compatibility identity, FIXTURE/TEST labels, and all 14 durable attack IDs remain intact.
-- [x] No L04, L14, migration, archive, or benchmark-stash scope entered.
-- [x] `node factory/04_verify/verify.mjs` passes against the hashes above.
+- [x] The accepted Stage 03 gate and its bound evidence hashes are fresh.
+- [x] All twelve L04 acceptance criteria have independent schema, runtime,
+  fixture, test, and reviewer-visible evidence.
+- [x] All twelve negative cases fail closed without partial durable state.
+- [x] Three authority races, six migration schedules, the 34-event projection,
+  tenant collision, redaction, and bounded reset evidence are sufficient.
+- [x] The Stage 01 compatibility correction is pure and import-safe and does
+  not change the accepted specification or product behavior.
+- [x] The 75-test independent suite, focused ICM contract, lint, accepted Stage
+  03 verifier, production build, and Stage 04 verifier are reproducible.
+- [x] The deferred end-of-pipeline ICM state case is acceptable for Stage 05.
+- [x] No L14 route, endpoint, middleware, worker, authentication, provider, or
+  graph-topology surface entered this release.
+- [x] All three benchmark stashes remain preserved.
 
 ## Reviewer record
 
 - Decision: `accepted`
 - Reviewer: `project-owner`
-- Reviewed at: `2026-08-25T00:36:13.1974280+05:30`
+- Reviewed at: `2026-08-26T00:38:43.1970271+05:30`
 - Corrections: `none recorded`

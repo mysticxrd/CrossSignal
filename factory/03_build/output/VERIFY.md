@@ -1,40 +1,51 @@
 ---
-type: verification-record
+type: stage-verification
 stage: 03_build
-unit: fixture-runtime-source-of-truth-correction
+unit: append-only-authority-control-history-and-trace-projection-completeness
 status: passed
+verified_at: 2026-08-25T14:56:07+05:30
+environment: Windows; Node 22+; node:sqlite; vinext production build
 ---
 
-# L20 Stage 03 verification record
+# Stage 03 verification
 
-Run `node factory/03_build/verify.mjs` from the repository root.
+## Result
 
-The verifier fails closed on:
+Passed. The governed L04 product surface implements canonical append-only
+workspace authority history, exact effect binding, complete subject history,
+and a complete redacted ordered snapshot/UI projection without entering L14.
 
-- drift in the accepted Stage 02 package/gate or either shared reference;
-- drift in any of the eight durable Stage 03 outputs;
-- an unaccepted Stage 02 gate;
-- any failing import, projection, reset, or seal-transition case;
-- a product/archive or durable-test/numbered-fixture dependency;
-- more than one durable graph registry definition;
-- a remaining stage-numbered public export;
-- loss of any of the fourteen durable L06 database-attack cases;
-- any failure in the 66-test durable Flight Recorder suite;
-- focused lint failure; or
-- a missing, stale, or prematurely closed Stage 03 human gate.
+## Commands
 
-Expected passing summary:
+| Command | Exit | Summary |
+|---|---:|---|
+| `node node_modules/tsx/dist/cli.mjs --test tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs` | 0 | 63 tests passed; L04 plus L08/L06 regression coverage green |
+| `node node_modules/eslint/bin/eslint.js app/CrossSignalApp.tsx app/flight-recorder-types.ts db/flight-recorder-schema.ts db/flight-recorder-contracts.ts db/flight-recorder-graph.ts db/flight-recorder.ts db/migrations.ts tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs` | 0 | No lint findings |
+| `node node_modules/vinext/dist/cli.js build` | 0 | Five build environments and `/` dynamic route completed |
+| `node factory/03_build/verify.mjs` | 0 | Inputs, accepted gate, fixture parity, schema/metadata, guards, projection/redaction, scope, tests, lint, and build passed |
 
-```text
-Stage 03 build verification passed.
-Bound inputs: 5
-Bound durable outputs: 8
-Stage 02 cases: 16
-Durable product tests: 66 passed
-Graph authority definitions: 1
-```
+The first sandboxed production-build attempt was denied with Windows `EPERM`
+when Vite followed the checked dependency junction to write `.vite-temp`. The
+identical build was rerun with workspace permission and passed; no dependency or
+source mutation was used to bypass the failure.
 
-The production build is separately recorded in `BUILD_EVIDENCE.md` because its
-Vite cache writes depend on the installed workspace dependency location. The
-verifier itself remains deterministic and read-only apart from isolated test
-databases created by the product suite.
+## Verified invariants
+
+- Stage 02 gate is closed/accepted and its package/fixture hashes are unchanged.
+- The durable fixture is byte-equivalent to accepted Stage 02 fixture truth.
+- Both L04 tables, generated metadata, migration assertions, indexes, and all
+  required append-only/exact-binding/runtime-boundary triggers exist.
+- Runtime contains no legacy kill-switch SELECT/UPDATE authority path.
+- Control and trace histories are resealed, gap-free, tenant-bound, and complete.
+- Every projected field is closed; raw payload/idempotency/actor/recipient/body/
+  provider/secret material remains server-side.
+- Pause-wins and reservation-wins schedules preserve atomicity and exact proof.
+- FIXTURE reset preserves workspace authority history.
+- No route, endpoint, middleware, worker, provider, or graph-topology surface was
+  added in Stage 03.
+
+## Evidence hashes
+
+The human gate binds the normalized SHA-256 of the final `BUILD_EVIDENCE.md` and
+this `VERIFY.md`. Product hashes will be rebound by later governed stages after
+the Stage 03 human decision.

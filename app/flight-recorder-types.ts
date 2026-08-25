@@ -2,6 +2,32 @@ export type ExecutionScenario = "confirmed" | "failed" | "indeterminate";
 
 export type TruthMode = "LIVE" | "TEST" | "FIXTURE";
 
+export type AuthorityControlHistoryItem = {
+  id: string;
+  sequence: number;
+  priorState: boolean | null;
+  currentState: boolean;
+  reasonCode: "workspace_initialized" | "migration_backfill" | "owner_transition";
+  actorDisplay: "Workspace owner";
+  occurredAt: string;
+  contentHash: string;
+};
+
+export type TraceEventProjection = {
+  id: string;
+  sequence: number;
+  eventType: string;
+  subjectType: "trace" | "context" | "graph" | "intent" | "policy" | "approval" | "effect" | "outcome";
+  subjectRef: string;
+  priorState: string | null;
+  currentState: string;
+  actorType: "human" | "system" | "agent" | "adapter";
+  actorDisplay: string;
+  occurredAt: string;
+  payloadHash: string;
+  details: Record<string, string | number | boolean | null | Array<unknown> | Record<string, unknown>>;
+};
+
 export type FlightRecorderSnapshot = {
   workspaceId: string;
   traceId: string;
@@ -91,6 +117,8 @@ export type FlightRecorderSnapshot = {
     sourceCount: number;
     manifestHash: string;
   };
+  authorityControlHistory: AuthorityControlHistoryItem[];
+  traceEvents: TraceEventProjection[];
   traceEventCount: number;
 };
 

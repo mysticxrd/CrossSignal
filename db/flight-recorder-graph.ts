@@ -193,7 +193,7 @@ async function eventStatement(input: {
   traceId: string;
   sequence: number;
   eventType: string;
-  subjectType: "trace" | "graph";
+  subjectType: "trace" | "graph" | "intent" | "policy";
   subjectId: string;
   priorState: string | null;
   currentState: string;
@@ -940,25 +940,45 @@ async function completeHandoff(input: GraphRequest, scope: Awaited<ReturnType<ty
     now,
   });
   const sequence = await nextSequence(input.workspaceId, input.traceId);
-  const event = await eventStatement({
+  const handoffEvent = (
+    offset: number,
+    eventType: string,
+    subjectType: "trace" | "intent" | "policy",
+    subjectId: string,
+    priorState: string | null,
+    currentState: string,
+    actorType: "human" | "system" | "agent",
+    actorId: string,
+    payload: Record<string, unknown>,
+  ) => eventStatement({
     workspaceId: input.workspaceId,
     traceId: input.traceId,
-    sequence,
-    eventType: "graph.completed",
-    subjectType: "trace",
-    subjectId: input.traceId,
-    priorState: "reasoning",
-    currentState: "awaiting_approval",
-    actorType: "system",
-    actorId: "crosssignal-authority-v1",
-    payload: {
-      graphVersion: REASONING_GRAPH_VERSION,
-      intentId: bundle.intent.id,
-      sourceArtifactId: synth.artifact_id,
-    },
-    idempotencyKey: `${input.traceId}:${REASONING_GRAPH_VERSION}:completed`,
+    sequence: sequence + offset,
+    eventType,
+    subjectType,
+    subjectId,
+    priorState,
+    currentState,
+    actorType,
+    actorId,
+    payload,
+    idempotencyKey: `${input.traceId}:${bundle.intent.id}:${eventType}`,
     occurredAt: now,
   });
+  const events = await Promise.all([
+    handoffEvent(0, "intent.drafted", "intent", bundle.intent.id, null, "drafted", "agent", "crosssignal-synthesizer-v1", { intentVersion: 1 }),
+    handoffEvent(1, "intent.sealed", "intent", bundle.intent.id, "drafted", "sealed", "system", "crosssignal-authority-v1", { intentVersion: 1, policyVersion: bundle.intent.policyVersion }),
+    handoffEvent(2, "policy.unevaluated", "policy", bundle.policyDecision.id, null, "unevaluated", "system", "deterministic-policy-v1", { intentRef: bundle.intent.id }),
+    handoffEvent(3, "policy.decided", "policy", bundle.policyDecision.id, "unevaluated", bundle.policyDecision.verdict, "system", "deterministic-policy-v1", { intentRef: bundle.intent.id, policyVersion: bundle.intent.policyVersion, verdict: bundle.policyDecision.verdict }),
+    handoffEvent(4, "intent.policy_evaluated", "intent", bundle.intent.id, "sealed", "policy_evaluated", "system", "deterministic-policy-v1", { policyRef: bundle.policyDecision.id }),
+    handoffEvent(5, "intent.approval_pending", "intent", bundle.intent.id, "policy_evaluated", "approval_pending", "system", "crosssignal-authority-v1", {}),
+    handoffEvent(6, "trace.awaiting_approval", "trace", input.traceId, "reasoning", "awaiting_approval", "system", "crosssignal-authority-v1", {
+      graphVersion: REASONING_GRAPH_VERSION,
+      intentId: bundle.intent.id,
+      intentRef: bundle.intent.id,
+      sourceArtifactId: synth.artifact_id,
+    }),
+  ]);
   try {
     await getD1().batch([
       intentStatement(bundle.intent),
@@ -968,7 +988,7 @@ async function completeHandoff(input: GraphRequest, scope: Awaited<ReturnType<ty
           WHERE workspace_id = ? AND id = ? AND current_state = 'reasoning'
             AND active_intent_id = ?`)
         .bind(now, input.workspaceId, input.traceId, bundle.intent.id),
-      event,
+      ...events,
     ]);
   } catch (error) {
     const trace = await getD1()

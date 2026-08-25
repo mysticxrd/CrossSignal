@@ -41,6 +41,77 @@ export const workspaceAuthorityControls = sqliteTable(
   ],
 );
 
+export const workspaceAuthorityControlEvents = sqliteTable(
+  "workspace_authority_control_events",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    sequence: integer("sequence").notNull(),
+    controlKind: text("control_kind", { enum: ["kill_switch"] }).notNull(),
+    priorState: integer("prior_state", { mode: "boolean" }),
+    currentState: integer("current_state", { mode: "boolean" }).notNull(),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    reasonCode: text("reason_code", {
+      enum: ["workspace_initialized", "migration_backfill", "owner_transition"],
+    }).notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    payloadJson: text("payload_json").notNull(),
+    contentHash: text("content_hash").notNull(),
+    occurredAt: text("occurred_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_authority_control_events_workspace_id").on(
+      table.workspaceId,
+      table.id,
+    ),
+    uniqueIndex("idx_authority_control_events_sequence").on(
+      table.workspaceId,
+      table.sequence,
+    ),
+    uniqueIndex("idx_authority_control_events_idempotency").on(
+      table.workspaceId,
+      table.idempotencyKey,
+    ),
+    index("idx_authority_control_events_head").on(
+      table.workspaceId,
+      table.controlKind,
+      table.sequence,
+    ),
+    foreignKey({
+      name: "fk_authority_control_events_membership",
+      columns: [table.workspaceId, table.actorUserId],
+      foreignColumns: [workspaceMembers.workspaceId, workspaceMembers.userId],
+    }),
+    check("chk_authority_control_events_sequence", sql`${table.sequence} >= 1`),
+    check(
+      "chk_authority_control_events_kind",
+      sql`${table.controlKind} = 'kill_switch'`,
+    ),
+    check(
+      "chk_authority_control_events_prior_state",
+      sql`${table.priorState} IS NULL OR ${table.priorState} IN (0, 1)`,
+    ),
+    check(
+      "chk_authority_control_events_current_state",
+      sql`${table.currentState} IN (0, 1)`,
+    ),
+    check(
+      "chk_authority_control_events_reason",
+      sql`${table.reasonCode} IN ('workspace_initialized', 'migration_backfill', 'owner_transition')`,
+    ),
+    check("chk_authority_control_events_payload", sql`json_valid(${table.payloadJson})`),
+    check("chk_authority_control_events_hash", hashCheck(table.contentHash)),
+    check(
+      "chk_authority_control_events_time",
+      sql`unixepoch(${table.occurredAt}) IS NOT NULL`,
+    ),
+  ],
+);
+
 export const flightTraces = sqliteTable(
   "flight_traces",
   {
@@ -852,6 +923,46 @@ export const effectAttempts = sqliteTable(
     check(
       "chk_effect_attempts_reserved_time",
       sql`unixepoch(${table.reservedAt}) IS NOT NULL`,
+    ),
+  ],
+);
+
+export const effectAuthorityControlBindings = sqliteTable(
+  "effect_authority_control_bindings",
+  {
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    traceId: text("trace_id").notNull(),
+    effectAttemptId: text("effect_attempt_id").notNull(),
+    authorityControlEventId: text("authority_control_event_id").notNull(),
+    authorityControlSequence: integer("authority_control_sequence").notNull(),
+    authorityControlHash: text("authority_control_hash").notNull(),
+    boundAt: text("bound_at").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.effectAttemptId] }),
+    foreignKey({
+      name: "fk_effect_authority_binding_effect",
+      columns: [table.workspaceId, table.effectAttemptId, table.traceId],
+      foreignColumns: [effectAttempts.workspaceId, effectAttempts.id, effectAttempts.traceId],
+    }).onDelete("cascade"),
+    foreignKey({
+      name: "fk_effect_authority_binding_control",
+      columns: [table.workspaceId, table.authorityControlEventId],
+      foreignColumns: [workspaceAuthorityControlEvents.workspaceId, workspaceAuthorityControlEvents.id],
+    }),
+    check(
+      "chk_effect_authority_binding_sequence",
+      sql`${table.authorityControlSequence} >= 1`,
+    ),
+    check(
+      "chk_effect_authority_binding_hash",
+      hashCheck(table.authorityControlHash),
+    ),
+    check(
+      "chk_effect_authority_binding_time",
+      sql`unixepoch(${table.boundAt}) IS NOT NULL`,
     ),
   ],
 );

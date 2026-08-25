@@ -1,187 +1,242 @@
-import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  ACCEPTANCE_COVERAGE,
-  DURABLE_PROJECTION,
-  IMPORT_CASES,
-  L20_ERRORS,
-  PROJECTION_MUTATIONS,
-  RESET_CASES,
-  SEAL_TRANSITION_CASE,
-  assertDurableProjection,
-  evaluateImport,
-  evaluateResetCase,
-} from "./fixtures/fixture-runtime-ownership.fixture.mjs";
 import {
   fileHash,
   frontmatterValue,
   markdownHashBindings,
   markdownSection,
+  repositoryPath,
+  runChecked,
 } from "../_lib/verify-kit.mjs";
+import {
+  L04_ACCEPTANCE_IDS,
+  L04_AUTHORITY_TRACE_FIXTURE,
+  L04_FIXTURE_VERSION,
+  L04_MIGRATION_CASES,
+  L04_NEGATIVE_IDS,
+  L04_PROJECTION_DETAIL_ALLOWLIST,
+  L04_RACE_SCHEDULES,
+  projectTraceEvents,
+  validateL04Fixture,
+} from "./fixtures/l04-authority-trace.fixture.mjs";
 
-const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
-const packagePath = resolve(projectRoot, "factory/02_data/output/DATA_PACKAGE.md");
-const gatePath = resolve(projectRoot, "factory/02_data/output/HUMAN_GATE.md");
+const stageRoot = dirname(fileURLToPath(import.meta.url));
+const projectRoot = resolve(stageRoot, "../..");
+const contextPath = resolve(stageRoot, "CONTEXT.md");
+const packagePath = resolve(stageRoot, "output/DATA_PACKAGE.md");
+const gatePath = resolve(stageRoot, "output/HUMAN_GATE.md");
+const specPath = resolve(stageRoot, "../01_spec/output/SPEC.md");
+const specGatePath = resolve(stageRoot, "../01_spec/output/HUMAN_GATE.md");
 
-const boundPaths = [
+function invariant(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function includesNormalized(document, value) {
+  return document.replace(/\s+/g, " ").includes(value.replace(/\s+/g, " "));
+}
+
+const expectedInputs = [
   "factory/02_data/CONTEXT.md",
   "factory/01_spec/output/SPEC.md",
   "factory/01_spec/output/HUMAN_GATE.md",
   "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
   "factory/_shared/QUALITY_GATES.md",
-  "db/flight-recorder-demo.ts",
+  "factory/_lib/verify-kit.mjs",
+  "factory/_lib/factory-state.mjs",
+  "db/flight-recorder-schema.ts",
+  "db/flight-recorder-contracts.ts",
   "db/flight-recorder.ts",
+  "db/flight-recorder-demo.ts",
   "db/flight-recorder-graph.ts",
+  "db/migrations.ts",
+  "app/flight-recorder-types.ts",
+  "app/CrossSignalApp.tsx",
+  "drizzle/0004_typical_omega_red.sql",
+  "drizzle/0005_flight_recorder_guards.sql",
+  "drizzle/0006_l08_active_intent_authority.sql",
+  "drizzle/0007_l06_persisted_graph_executor.sql",
   "tests/flight-recorder-data.test.mjs",
   "tests/flight-recorder-build.test.mjs",
-  "tests/flight-recorder-release.test.mjs",
-  "factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs",
 ];
 
-function quotedConstant(source, name) {
-  const match = source.match(new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*\"([^\"]+)\"`));
-  assert.ok(match, `missing ${name}`);
-  return match[1];
+const [context, dataPackage, gate, spec, specGate] = await Promise.all([
+  readFile(contextPath, "utf8"),
+  readFile(packagePath, "utf8"),
+  readFile(gatePath, "utf8"),
+  readFile(specPath, "utf8"),
+  readFile(specGatePath, "utf8"),
+]);
+
+invariant(frontmatterValue(context, "type") === "stage-contract", "Stage 02 contract type is invalid");
+invariant(frontmatterValue(context, "stage") === "02_data", "Stage 02 contract identity is invalid");
+invariant(frontmatterValue(context, "status") === "active", "Stage 02 contract is not active");
+invariant(frontmatterValue(specGate, "gate_status") === "closed", "Stage 01 gate is not closed");
+invariant(frontmatterValue(specGate, "decision") === "accepted", "Stage 01 gate is not accepted");
+invariant(
+  frontmatterValue(specGate, "spec_sha256") === await fileHash(projectRoot, specPath),
+  "Stage 01 gate does not bind the current specification",
+);
+
+const declaredInputs = [...context.matchAll(
+  /^- (?:Freshness dependency|Tooling dependency|Observed baseline): `([^`]+)`$/gm,
+)].map((match) => repositoryPath(projectRoot, resolve(stageRoot, match[1])));
+invariant(
+  JSON.stringify(declaredInputs) === JSON.stringify(expectedInputs.slice(1)),
+  `Stage 02 declared inputs differ from the bounded set:\n${declaredInputs.join("\n")}`,
+);
+invariant(!context.includes("_archive/2026"), "Stage 02 declares an archive input");
+
+invariant(frontmatterValue(dataPackage, "type") === "stage-primary-output", "DATA_PACKAGE.md type is invalid");
+invariant(frontmatterValue(dataPackage, "stage") === "02_data", "DATA_PACKAGE.md stage is invalid");
+invariant(frontmatterValue(dataPackage, "status") === "ready-for-review", "Data package is not ready for review");
+invariant(frontmatterValue(dataPackage, "fixture_version") === L04_FIXTURE_VERSION, "Fixture version drift");
+
+for (const heading of [
+  "Data-package outcome",
+  "Ownership and truth",
+  "Durable schema contract",
+  "Migration and compatibility contract",
+  "Authority mutation and race contract",
+  "Trace subject-event catalog",
+  "Ordered redacted projection contract",
+  "Executable fixture contract",
+  "Stage 03 change map",
+  "Acceptance and negative coverage",
+  "Declared input hashes",
+]) invariant(markdownSection(dataPackage, new RegExp(`^## ${heading}$`)).length > 0, `Missing section: ${heading}`);
+
+const bindings = markdownHashBindings(markdownSection(dataPackage, /^## Declared input hashes$/));
+invariant(bindings.length === expectedInputs.length, "Data package does not bind every declared input exactly once");
+invariant(
+  JSON.stringify(bindings.map(({ input }) => input)) === JSON.stringify(expectedInputs),
+  "Data-package input bindings differ from the declared ordered set",
+);
+for (const binding of bindings) {
+  invariant(
+    await fileHash(projectRoot, resolve(projectRoot, binding.input)) === binding.expected,
+    `Input hash drift: ${binding.input}`,
+  );
 }
 
-function numericConstant(source, name) {
-  const match = source.match(new RegExp(`(?:export\\s+)?const\\s+${name}\\s*=\\s*([0-9.]+)`));
-  assert.ok(match, `missing ${name}`);
-  return Number(match[1]);
+for (const name of [
+  "workspace_authority_control_events",
+  "effect_authority_control_bindings",
+  "idx_authority_control_events_workspace_id",
+  "idx_authority_control_events_sequence",
+  "idx_authority_control_events_idempotency",
+  "idx_authority_control_events_head",
+  "trg_l04_authority_events_append_only",
+  "trg_l04_authority_events_delete_guard",
+  "trg_l04_authority_events_sequence",
+  "trg_l04_authority_events_actor",
+  "trg_l04_legacy_authority_control_frozen",
+  "trg_l04_effect_authority_bindings_immutable",
+  "trg_l04_effect_authority_binding_exact",
+  "trg_l04_effect_reserved_requires_authority",
+  "trg_l04_trace_executing_requires_authority",
+]) invariant(dataPackage.includes(name), `Missing schema object: ${name}`);
+
+for (const errorCode of [
+  "l04_authority_history_immutable",
+  "l04_authority_history_sequence",
+  "l04_authority_history_noop",
+  "l04_authority_history_actor_mismatch",
+  "l04_legacy_authority_control_frozen",
+  "l04_missing_authority_control",
+  "l04_stale_authority_control",
+  "l04_effect_authority_immutable",
+  "l04_trace_authority_projection_mismatch",
+  "l04_trace_projection_incomplete",
+  "migration_l04_invalid_authority_history",
+  "migration_l04_ambiguous_authority_history",
+  "migration_l04_unresolvable_effect_authority",
+  "migration_l04_incomplete_trace_history",
+]) invariant(dataPackage.includes(errorCode), `Missing stable failure: ${errorCode}`);
+
+for (const requirement of [
+  "Canonical ordered workspace kill-switch history",
+  "Frozen migration input; never runtime authority after L04",
+  "same D1 batch",
+  "rolls back the complete authority/effect boundary",
+  "Delete only existing `flight_traces.truth_mode = 'FIXTURE'` rows",
+  "never invents historical authority for durable non-FIXTURE effects",
+  "`INSERT OR IGNORE`, reread, and byte-compare",
+  "desired value equal to current is a no-op",
+  "Unknown event types remain in the ordered list with empty details",
+  "Raw `payload_json`, idempotency key,",
+  "No route, endpoint, middleware, authentication protocol",
+]) invariant(includesNormalized(dataPackage, requirement), `Missing data invariant: ${requirement}`);
+
+const fixtureErrors = validateL04Fixture(L04_AUTHORITY_TRACE_FIXTURE);
+invariant(fixtureErrors.length === 0, `Executable fixture failed:\n${fixtureErrors.join("\n")}`);
+invariant(L04_AUTHORITY_TRACE_FIXTURE.controlHistory.length === 3, "Control history fixture count drift");
+invariant(L04_AUTHORITY_TRACE_FIXTURE.traceEvents.length === 34, "Trace event fixture count drift");
+invariant(L04_AUTHORITY_TRACE_FIXTURE.traceEventCount === 34, "Projected trace count drift");
+invariant(L04_RACE_SCHEDULES.length === 3, "Race schedule coverage drift");
+invariant(L04_MIGRATION_CASES.length === 6, "Migration case coverage drift");
+invariant(Object.keys(L04_PROJECTION_DETAIL_ALLOWLIST).length === 8, "Redaction allowlist subject coverage drift");
+
+const mixedProjection = projectTraceEvents(
+  [...L04_AUTHORITY_TRACE_FIXTURE.collisionRows, ...L04_AUTHORITY_TRACE_FIXTURE.traceEvents].reverse(),
+  L04_AUTHORITY_TRACE_FIXTURE.identity.workspaceId,
+  L04_AUTHORITY_TRACE_FIXTURE.identity.traceId,
+);
+invariant(mixedProjection.length === 34, "Tenant collision rows leaked into the projection");
+invariant(mixedProjection.every((event, index) => event.sequence === index + 1), "Projection is not sequence ordered");
+const projectionJson = JSON.stringify(mixedProjection);
+for (const forbidden of ["payloadJson", "idempotencyKey", "actorId", "@example", "Bearer ", "recipients", "emailBody"]) {
+  invariant(!projectionJson.includes(forbidden), `Projection leaked forbidden token: ${forbidden}`);
 }
 
-function assertNamedFailure(operation, code) {
-  assert.throws(operation, new RegExp(`(?:^|Error: )${code}:`));
+for (const id of L04_ACCEPTANCE_IDS) {
+  invariant(spec.includes(id), `Accepted specification is missing ${id}`);
+  invariant((dataPackage.match(new RegExp(id, "g")) ?? []).length === 1, `${id} coverage must appear exactly once`);
+}
+for (const id of L04_NEGATIVE_IDS) {
+  invariant(spec.includes(id), `Accepted specification is missing ${id}`);
+  invariant((dataPackage.match(new RegExp(id, "g")) ?? []).length === 1, `${id} coverage must appear exactly once`);
 }
 
-export async function validateDataPackage() {
-  const [dataPackage, gate, spec, specGate, demo, store, graph, dataTest, buildTest, releaseTest, fixtureSource] =
-    await Promise.all([
-      readFile(packagePath, "utf8"),
-      readFile(gatePath, "utf8"),
-      readFile(resolve(projectRoot, "factory/01_spec/output/SPEC.md"), "utf8"),
-      readFile(resolve(projectRoot, "factory/01_spec/output/HUMAN_GATE.md"), "utf8"),
-      readFile(resolve(projectRoot, "db/flight-recorder-demo.ts"), "utf8"),
-      readFile(resolve(projectRoot, "db/flight-recorder.ts"), "utf8"),
-      readFile(resolve(projectRoot, "db/flight-recorder-graph.ts"), "utf8"),
-      readFile(resolve(projectRoot, "tests/flight-recorder-data.test.mjs"), "utf8"),
-      readFile(resolve(projectRoot, "tests/flight-recorder-build.test.mjs"), "utf8"),
-      readFile(resolve(projectRoot, "tests/flight-recorder-release.test.mjs"), "utf8"),
-      readFile(resolve(projectRoot, "factory/02_data/fixtures/fixture-runtime-ownership.fixture.mjs"), "utf8"),
-    ]);
-
-  assert.equal(frontmatterValue(specGate, "decision"), "accepted");
-  assert.equal(frontmatterValue(specGate, "gate_status"), "closed");
-  assert.equal(frontmatterValue(dataPackage, "finding"), "L20");
-  assert.equal(frontmatterValue(dataPackage, "status"), "proposed");
-  for (const heading of [
-    "Transformation",
-    "Executable schema",
-    "Canonical projection",
-    "Case inventory",
-    "State and authority",
-    "Provenance and truth labels",
-    "Stage 03 handoff",
-    "Acceptance mapping",
-    "Non-goals",
-    "Human decision requested",
-  ]) assert.ok(markdownSection(dataPackage, new RegExp(`^## ${heading}$`)).length > 60, `missing ${heading}`);
-
-  const bindings = markdownHashBindings(dataPackage);
-  assert.deepEqual(bindings.map(({ input }) => input).sort(), [...boundPaths].sort());
-  for (const binding of bindings) {
-    assert.equal(
-      await fileHash(projectRoot, resolve(projectRoot, binding.input)),
-      binding.expected,
-      `stale data binding: ${binding.input}`,
-    );
-  }
-
-  for (const importCase of IMPORT_CASES) {
-    assert.deepEqual(evaluateImport(importCase), importCase.expected, importCase.id);
-  }
-  assert.equal(assertDurableProjection(DURABLE_PROJECTION), true);
-  for (const mutation of PROJECTION_MUTATIONS) {
-    assertNamedFailure(() => assertDurableProjection(mutation.value), mutation.error);
-  }
-  for (const resetCase of RESET_CASES) {
-    const actual = evaluateResetCase(resetCase);
-    assert.equal(actual.deletedTraces, resetCase.expectedDeletedTraces, resetCase.id);
-    assert.equal(actual.error, resetCase.error ?? null, resetCase.id);
-  }
-
-  const knownCaseIds = new Set([
-    ...IMPORT_CASES.map(({ id }) => id),
-    ...PROJECTION_MUTATIONS.map(({ id }) => id),
-    ...RESET_CASES.map(({ id }) => id),
-    SEAL_TRANSITION_CASE.id,
-  ]);
-  for (let index = 1; index <= 9; index += 1) {
-    const criterion = `AC-L20-${String(index).padStart(2, "0")}`;
-    assert.ok(ACCEPTANCE_COVERAGE[criterion]?.length > 0, `missing coverage: ${criterion}`);
-    for (const caseId of ACCEPTANCE_COVERAGE[criterion]) {
-      assert.ok(knownCaseIds.has(caseId), `unknown ${criterion} case: ${caseId}`);
-    }
-  }
-
-  const registryStart = graph.indexOf("export const REASONING_NODE_REGISTRY");
-  const registryEnd = graph.indexOf("] as const);", registryStart);
-  assert.ok(registryStart >= 0 && registryEnd > registryStart, "missing bounded graph registry");
-  const registrySource = graph.slice(registryStart, registryEnd);
-  const actualProjection = {
-    fixtureKey: quotedConstant(demo, "STAGE_03_FIXTURE_KEY"),
-    traceKey: quotedConstant(demo, "STAGE_03_TRACE_KEY"),
-    spendingCapUsd: numericConstant(demo, "STAGE_03_SPENDING_CAP_USD"),
-    fixtureTruthMode: "FIXTURE",
-    intentTruthMode: "TEST",
-    graphVersion: quotedConstant(graph, "REASONING_GRAPH_VERSION"),
-    handlerVersion: quotedConstant(graph, "REASONING_HANDLER_VERSION"),
-    artifactSchemaVersion: quotedConstant(graph, "REASONING_ARTIFACT_SCHEMA_VERSION"),
-    nodes: [...registrySource.matchAll(/nodeKey:\s*"([^"]+)"/g)].map((match) => {
-      const expected = DURABLE_PROJECTION.nodes.find(({ nodeKey }) => nodeKey === match[1]);
-      return { nodeKey: match[1], predecessors: [...(expected?.predecessors ?? [])] };
-    }),
-  };
-  assert.equal(assertDurableProjection(actualProjection), true);
-  assert.match(store, /buildFlightRecorderSeed/);
-  assert.match(store, /runPersistedReasoningGraph/);
-  assert.match(dataTest, /factory\/02_data\/fixtures\/onboarding-rescue\.fixture/);
-  assert.match(buildTest, /factory\/02_data\/fixtures\/persisted-graph-executor\.fixture/);
-  assert.match(releaseTest, /db\/flight-recorder-demo\.ts/);
-  assert.doesNotMatch(fixtureSource, /(?:sk_(?:live|test)|Bearer\s+[A-Za-z0-9._-]{20,}|BEGIN PRIVATE KEY)/i);
-  assert.equal(SEAL_TRANSITION_CASE.activeNumberedFixturePresent, false);
-  assert.equal(SEAL_TRANSITION_CASE.expectedRuntimeBehavior, "unchanged");
-
-  const decision = frontmatterValue(gate, "decision");
-  assert.ok(["pending", "accepted"].includes(decision));
-  assert.equal(frontmatterValue(gate, "gate_status"), decision === "accepted" ? "closed" : "open");
-  if (decision === "accepted") {
-    assert.notEqual(frontmatterValue(gate, "reviewer"), "pending");
-    assert.match(frontmatterValue(gate, "reviewed_at") ?? "", /^\d{4}-\d{2}-\d{2}T/);
-  }
-  assert.equal(frontmatterValue(gate, "data_package_sha256"), await fileHash(projectRoot, packagePath));
-
-  return {
-    status: "passed",
-    finding: "L20",
-    inputs: Object.fromEntries(
-      await Promise.all(boundPaths.map(async (path) => [path, await fileHash(projectRoot, resolve(projectRoot, path))])),
-    ),
-    dataPackage: await fileHash(projectRoot, packagePath),
-    caseCounts: {
-      imports: IMPORT_CASES.length,
-      projectionMutations: PROJECTION_MUTATIONS.length,
-      resets: RESET_CASES.length,
-      sealTransitions: 1,
-      acceptanceCriteria: Object.keys(ACCEPTANCE_COVERAGE).length,
-    },
-    namedErrors: Object.values(L20_ERRORS).length,
-    gate: decision,
-  };
+const changeMap = markdownSection(dataPackage, /^## Stage 03 change map$/);
+for (const path of [
+  "db/flight-recorder-schema.ts",
+  "drizzle/0008_l04_authority_history_trace_projection.sql",
+  "db/migrations.ts",
+  "db/flight-recorder-contracts.ts",
+  "db/flight-recorder-demo.ts",
+  "db/flight-recorder-graph.ts",
+  "db/flight-recorder.ts",
+  "app/flight-recorder-types.ts",
+  "app/CrossSignalApp.tsx",
+  "tests/flight-recorder-data.test.mjs",
+  "tests/flight-recorder-build.test.mjs",
+  "tests/fixtures/l04-authority-trace.fixture.mjs",
+]) invariant(changeMap.includes(path), `Stage 03 change map is missing ${path}`);
+for (const forbiddenPath of ["app/api/", "route.ts", "middleware.ts", "worker/"]) {
+  invariant(!changeMap.includes(forbiddenPath), `L14 or unrelated scope entered the change map: ${forbiddenPath}`);
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  console.log(JSON.stringify(await validateDataPackage(), null, 2));
-}
+const productStatus = runChecked(
+  "git",
+  ["status", "--porcelain=v1", "--untracked-files=all", "--", "app", "db", "drizzle", "worker", "tests"],
+  { cwd: projectRoot },
+).stdout.trim();
+invariant(productStatus === "", `Stage 02 modified durable product paths:\n${productStatus}`);
+
+invariant(frontmatterValue(gate, "gate_status") === "open", "Stage 02 human gate must remain open");
+invariant(frontmatterValue(gate, "decision") === "pending", "Stage 02 human gate must remain pending");
+invariant(frontmatterValue(gate, "data_package_sha256") === "pending", "Stage 02 gate prematurely binds the data package");
+invariant(frontmatterValue(gate, "verification_sha256") === "pending", "Stage 02 gate prematurely binds verification");
+
+console.log("Stage 02 data verification passed.");
+console.log(`Declared inputs: ${bindings.length}`);
+console.log(`Fixture: ${L04_FIXTURE_VERSION}`);
+console.log("Control events: 3");
+console.log("Trace events/projected events: 34/34");
+console.log("Race schedules: 3");
+console.log("Migration cases: 6");
+console.log("Acceptance/negative coverage: 12/12");
+console.log("Durable product changes: none");
+console.log("Human gate: open / pending");

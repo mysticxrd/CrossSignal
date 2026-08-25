@@ -1,33 +1,28 @@
 ---
 type: human-gate
 stage: 02_data
-unit: fixture-runtime-source-of-truth-correction
 gate_status: closed
 decision: accepted
 reviewer: project-owner
-reviewed_at: 2026-08-24T13:39:15.671Z
-data_package_sha256: c59eca1d8f968d7b103f9f2bebc7bd44e066d52baf7747220078c077273b33da
-verification_sha256: 5407635737c59a30bf651baa924d88f8cd3d7aca25d21d11e2af5188afa2ef11
+reviewed_at: 2026-08-25T14:34:10.0254157+05:30
+data_package_sha256: a503213bfcccd597700fe6934c365855d90d422d9c03b015bf10b2a96438979d
+verification_sha256: 87c74555ae86ca3775871d232facc1fce58c544f55cac5354f7131e1b5c2d306
 ---
 
-# L20 data-package human gate
+# Stage 02 human gate
 
-The project owner accepted this gate by directing the run to continue to
-Stage 03.
+The project owner accepted the current data package and verification hashes.
+This closes Stage 02 and authorizes Stage 03 only.
 
-## Review checklist
+## Review prompts
 
-- [x] The executable fixture is a factory projection, not runtime authority.
-- [x] All nine specification criteria have deterministic case coverage.
-- [x] Forbidden product/test/archive imports return stable named errors.
-- [x] Fixture, graph, and truth-mode mutations fail closed.
-- [x] Exact reset and cross-tenant preservation cases are complete.
-- [x] Stage 03 receives an unambiguous build handoff.
-- [x] L04, L14, archives, migrations, and benchmark stashes remain untouched.
+- Is the event table the sole effective kill-switch truth after migration?
+- Is the effect binding table the right atomic proof of the exact control head?
+- Is bounded deletion/reseeding of existing FIXTURE traces acceptable while
+  ambiguous non-FIXTURE authority history blocks migration?
+- Are the authority subject chains and 34-event projection complete enough?
+- Are redaction and L14 separation explicit?
 
-## Reviewer record
+## Corrections
 
-- Decision: `accepted`
-- Reviewer: `project-owner`
-- Reviewed at: `2026-08-24T13:39:15.671Z`
-- Corrections: `none recorded`
+None recorded.

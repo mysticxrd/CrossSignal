@@ -83,7 +83,13 @@ const {
   runPersistedReasoningGraph,
   summarizePersistedReasoningGraph,
 } = await import("../db/flight-recorder-graph.ts");
-const { getOrCreateFlightRecorderSnapshot } = await import("../db/flight-recorder.ts");
+const {
+  authorizeAndExecute,
+  getOrCreateFlightRecorderSnapshot,
+  installAuthorizationRaceBarrierForTest,
+  resetFlightRecorderFixture,
+  setWorkspaceKillSwitch,
+} = await import("../db/flight-recorder.ts");
 
 const migrationNames = [
   "0000_dry_chat.sql",
@@ -97,6 +103,7 @@ const migrationNames = [
 const runtimeMigrationNames = [
   ...migrationNames,
   "0007_l06_persisted_graph_executor.sql",
+  "0008_l04_authority_history_trace_projection.sql",
 ];
 
 class TestD1Statement {
@@ -1627,5 +1634,112 @@ test("all fourteen L06 direct-database attacks fail with zero partial mutation",
         harness.database.close();
       }
     });
+  }
+});
+
+test("L04 runtime appends canonical control history and returns a complete redacted ordered trace", async () => {
+  const harness = await freshRuntimeHarness("l04-history");
+  try {
+    const initial = await getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId);
+    assert.equal(initial.authorityControlHistory.length, 1);
+    assert.equal(initial.authorityControlHistory[0].reasonCode, "workspace_initialized");
+    assert.equal(initial.killSwitchEngaged, false);
+    assert.equal(initial.traceEventCount, initial.traceEvents.length);
+    assert.deepEqual(initial.traceEvents.map((event) => event.sequence), initial.traceEvents.map((_, index) => index + 1));
+
+    const paused = await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: true });
+    assert.equal(paused.killSwitchEngaged, true);
+    assert.equal(paused.authorityControlHistory.length, 2);
+    const samePause = await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: true });
+    assert.equal(samePause.authorityControlHistory.length, 2);
+    const resumed = await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: false });
+    assert.equal(resumed.authorityControlHistory.length, 3);
+
+    const executed = await authorizeAndExecute({ userId: harness.userId, workspaceId: harness.workspaceId, scenario: "confirmed" });
+    assert.equal(executed.traceState, "assessed");
+    assert.equal(executed.traceEventCount, executed.traceEvents.length);
+    assert.ok(executed.traceEvents.some((event) => event.eventType === "approval.approved"));
+    assert.ok(executed.traceEvents.some((event) => event.eventType === "effect.confirmed"));
+    assert.ok(executed.traceEvents.some((event) => event.eventType === "intent.consumed"));
+    const binding = harness.database.prepare(`SELECT authority_control_event_id, authority_control_sequence,
+      authority_control_hash FROM effect_authority_control_bindings`).get();
+    assert.equal(binding.authority_control_event_id, resumed.authorityControlHistory.at(-1).id);
+    assert.equal(binding.authority_control_sequence, 3);
+    assert.equal(binding.authority_control_hash, resumed.authorityControlHistory.at(-1).contentHash);
+    const serialized = JSON.stringify(executed.traceEvents);
+    for (const forbidden of ["payloadJson", "idempotencyKey", "actorId", "@example.test", executed.intent.body]) {
+      assert.equal(serialized.includes(forbidden), false, forbidden);
+    }
+
+    const reset = await resetFlightRecorderFixture(harness.userId, harness.workspaceId);
+    assert.equal(reset.authorityControlHistory.length, 3);
+    assert.equal(harness.database.prepare("SELECT COUNT(*) count FROM effect_attempts").get().count, 0);
+    assert.throws(() => harness.database.exec("UPDATE workspace_authority_control_events SET current_state = 1"), /l04_authority_history_immutable/);
+    assert.throws(() => harness.database.exec("DELETE FROM workspace_authority_control_events"), /l04_authority_history_immutable/);
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L04 pause wins the pre-reservation race while a completed reservation retains its exact authority proof", async () => {
+  const harness = await freshRuntimeHarness("l04-race");
+  try {
+    await getOrCreateFlightRecorderSnapshot(harness.userId, harness.workspaceId);
+    const loaded = deferred();
+    const resume = deferred();
+    const removeBarrier = installAuthorizationRaceBarrierForTest(async () => {
+      loaded.resolve();
+      await resume.promise;
+    });
+    const losingExecution = authorizeAndExecute({ userId: harness.userId, workspaceId: harness.workspaceId, scenario: "confirmed" });
+    await loaded.promise;
+    await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: true });
+    resume.resolve();
+    await assert.rejects(losingExecution, /l04_stale_authority_control/);
+    removeBarrier();
+    assert.equal(harness.database.prepare("SELECT COUNT(*) count FROM effect_attempts").get().count, 0);
+    assert.equal(harness.database.prepare("SELECT COUNT(*) count FROM approval_grants").get().count, 0);
+
+    const resumed = await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: false });
+    const executed = await authorizeAndExecute({ userId: harness.userId, workspaceId: harness.workspaceId, scenario: "failed" });
+    const bound = harness.database.prepare("SELECT authority_control_sequence FROM effect_authority_control_bindings").get();
+    assert.equal(bound.authority_control_sequence, resumed.authorityControlHistory.at(-1).sequence);
+    const pausedAfter = await setWorkspaceKillSwitch({ userId: harness.userId, workspaceId: harness.workspaceId, engaged: true });
+    assert.equal(pausedAfter.authorityControlHistory.at(-1).sequence, bound.authority_control_sequence + 1);
+    assert.equal(executed.execution.state, "failed");
+    assert.equal(harness.database.prepare("SELECT authority_control_sequence FROM effect_authority_control_bindings").get().authority_control_sequence, bound.authority_control_sequence);
+  } finally {
+    installAuthorizationRaceBarrierForTest(null);
+    harness.database.close();
+  }
+});
+
+test("L04 compatibility deterministically backfills and freezes a legacy control head", async () => {
+  const database = await freshDatabase(runtimeMigrationNames.slice(0, -1));
+  const userId = "l04-legacy-owner";
+  const workspaceId = "l04-legacy-workspace";
+  insert(database, "users", { id: userId, email: "l04-legacy@example.test", display_name: "L04 Legacy Owner" });
+  insert(database, "workspaces", { id: workspaceId, name: "L04 Legacy", slug: workspaceId, owner_user_id: userId });
+  insert(database, "workspace_members", { workspace_id: workspaceId, user_id: userId, role: "owner" });
+  insert(database, "workspace_authority_controls", {
+    workspace_id: workspaceId,
+    kill_switch_engaged: 1,
+    updated_by: userId,
+    updated_at: "2026-08-25T08:00:00.000Z",
+  });
+  applyMigrationAtomically(database, await readFile(new URL("drizzle/0008_l04_authority_history_trace_projection.sql", root), "utf8"));
+  globalThis.__cfrCloudflareEnv.DB = new TestD1Database(database);
+  try {
+    const snapshot = await getOrCreateFlightRecorderSnapshot(userId, workspaceId);
+    assert.equal(snapshot.killSwitchEngaged, true);
+    assert.equal(snapshot.authorityControlHistory.length, 1);
+    assert.equal(snapshot.authorityControlHistory[0].reasonCode, "migration_backfill");
+    const firstId = snapshot.authorityControlHistory[0].id;
+    const reread = await getOrCreateFlightRecorderSnapshot(userId, workspaceId);
+    assert.equal(reread.authorityControlHistory.length, 1);
+    assert.equal(reread.authorityControlHistory[0].id, firstId);
+    assert.throws(() => database.exec("UPDATE workspace_authority_controls SET kill_switch_engaged = 0"), /l04_legacy_authority_control_frozen/);
+  } finally {
+    database.close();
   }
 });

@@ -4,6 +4,8 @@ import test from "node:test";
 import {
   assertTransition,
   createContextManifest,
+  projectFlightTraceEvents,
+  sealAuthorityControlEvent,
   sealActionIntent,
   stableStringify,
   validateExecutionAuthority,
@@ -11,6 +13,10 @@ import {
   validatePersistedActionIntent,
   validateReasoningArtifact,
 } from "../db/flight-recorder-contracts.ts";
+import {
+  L04_AUTHORITY_TRACE_FIXTURE,
+  validateL04Fixture,
+} from "./fixtures/l04-authority-trace.fixture.mjs";
 import {
   FLIGHT_RECORDER_FIXTURE_IDENTITY,
   FLIGHT_RECORDER_FIXTURE_KEY,
@@ -367,4 +373,70 @@ test("migration enforces workspace ownership, immutable authority, and append-on
   assert.match(migration, /trg_outcome_supersessions_immutable/);
   assert.match(migration, /trg_flight_trace_events_subject_binding/);
   assert.match(migration, /trg_flight_trace_events_transition/);
+});
+
+test("L04 fixture control history reseals and its trace projects completely without raw authority data", async () => {
+  assert.deepEqual(validateL04Fixture(), []);
+  for (const expected of L04_AUTHORITY_TRACE_FIXTURE.controlHistory) {
+    const sealed = await sealAuthorityControlEvent({
+      id: expected.id,
+      workspaceId: expected.workspaceId,
+      sequence: expected.sequence,
+      priorState: expected.priorState,
+      currentState: expected.currentState,
+      actorUserId: expected.actorUserId,
+      reasonCode: expected.reasonCode,
+      idempotencyKey: expected.idempotencyKey,
+      occurredAt: expected.occurredAt,
+    });
+    assert.equal(sealed.payloadJson, expected.payloadJson);
+    assert.equal(sealed.contentHash, expected.contentHash);
+  }
+
+  const { identity, traceEvents } = L04_AUTHORITY_TRACE_FIXTURE;
+  const projection = await projectFlightTraceEvents({
+    workspaceId: identity.workspaceId,
+    traceId: identity.traceId,
+    rows: traceEvents,
+  });
+  assert.equal(projection.length, traceEvents.length);
+  assert.deepEqual(projection.map((event) => event.sequence), traceEvents.map((event) => event.sequence));
+  const serialized = JSON.stringify(projection);
+  for (const forbidden of ["payloadJson", "idempotencyKey", "actorId", "@example.test", "Bearer "]) {
+    assert.equal(serialized.includes(forbidden), false, forbidden);
+  }
+  const unknown = await projectFlightTraceEvents({
+    workspaceId: identity.workspaceId,
+    traceId: identity.traceId,
+    rows: traceEvents.map((event, index) => index === 0 ? { ...event, eventType: "trace.future_event" } : event),
+  });
+  assert.deepEqual(unknown[0].details, {});
+  await assert.rejects(projectFlightTraceEvents({
+    workspaceId: identity.workspaceId,
+    traceId: identity.traceId,
+    rows: traceEvents.map((event, index) => index === 0 ? { ...event, payloadHash: "0".repeat(64) } : event),
+  }), /l04_trace_projection_incomplete/);
+  await assert.rejects(projectFlightTraceEvents({
+    workspaceId: identity.workspaceId,
+    traceId: identity.traceId,
+    rows: [{ ...traceEvents[0], workspaceId: identity.collisionWorkspaceId }],
+  }), /l04_trace_projection_incomplete/);
+});
+
+test("migration 0008 declares append-only authority history, exact effect binding, and bounded FIXTURE reset", async () => {
+  const migration = await readFile(new URL("drizzle/0008_l04_authority_history_trace_projection.sql", projectRoot), "utf8");
+  for (const required of [
+    "workspace_authority_control_events",
+    "effect_authority_control_bindings",
+    "trg_l04_authority_events_append_only",
+    "trg_l04_authority_events_sequence",
+    "trg_l04_legacy_authority_control_frozen",
+    "trg_l04_effect_authority_binding_exact",
+    "trg_l04_effect_reserved_requires_authority",
+    "trg_l04_trace_executing_requires_authority",
+    "migration_l04_unresolvable_effect_authority",
+    "migration_l04_incomplete_trace_history",
+  ]) assert.match(migration, new RegExp(required));
+  assert.match(migration, /DELETE FROM `flight_traces` WHERE `truth_mode` = 'FIXTURE'/);
+  assert.doesNotMatch(migration, /DELETE FROM `workspace_authority_control_events`/);
 });

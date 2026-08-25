@@ -1,4 +1,11 @@
 import { getD1 } from ".";
+import {
+  sealAuthorityControlEvent,
+  sealCanonical,
+  stableStringify,
+  validatePersistedAuthorityControlEvent,
+  type AuthorityControlEvent,
+} from "./flight-recorder-contracts";
 
 const REQUIRED_SCHEMA_OBJECTS = [
   // Durable product baseline.
@@ -17,6 +24,8 @@ const REQUIRED_SCHEMA_OBJECTS = [
   // Stage 02 tables. Runtime access requires the complete chain of custody,
   // including authority controls and explicit supersession records.
   "workspace_authority_controls",
+  "workspace_authority_control_events",
+  "effect_authority_control_bindings",
   "flight_traces",
   "flight_evidence",
   "context_snapshots",
@@ -84,6 +93,10 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "idx_flight_trace_events_sequence",
   "idx_flight_trace_events_idempotency",
   "idx_flight_trace_events_subject",
+  "idx_authority_control_events_workspace_id",
+  "idx_authority_control_events_sequence",
+  "idx_authority_control_events_idempotency",
+  "idx_authority_control_events_head",
 
   // Stage 02 transition, binding, immutability, deletion, and sequence guards.
   "trg_flight_traces_identity_immutable",
@@ -151,9 +164,21 @@ const REQUIRED_SCHEMA_OBJECTS = [
   "trg_flight_trace_events_subject_binding",
   "trg_flight_trace_events_transition",
   "trg_flight_trace_events_executing_projection",
+  "trg_l04_authority_events_append_only",
+  "trg_l04_authority_events_delete_guard",
+  "trg_l04_authority_events_sequence",
+  "trg_l04_authority_events_actor",
+  "trg_l04_legacy_authority_control_frozen",
+  "trg_l04_legacy_authority_control_frozen_delete",
+  "trg_l04_effect_authority_bindings_immutable",
+  "trg_l04_effect_authority_bindings_delete_guard",
+  "trg_l04_effect_authority_binding_exact",
+  "trg_l04_effect_reserved_requires_authority",
+  "trg_l04_trace_executing_requires_authority",
 ] as const;
 
 let compatibilityReady: Promise<void> | null = null;
+let compatibilityDatabase: unknown = null;
 
 async function verifyCheckedInMigrations(): Promise<void> {
   const d1 = getD1();
@@ -211,11 +236,120 @@ async function verifyCheckedInMigrations(): Promise<void> {
       throw new Error(`Database schema is not ready. Apply migration 0007; missing: reasoning_nodes.${name}.`);
     }
   }
+
+  await backfillLegacyAuthorityControls();
+}
+
+type LegacyAuthorityRow = {
+  workspace_id: string;
+  kill_switch_engaged: number;
+  updated_by: string;
+  updated_at: string;
+  membership_user_id: string | null;
+};
+
+type StoredAuthorityRow = {
+  id: string;
+  workspace_id: string;
+  sequence: number;
+  control_kind: "kill_switch";
+  prior_state: number | null;
+  current_state: number;
+  actor_user_id: string;
+  reason_code: AuthorityControlEvent["reasonCode"];
+  idempotency_key: string;
+  payload_json: string;
+  content_hash: string;
+  occurred_at: string;
+};
+
+function mapStoredAuthority(row: StoredAuthorityRow): AuthorityControlEvent {
+  return {
+    id: row.id,
+    workspaceId: row.workspace_id,
+    sequence: row.sequence,
+    controlKind: row.control_kind,
+    priorState: row.prior_state === null ? null : row.prior_state === 1,
+    currentState: row.current_state === 1,
+    actorUserId: row.actor_user_id,
+    reasonCode: row.reason_code,
+    idempotencyKey: row.idempotency_key,
+    payloadJson: row.payload_json,
+    contentHash: row.content_hash,
+    occurredAt: row.occurred_at,
+  };
+}
+
+async function backfillLegacyAuthorityControls(): Promise<void> {
+  const d1 = getD1();
+  const legacy = await d1.prepare(`SELECT controls.workspace_id, controls.kill_switch_engaged,
+      controls.updated_by, controls.updated_at, member.user_id AS membership_user_id
+    FROM workspace_authority_controls controls
+    LEFT JOIN workspace_members member
+      ON member.workspace_id = controls.workspace_id AND member.user_id = controls.updated_by
+    ORDER BY controls.workspace_id`).all<LegacyAuthorityRow>();
+
+  for (const row of legacy.results) {
+    if ((row.kill_switch_engaged !== 0 && row.kill_switch_engaged !== 1)
+      || row.membership_user_id !== row.updated_by
+      || !Number.isFinite(Date.parse(row.updated_at))) {
+      throw new Error("migration_l04_invalid_authority_history");
+    }
+    const identity = await sealCanonical({ kind: "migration", workspaceId: row.workspace_id });
+    const expected = await sealAuthorityControlEvent({
+      id: `authority_control_${identity.sha256.slice(0, 24)}`,
+      workspaceId: row.workspace_id,
+      sequence: 1,
+      priorState: null,
+      currentState: row.kill_switch_engaged === 1,
+      actorUserId: row.updated_by,
+      reasonCode: "migration_backfill",
+      idempotencyKey: `l04:migration:${row.workspace_id}:kill_switch`,
+      occurredAt: row.updated_at,
+    });
+
+    await d1.prepare(`INSERT OR IGNORE INTO workspace_authority_control_events (
+      id, workspace_id, sequence, control_kind, prior_state, current_state,
+      actor_user_id, reason_code, idempotency_key, payload_json, content_hash, occurred_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .bind(
+        expected.id,
+        expected.workspaceId,
+        expected.sequence,
+        expected.controlKind,
+        expected.priorState,
+        expected.currentState ? 1 : 0,
+        expected.actorUserId,
+        expected.reasonCode,
+        expected.idempotencyKey,
+        expected.payloadJson,
+        expected.contentHash,
+        expected.occurredAt,
+      ).run();
+
+    const stored = await d1.prepare(`SELECT id, workspace_id, sequence, control_kind,
+        prior_state, current_state, actor_user_id, reason_code, idempotency_key,
+        payload_json, content_hash, occurred_at
+      FROM workspace_authority_control_events
+      WHERE workspace_id = ? AND sequence = 1`).bind(row.workspace_id).first<StoredAuthorityRow>();
+    if (!stored) throw new Error("migration_l04_invalid_authority_history");
+    const mapped = mapStoredAuthority(stored);
+    const validationErrors = await validatePersistedAuthorityControlEvent(mapped);
+    if (validationErrors.length > 0) throw new Error("migration_l04_invalid_authority_history");
+    if (stableStringify(mapped) !== stableStringify(expected)) {
+      throw new Error("migration_l04_ambiguous_authority_history");
+    }
+  }
 }
 
 export function ensureDatabaseCompatibility(): Promise<void> {
-  compatibilityReady ??= verifyCheckedInMigrations().catch((error) => {
+  const database = getD1();
+  if (compatibilityDatabase !== database) {
+    compatibilityDatabase = database;
     compatibilityReady = null;
+  }
+  compatibilityReady ??= verifyCheckedInMigrations().catch((error) => {
+    if (compatibilityDatabase === database) compatibilityReady = null;
     throw error;
   });
   return compatibilityReady;
