@@ -1,40 +1,45 @@
 ---
 type: human-gate
 stage: 05_ship
-unit: append-only-authority-control-history-and-trace-projection-completeness
 gate_status: closed
 decision: accepted
-reviewer: project-owner
-reviewed_at: 2026-08-26T01:01:08.0010585+05:30
-release_manifest_sha256: 1f99b67d187d4e4fb1866465512b8ea9c02928367e02fde5797cff6771c45a01
-demo_script_sha256: c5645b6be12d4b0b5e30a2ec4331bc3464eca6fdcd6af1995dc572237a72319e
-verification_sha256: b02c7edce906cf267fa2eb49a956875ea69bcb75512577bec0f17a63ae9a946f
+reviewer: human
+reviewed_at: 2026-08-31T18:07:18Z
+release_manifest_sha256: 266b76349fd6cebb131cad5bf221aab27c77eab29f6a8f2c3bc3825212212bfe
+demo_script_sha256: 3f52ccb4f78243a9fb8e92d9182fb672eb8c2735c0b17c98dcc383cc4825f01a
+verification_sha256: d9e5cd89a008a68a861347bb3e26df04be782d101c8092f2d3520710c8c69893
 ---
 
 # Stage 05 human gate
 
-The project owner accepted the bound L04 release manifest, evaluator script,
-and verification evidence. This closes the governed L04 pipeline and
-authorizes commit and seal only.
+The complete L14 release head, cold evaluator runbook, and ship verification
+are fresh. Human review is required before commit and seal.
 
 ## Review checklist
 
-- [x] The manifest binds the accepted Stage 04 evidence and current L04 product
-  head without drift.
-- [x] FIXTURE evidence, TEST effects, correlated outcomes, and all non-claims
-  are explicit and unambiguous.
-- [x] The cold preparation and verification commands reproduce successfully.
-- [x] The reviewer flow demonstrates append-only control history, exact effect
-  binding, complete ordered redacted projection, and authority-preserving reset.
-- [x] All 12 acceptance criteria, 12 negative cases, 3 races, 6 migrations, and
-  the 34-event reference trace have sufficient proof.
-- [x] L08/L06 regressions, lint, build, scope checks, and all three benchmark
-  stashes remain green/preserved.
-- [x] L14 remains outside this gate decision; commit/seal are separately authorized.
+- [x] Run `npm run demo:prepare` from the reviewed checkout without editing files.
+- [x] Confirm all 115 release-head files match the manifest.
+- [x] Confirm the focused suite passes 57 tests, including 28 pending and 49 completed events.
+- [x] Confirm lint and the Vinext production build pass.
+- [x] Confirm the manifest binds accepted Stage 04 evidence and all 14 acceptance plus 12 negative IDs.
+- [x] Confirm the cold runbook proves exact no-store HTTP `401`, `400`, and masked no-D1 `500` boundaries.
+- [x] Confirm durable successful resolution is explicitly labeled local `FIXTURE` evidence.
+- [x] Confirm no deployed endpoint, live D1, external integration, UI, exactly-once, or causal claim is made.
+- [x] Confirm the cold path contains no hidden repair, fixture regeneration, migration generation, or stash application.
+- [x] Confirm all three benchmark stashes remain preserved.
+- [x] Choose whether to authorize the complete L14 release commit and seal check.
 
-## Reviewer record
+## Reviewed artifacts
 
-- Decision: `accepted`
-- Reviewer: `project-owner`
-- Reviewed at: `2026-08-26T01:01:08.0010585+05:30`
-- Corrections: `none recorded`
+| Artifact | SHA-256 |
+|---|---|
+| `factory/05_ship/output/RELEASE_MANIFEST.md` | `266b76349fd6cebb131cad5bf221aab27c77eab29f6a8f2c3bc3825212212bfe` |
+| `factory/05_ship/output/DEMO_SCRIPT.md` | `3f52ccb4f78243a9fb8e92d9182fb672eb8c2735c0b17c98dcc383cc4825f01a` |
+| `factory/05_ship/output/VERIFY.md` | `d9e5cd89a008a68a861347bb3e26df04be782d101c8092f2d3520710c8c69893` |
+
+## Decision
+
+`accepted`
+
+The human accepted the reviewed artifacts against the hashes above and
+authorized the complete L14 release commit and seal check.

@@ -1,40 +1,44 @@
 ---
 type: human-gate
 stage: 04_verify
-unit: append-only-authority-control-history-and-trace-projection-completeness
 gate_status: closed
 decision: accepted
-reviewer: project-owner
-reviewed_at: 2026-08-26T00:38:43.1970271+05:30
-verification_report_sha256: 08517d722b9da7140174549b3279bbc9d4bd0335ec21237b6efb7212c8cb4b7a
-verification_sha256: 03b5076c97c56d00daae7b7bb2ff13e12d07a14255b1cc8b0e714c6531d84b9a
+reviewer: human
+reviewed_at: 2026-08-31T13:21:22Z
+verification_report_sha256: 1db772fa55840bdb8d5dab2daa26da1ca8e21ea1d91d0153b19415b34b950400
+verification_sha256: 94db8f7c43efa6c0fbe710410c17c2393179486a8419d87794d0d564116e08c3
 ---
 
 # Stage 04 human gate
 
-The project owner accepted the bound Stage 04 verification report and evidence.
-This closes Stage 04 and authorizes Stage 05 shipping only.
+The authenticated tenant-scoped redacted ordered trace-resolution endpoint has
+fresh release-grade local verification. Human review is required before Stage
+05 begins.
 
 ## Review checklist
 
-- [x] The accepted Stage 03 gate and its bound evidence hashes are fresh.
-- [x] All twelve L04 acceptance criteria have independent schema, runtime,
-  fixture, test, and reviewer-visible evidence.
-- [x] All twelve negative cases fail closed without partial durable state.
-- [x] Three authority races, six migration schedules, the 34-event projection,
-  tenant collision, redaction, and bounded reset evidence are sufficient.
-- [x] The Stage 01 compatibility correction is pure and import-safe and does
-  not change the accepted specification or product behavior.
-- [x] The 75-test independent suite, focused ICM contract, lint, accepted Stage
-  03 verifier, production build, and Stage 04 verifier are reproducible.
-- [x] The deferred end-of-pipeline ICM state case is acceptable for Stage 05.
-- [x] No L14 route, endpoint, middleware, worker, authentication, provider, or
-  graph-topology surface entered this release.
-- [x] All three benchmark stashes remain preserved.
+- [x] Confirm the production build emits the dynamic L14 route.
+- [x] Confirm unauthenticated production HTTP returns exact no-store JSON `401` before D1 loading.
+- [x] Confirm authenticated field selection returns exact no-store JSON `400` before lookup.
+- [x] Confirm authenticated production HTTP without local D1 returns the masked no-store JSON `500`.
+- [x] Confirm the fixture-backed real handler and resolver return 28 pending and 49 completed ordered events.
+- [x] Confirm tenant isolation uses byte-identical non-disclosing `404` responses.
+- [x] Confirm all five malformed histories fail closed without partial events.
+- [x] Confirm redaction excludes unknown secret-bearing payload fields.
+- [x] Confirm repeated reads preserve all tracked durable counts.
+- [x] Confirm all 14 acceptance IDs and 12 negative IDs have passed outcomes.
+- [x] Confirm the evidence is labeled `FIXTURE` and makes no deployed or live-integration claim.
 
-## Reviewer record
+## Reviewed artifacts
 
-- Decision: `accepted`
-- Reviewer: `project-owner`
-- Reviewed at: `2026-08-26T00:38:43.1970271+05:30`
-- Corrections: `none recorded`
+| Artifact | SHA-256 |
+|---|---|
+| `factory/04_verify/output/VERIFICATION_REPORT.md` | `1db772fa55840bdb8d5dab2daa26da1ca8e21ea1d91d0153b19415b34b950400` |
+| `factory/04_verify/output/VERIFY.md` | `94db8f7c43efa6c0fbe710410c17c2393179486a8419d87794d0d564116e08c3` |
+
+## Decision
+
+`accepted`
+
+The Stage 04 verification evidence is accepted. Stage 05 is authorized against
+the reviewed hashes above.

@@ -13,6 +13,7 @@ import {
 } from "../db/flight-recorder-demo.ts";
 import {
   assertExecutionAuthority,
+  projectFlightTraceEvents,
   sealCanonical,
   stableStringify,
   validateExecutionAuthority,
@@ -87,9 +88,20 @@ const {
   authorizeAndExecute,
   getOrCreateFlightRecorderSnapshot,
   installAuthorizationRaceBarrierForTest,
+  replacePendingIntent,
   resetFlightRecorderFixture,
   setWorkspaceKillSwitch,
 } = await import("../db/flight-recorder.ts");
+const { resolveFlightTrace } = await import("../db/trace-resolution.ts");
+const { handleTraceResolutionRequest } = await import("../app/trace-resolution.ts");
+const {
+  L14_CORRUPTIONS,
+  L14_ERRORS,
+  L14_EVENT_KEYS,
+  L14_SUCCESS_KEYS,
+  L14_TRACE_KEYS,
+  L14_TRACE_RESOLUTION_FIXTURE,
+} = await import("../factory/02_data/fixtures/l14-trace-resolution.fixture.mjs");
 
 const migrationNames = [
   "0000_dry_chat.sql",
@@ -1741,5 +1753,297 @@ test("L04 compatibility deterministically backfills and freezes a legacy control
     assert.throws(() => database.exec("UPDATE workspace_authority_controls SET kill_switch_engaged = 0"), /l04_legacy_authority_control_frozen/);
   } finally {
     database.close();
+  }
+});
+
+function l14User(owner) {
+  return {
+    userId: owner.userId,
+    email: owner.email,
+    displayName: owner.email,
+    fullName: null,
+  };
+}
+
+function l14Counts(database) {
+  return {
+    traces: database.prepare("SELECT COUNT(*) count FROM flight_traces").get().count,
+    events: database.prepare("SELECT COUNT(*) count FROM flight_trace_events").get().count,
+    intents: database.prepare("SELECT COUNT(*) count FROM action_intents").get().count,
+    grants: database.prepare("SELECT COUNT(*) count FROM approval_grants").get().count,
+    effects: database.prepare("SELECT COUNT(*) count FROM effect_attempts").get().count,
+  };
+}
+
+async function freshL14Harness() {
+  const fixture = L14_TRACE_RESOLUTION_FIXTURE;
+  const database = await freshDatabase(runtimeMigrationNames);
+  for (const [ownerKey, workspaceKey] of [["ownerA", "workspaceA"], ["ownerB", "workspaceB"]]) {
+    const owner = fixture.identity[ownerKey];
+    const workspaceId = fixture.identity[workspaceKey];
+    insert(database, "users", { id: owner.userId, email: owner.email, display_name: owner.email });
+    insert(database, "workspaces", { id: workspaceId, name: workspaceId, slug: workspaceId, owner_user_id: owner.userId });
+    insert(database, "workspace_members", { workspace_id: workspaceId, user_id: owner.userId, role: "owner" });
+  }
+  globalThis.__cfrCloudflareEnv.DB = new TestD1Database(database);
+  const pendingA = await getOrCreateFlightRecorderSnapshot(
+    fixture.identity.ownerA.userId,
+    fixture.identity.workspaceA,
+  );
+  const pendingB = await getOrCreateFlightRecorderSnapshot(
+    fixture.identity.ownerB.userId,
+    fixture.identity.workspaceB,
+  );
+  await replacePendingIntent({
+    userId: fixture.identity.ownerB.userId,
+    workspaceId: fixture.identity.workspaceB,
+    recipients: DEFAULT_ONBOARDING_RECIPIENTS,
+    subject: DEFAULT_ONBOARDING_SUBJECT,
+    body: DEFAULT_ONBOARDING_BODY,
+  });
+  const completedB = await authorizeAndExecute({
+    userId: fixture.identity.ownerB.userId,
+    workspaceId: fixture.identity.workspaceB,
+    scenario: "confirmed",
+  });
+  return { database, fixture, pendingA, pendingB, completedB };
+}
+
+function l14Request(workspaceId, traceId, query = "", headers = {}) {
+  return new Request(
+    `https://crosssignal.test/api/workspaces/${encodeURIComponent(workspaceId)}/traces/${encodeURIComponent(traceId)}${query}`,
+    { method: "GET", headers },
+  );
+}
+
+async function invokeL14({ user, workspaceId, traceId, query = "", headers = {}, resolve = resolveFlightTrace }) {
+  return handleTraceResolutionRequest(
+    l14Request(workspaceId, traceId, query, headers),
+    { params: Promise.resolve({ workspaceId, traceId }) },
+    { authenticate: async () => user, resolve },
+  );
+}
+
+test("L14 real handler resolves pending and completed tenant traces without mutation", async () => {
+  const harness = await freshL14Harness();
+  const { fixture } = harness;
+  try {
+    assert.equal(harness.pendingA.traceEventCount, fixture.success.pendingA.eventCount);
+    assert.equal(harness.pendingB.traceEventCount, fixture.success.pendingA.eventCount);
+    assert.equal(harness.completedB.traceEventCount, fixture.success.completedB.eventCount);
+    const before = l14Counts(harness.database);
+    const cases = [
+      {
+        user: l14User(fixture.identity.ownerA),
+        workspaceId: fixture.identity.workspaceA,
+        traceId: harness.pendingA.traceId,
+        expectedState: "awaiting_approval",
+        expectedCount: fixture.success.pendingA.eventCount,
+      },
+      {
+        user: l14User(fixture.identity.ownerB),
+        workspaceId: fixture.identity.workspaceB,
+        traceId: harness.completedB.traceId,
+        expectedState: "assessed",
+        expectedCount: fixture.success.completedB.eventCount,
+      },
+    ];
+    for (const item of cases) {
+      const direct = await resolveFlightTrace({
+        userId: item.user.userId,
+        workspaceId: item.workspaceId,
+        traceId: item.traceId,
+      });
+      assert.equal(direct.kind, "found");
+      const response = await invokeL14(item);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("cache-control"), fixture.cacheControl);
+      assert.match(response.headers.get("content-type"), /^application\/json/);
+      const body = await response.json();
+      assert.deepEqual(Object.keys(body).sort(), L14_SUCCESS_KEYS);
+      assert.deepEqual(Object.keys(body.trace).sort(), L14_TRACE_KEYS);
+      assert.equal(body.trace.state, item.expectedState);
+      assert.equal(body.eventCount, item.expectedCount);
+      assert.equal(body.complete, true);
+      assert.deepEqual(body.events, direct.resolution.events);
+      assert.deepEqual(body.events.map(({ sequence }) => sequence), body.events.map((_, index) => index + 1));
+      for (const event of body.events) assert.deepEqual(Object.keys(event).sort(), L14_EVENT_KEYS);
+      const serialized = JSON.stringify(body);
+      for (const forbidden of ["payloadJson", "idempotencyKey", "actorId", "@example.test", "Bearer ", DEFAULT_ONBOARDING_BODY]) {
+        assert.equal(serialized.includes(forbidden), false, forbidden);
+      }
+    }
+    for (let index = 0; index < 3; index += 1) {
+      const response = await invokeL14(cases[index % cases.length]);
+      assert.equal(response.status, 200);
+    }
+    assert.deepEqual(l14Counts(harness.database), before);
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L14 handler fails closed for auth, input, tenant, integrity, and dependency attacks", async () => {
+  const harness = await freshL14Harness();
+  const { fixture } = harness;
+  const ownerA = l14User(fixture.identity.ownerA);
+  try {
+    let lookupCount = 0;
+    const countedResolve = async () => {
+      lookupCount += 1;
+      return { kind: "not_found" };
+    };
+    const unauthenticated = await invokeL14({
+      user: null,
+      workspaceId: fixture.identity.workspaceA,
+      traceId: harness.pendingA.traceId,
+      resolve: countedResolve,
+    });
+    assert.equal(unauthenticated.status, L14_ERRORS.unauthenticated.status);
+    assert.deepEqual(await unauthenticated.json(), L14_ERRORS.unauthenticated.body);
+    assert.equal(lookupCount, 0);
+
+    for (const request of [
+      { workspaceId: "bad/id", traceId: harness.pendingA.traceId },
+      { workspaceId: fixture.identity.workspaceA, traceId: "x".repeat(129) },
+      { workspaceId: fixture.identity.workspaceA, traceId: harness.pendingA.traceId, query: "?fields=payloadJson" },
+    ]) {
+      const response = await invokeL14({ user: ownerA, ...request, resolve: countedResolve });
+      assert.equal(response.status, L14_ERRORS.invalid.status);
+      assert.deepEqual(await response.json(), L14_ERRORS.invalid.body);
+    }
+    assert.equal(lookupCount, 0);
+
+    const before = l14Counts(harness.database);
+    const notFoundRequests = [
+      { workspaceId: fixture.identity.workspaceB, traceId: harness.completedB.traceId },
+      { workspaceId: fixture.identity.workspaceA, traceId: harness.completedB.traceId },
+      { workspaceId: "l14-absent-workspace", traceId: "l14-absent-trace" },
+    ];
+    const notFoundBodies = [];
+    for (const request of notFoundRequests) {
+      const response = await invokeL14({
+        user: ownerA,
+        ...request,
+        headers: {
+          "x-user-id": fixture.identity.ownerB.userId,
+          "x-workspace-id": fixture.identity.workspaceB,
+          cookie: `active_workspace=${fixture.identity.workspaceB}`,
+        },
+      });
+      assert.equal(response.status, L14_ERRORS.notFound.status);
+      notFoundBodies.push(await response.text());
+    }
+    assert.equal(new Set(notFoundBodies).size, 1);
+    assert.equal(notFoundBodies[0], JSON.stringify(L14_ERRORS.notFound.body));
+
+    const emptyTraceId = "l14-empty-trace";
+    insert(harness.database, "flight_traces", {
+      id: emptyTraceId,
+      workspace_id: fixture.identity.workspaceA,
+      trace_key: emptyTraceId,
+      fixture_key: "l14-empty-fixture",
+      truth_mode: "FIXTURE",
+      current_state: "collecting",
+      retention_class: "review_evidence",
+      retention_until: "2027-08-31T00:00:00.000Z",
+      created_by: ownerA.userId,
+    });
+    const beforeIncompleteRead = l14Counts(harness.database);
+    const incomplete = await invokeL14({
+      user: ownerA,
+      workspaceId: fixture.identity.workspaceA,
+      traceId: emptyTraceId,
+    });
+    assert.equal(incomplete.status, L14_ERRORS.incomplete.status);
+    assert.deepEqual(await incomplete.json(), L14_ERRORS.incomplete.body);
+    assert.deepEqual(l14Counts(harness.database), beforeIncompleteRead);
+
+    for (const corruption of L14_CORRUPTIONS) {
+      await assert.rejects(
+        projectFlightTraceEvents({
+          workspaceId: fixture.identity.workspaceB,
+          traceId: fixture.identity.traceB,
+          rows: corruption.rows,
+        }),
+        /l04_trace_projection_incomplete/,
+      );
+      const response = await invokeL14({
+        user: ownerA,
+        workspaceId: fixture.identity.workspaceA,
+        traceId: harness.pendingA.traceId,
+        resolve: async () => ({ kind: "incomplete" }),
+      });
+      assert.equal(response.status, corruption.expected.status);
+      const body = await response.json();
+      assert.deepEqual(body, corruption.expected.body);
+      assert.equal("events" in body, false);
+    }
+
+    const unknown = fixture.unknownEvent.projected;
+    const unknownResponse = await invokeL14({
+      user: ownerA,
+      workspaceId: fixture.identity.workspaceA,
+      traceId: harness.pendingA.traceId,
+      resolve: async () => ({
+        kind: "found",
+        resolution: {
+          workspaceRef: fixture.identity.workspaceA,
+          trace: {
+            id: harness.pendingA.traceId,
+            traceKey: harness.pendingA.traceKey,
+            state: harness.pendingA.traceState,
+            truthMode: harness.pendingA.truthMode,
+          },
+          events: [unknown],
+        },
+      }),
+    });
+    const unknownBody = await unknownResponse.json();
+    assert.deepEqual(unknownBody.events[0].details, {});
+    const unknownSerialized = JSON.stringify(unknownBody);
+    for (const forbidden of ["private email body", "Bearer l14-secret-token-value", "hidden@example.test", "providerPayload"]) {
+      assert.equal(unknownSerialized.includes(forbidden), false, forbidden);
+    }
+
+    const unavailable = await invokeL14({
+      user: ownerA,
+      workspaceId: fixture.identity.workspaceA,
+      traceId: harness.pendingA.traceId,
+      resolve: async () => { throw new Error("SQLITE_BUSY: internal detail"); },
+    });
+    assert.equal(unavailable.status, L14_ERRORS.unavailable.status);
+    const unavailableText = await unavailable.text();
+    assert.equal(unavailableText, JSON.stringify(L14_ERRORS.unavailable.body));
+    assert.equal(unavailableText.includes("SQLITE_BUSY"), false);
+    assert.deepEqual(l14Counts(harness.database), { ...beforeIncompleteRead });
+    assert.equal(before.traces + 1, beforeIncompleteRead.traces);
+  } finally {
+    harness.database.close();
+  }
+});
+
+test("L14 route delegates strict authentication to the tenant-bound read-only resolver", async () => {
+  const [auth, handler, route, resolver] = await Promise.all([
+    readFile(new URL("app/crosssignal-auth.ts", root), "utf8"),
+    readFile(new URL("app/trace-resolution.ts", root), "utf8"),
+    readFile(new URL("app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts", root), "utf8"),
+    readFile(new URL("db/trace-resolution.ts", root), "utf8"),
+  ]);
+  assert.match(auth, /getStrictCrossSignalUser[\s\S]+return getChatGPTUser\(\)/);
+  assert.match(route, /export const dynamic = "force-dynamic"/);
+  assert.equal((route.match(/export async function GET/g) ?? []).length, 1);
+  assert.doesNotMatch(route, /export async function (?:POST|PUT|PATCH|DELETE)/);
+  assert.doesNotMatch(route, /^import \{ resolveFlightTrace \}/m);
+  assert.match(route, /resolve: async \(input\)[\s\S]+await import\([\s\S]+db\/trace-resolution/);
+  assert.match(handler, /const \{ workspaceId, traceId \} = await context\.params/);
+  assert.match(handler, /searchParams\.size > 0/);
+  assert.match(handler, /Cache-Control/);
+  assert.match(resolver, /workspace_id = \? AND user_id = \? AND role = 'owner'/);
+  assert.equal((resolver.match(/WHERE workspace_id = \? AND (?:id|trace_id) = \?/g) ?? []).length, 2);
+  assert.match(resolver, /projectFlightTraceEvents/);
+  for (const forbidden of ["INSERT INTO", "UPDATE ", "DELETE FROM", "getOrCreateFlightRecorderSnapshot"] ) {
+    assert.equal(resolver.includes(forbidden), false, forbidden);
+    assert.equal(handler.includes(forbidden), false, forbidden);
   }
 });

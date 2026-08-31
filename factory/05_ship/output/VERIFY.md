@@ -1,58 +1,71 @@
 ---
-type: stage-verification
+type: verification-record
 stage: 05_ship
-unit: append-only-authority-control-history-and-trace-projection-completeness
 status: passed
-verified_at: 2026-08-26T00:42:51.2205010+05:30
-environment: Windows; Node 22+; node:sqlite; vinext production build
+verified_at: 2026-08-31T18:02:51Z
+environment: local-windows-node
+truth_mode: FIXTURE
 ---
 
-# Stage 05 verification
+# L14 Stage 05 verification record
 
-## Result
+## Environment
 
-Passed. The evaluator package binds the accepted L04 evidence, current product
-head, compatibility correction, cold preparation check, and reviewer script.
-It is ready for human review but is not committed or sealed.
+- OS: `Microsoft Windows 10.0.26200`
+- Node: `v22.15.0`
+- Package manager: repository npm scripts with the existing lockfile
+- Runtime evidence: accepted Stage 04 local Vinext HTTP probes
+- Durable success evidence: migrated in-memory SQLite with labeled `FIXTURE` histories
+- Release inventory: `115` existing non-generated files outside Stage 05 output
+- Environment secret values read: none
+
+## Artifact bindings
+
+| Input | SHA-256 |
+|---|---|
+| `factory/05_ship/prepare.mjs` | `ffb2920821f3203046ce2b1d7f8a894e7b9192153520ec74dea45b6dbe2a391b` |
+| `factory/05_ship/verify.mjs` | `4d7a6f8832dd1f7a1bbc49716f34048a2018f3acdcd7813d3de984e3ac3d2cac` |
+| `factory/05_ship/output/RELEASE_MANIFEST.md` | `266b76349fd6cebb131cad5bf221aab27c77eab29f6a8f2c3bc3825212212bfe` |
+| `factory/05_ship/output/DEMO_SCRIPT.md` | `3f52ccb4f78243a9fb8e92d9182fb672eb8c2735c0b17c98dcc383cc4825f01a` |
 
 ## Commands
 
-| Command | Exit | Summary |
-|---|---:|---|
-| `node factory/05_ship/prepare.mjs` | 0 | Stage 04 accepted/bound, fixture valid, prior stages complete, and FIXTURE/TEST truth printed. |
-| `node node_modules/tsx/dist/cli.mjs --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs` | 0 | 75 passed, 0 failed; factory tools, rendered output, L04, L08, and L06 coverage green. |
-| `node node_modules/tsx/dist/cli.mjs --test --test-name-pattern "fails the Spec gate" tests/icm-workspace.test.mjs` | 0 | 1 passed, 0 failed; import-safe Stage 01 compatibility contract green. |
-| `node node_modules/eslint/bin/eslint.js <bound L04 product/tests and Stage 05 scripts>` | 0 | Focused release-head and packaging lint passed. |
-| `node factory/04_verify/verify.mjs` | 0 | Accepted release-grade Stage 04 battery reran successfully. |
-| `node node_modules/vinext/dist/cli.js build` | 0 | Independent production build completed. |
-| `node factory/05_ship/verify.mjs` | 1 | Initial diagnostic stopped on an over-broad non-claim regex that misclassified “No LIVE email is sent”; verifier-only guard corrected and script/manifest rebound. |
-| `node factory/05_ship/verify.mjs` | 0 | Release bindings, instructions, coverage, scope, tests, lint, build, factory state, gate, and stash checks passed. |
-| `node factory/05_ship/verify.mjs` after gate acceptance | 1 | Post-acceptance diagnostic found the preparation/state checks recognized only the open-gate state; scripts corrected to accept both Stage 05 review and completed-pipeline states. |
-| `git diff --check` | 0 | No whitespace errors. |
-| `node factory/status.mjs` | 0 | Stages 01-04 complete/accepted/fresh; Stage 05 active with an open human gate. |
+| Timestamp UTC | Command | Exit | Relevant result |
+|---|---|---:|---|
+| `2026-08-31T13:36:16Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run demo:prepare` | `0` | Ended `13:36:17Z`; all `115` release-head files matched and the cold path required no hidden repair. |
+| `2026-08-31T13:34:02Z` | `& '.\\node_modules\\.bin\\tsx.cmd' --test tests/flight-recorder-build.test.mjs` | `0` | Ended `13:34:07Z`; `57` passed, `0` failed, including both L14 success traces and all negative boundaries. |
+| `2026-08-31T18:02:45Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run lint` | `0` | Ended `18:02:51Z`; final ESLint completed without findings. |
+| `2026-08-31T13:35:34Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run build` | `0` | Ended `13:35:40Z`; five Vinext environments built and the dynamic L14 route was emitted. |
+| `2026-08-31T18:02:45Z` | `git diff --check` | `0` | Ended `18:02:46Z`; no whitespace errors. |
+| `2026-08-31T18:02:45Z` | `& '.\\node_modules\\.bin\\tsx.cmd' factory/05_ship/verify.mjs` | `0` | Release-head coverage, cold runbook, accepted Stage 04 evidence, output bindings, and open gate validated. |
+| `2026-08-31T18:02:45Z` | `& 'C:\\Program Files\\nodejs\\node.exe' factory/status.mjs` | `0` | Ended `18:02:45Z`; Stages 01-04 complete and accepted, with Stage 05 dependencies and release head both fresh and waiting only on its human gate. |
 
-## Coverage
+## Stage-owned corrections
 
-| Measure | Result |
-|---|---:|
-| Acceptance criteria | 12 / 12 |
-| Negative cases | 12 / 12 |
-| Authority race schedules | 3 / 3 |
-| Migration schedules | 6 / 6 |
-| Ordered reference trace events | 34 / 34 |
-| Independent relevant-suite tests | 75 passed / 0 failed |
-| Focused ICM contract | 1 passed / 0 failed |
-| Benchmark stashes | 3 preserved |
+The first cold-preparation attempt at `13:32:32Z` found that its runbook check
+expected npm shorthand while the runbook used the absolute Windows npm path.
+The helper assertion was corrected and the manifest rebound; the next run and
+the final run passed.
 
-## Deferred final checks
+The first Stage 05 lint at `13:34:03Z` found one unused verifier variable. The
+redundant read was removed and the verifier hash was rebound; final lint passed.
+Neither correction changed product code, accepted Stage 04 evidence, fixtures,
+or durable data.
 
-The end-of-pipeline factory-state assertion and `node factory/seal.mjs` require
-an accepted Stage 05 gate and a clean committed worktree. They are deliberately
-deferred until the project owner accepts this package and explicitly authorizes
-commit/seal. The ICM catalog case remains excluded from this governed run.
+The first derived status check showed root dotfile bindings as stale because
+leading-dot paths are resolved relative to the manifest directory. The three
+root dotfile bindings were expressed as canonical `../../../...` paths, the helper
+and manifest were rebound, and both cold preparation and derived status then
+agreed on the same fresh 115-file head.
 
-## Scope result
+## Evidence disposition
 
-No product/test path changed during Stage 05. No L14 endpoint, route,
-middleware, worker, provider, authentication, or graph-topology surface was
-added. FIXTURE/TEST labels and non-claims remain explicit.
+The release manifest binds the complete governed release inventory and the
+human gate separately binds all Stage 05 outputs. The cold runbook preserves
+the `FIXTURE` label, distinguishes the local no-D1 HTTP boundary from durable
+fixture success, and contains no repair step.
+
+## Disposition
+
+`status: passed`. Stage 05 opens its human gate and stops. Commit and seal are
+not authorized until a human accepts the gate.

@@ -1,84 +1,126 @@
 ---
-type: evaluator-demo-script
+type: evaluator-runbook
 stage: 05_ship
-unit: append-only-authority-control-history-and-trace-projection-completeness
-status: ready-for-review
-truth_mode: FIXTURE-and-TEST
-created: 2026-08-26
+unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
+status: ready
+truth_mode: FIXTURE
 ---
 
-# L04 cold evaluator script
+# L14 cold evaluator script
 
-## Purpose
+## Promise
 
-Verify that CrossSignal preserves append-only workspace authority history,
-binds each consequential effect to the exact current control event, and renders
-the complete ordered tenant-scoped redacted trace. This is a FIXTURE/TEST demo,
-not a LIVE provider or production tenant claim.
+This runbook demonstrates one read-only endpoint:
 
-## Prerequisites
-
-- Clean checkout of the candidate commit.
-- Node.js 22.13 or newer and npm.
-- No production credentials or external provider account is required.
-
-## Cold automated proof
-
-```powershell
-npm ci
-node factory/05_ship/prepare.mjs
-node factory/05_ship/verify.mjs
+```text
+GET /api/workspaces/{workspaceId}/traces/{traceId}
 ```
 
-Expected preparation output identifies accepted Stage 04 evidence, persisted
-FIXTURE truth, the TEST adapter, and this script. Expected verification output
-reports 12/12 acceptance criteria, 12/12 negative cases, 75 independent tests,
-3 authority races, 6 migration schedules, 34 reference trace events, a passing
-production build, and 3 preserved benchmark stashes.
+It proves strict authentication and stable local HTTP boundaries, then uses a
+migrated in-memory database with labeled `FIXTURE` histories to prove tenant
+scope, complete L04 projection, ordering, redaction, integrity, secrecy, and
+read-only behavior. It is not a deployed endpoint or live D1 demonstration.
 
-## Reviewer flow
+## Preconditions
 
-1. Run `npm run dev` and open the local URL printed by Vinext.
-2. Enter through the development owner flow and select the seeded workspace.
-3. Confirm the page visibly labels evidence and the persisted narrative trace
-   as `FIXTURE`, and the consequential email action as `TEST`.
-4. In the authority control, pause actions, resume them, and confirm the
-   workspace history retains the complete ordered transition sequence.
-5. Authorize the exact TEST action. Confirm the effect appears only after the
-   latest unengaged control event and that its persisted trace detail identifies
-   the exact authority event sequence/hash used at reservation.
-6. Inspect `Persisted FIXTURE trace`. Confirm sequence order is contiguous,
-   actors use closed display labels, and no raw payload, actor ID, recipient,
-   message body, provider response, credential, or secret appears.
-7. Pause again after the completed reservation. Confirm the earlier effect
-   still points to its historical authority proof while current authority is
-   engaged.
-8. Reset the exact FIXTURE trace. Confirm the trace is regenerated while the
-   workspace authority-control history remains present.
+- Start at the reviewed repository checkout with dependencies already present.
+- Use Windows PowerShell, Node `v22.15.0` or another supported Node `>=22.13.0`,
+  and no environment secret values.
+- Do not edit files, regenerate fixtures, generate migrations, or apply stashes.
 
-## Focused negative probes
+## 1. Confirm governed state
 
 ```powershell
-node node_modules/tsx/dist/cli.mjs --test --test-name-pattern "L04" tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs
+& 'C:\Program Files\nodejs\node.exe' factory/status.mjs
 ```
 
-The matching tests prove immutable history, stale race rollback, deterministic
-legacy bootstrap, exact effect binding, bounded reset, projection completeness,
-tenant collision rejection, and redaction. Nonmatching tests are reported as
-skipped by the Node test runner.
+Expected before human acceptance: Stages 01-04 are complete and accepted,
+Stage 05 is active at its human gate, and the release is not yet sealed.
 
-## Expected limitations
+## 2. Validate the cold release package
 
-- No L14 HTTP trace-resolution endpoint exists.
-- No LIVE email is sent; the adapter is TEST and evidence/outcomes are FIXTURE.
-- A single-workspace screen does not visually prove tenant isolation; database
-  and runtime collision tests provide that proof.
-- The outcome is correlated fixture evidence, not causal inference.
-- Seal verification is performed only after human gate acceptance and commit.
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run demo:prepare
+```
 
-## Stop condition
+Expected: the helper reports that every release-head file matches the manifest
+and that the evaluator path requires no hidden repair.
 
-Stop and reject the release if any truth badge is missing, authority history is
-rewritten or lost, an effect lacks the exact control binding, projection order
-or count differs, sensitive payload data appears, a tenant probe succeeds, or
-any governed verifier exits nonzero.
+## 3. Execute the durable FIXTURE story
+
+```powershell
+& '.\node_modules\.bin\tsx.cmd' --test tests/flight-recorder-build.test.mjs
+```
+
+Expected: `57` tests pass. The L14 cases execute a 28-event pending trace and a
+49-event completed trace through the real handler, tenant-bound resolver,
+migrated in-memory database, and L04 projector. They also exercise identical
+non-disclosing `404` responses, five corruptions, stable errors, secret
+suppression, and repeated-read invariance.
+
+## 4. Check source and production compilation
+
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run lint
+& 'C:\Program Files\nodejs\npm.cmd' run build
+```
+
+Expected: lint passes and Vinext emits the dynamic route
+`/api/workspaces/:workspaceId/traces/:traceId`.
+
+## 5. Probe the local production HTTP boundary
+
+Start the server:
+
+```powershell
+& 'C:\Program Files\nodejs\npm.cmd' run start -- --host 127.0.0.1 --port 4174
+```
+
+From a second PowerShell terminal, prove authentication-first route loading:
+
+```powershell
+curl.exe -sS -i "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"
+```
+
+Expected: HTTP `401`, `Cache-Control: private, no-store`, JSON content type, and
+`{"error":{"code":"authentication_required"}}`.
+
+Prove authenticated query rejection before lookup:
+
+```powershell
+curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" -H "oai-authenticated-user-email: owner-a@example.test" -H "oai-authenticated-user-full-name: Owner%20A" -H "oai-authenticated-user-full-name-encoding: percent-encoded-utf-8" "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a?fields=payloadJson"
+```
+
+Expected: HTTP `400`, the same no-store and JSON headers, and
+`{"error":{"code":"invalid_trace_request"}}`.
+
+Prove dependency failure masking without a local D1 binding:
+
+```powershell
+curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" -H "oai-authenticated-user-email: owner-a@example.test" -H "oai-authenticated-user-full-name: Owner%20A" -H "oai-authenticated-user-full-name-encoding: percent-encoded-utf-8" "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"
+```
+
+Expected: HTTP `500`, the same no-store and JSON headers, and
+`{"error":{"code":"trace_resolution_unavailable"}}`. This is an expected
+masked local dependency result, not a successful D1 lookup. Stop the server
+with `Ctrl+C` after the probes.
+
+## 6. Inspect the release evidence
+
+Review:
+
+- `factory/04_verify/output/VERIFICATION_REPORT.md`
+- `factory/05_ship/output/RELEASE_MANIFEST.md`
+- `factory/05_ship/output/VERIFY.md`
+- `factory/05_ship/output/HUMAN_GATE.md`
+
+Confirm the release remains labeled `FIXTURE`, all 14 acceptance IDs and 12
+negative IDs are resolved, and no deployed, live D1, external integration, or
+UI claim is made.
+
+## Stop rule
+
+No repair, fixture regeneration, migration generation, or file edit is part of
+this cold run. If any expected result differs, stop and report the first broken
+boundary; do not patch the release while demonstrating it. Commit and seal are
+separate actions after human acceptance of Stage 05.

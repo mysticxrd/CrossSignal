@@ -3,25 +3,35 @@ type: human-gate
 stage: 01_spec
 gate_status: closed
 decision: accepted
-reviewer: project-owner
-reviewed_at: 2026-08-25T14:13:59.5178938+05:30
-spec_sha256: a61807c8500b2b1038c8acdeb340d82999fc86c1be53bd428e6390f74204a527
-verification_sha256: 821e81f24e1dd96e36c1bc9d3c06e42ef7c9e7797f5afa10f3f51e712b666de1
+reviewer: human
+reviewed_at: 2026-08-27T17:45:26.644Z
+spec_sha256: b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371
+verification_sha256: 780c09d4a94cf68fd2906f1d3c8447ded38e8eb339c92b7af57cdbdee3acc24b
 ---
 
 # Stage 01 human gate
 
-The project owner accepted the current specification and verification hashes.
-This closes Stage 01 and authorizes Stage 02 only.
+The human reviewer accepted the bounded L14 specification and authorized the
+factory to continue to Stage 02.
 
-## Review prompts
+## Review checklist
 
-- Is append-only workspace authority history the intended L04 correction?
-- Must the latest valid history event be the only runtime kill-switch truth?
-- Does the required trace event coverage preserve L08 authority behavior?
-- Is the redacted internal projection complete enough for L14 to expose later?
-- Are the L14 endpoint and unrelated product work clearly excluded?
+- [x] The route and v1 response are exactly bounded.
+- [x] Authentication is strict and non-redirecting.
+- [x] Tenant isolation fails closed without resource-existence disclosure.
+- [x] The response reuses the complete ordered L04 redacted projection.
+- [x] Failure semantics and all fourteen acceptance criteria are observable.
+- [x] Explicit exclusions keep L14 read-only and prevent scope expansion.
 
-## Corrections
+## Reviewed artifact
 
-None recorded.
+| Artifact | SHA-256 |
+|---|---|
+| `factory/01_spec/output/SPEC.md` | `b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371` |
+| `factory/01_spec/output/VERIFY.md` | `780c09d4a94cf68fd2906f1d3c8447ded38e8eb339c92b7af57cdbdee3acc24b` |
+
+## Decision
+
+`accepted`
+
+Accepted on the user's instruction to continue to Stage 02.

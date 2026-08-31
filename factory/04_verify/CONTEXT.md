@@ -1,98 +1,77 @@
 ---
 type: stage-contract
 stage: 04_verify
-unit: append-only-authority-control-history-and-trace-projection-completeness
+unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
 status: active
+truth_mode: FIXTURE
 ---
 
-# 04_verify - establish release-grade L04 evidence
+# 04_verify - turn the working L14 slice into release-grade evidence
 
-One job: independently verify the accepted L04 build against every accepted
-criterion and negative case, record reproducible release-grade evidence, and
-stop without changing product behavior or entering the L14 endpoint.
+One job: independently verify the complete authenticated, tenant-scoped,
+redacted, ordered trace-resolution promise and resolve every accepted Stage 03
+acceptance and negative case with reproducible local evidence.
 
 ## Inputs
 
 - Freshness dependency: `../03_build/output/BUILD_EVIDENCE.md`
-- Freshness dependency: `../03_build/output/VERIFY.md`
 - Freshness dependency: `../03_build/output/HUMAN_GATE.md`
-- Freshness dependency: `../01_spec/output/SPEC.md`
-- Freshness dependency: `../02_data/output/DATA_PACKAGE.md`
-- Freshness dependency: `../02_data/fixtures/l04-authority-trace.fixture.mjs`
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Tooling dependency: `../_lib/verify-kit.mjs`
-- Tooling dependency: `../_lib/factory-state.mjs`
-- Tooling dependency: `../../package.json`
-- Tooling dependency: `../../eslint.config.mjs`
-- Tooling dependency: `../../tsconfig.json`
-- Authorized upstream compatibility correction: `../01_spec/verify.mjs`
-- Observed compatibility contract: `../../tests/icm-workspace.test.mjs`
-- Observed product: `../../db/flight-recorder-schema.ts`
-- Observed product: `../../db/flight-recorder-contracts.ts`
-- Observed product: `../../db/flight-recorder.ts`
-- Observed product: `../../db/flight-recorder-demo.ts`
-- Observed product: `../../db/flight-recorder-graph.ts`
-- Observed product: `../../db/migrations.ts`
-- Observed product: `../../app/flight-recorder-types.ts`
-- Observed product: `../../app/CrossSignalApp.tsx`
-- Observed product: `../../drizzle/0008_l04_authority_history_trace_projection.sql`
-- Observed product: `../../drizzle/meta/0008_snapshot.json`
-- Observed product: `../../drizzle/meta/_journal.json`
-- Observed product: `../../tests/flight-recorder-data.test.mjs`
-- Observed product: `../../tests/flight-recorder-build.test.mjs`
-- Observed product: `../../tests/fixtures/l04-authority-trace.fixture.mjs`
-- Stage-owned surface: `output/VERIFICATION_REPORT.md`
-- Stage-owned surface: `output/VERIFY.md`
-- Stage-owned surface: `output/HUMAN_GATE.md`
-- Stage-owned surface: `verify.mjs`
+- Verification helper: `../_lib/verify-kit.mjs`
+- Observed baseline: `../../package.json`
+- Observed baseline: `../../app/crosssignal-auth.ts`
+- Observed baseline: `../../app/trace-resolution.ts`
+- Observed baseline: `../../app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts`
+- Observed baseline: `../../db/trace-resolution.ts`
+- Observed baseline: `../../tests/flight-recorder-build.test.mjs`
+- Observed baseline: `../02_data/fixtures/l14-trace-resolution.fixture.mjs`
+- Stage-owned surface: `verify.mjs` and `output/`
 
-Do not load or change: product code, product tests, later stages, `_archive/`,
-the source vault, routes/endpoints, middleware, worker code, provider behavior,
-graph topology, or any path not named above.
+Do not load: later stages, `_archive/`, the whole repository, generated build
+output, dependency source, environment secret values, or any reference not
+named above. Stage 04 does not change durable product code.
 
 ## Process
 
-1. Read and hash every declared input by role; confirm Stage 03 is accepted.
-2. Independently map all twelve acceptance criteria and twelve negative cases
-   to durable schema, runtime, fixture, test, and UI evidence.
-3. Run fixture validation, the product data/build suite, L08/L06 regressions,
-   lint, production build, rendered-output checks, the focused import-safe ICM
-   specification contract, and Stage 03 verification. Do not execute the ICM
-   catalog case that deliberately reads `_archive/`; its end-of-pipeline state
-   case remains owned by Stage 05 after Ship outputs exist.
-4. Inspect migration atomicity, authority races, tenant collisions, redaction,
-   bounded reset, truth labels, and L14 scope exclusion.
-5. Record exact commands, results, hashes, limitations, and release risks.
-6. Write the report and verification artifacts, then stop.
+1. Read and hash every declared input by role.
+2. Infer and record the complete flow: authenticated request -> tenant-bound
+   membership/trace/event reads -> L04 projection -> stable redacted response.
+3. Inspect each boundary and independently execute the accepted success,
+   failure, integrity, isolation, secrecy, and read-only cases.
+4. Run focused tests, lint, production build, the Stage 04 verifier, and diff
+   inspection. Stop on the first broken boundary and route correction upstream.
+5. Write release-grade evidence with an explicit `FIXTURE` truth label, then
+   open the human gate and stop.
 
 ## Outputs
 
 - `output/VERIFICATION_REPORT.md`
 - `output/VERIFY.md`
-- `output/HUMAN_GATE.md` - opened for reviewer decision
+- `output/HUMAN_GATE.md`
 
 ## Verify
 
-Run `node factory/04_verify/verify.mjs`. It must fail on input drift, an
-unaccepted Stage 03 gate, missing criterion/negative coverage, fixture drift,
-mutable or ambiguous authority history, stale/missing effect binding, incomplete
-or unsafe projection, tenant leakage, reset loss, truth/provider mislabeling,
-L08/L06 regression, unauthorized product mutation, L14 scope entry, lint/test/
-build/render failure, or incomplete verification artifacts.
+The verification report must resolve `AC-L14-01` through `AC-L14-14` and
+`NEG-L14-01` through `NEG-L14-12`, bind the exact route-to-data-to-response
+surfaces, show `28` pending and `49` completed ordered events, exercise all
+five corruptions through the real L04 projector, prove byte-identical
+non-disclosing `404` responses, prove stable `400`/`401`/`409`/`500` envelopes,
+and prove repeated reads do not mutate durable counts.
 
-Record exact commands, timestamps, environment, exit codes, output summaries,
-and normalized input/product/report hashes in `output/VERIFY.md` with
-`status: passed`.
+Record exact command, timestamp, Windows/Node environment, exit code, and
+relevant output. Lint, focused tests, production build, verifier, and
+`git diff --check` must pass. A local fixture-backed result is not a deployed or
+live-integration claim.
 
 ## Human gate
 
-The reviewer inspects criterion resolution, negative evidence, residual risks,
-and reproducibility, then binds `VERIFICATION_REPORT.md` and `VERIFY.md` hashes
-with `accepted`, `changes-requested`, or `rejected`. Do not begin Stage 05
-without `accepted`.
+The reviewer inspects the verification report and verification record, records
+their hashes, and chooses `accepted`, `changes-requested`, or `rejected`.
+Verification opens this gate but never accepts it. Do not begin Stage 05 without
+an accepted Stage 04 gate.
 
 ## Failure routing
 
-Return any defect to Stage 03 or its upstream contract. Stage 04 never patches
-the product or weakens a guard to manufacture a passing report.
+Correct Stage 04 evidence or route a real product defect back to Stage 03. Do
+not patch Stage 05 to hide an earlier defect.

@@ -1,57 +1,58 @@
 ---
-type: stage-verification
+type: verification-record
 stage: 04_verify
-unit: append-only-authority-control-history-and-trace-projection-completeness
 status: passed
-verified_at: 2026-08-26T00:22:27.1302396+05:30
-environment: Windows; Node 22+; node:sqlite; vinext production build
+verified_at: 2026-08-31T13:18:07Z
+environment: local-windows-node
+truth_mode: FIXTURE
 ---
 
-# Stage 04 verification
+# L14 Stage 04 verification record
 
-## Result
+## Environment
 
-Passed. All governed Stage 04 evidence is reproducible, the accepted Stage 03
-gate and product head are fresh, and the L04 release is ready for human review.
-Stage 05 and L14 remain unauthorized.
+- OS: `Microsoft Windows 10.0.26200`
+- Node: `v22.15.0`
+- Runtime evidence: local Vinext production server on `127.0.0.1:4174`
+- Data evidence: migrated in-memory SQLite with explicitly labeled `FIXTURE` histories
+- Browser/UI evidence: not applicable; L14 exposes an HTTP API without a UI entry point
+- Secret values read: none
+
+## Artifact bindings
+
+| Input | SHA-256 |
+|---|---|
+| `factory/04_verify/verify.mjs` | `49358bdfd13d7c102ecd7cd8f1a0467f839aefde04dfee9d1ac9dc3ef3641b5d` |
+| `factory/04_verify/output/VERIFICATION_REPORT.md` | `1db772fa55840bdb8d5dab2daa26da1ca8e21ea1d91d0153b19415b34b950400` |
 
 ## Commands
 
-| Command | Exit | Summary |
-|---|---:|---|
-| `node node_modules/tsx/dist/cli.mjs --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs` | 1 | Initial diagnostic: 75 passed; whole ICM module failed to import the missing Stage 01 `validateSpec` export. This exposed the authorized upstream compatibility correction and was not treated as final evidence. |
-| `node node_modules/tsx/dist/cli.mjs --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs` | 0 | 75 passed, 0 failed; factory tools, rendered output, L04 data/runtime, and L08/L06 regressions green. |
-| `node node_modules/tsx/dist/cli.mjs --test --test-name-pattern "fails the Spec gate" tests/icm-workspace.test.mjs` | 0 | 1 passed, 0 failed; corrected Stage 01 verifier imports safely and exposes the pure generic specification contract. |
-| `node node_modules/eslint/bin/eslint.js app/CrossSignalApp.tsx app/flight-recorder-types.ts db/flight-recorder-schema.ts db/flight-recorder-contracts.ts db/flight-recorder-graph.ts db/flight-recorder.ts db/migrations.ts tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs factory/01_spec/verify.mjs tests/icm-workspace.test.mjs` | 0 | Focused product, test, and authorized compatibility-correction lint passed. |
-| `node factory/03_build/verify.mjs` | 0 | Accepted Stage 03 verifier passed: 63 product tests, fixture parity, static guards, lint, and production build. |
-| `node node_modules/vinext/dist/cli.js build` | 0 | Independent production build completed. |
-| `node factory/04_verify/verify.mjs` | 0 | Stage-owned hash, gate, fixture, acceptance, negative-case, test, lint, build, and scope verifier passed. |
-| `git diff --check` | 0 | No whitespace errors. |
-| `node factory/status.mjs` | 0 | Stages 01-03 complete/accepted/fresh; Stage 04 active with an open human gate; Stage 05 not started. |
+| Timestamp UTC | Command | Exit | Relevant result |
+|---|---|---:|---|
+| `2026-08-31T13:08:00Z` | `& '.\\node_modules\\.bin\\tsx.cmd' --test tests/flight-recorder-build.test.mjs` | `0` | Ended `13:08:05Z`; `57` passed, `0` failed; both L14 success traces and all fail-closed cases passed. |
+| `2026-08-31T13:08:00Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run lint` | `0` | Ended `13:08:07Z`; ESLint completed without findings. |
+| `2026-08-31T13:08:26Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run build` | `0` | Ended `13:08:39Z`; five Vinext environments built and the dynamic L14 route was emitted. |
+| `2026-08-31T13:05:01Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run start -- --host 127.0.0.1 --port 4174` | `n/a` | Long-running server announced readiness; it was stopped after probes and port `4174` had no remaining listener. |
+| `2026-08-31T13:05:01Z` | `curl.exe -sS -i "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"` | `0` | HTTP `401`; exact JSON authentication error, JSON content type, and `private, no-store`. |
+| `2026-08-31T13:05:03Z` | `curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" [...] "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a?fields=payloadJson"` | `0` | HTTP `400`; exact JSON invalid-request error and `private, no-store`. |
+| `2026-08-31T13:05:02Z` | `curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" [...] "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"` | `0` | HTTP `500`; exact masked JSON unavailable error and `private, no-store`; no raw loader failure. |
+| `2026-08-31T13:14:56Z` | `git diff --check` | `0` | No whitespace errors. |
+| `2026-08-31T13:18:07Z` | `& '.\\node_modules\\.bin\\tsx.cmd' factory/04_verify/verify.mjs` | `0` | Accepted input hashes, source invariants, all 26 case outcomes, report bindings, and the open gate validated. |
 
-## Scope notes
+## Evidence disposition
 
-- The ICM catalog case is excluded because it deliberately loads `_archive/`,
-  which the governed run forbids.
-- The end-of-pipeline factory-state ICM case is deferred until Stage 05 creates
-  and binds Ship outputs.
-- The Stage 01 compatibility correction adds only a pure named export and an
-  import-safe CLI guard; it changes no accepted L04 spec or product behavior.
+The local production boundary proves authentication-first route loading,
+pre-lookup query rejection, stable cache headers, JSON error envelopes, and
+masked dependency failure. The migrated in-memory `FIXTURE` boundary proves
+the complete tenant-scoped resolver, L04 projection, two success histories,
+isolation, integrity, secrecy, ordering, and read-only invariance.
 
-## Fixture and coverage summary
+The initial sandboxed build preflight could not write Vite's temporary config
+file through the workspace dependency junction. The same governed build command
+was rerun with workspace write access and passed as recorded above; no product
+or factory input changed between those attempts.
 
-| Measure | Result |
-|---|---:|
-| Acceptance criteria | 12 / 12 |
-| Negative cases | 12 / 12 |
-| Authority race schedules | 3 / 3 |
-| Migration schedules | 6 / 6 |
-| Ordered reference trace events | 34 / 34 |
-| Independent relevant-suite tests | 75 passed / 0 failed |
-| Focused ICM contract | 1 passed / 0 failed |
-| Accepted Stage 03 product suite | 63 passed / 0 failed |
+## Disposition
 
-## Preserved state
-
-All three benchmark stashes remain present and unchanged. No Stage 05 output or
-L14 delivery surface was created.
+`status: passed`. Stage 04 opens its human gate and stops. Stage 05 is not
+authorized until that gate is accepted.

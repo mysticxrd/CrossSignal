@@ -18,6 +18,10 @@ export async function getCrossSignalUser(): Promise<ChatGPTUser | null> {
   return process.env.NODE_ENV === "development" ? DEVELOPMENT_OWNER : null;
 }
 
+export async function getStrictCrossSignalUser(): Promise<ChatGPTUser | null> {
+  return getChatGPTUser();
+}
+
 export async function requireCrossSignalUser(
   returnTo: string,
 ): Promise<ChatGPTUser> {

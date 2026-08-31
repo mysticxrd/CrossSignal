@@ -1,16 +1,15 @@
 ---
 type: stage-contract
 stage: 02_data
-unit: append-only-authority-control-history-and-trace-projection-completeness
 status: active
+unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
 ---
 
-# 02_data - make the L04 authority and trace contracts executable
+# 02_data - make the L14 HTTP contract executable
 
-One job: turn the accepted L04 specification into one hash-bound executable data
-package covering schema, migration, authority events, ordered trace projection,
-redaction, concurrency schedules, and negative fixtures without changing the
-durable product.
+One job: turn the accepted L14 specification into deterministic request,
+response, error, tenant-collision, integrity-failure, and redaction fixtures
+without implementing the endpoint.
 
 ## Inputs
 
@@ -18,69 +17,59 @@ durable product.
 - Freshness dependency: `../01_spec/output/HUMAN_GATE.md`
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Tooling dependency: `../_lib/verify-kit.mjs`
-- Tooling dependency: `../_lib/factory-state.mjs`
+- Verifier library: `../_lib/verify-kit.mjs`
+- Observed baseline: `../../app/chatgpt-auth.ts`
+- Observed baseline: `../../app/crosssignal-auth.ts`
+- Observed baseline: `../../db/workspaces.ts`
 - Observed baseline: `../../db/flight-recorder-schema.ts`
 - Observed baseline: `../../db/flight-recorder-contracts.ts`
 - Observed baseline: `../../db/flight-recorder.ts`
-- Observed baseline: `../../db/flight-recorder-demo.ts`
-- Observed baseline: `../../db/flight-recorder-graph.ts`
-- Observed baseline: `../../db/migrations.ts`
-- Observed baseline: `../../app/flight-recorder-types.ts`
-- Observed baseline: `../../app/CrossSignalApp.tsx`
-- Observed baseline: `../../drizzle/0004_typical_omega_red.sql`
-- Observed baseline: `../../drizzle/0005_flight_recorder_guards.sql`
-- Observed baseline: `../../drizzle/0006_l08_active_intent_authority.sql`
-- Observed baseline: `../../drizzle/0007_l06_persisted_graph_executor.sql`
-- Observed baseline: `../../tests/flight-recorder-data.test.mjs`
-- Observed baseline: `../../tests/flight-recorder-build.test.mjs`
+- Observed baseline: `../../tests/fixtures/l04-authority-trace.fixture.mjs`
+- Stage-owned surface: `CONTEXT.md`
+- Stage-owned surface: `fixtures/l14-trace-resolution.fixture.mjs`
+- Stage-owned surface: `verify.mjs`
 - Stage-owned surface: `output/DATA_PACKAGE.md`
 - Stage-owned surface: `output/VERIFY.md`
 - Stage-owned surface: `output/HUMAN_GATE.md`
-- Stage-owned surface: `fixtures/l04-authority-trace.fixture.mjs`
-- Stage-owned surface: `verify.mjs`
 
-Do not load: later stages, `_archive/`, the source vault, the whole repository,
-or any product path not named above.
+Do not load: later stages, `_archive/`, the whole repository, generated build
+output, dependency folders, or any reference not named above.
 
 ## Process
 
-1. Read and hash the accepted specification, gate, shared references, tooling,
-   and declared product baselines by role.
-2. Resolve exact durable identities, constraints, migration/backfill phases,
-   control-event authority checks, trace-event state chains, and redaction
-   allowlists.
-3. Encode the golden tenant, collision tenant, control transitions, authority
-   lineage, projection, duplicate/no-op cases, migration failures, and race
-   schedules in one deterministic executable fixture.
-4. Map all twelve accepted criteria and negative cases to Stage 03 product
-   paths and exact verification assertions.
-5. Write the data package and verification record, then stop.
+1. Read and hash the accepted spec, gate, two shared references, verifier
+   library, and exact observed baselines.
+2. Encode the v1 request/response/error shapes and all twelve negative cases in
+   one deterministic fixture with tenant-collision and corrupt-row variants.
+3. Write the data package, executable fixture, deterministic verifier,
+   verification record, and pending reviewer gate; then stop.
 
 ## Outputs
 
 - `output/DATA_PACKAGE.md`
 - `output/VERIFY.md`
-- `output/HUMAN_GATE.md` - opened for reviewer decision
+- `output/HUMAN_GATE.md`
+- `fixtures/l14-trace-resolution.fixture.mjs`
+- `verify.mjs`
 
 ## Verify
 
-Run `node factory/02_data/verify.mjs`. It must execute the fixture and fail
-closed on input drift, missing schema or migration constraints, ambiguous
-control/trace ordering, non-idempotent backfill, incomplete authority subject
-chains, projection omission or cross-tenant inclusion, secret leakage, missing
-race schedules, uncovered accepted criteria/negative cases, or L14 scope entry.
+Run `node factory/02_data/verify.mjs`. Record input hashes, fixture hash,
+output hashes, environment, command results, and `status: passed | failed` in
+`VERIFY.md`.
 
-Record the exact command, timestamp, environment, exit code, fixture result,
-and normalized artifact hashes in `output/VERIFY.md` with `status: passed`.
+The accepted Stage 01 outputs and two shared references are freshness
+dependencies. Observed product baselines remain historical bindings.
 
 ## Human gate
 
-The reviewer edits `DATA_PACKAGE.md` if needed, records the reviewed data
-package and verification hashes in `HUMAN_GATE.md`, and chooses `accepted`,
-`changes-requested`, or `rejected`. Do not begin Stage 03 without `accepted`.
+The reviewer confirms the fixture is deterministic, represents all fourteen
+acceptance criteria and twelve negative cases, keeps tenant collisions
+indistinguishable from absence, and cannot widen the L04 redaction allowlist.
+Record `accepted`, `changes-requested`, or `rejected` in `HUMAN_GATE.md`. Do not
+begin Stage 03 without `accepted`.
 
 ## Failure routing
 
-Correct the Stage 02 data package or return to the accepted specification.
-Never patch Stage 03 product code to compensate for an ambiguous data contract.
+Correct the data package or return to the accepted specification. Never alter
+the product implementation to hide a fixture or contract defect.

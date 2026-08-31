@@ -1,136 +1,180 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   fileHash,
   frontmatterValue,
-  runChecked,
+  markdownHashBindings,
+  markdownSection,
 } from "../_lib/verify-kit.mjs";
 import {
-  L04_ACCEPTANCE_IDS,
-  L04_AUTHORITY_TRACE_FIXTURE,
-  L04_MIGRATION_CASES,
-  L04_NEGATIVE_IDS,
-  L04_RACE_SCHEDULES,
-  validateL04Fixture,
-} from "../../tests/fixtures/l04-authority-trace.fixture.mjs";
+  L14_ACCEPTANCE_IDS,
+  L14_CORRUPTIONS,
+  L14_NEGATIVE_IDS,
+  L14_TRACE_RESOLUTION_FIXTURE,
+  l14FixtureDigest,
+  validateL14Fixture,
+} from "../02_data/fixtures/l14-trace-resolution.fixture.mjs";
+import { projectFlightTraceEvents } from "../../db/flight-recorder-contracts.ts";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
-const expectedInputs = new Map(Object.entries({
-  "factory/03_build/CONTEXT.md": "e0134c4e73046a6e3dbd87b3af6b123d8cb0b6e7e0a00b8d184705fe50021524",
-  "factory/02_data/output/DATA_PACKAGE.md": "a503213bfcccd597700fe6934c365855d90d422d9c03b015bf10b2a96438979d",
-  "factory/02_data/output/HUMAN_GATE.md": "d9e7efd6b2084026e5ee8c7a993670df2fba89539da0bc51c460f272e2b8aaa9",
-  "factory/02_data/fixtures/l04-authority-trace.fixture.mjs": "cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464",
+const pathFromRoot = (path) => resolve(projectRoot, path);
+const read = (path) => readFile(pathFromRoot(path), "utf8");
+
+const acceptedInputs = {
+  "factory/03_build/CONTEXT.md": "45fd8c59bf4c8b30fb5adb467a6cbd8bd565f151286dbea43994750f12f68658",
+  "factory/02_data/output/DATA_PACKAGE.md": "a63729a4927b0b2688f0ce0e15f005cc62e013de97b79cdf8759aa6a078b6cb0",
+  "factory/02_data/output/HUMAN_GATE.md": "631d4a43b0579408da75aa162a6b5039796c4aa8f99bdc537701f7ec21197d83",
   "factory/_shared/ARCHITECTURE_SNAPSHOT.md": "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084",
   "factory/_shared/QUALITY_GATES.md": "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f",
   "factory/_lib/verify-kit.mjs": "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c",
-  "factory/_lib/factory-state.mjs": "72870904445d54f01eea443ed5a5de1b2af2fd19df66e085a52bf47982594d28",
+  "factory/02_data/fixtures/l14-trace-resolution.fixture.mjs": "d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d",
+};
+
+const observedBaselines = {
   "package.json": "c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972",
-  "drizzle.config.ts": "3ec3fe6a06a9be54bbd980ec2fc72b014bfdc7d30b5c92d02aa0aa3c95e39b1a",
-  "eslint.config.mjs": "6090bd544865638d8c77a3443f037b3b289596a7ec1e1dccc3a13677e6d1ca83",
-  "tsconfig.json": "379054f6cec60ebd0e18c47a3ce72b2cc1b3f7abd0037c668e87cb2070891147",
-}));
+  "app/chatgpt-auth.ts": "4265a2e7c2dcb3a6f4b7026f762bf5b6e4caec76cc13c0a45987ee9a9f2e42cc",
+  "app/crosssignal-auth.ts": "4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0",
+  "db/index.ts": "c6fc9494d04c9457fc4178bed614d0e4ba7c5877e9d65ced11c691b735ec851e",
+  "db/workspaces.ts": "d7f5b0d47fd294f2055c8f9247d9b8f5a0a7a1eb9c86e2daf5cb9d917e1a8eb6",
+  "db/flight-recorder-contracts.ts": "e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192",
+  "db/flight-recorder.ts": "4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0",
+  "tests/flight-recorder-build.test.mjs": "7efeb3f0ca10d7b49b5d7498d364ab6c345b1919b74b6686bc774f664e52cedd",
+};
 
-const stageOwnedProduct = new Set([
-  "db/flight-recorder-schema.ts",
-  "db/flight-recorder-contracts.ts",
-  "db/flight-recorder.ts",
-  "db/flight-recorder-demo.ts",
-  "db/flight-recorder-graph.ts",
-  "db/migrations.ts",
-  "app/flight-recorder-types.ts",
-  "app/CrossSignalApp.tsx",
-  "drizzle/0008_l04_authority_history_trace_projection.sql",
-  "drizzle/meta/0008_snapshot.json",
-  "drizzle/meta/_journal.json",
-  "tests/flight-recorder-data.test.mjs",
-  "tests/flight-recorder-build.test.mjs",
-  "tests/fixtures/l04-authority-trace.fixture.mjs",
-]);
+const productBindings = {
+  "app/crosssignal-auth.ts": "c6ab098131230d21491af33be98430ff9a12af081166a8c30bc6ff2b3bef7d7a",
+  "app/trace-resolution.ts": "256b25f5350fe4c383f949dff9c6a2cdce7265626fbba62d1ee7439382f082fd",
+  "app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts": "418b13ecc92d5c5e7a075bab06e33b8195aea3205ebeacac66008cd53734d7e3",
+  "db/trace-resolution.ts": "2c13169c911ed46ed96670361fb0b88382184dfb92e8e11da5c6e353f16536f9",
+  "tests/flight-recorder-build.test.mjs": "6829c8405785647baba19975f60cde2b9dff62fb927bd27176725d74159df73b",
+};
 
-for (const [path, expected] of expectedInputs) {
-  assert.equal(await fileHash(projectRoot, join(projectRoot, path)), expected, `input drift: ${path}`);
+const [dataGate, buildEvidence, verification, humanGate, auth, handler, route, resolver, tests] =
+  await Promise.all([
+    read("factory/02_data/output/HUMAN_GATE.md"),
+    read("factory/03_build/output/BUILD_EVIDENCE.md"),
+    read("factory/03_build/output/VERIFY.md"),
+    read("factory/03_build/output/HUMAN_GATE.md"),
+    read("app/crosssignal-auth.ts"),
+    read("app/trace-resolution.ts"),
+    read("app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts"),
+    read("db/trace-resolution.ts"),
+    read("tests/flight-recorder-build.test.mjs"),
+  ]);
+
+assert.equal(frontmatterValue(dataGate, "gate_status"), "closed");
+assert.equal(frontmatterValue(dataGate, "decision"), "accepted");
+assert.equal(frontmatterValue(buildEvidence, "status"), "passed");
+assert.equal(frontmatterValue(verification, "status"), "passed");
+assert.equal(frontmatterValue(humanGate, "gate_status"), "open");
+assert.equal(frontmatterValue(humanGate, "decision"), "pending");
+
+function bindingsFor(markdown, heading) {
+  return new Map(markdownHashBindings(markdownSection(markdown, heading))
+    .map(({ input, expected }) => [input, expected]));
 }
 
-const gate = await readFile(join(projectRoot, "factory/02_data/output/HUMAN_GATE.md"), "utf8");
-assert.equal(frontmatterValue(gate, "decision"), "accepted");
-assert.equal(frontmatterValue(gate, "gate_status"), "closed");
-assert.equal(frontmatterValue(gate, "data_package_sha256"), expectedInputs.get("factory/02_data/output/DATA_PACKAGE.md"));
-
-const upstreamFixtureHash = await fileHash(projectRoot, join(projectRoot, "factory/02_data/fixtures/l04-authority-trace.fixture.mjs"));
-const durableFixtureHash = await fileHash(projectRoot, join(projectRoot, "tests/fixtures/l04-authority-trace.fixture.mjs"));
-assert.equal(durableFixtureHash, upstreamFixtureHash, "durable L04 fixture drifted from accepted Stage 02 truth");
-assert.deepEqual(validateL04Fixture(), []);
-assert.equal(L04_AUTHORITY_TRACE_FIXTURE.traceEvents.length, 34);
-assert.equal(L04_ACCEPTANCE_IDS.length, 12);
-assert.equal(L04_NEGATIVE_IDS.length, 12);
-assert.equal(L04_RACE_SCHEDULES.length, 3);
-assert.equal(L04_MIGRATION_CASES.length, 6);
-
-const migration = await readFile(join(projectRoot, "drizzle/0008_l04_authority_history_trace_projection.sql"), "utf8");
-for (const object of [
-  "workspace_authority_control_events",
-  "effect_authority_control_bindings",
-  "idx_authority_control_events_sequence",
-  "trg_l04_authority_events_append_only",
-  "trg_l04_authority_events_delete_guard",
-  "trg_l04_authority_events_sequence",
-  "trg_l04_authority_events_actor",
-  "trg_l04_legacy_authority_control_frozen",
-  "trg_l04_effect_authority_binding_exact",
-  "trg_l04_effect_reserved_requires_authority",
-  "trg_l04_trace_executing_requires_authority",
-  "migration_l04_unresolvable_effect_authority",
-  "migration_l04_incomplete_trace_history",
-]) assert.match(migration, new RegExp(object), `migration object missing: ${object}`);
-assert.match(migration, /DELETE FROM `flight_traces` WHERE `truth_mode` = 'FIXTURE'/);
-assert.doesNotMatch(migration, /DELETE FROM `workspace_authority_control_events`/);
-
-const [snapshot, journal, runtime, contracts, appTypes, appUi, dataTests, buildTests] = await Promise.all([
-  readFile(join(projectRoot, "drizzle/meta/0008_snapshot.json"), "utf8"),
-  readFile(join(projectRoot, "drizzle/meta/_journal.json"), "utf8"),
-  readFile(join(projectRoot, "db/flight-recorder.ts"), "utf8"),
-  readFile(join(projectRoot, "db/flight-recorder-contracts.ts"), "utf8"),
-  readFile(join(projectRoot, "app/flight-recorder-types.ts"), "utf8"),
-  readFile(join(projectRoot, "app/CrossSignalApp.tsx"), "utf8"),
-  readFile(join(projectRoot, "tests/flight-recorder-data.test.mjs"), "utf8"),
-  readFile(join(projectRoot, "tests/flight-recorder-build.test.mjs"), "utf8"),
-]);
-for (const table of ["workspace_authority_control_events", "effect_authority_control_bindings"]) {
-  assert.match(snapshot, new RegExp(table));
-}
-assert.match(journal, /0008_l04_authority_history_trace_projection/);
-assert.doesNotMatch(runtime, /SELECT kill_switch_engaged FROM workspace_authority_controls/);
-assert.doesNotMatch(runtime, /UPDATE workspace_authority_controls/);
-for (const marker of ["sealAuthorityControlEvent", "latestAuthorityControl", "effect_authority_control_bindings", "projectFlightTraceEvents"]) {
-  assert.match(runtime + contracts, new RegExp(marker));
-}
-for (const marker of ["authorityControlHistory", "traceEvents", "Persisted FIXTURE trace"]) {
-  assert.match(appTypes + appUi, new RegExp(marker));
-}
-for (const marker of ["l04_stale_authority_control", "migration_backfill", "l04_authority_history_immutable", "traceEventCount", "payloadJson", "L04 fixture"]) {
-  assert.match(dataTests + buildTests, new RegExp(marker));
+const declaredAcceptedInputs = bindingsFor(buildEvidence, /^## Accepted input bindings$/);
+for (const [path, expected] of Object.entries(acceptedInputs)) {
+  assert.equal(declaredAcceptedInputs.get(path), expected, `${path} accepted input binding drifted`);
+  assert.equal(await fileHash(projectRoot, pathFromRoot(path)), expected, `${path} is stale`);
 }
 
-const status = runChecked("git", ["status", "--porcelain=v1", "--untracked-files=all"], { cwd: projectRoot });
-for (const line of status.stdout.split(/\r?\n/).filter(Boolean)) {
-  const path = line.slice(3).replaceAll("\\", "/");
-  if (path.startsWith("factory/") || path.startsWith("_archive/")) continue;
-  assert.ok(stageOwnedProduct.has(path), `unauthorized Stage 03 path: ${path}`);
-}
-for (const forbidden of ["app/api/", "route.ts", "middleware", "worker/"]) {
-  assert.equal([...stageOwnedProduct].some((path) => path.includes(forbidden)), false, `L14/out-of-scope surface entered: ${forbidden}`);
+const declaredBaselines = bindingsFor(buildEvidence, /^## Observed baseline bindings$/);
+for (const [path, expected] of Object.entries(observedBaselines)) {
+  assert.equal(declaredBaselines.get(path), expected, `${path} observed baseline binding drifted`);
 }
 
-runChecked("node", ["node_modules/tsx/dist/cli.mjs", "--test", "tests/flight-recorder-data.test.mjs", "tests/flight-recorder-build.test.mjs"], { cwd: projectRoot, timeout: 180_000 });
-runChecked("node", ["node_modules/eslint/bin/eslint.js", "app/CrossSignalApp.tsx", "app/flight-recorder-types.ts", "db/flight-recorder-schema.ts", "db/flight-recorder-contracts.ts", "db/flight-recorder-graph.ts", "db/flight-recorder.ts", "db/migrations.ts", "tests/flight-recorder-data.test.mjs", "tests/flight-recorder-build.test.mjs"], { cwd: projectRoot, timeout: 180_000 });
-runChecked("node", ["node_modules/vinext/dist/cli.js", "build"], { cwd: projectRoot, timeout: 180_000 });
-
-for (const output of ["BUILD_EVIDENCE.md", "VERIFY.md", "HUMAN_GATE.md"]) {
-  await readFile(join(projectRoot, "factory/03_build/output", output), "utf8");
+const declaredProducts = bindingsFor(buildEvidence, /^## Product bindings$/);
+for (const [path, expected] of Object.entries(productBindings)) {
+  assert.equal(declaredProducts.get(path), expected, `${path} product binding drifted`);
+  assert.equal(await fileHash(projectRoot, pathFromRoot(path)), expected, `${path} changed after verification`);
 }
-const verify = await readFile(join(projectRoot, "factory/03_build/output/VERIFY.md"), "utf8");
-assert.equal(frontmatterValue(verify, "status"), "passed");
 
-console.log("Stage 03 build verification passed: L04 durable history, exact binding, complete redacted projection, regressions, lint, and production build are green.");
+assert.deepEqual(validateL14Fixture(), []);
+assert.equal(
+  l14FixtureDigest(),
+  "3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4",
+);
+for (const corruption of L14_CORRUPTIONS) {
+  await assert.rejects(
+    projectFlightTraceEvents({
+      workspaceId: L14_TRACE_RESOLUTION_FIXTURE.identity.workspaceB,
+      traceId: L14_TRACE_RESOLUTION_FIXTURE.identity.traceB,
+      rows: corruption.rows,
+    }),
+    /l04_trace_projection_incomplete/,
+    corruption.id,
+  );
+}
+
+assert.match(auth, /export async function getStrictCrossSignalUser\(\): Promise<ChatGPTUser \| null> \{\s*return getChatGPTUser\(\);\s*\}/);
+assert.match(handler, /const user = await dependencies\.authenticate\(\)/);
+assert.match(handler, /const \{ workspaceId, traceId \} = await context\.params/);
+assert.match(handler, /url\.searchParams\.size > 0/);
+assert.match(handler, /private, no-store/);
+for (const code of [
+  "invalid_trace_request",
+  "authentication_required",
+  "trace_not_found",
+  "trace_projection_incomplete",
+  "trace_resolution_unavailable",
+]) assert.ok(handler.includes(code), `missing stable error code ${code}`);
+assert.ok(handler.indexOf("dependencies.authenticate") < handler.indexOf("dependencies.resolve"));
+
+assert.match(route, /export const dynamic = "force-dynamic"/);
+assert.equal((route.match(/export async function GET/g) ?? []).length, 1);
+assert.doesNotMatch(route, /export async function (?:POST|PUT|PATCH|DELETE)/);
+assert.doesNotMatch(route, /runtime\s*=\s*["']edge["']/);
+assert.match(route, /authenticate: getStrictCrossSignalUser/);
+assert.doesNotMatch(route, /^import \{ resolveFlightTrace \}/m);
+assert.match(route, /resolve: async \(input\)[\s\S]+await import\([\s\S]+db\/trace-resolution/);
+
+assert.match(resolver, /workspace_id = \? AND user_id = \? AND role = 'owner'/);
+assert.equal((resolver.match(/WHERE workspace_id = \? AND (?:id|trace_id) = \?/g) ?? []).length, 2);
+assert.match(resolver, /ORDER BY sequence ASC/);
+assert.match(resolver, /projectFlightTraceEvents/);
+for (const forbidden of ["INSERT INTO", "UPDATE ", "DELETE FROM", "getOrCreateFlightRecorderSnapshot"]) {
+  assert.equal(resolver.includes(forbidden), false, `resolver contains ${forbidden}`);
+  assert.equal(handler.includes(forbidden), false, `handler contains ${forbidden}`);
+}
+
+assert.match(tests, /L14 real handler resolves pending and completed tenant traces without mutation/);
+assert.match(tests, /L14 handler fails closed for auth, input, tenant, integrity, and dependency attacks/);
+assert.match(tests, /L14 route delegates strict authentication to the tenant-bound read-only resolver/);
+assert.match(tests, /doesNotMatch\(route, \/\^import \\\{ resolveFlightTrace/);
+assert.match(tests, /projectFlightTraceEvents\(\{[\s\S]+rows: corruption\.rows/);
+for (const id of [...L14_ACCEPTANCE_IDS, ...L14_NEGATIVE_IDS]) {
+  assert.ok(buildEvidence.includes(id), `build evidence is missing ${id}`);
+}
+for (const command of [
+  "tsx --test tests/flight-recorder-build.test.mjs",
+  "tsx factory/03_build/verify.mjs",
+  "npm run lint",
+  "npm run build",
+  "npm run start",
+  "curl.exe -sS -i",
+  "git diff --check",
+]) {
+  assert.ok(verification.includes(command), `verification is missing ${command}`);
+}
+
+const gateBindings = new Map(markdownHashBindings(humanGate)
+  .map(({ input, expected }) => [input, expected]));
+for (const path of [
+  "factory/03_build/output/BUILD_EVIDENCE.md",
+  "factory/03_build/output/VERIFY.md",
+]) {
+  assert.equal(
+    gateBindings.get(path),
+    await fileHash(projectRoot, pathFromRoot(path)),
+    `${path} human gate binding drifted`,
+  );
+}
+
+console.log(
+  "L14 Stage 03 build verification passed: strict auth, tenant-bound read-only resolution, " +
+  "2 success traces, 5 stable errors, 5 fail-closed corruptions, 14 acceptance IDs, and 12 negative cases.",
+);

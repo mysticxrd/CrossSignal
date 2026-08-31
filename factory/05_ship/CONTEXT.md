@@ -1,91 +1,75 @@
 ---
 type: stage-contract
 stage: 05_ship
-unit: append-only-authority-control-history-and-trace-projection-completeness
+unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
 status: active
+truth_mode: FIXTURE
 ---
 
-# 05_ship - package the verified L04 release
+# 05_ship - turn verified L14 evidence into an evaluator-ready release
 
-One job: turn accepted L04 verification into a cold evaluator-ready package
-that binds the governed product head and stops before commit or seal.
+One job: bind the complete current release head and give a reviewer a cold,
+reproducible path to inspect the authenticated tenant-scoped redacted ordered
+trace-resolution endpoint without hidden repair.
 
 ## Inputs
 
 - Freshness dependency: `../04_verify/output/VERIFICATION_REPORT.md`
-- Freshness dependency: `../04_verify/output/VERIFY.md`
 - Freshness dependency: `../04_verify/output/HUMAN_GATE.md`
-- Freshness dependency: `../03_build/output/BUILD_EVIDENCE.md`
-- Freshness dependency: `../03_build/output/HUMAN_GATE.md`
-- Freshness dependency: `../02_data/output/DATA_PACKAGE.md`
-- Freshness dependency: `../02_data/output/HUMAN_GATE.md`
-- Freshness dependency: `../01_spec/output/SPEC.md`
-- Freshness dependency: `../01_spec/output/HUMAN_GATE.md`
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Tooling dependency: `../_lib/verify-kit.mjs`
-- Tooling dependency: `../_lib/factory-state.mjs`
-- Tooling dependency: `../../package.json`
-- Tooling dependency: `../../eslint.config.mjs`
-- Tooling dependency: `../../tsconfig.json`
-- Observed release contract: `../../tests/icm-workspace.test.mjs`
-- Observed product: `../../db/flight-recorder-schema.ts`
-- Observed product: `../../db/flight-recorder-contracts.ts`
-- Observed product: `../../db/flight-recorder.ts`
-- Observed product: `../../db/flight-recorder-demo.ts`
-- Observed product: `../../db/flight-recorder-graph.ts`
-- Observed product: `../../db/migrations.ts`
-- Observed product: `../../app/flight-recorder-types.ts`
-- Observed product: `../../app/CrossSignalApp.tsx`
-- Observed product: `../../drizzle/0008_l04_authority_history_trace_projection.sql`
-- Observed product: `../../drizzle/meta/0008_snapshot.json`
-- Observed product: `../../drizzle/meta/_journal.json`
-- Observed product: `../../tests/flight-recorder-data.test.mjs`
-- Observed product: `../../tests/flight-recorder-build.test.mjs`
-- Observed product: `../../tests/fixtures/l04-authority-trace.fixture.mjs`
-- Authorized compatibility correction: `../01_spec/verify.mjs`
-- Stage-owned surface: `output/RELEASE_MANIFEST.md`
-- Stage-owned surface: `output/DEMO_SCRIPT.md`
-- Stage-owned surface: `output/VERIFY.md`
-- Stage-owned surface: `output/HUMAN_GATE.md`
-- Stage-owned surface: `prepare.mjs`
-- Stage-owned surface: `verify.mjs`
+- Verification helper: `../_lib/verify-kit.mjs`
+- Factory state helper: `../_lib/factory-state.mjs`
+- Factory status helper: `../status.mjs`
+- Release seal helper: `../seal.mjs`
+- Observed baseline: `../../package.json`
+- Release inventory: Git-tracked and untracked non-ignored files outside `_archive/`, dependency folders, generated build output, and `factory/05_ship/output/` (the human gate binds Stage 05 outputs without a self-reference)
+- Stage-owned surface: `prepare.mjs`, `verify.mjs`, and `output/`
 
-Do not load: `_archive/`, the source vault, later-run work, or undeclared
-references. Do not change product/tests, prior accepted outputs, routes,
-middleware, workers, providers, topology, or benchmark stashes.
+Do not load: `_archive/`, dependency source, generated build output,
+environment secret values, or any reference not named above. Stage 05 does not
+change durable product code.
 
 ## Process
 
-1. Hash every input and confirm Stage 04 acceptance.
-2. Bind the L04 product/evidence head in a release manifest.
-3. Write a cold preparation check and evaluator script with truth labels,
-   negative probes, expected results, and limitations.
-4. Run applicable tests, focused import-safe ICM contracts, lint, build, Stage
-   04 verification, factory status, and diff checks. Never run the ICM archive
-   catalog case.
-5. Record reproducible evidence, open the human gate, and stop.
+1. Read and hash every declared file input by role.
+2. Derive the release inventory with the same exclusions enforced by the seal
+   helper and bind every current release-head file in the manifest.
+3. Write a cold demo script that begins from the repository state, preserves
+   the `FIXTURE` truth label, runs reproducible checks, and requires no repair.
+4. Run the cold preparation helper, focused tests, lint, production build,
+   Stage 05 verifier, status, and diff inspection.
+5. Write release evidence, open the human gate, and stop before commit or seal.
 
 ## Outputs
 
 - `output/RELEASE_MANIFEST.md`
 - `output/DEMO_SCRIPT.md`
 - `output/VERIFY.md`
-- `output/HUMAN_GATE.md` - opened for reviewer decision
+- `output/HUMAN_GATE.md`
 
 ## Verify
 
-Run `node factory/05_ship/verify.mjs`. Fail on drift, incomplete coverage,
-unsafe instructions, truth-label regression, L08/L06 regression, L14 entry,
-archive dependency, stash loss, or test/lint/build failure. The complete factory
-state/seal assertion waits for gate acceptance and commit.
+The release manifest must bind the accepted Stage 04 report and gate, the
+current product and governed factory head required by `seal.mjs`, the exact
+Stage 05 scripts, the L14 route contract, the 28-event pending and 49-event
+completed evidence, all 14 acceptance IDs, all 12 negative IDs, and the local
+production `401`/`400`/masked-`500` probes. It must state that the durable
+success proof is local `FIXTURE` evidence and is not a deployed or live D1
+claim.
+
+Record exact command, timestamp, Windows/Node environment, exit code, and
+relevant output. Focused tests, lint, production build, preparation, verifier,
+status, and `git diff --check` must pass. The seal is intentionally not run
+until after the Stage 05 human gate and release commit.
 
 ## Human gate
 
-The reviewer runs the cold script and binds all three outputs. Do not commit,
-seal, or begin L14 without acceptance and a later explicit instruction.
+The reviewer cold-runs the demo script, inspects the manifest and verification
+record, records their hashes, and chooses `accepted`, `changes-requested`, or
+`rejected`. Verification opens this gate but never accepts it.
 
 ## Failure routing
 
-Return defects upstream. Stage 05 never patches product behavior or weakens a
-guard to manufacture a shippable result.
+Correct Stage 05 evidence or route a real defect to the owning upstream stage.
+Do not edit product code or suppress a seal prerequisite in ship evidence.

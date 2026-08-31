@@ -1,109 +1,82 @@
 ---
 type: stage-contract
 stage: 03_build
-unit: append-only-authority-control-history-and-trace-projection-completeness
 status: active
+unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
 ---
 
-# 03_build - implement the L04 durable vertical slice
+# 03_build - implement the L14 vertical slice
 
-One job: implement the accepted append-only authority-control history, exact
-effect binding, complete authority subject events, and ordered redacted trace
-projection as one durable migration/runtime/UI/test slice without entering the
-L14 endpoint or unrelated product work.
+One job: turn the accepted L14 data package into one durable read-only App
+Router endpoint with strict authentication, tenant-bound resolution, reused
+redaction, and executable handler proof.
 
 ## Inputs
 
 - Freshness dependency: `../02_data/output/DATA_PACKAGE.md`
 - Freshness dependency: `../02_data/output/HUMAN_GATE.md`
-- Freshness dependency: `../02_data/fixtures/l04-authority-trace.fixture.mjs`
 - Freshness dependency: `../_shared/ARCHITECTURE_SNAPSHOT.md`
 - Freshness dependency: `../_shared/QUALITY_GATES.md`
-- Tooling dependency: `../_lib/verify-kit.mjs`
-- Tooling dependency: `../_lib/factory-state.mjs`
-- Tooling dependency: `../../package.json`
-- Tooling dependency: `../../drizzle.config.ts`
-- Tooling dependency: `../../eslint.config.mjs`
-- Tooling dependency: `../../tsconfig.json`
-- Observed baseline: `../../db/flight-recorder-schema.ts`
+- Verifier library: `../_lib/verify-kit.mjs`
+- Executable fixture: `../02_data/fixtures/l14-trace-resolution.fixture.mjs`
+- Observed baseline: `../../package.json`
+- Observed baseline: `../../app/chatgpt-auth.ts`
+- Observed baseline: `../../app/crosssignal-auth.ts`
+- Observed baseline: `../../db/index.ts`
+- Observed baseline: `../../db/workspaces.ts`
 - Observed baseline: `../../db/flight-recorder-contracts.ts`
 - Observed baseline: `../../db/flight-recorder.ts`
-- Observed baseline: `../../db/flight-recorder-demo.ts`
-- Observed baseline: `../../db/flight-recorder-graph.ts`
-- Observed baseline: `../../db/migrations.ts`
-- Observed baseline: `../../app/flight-recorder-types.ts`
-- Observed baseline: `../../app/CrossSignalApp.tsx`
-- Observed baseline: `../../drizzle/0004_typical_omega_red.sql`
-- Observed baseline: `../../drizzle/0005_flight_recorder_guards.sql`
-- Observed baseline: `../../drizzle/0006_l08_active_intent_authority.sql`
-- Observed baseline: `../../drizzle/0007_l06_persisted_graph_executor.sql`
-- Observed baseline: `../../drizzle/meta/0007_snapshot.json`
-- Observed baseline: `../../drizzle/meta/_journal.json`
-- Observed baseline: `../../tests/flight-recorder-data.test.mjs`
 - Observed baseline: `../../tests/flight-recorder-build.test.mjs`
-- Stage-owned surface: `../../db/flight-recorder-schema.ts`
-- Stage-owned surface: `../../db/flight-recorder-contracts.ts`
-- Stage-owned surface: `../../db/flight-recorder.ts`
-- Stage-owned surface: `../../db/flight-recorder-demo.ts`
-- Stage-owned surface: `../../db/flight-recorder-graph.ts`
-- Stage-owned surface: `../../db/migrations.ts`
-- Stage-owned surface: `../../app/flight-recorder-types.ts`
-- Stage-owned surface: `../../app/CrossSignalApp.tsx`
-- Stage-owned surface: `../../drizzle/0008_l04_authority_history_trace_projection.sql`
-- Stage-owned surface: `../../drizzle/meta/0008_snapshot.json`
-- Stage-owned surface: `../../drizzle/meta/_journal.json`
-- Stage-owned surface: `../../tests/flight-recorder-data.test.mjs`
+- Stage-owned surface: `../../app/crosssignal-auth.ts`
+- Stage-owned surface: `../../app/trace-resolution.ts`
+- Stage-owned surface: `../../app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts`
+- Stage-owned surface: `../../db/trace-resolution.ts`
 - Stage-owned surface: `../../tests/flight-recorder-build.test.mjs`
-- Stage-owned surface: `../../tests/fixtures/l04-authority-trace.fixture.mjs`
+- Stage-owned surface: `CONTEXT.md`
+- Stage-owned surface: `verify.mjs`
 - Stage-owned surface: `output/BUILD_EVIDENCE.md`
 - Stage-owned surface: `output/VERIFY.md`
 - Stage-owned surface: `output/HUMAN_GATE.md`
-- Stage-owned surface: `verify.mjs`
 
-Do not load or change: later stages, `_archive/`, the source vault, any route or
-endpoint, middleware, worker code, provider behavior, graph topology, or any
-product path not named above.
+Do not load: later stages, `_archive/`, the whole repository, generated build
+output, dependency folders, or any reference not named above.
 
 ## Process
 
-1. Read and hash all declared inputs by role; confirm Stage 02 is accepted.
-2. Copy the accepted fixture into durable tests before product tests depend on
-   it.
-3. Implement schema and migration guards, then compatibility/bootstrap logic.
-4. Implement canonical control transitions, exact effect binding, complete
-   subject events, projection validation/redaction, and minimal reviewer UI.
-5. Extend durable data/build tests for every accepted criterion, negative case,
-   migration schedule, tenant collision, race, reset, and L08/L06 regression.
-6. Run focused tests, lint, production build, verifier, and diff inspection.
-7. Write build evidence and verification, then stop.
+1. Read and hash the accepted data package, gate, two shared references,
+   executable fixture, verifier library, and exact observed baselines.
+2. Implement the strict auth helper, tenant-bound read resolver, request
+   handler, route delegation, and fixture-driven product tests.
+3. Run the focused handler suite, Stage 03 verifier, lint, production build,
+   and diff inspection; write evidence and a pending reviewer gate; then stop.
 
 ## Outputs
 
 - `output/BUILD_EVIDENCE.md`
 - `output/VERIFY.md`
-- `output/HUMAN_GATE.md` - opened for reviewer decision
+- `output/HUMAN_GATE.md`
+- `verify.mjs`
 
 ## Verify
 
-Run `node factory/03_build/verify.mjs`. It must fail on input drift, unauthorized
-paths, missing migration objects/metadata, mutable or ambiguous authority
-history, a stale effect binding, incomplete/unsafe trace projection, missing
-fixture/race/migration/tenant/reset coverage, L08/L06 regression, fixture truth
-mislabeling, secret leakage, L14 scope entry, lint failure, test failure, or
-production build failure.
+Run `tsx --test tests/flight-recorder-build.test.mjs`,
+`tsx factory/03_build/verify.mjs`, `npm run lint`, `npm run build`, and
+`git diff --check`. Record commands, hashes, environment, positive and negative
+results, and `status: passed | failed` in `VERIFY.md`.
 
-Record exact commands, timestamps, environment, exit codes, output summaries,
-and normalized input/product/output hashes in `output/VERIFY.md` with
-`status: passed`.
+The accepted Stage 02 outputs and two shared references are freshness
+dependencies. Product paths are historical build bindings until Ship binds the
+release head.
 
 ## Human gate
 
-The reviewer runs the complete golden path, inspects authority toggles and the
-ordered trace, then binds `BUILD_EVIDENCE.md` and `VERIFY.md` hashes with one of
-`accepted`, `changes-requested`, or `rejected`. Do not begin Stage 04 without
-`accepted`.
+The reviewer confirms both successful tenant traces and representative `400`,
+`401`, `404`, `409`, and `500` responses through the real handler, inspects
+ordered redacted output and write-count invariance, and accepts or rejects the
+vertical slice. Do not begin Stage 04 without `accepted`.
 
 ## Failure routing
 
-Correct Stage 03 within the accepted data package, or return upstream for a
-contract change. Never weaken a durable guard or enter L14 to hide a failure.
+Correct this build or return to the accepted data/spec contract. Never weaken
+authentication, tenant predicates, projection integrity, or redaction to make
+a test pass.

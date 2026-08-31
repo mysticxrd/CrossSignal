@@ -1,196 +1,103 @@
+import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import {
   fileHash,
   frontmatterValue,
   markdownHashBindings,
-  markdownSection,
-  repositoryPath,
+  runChecked,
 } from "../_lib/verify-kit.mjs";
 
-const stageRoot = dirname(fileURLToPath(import.meta.url));
-const projectRoot = resolve(stageRoot, "../..");
-const contextPath = resolve(stageRoot, "CONTEXT.md");
-const specPath = resolve(stageRoot, "output/SPEC.md");
-const gatePath = resolve(stageRoot, "output/HUMAN_GATE.md");
+const root = resolve(import.meta.dirname, "../..");
+const specPath = resolve(import.meta.dirname, "output/SPEC.md");
+const verifyPath = resolve(import.meta.dirname, "output/VERIFY.md");
+const gatePath = resolve(import.meta.dirname, "output/HUMAN_GATE.md");
+const spec = await readFile(specPath, "utf8");
+const gate = await readFile(gatePath, "utf8");
 
-function invariant(condition, message) {
-  if (!condition) throw new Error(message);
-}
-
-function requireText(document, value, label = value) {
-  const normalizedDocument = document.replace(/\s+/g, " ");
-  const normalizedValue = value.replace(/\s+/g, " ");
-  invariant(normalizedDocument.includes(normalizedValue), `SPEC.md is missing ${label}`);
-}
-
-// Kept as a pure compatibility API for the repository-level ICM contract test.
-// The governed L04 verifier below remains the authoritative Stage 01 check.
-export function validateSpec(document) {
-  const errors = [];
-  for (const heading of [
-    "Relationship to Result",
-    "Public evidence",
-    "Product definition",
-    "Primary user and problem",
-    "Golden path",
-    "Scope",
-    "Acceptance criteria",
-    "Current repository truth",
-    "Evaluator thesis",
-    "Explicit non-claims",
-  ]) {
-    if (!new RegExp(`^## ${heading}$`, "m").test(document)) {
-      errors.push(`missing heading: ${heading}`);
-    }
-  }
-  if (/\bResult-(?:native|internal)\b|Result(?:'s)? private (?:stack|API|implementation)/i.test(document)) {
-    errors.push("unsupported Result claim");
-  }
-  return errors;
-}
-
-const expectedInputs = [
-  "factory/01_spec/CONTEXT.md",
-  "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
-  "factory/_shared/QUALITY_GATES.md",
-  "factory/_lib/verify-kit.mjs",
-  "factory/_lib/factory-state.mjs",
-  "db/flight-recorder-schema.ts",
-  "db/flight-recorder-contracts.ts",
-  "db/flight-recorder.ts",
-  "db/flight-recorder-demo.ts",
-  "db/flight-recorder-graph.ts",
-  "app/flight-recorder-types.ts",
-  "app/CrossSignalApp.tsx",
-  "drizzle/0004_typical_omega_red.sql",
-  "drizzle/0005_flight_recorder_guards.sql",
-  "drizzle/0006_l08_active_intent_authority.sql",
-  "tests/flight-recorder-data.test.mjs",
-  "tests/flight-recorder-build.test.mjs",
-];
-
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-const [context, spec, gate] = await Promise.all([
-  readFile(contextPath, "utf8"),
-  readFile(specPath, "utf8"),
-  readFile(gatePath, "utf8"),
+const expectedInputs = new Map([
+  ["factory/01_spec/CONTEXT.md", "ec2c145a85802c01ad5796e9619c72e700ea19350397f58b1379a12fc9f5a47e"],
+  ["factory/_shared/ARCHITECTURE_SNAPSHOT.md", "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084"],
+  ["factory/_shared/QUALITY_GATES.md", "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f"],
+  ["factory/_lib/verify-kit.mjs", "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c"],
+  ["package.json", "c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972"],
+  ["app/crosssignal-auth.ts", "4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0"],
+  ["app/page.tsx", "b72866126a09ffa1e0f51e127564b22b56430d16ea5d5c4f7878822c55624722"],
+  ["db/flight-recorder-contracts.ts", "e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192"],
+  ["db/flight-recorder.ts", "4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0"],
+  ["tests/flight-recorder-build.test.mjs", "7efeb3f0ca10d7b49b5d7498d364ab6c345b1919b74b6686bc774f664e52cedd"],
+  ["tests/flight-recorder-data.test.mjs", "d4be07a521bbfd19726d3ea2aa3bdd034620a2518a2375e8e4cf79ada8e032cf"],
 ]);
 
-invariant(frontmatterValue(context, "type") === "stage-contract", "Stage 01 contract type is invalid");
-invariant(frontmatterValue(context, "stage") === "01_spec", "Stage 01 contract identity is invalid");
-invariant(
-  frontmatterValue(context, "unit") === "append-only-authority-control-history-and-trace-projection-completeness",
-  "Stage 01 contract unit is invalid",
+assert.equal(frontmatterValue(spec, "type"), "stage-output");
+assert.equal(frontmatterValue(spec, "stage"), "01_spec");
+assert.equal(frontmatterValue(spec, "status"), "ready-for-review");
+const gateDecision = frontmatterValue(gate, "decision");
+assert.ok(["pending", "accepted"].includes(gateDecision), "gate decision is invalid");
+
+const declaredBindings = new Map(
+  markdownHashBindings(spec).map(({ input, expected }) => [input, expected]),
 );
-invariant(frontmatterValue(context, "status") === "active", "Stage 01 contract is not active");
-invariant(!context.includes("_archive/2026"), "Stage 01 declares an archive input");
+assert.equal(declaredBindings.size, expectedInputs.size, "spec input binding count drifted");
+for (const [path, expected] of expectedInputs) {
+  assert.equal(declaredBindings.get(path), expected, `missing or changed binding: ${path}`);
+  assert.equal(await fileHash(root, resolve(root, path)), expected, `stale input: ${path}`);
+}
 
-const declaredInputs = [...context.matchAll(
-  /^- (?:Freshness dependency|Tooling dependency|Observed baseline): `([^`]+)`$/gm,
-)].map((match) => repositoryPath(projectRoot, resolve(stageRoot, match[1])));
-invariant(
-  JSON.stringify(declaredInputs) === JSON.stringify(expectedInputs.slice(1)),
-  `Stage 01 declared inputs differ from the bounded set:\n${declaredInputs.join("\n")}`,
-);
+const requiredPhrases = [
+  "GET /api/workspaces/{workspaceId}/traces/{traceId}",
+  "no local-development fallback",
+  "projectFlightTraceEvents",
+  "Cache-Control: private, no-store",
+  "authentication_required",
+  "trace_not_found",
+  "trace_projection_incomplete",
+  "trace_resolution_unavailable",
+  "eventCount === events.length",
+  "also binding `workspace_id`",
+  "does not paginate or return a partial prefix",
+  "Unknown future event type",
+  "Durable table counts and trace state remain unchanged",
+  "No mutation method",
+];
+for (const phrase of requiredPhrases) {
+  assert.ok(spec.includes(phrase), `required contract phrase missing: ${phrase}`);
+}
 
-invariant(frontmatterValue(spec, "type") === "stage-primary-output", "SPEC.md type is invalid");
-invariant(frontmatterValue(spec, "stage") === "01_spec", "SPEC.md stage is invalid");
-invariant(frontmatterValue(spec, "status") === "ready-for-review", "SPEC.md is not ready for review");
-invariant(frontmatterValue(spec, "truth_mode") === "repository-observed", "SPEC.md truth mode is invalid");
+const acceptanceIds = [...spec.matchAll(/\*\*AC-L14-(\d{2})\b/g)].map((match) => match[1]);
+assert.deepEqual(acceptanceIds, Array.from({ length: 14 }, (_, index) => String(index + 1).padStart(2, "0")));
+const negativeIds = [...spec.matchAll(/`NEG-L14-(\d{2})`/g)].map((match) => match[1]);
+assert.deepEqual(negativeIds, Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0")));
 
-for (const heading of [
-  "Product outcome",
-  "Current repository evidence",
-  "Bounded scope",
-  "Authority-control history contract",
-  "Complete trace-event contract",
-  "Observable acceptance criteria",
-  "Required negative cases",
-  "Stage handoff",
-  "Declared input hashes",
+for (const forbidden of [
+  "Result's private stack",
+  "exactly-once delivery is guaranteed",
+  "chain-of-thought",
+  "permissive CORS is required",
 ]) {
-  invariant(markdownSection(spec, new RegExp(`^## ${heading}$`)).length > 0, `SPEC.md is missing ${heading}`);
+  assert.equal(spec.includes(forbidden), false, `forbidden claim present: ${forbidden}`);
 }
 
-const hashSection = markdownSection(spec, /^## Declared input hashes$/);
-const bindings = markdownHashBindings(hashSection);
-invariant(bindings.length === expectedInputs.length, "SPEC.md does not bind every declared input exactly once");
-invariant(
-  JSON.stringify(bindings.map(({ input }) => input)) === JSON.stringify(expectedInputs),
-  "SPEC.md input bindings differ from the declared ordered input set",
+const specHash = await fileHash(root, specPath);
+assert.ok(
+  gate.includes(`| \`factory/01_spec/output/SPEC.md\` | \`${specHash}\` |`),
+  "gate does not bind the current spec",
 );
-for (const binding of bindings) {
-  const actual = await fileHash(projectRoot, resolve(projectRoot, binding.input));
-  invariant(actual === binding.expected, `Input hash drift: ${binding.input}`);
+if (gateDecision === "accepted") {
+  const verifyHash = await fileHash(root, verifyPath);
+  assert.notEqual(frontmatterValue(gate, "reviewer"), "pending", "accepted gate has no reviewer");
+  assert.notEqual(frontmatterValue(gate, "reviewed_at"), "pending", "accepted gate has no timestamp");
+  assert.ok(
+    gate.includes(`| \`factory/01_spec/output/VERIFY.md\` | \`${verifyHash}\` |`),
+    "accepted gate does not bind the current verification record",
+  );
 }
 
-for (const evidence of [
-  "stores one mutable row per workspace",
-  "do not yet emit a complete",
-  "`traceEventCount`, not the ordered durable events",
-  "L08's",
-]) requireText(spec, evidence, `repository evidence: ${evidence}`);
+const { stdout } = runChecked(
+  "git",
+  ["diff", "--name-only", "--", "app", "db", "drizzle", "worker", "tests"],
+  { cwd: root },
+);
+assert.equal(stdout.trim(), "", "Stage 01 changed a durable product surface");
 
-for (const requirement of [
-  "Events are the canonical source for effective kill-switch state",
-  "absence, ambiguity, invalid ordering, or an unverifiable head fails closed as `engaged`",
-  "Requesting the already-effective value is an idempotent no-op",
-  "one serializable winner",
-  "using the row's workspace,",
-  "must not delete workspace authority-control history",
-  "same accepted write boundary",
-  "references the exact workspace control history",
-  "sorted by integer `sequence ASC`",
-  "`traceEventCount` remains a compatibility field and must equal `traceEvents.length`",
-  "never sorts by timestamp, silently deduplicates, paginates, truncates, or drops unknown event types",
-  "must not expose raw `payload_json`",
-  "Unknown or malformed payload fields are omitted",
-]) requireText(spec, requirement, `authority/trace requirement: ${requirement}`);
-
-for (const field of [
-  "event identity",
-  "workspace identity",
-  "sequence",
-  "control kind",
-  "prior state",
-  "current state",
-  "actor identity",
-  "reason code",
-  "idempotency key",
-  "occurred time",
-  "content hash",
-]) requireText(spec, `| ${field} |`, `authority-history field ${field}`);
-
-for (let index = 1; index <= 12; index += 1) {
-  const id = `L04-AC${String(index).padStart(2, "0")}`;
-  invariant((spec.match(new RegExp(id, "g")) ?? []).length === 1, `${id} must appear exactly once`);
-}
-for (let index = 1; index <= 12; index += 1) {
-  const id = `L04-N${String(index).padStart(2, "0")}`;
-  invariant((spec.match(new RegExp(id, "g")) ?? []).length === 1, `${id} must appear exactly once`);
-}
-
-const scope = markdownSection(spec, /^## Bounded scope$/);
-for (const exclusion of [
-  "an HTTP/API trace-resolution endpoint",
-  "new authentication or role semantics",
-  "a generic audit-log platform",
-  "changes to L08 active-intent selection",
-  "raw chain-of-thought",
-]) invariant(scope.includes(exclusion), `L04 scope is missing exclusion: ${exclusion}`);
-invariant(spec.includes("L14 will separately expose it"), "L14 handoff is not explicit");
-invariant(spec.includes("No L14 HTTP endpoint") || spec.includes("No L14 HTTP endpoint"), "L14 endpoint must be an explicit negative acceptance criterion");
-
-invariant(frontmatterValue(gate, "gate_status") === "open", "Human gate must remain open");
-invariant(frontmatterValue(gate, "decision") === "pending", "Human gate must remain pending");
-invariant(frontmatterValue(gate, "spec_sha256") === "pending", "Human gate prematurely binds SPEC.md");
-invariant(frontmatterValue(gate, "verification_sha256") === "pending", "Human gate prematurely binds VERIFY.md");
-
-console.log("Stage 01 specification verification passed.");
-console.log(`Declared inputs: ${bindings.length}`);
-console.log("Acceptance criteria: 12");
-console.log("Negative cases: 12");
-console.log("Human gate: open / pending");
-}
+console.log("L14 Stage 01 specification verification passed: 14 acceptance criteria, 12 negative cases, 11 bound inputs.");
