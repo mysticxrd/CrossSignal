@@ -1,58 +1,78 @@
 ---
 type: verification-record
 stage: 04_verify
+unit: supabase-postgres-authenticated-trace-resolution-parity
 status: passed
-verified_at: 2026-08-31T13:18:07Z
-environment: local-windows-node
-truth_mode: FIXTURE
+truth_mode: TEST
+verified_at: 2026-09-08T23:42:42+05:30
 ---
 
-# L14 Stage 04 verification record
+# Supabase Stage 04 verification commands
 
-## Environment
+## Focused route and adapter suite
 
-- OS: `Microsoft Windows 10.0.26200`
-- Node: `v22.15.0`
-- Runtime evidence: local Vinext production server on `127.0.0.1:4174`
-- Data evidence: migrated in-memory SQLite with explicitly labeled `FIXTURE` histories
-- Browser/UI evidence: not applicable; L14 exposes an HTTP API without a UI entry point
-- Secret values read: none
+```powershell
+node node_modules/tsx/dist/cli.mjs --test tests/flight-recorder-build.test.mjs tests/supabase-trace-resolution.test.mjs
+```
 
-## Artifact bindings
+Exit code: `0`. Result: 63 tests passed, 0 failed. The suite covered the D1
+rollback path, Supabase provider dispatch, transaction-pooler validation,
+authenticated route behavior, tenant and integrity failures, canonical
+mapping, no-fallback behavior, and deterministic secret-free fixture output.
 
-| Input | SHA-256 |
-|---|---|
-| `factory/04_verify/verify.mjs` | `49358bdfd13d7c102ecd7cd8f1a0467f839aefde04dfee9d1ac9dc3ef3641b5d` |
-| `factory/04_verify/output/VERIFICATION_REPORT.md` | `1db772fa55840bdb8d5dab2daa26da1ca8e21ea1d91d0153b19415b34b950400` |
+## Lint
 
-## Commands
+```powershell
+node "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js" run lint
+```
 
-| Timestamp UTC | Command | Exit | Relevant result |
-|---|---|---:|---|
-| `2026-08-31T13:08:00Z` | `& '.\\node_modules\\.bin\\tsx.cmd' --test tests/flight-recorder-build.test.mjs` | `0` | Ended `13:08:05Z`; `57` passed, `0` failed; both L14 success traces and all fail-closed cases passed. |
-| `2026-08-31T13:08:00Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run lint` | `0` | Ended `13:08:07Z`; ESLint completed without findings. |
-| `2026-08-31T13:08:26Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run build` | `0` | Ended `13:08:39Z`; five Vinext environments built and the dynamic L14 route was emitted. |
-| `2026-08-31T13:05:01Z` | `& 'C:\\Program Files\\nodejs\\npm.cmd' run start -- --host 127.0.0.1 --port 4174` | `n/a` | Long-running server announced readiness; it was stopped after probes and port `4174` had no remaining listener. |
-| `2026-08-31T13:05:01Z` | `curl.exe -sS -i "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"` | `0` | HTTP `401`; exact JSON authentication error, JSON content type, and `private, no-store`. |
-| `2026-08-31T13:05:03Z` | `curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" [...] "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a?fields=payloadJson"` | `0` | HTTP `400`; exact JSON invalid-request error and `private, no-store`. |
-| `2026-08-31T13:05:02Z` | `curl.exe -sS -i -H "oai-authenticated-user-id: l14-owner-a" [...] "http://127.0.0.1:4174/api/workspaces/l14-workspace-a/traces/l14-trace-a"` | `0` | HTTP `500`; exact masked JSON unavailable error and `private, no-store`; no raw loader failure. |
-| `2026-08-31T13:14:56Z` | `git diff --check` | `0` | No whitespace errors. |
-| `2026-08-31T13:18:07Z` | `& '.\\node_modules\\.bin\\tsx.cmd' factory/04_verify/verify.mjs` | `0` | Accepted input hashes, source invariants, all 26 case outcomes, report bindings, and the open gate validated. |
+Exit code: `0`. ESLint reported no findings.
 
-## Evidence disposition
+## Production build
 
-The local production boundary proves authentication-first route loading,
-pre-lookup query rejection, stable cache headers, JSON error envelopes, and
-masked dependency failure. The migrated in-memory `FIXTURE` boundary proves
-the complete tenant-scoped resolver, L04 projection, two success histories,
-isolation, integrity, secrecy, ordering, and read-only invariance.
+```powershell
+node "C:\Program Files\nodejs\node_modules\npm\bin\npm-cli.js" run build
+```
 
-The initial sandboxed build preflight could not write Vite's temporary config
-file through the workspace dependency junction. The same governed build command
-was rerun with workspace write access and passed as recorded above; no product
-or factory input changed between those attempts.
+Exit code: `0`. Vinext completed all five build environments and emitted the
+page route plus `/api/workspaces/:workspaceId/traces/:traceId`. Node reported
+only its experimental-glob notice.
 
-## Disposition
+## Supabase connector
 
-`status: passed`. Stage 04 opens its human gate and stops. Stage 05 is not
-authorized until that gate is accepted.
+The project-scoped Supabase connector executed read-only SQL for fixture counts,
+probe-role absence, both tenant contexts, missing context, and reader grants.
+It also read the security and performance advisors and migration ledger.
+
+Exit code: `0`. Results:
+
+- counts `2 / 2 / 2 / 77` and `probe_removed: true`;
+- tenant A `28 / 0 / 0` and tenant B `49 / 0 / 0` for own events, foreign
+  traces, and foreign events;
+- `visible_without_context: 0`;
+- SELECT granted on all four tables and no INSERT, UPDATE, or DELETE grant;
+- zero security advisories;
+- five `Unused Index` INFO notices and no performance warning; and
+- an empty Supabase migration ledger, disclosed in the report.
+
+All tenant queries ran in read-only transactions after `SET LOCAL ROLE
+cfr_trace_reader` and rolled back.
+
+## Repository diff inspection
+
+```powershell
+git diff --check
+```
+
+Exit code: `0`. Git emitted line-ending notices only and found no whitespace
+error.
+
+## Stage verifier
+
+```powershell
+node factory/04_verify/verify.mjs
+```
+
+Exit code: `0`. Output: `Stage 04 release verification passed.` The verifier
+confirmed Stage 03 acceptance, all five declared input hashes, resolved result
+tokens, secret-safe evidence, and the open human-gate bindings.

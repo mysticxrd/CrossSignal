@@ -1,41 +1,47 @@
 ---
 type: human-gate
 stage: 02_data
+unit: supabase-postgres-authenticated-trace-resolution-parity
 gate_status: closed
 decision: accepted
 reviewer: human
-reviewed_at: 2026-08-31T11:37:29Z
-data_package_sha256: a63729a4927b0b2688f0ce0e15f005cc62e013de97b79cdf8759aa6a078b6cb0
-verification_sha256: 3938b14873f5e85b1486a736f095f677eb267ab1268eb34679726d75db26382f
+reviewed_at: 2026-09-08T13:17:42+05:30
+data_package_sha256: 325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861
+verification_sha256: 2db791528904ccbe7586018321fb23c7639e9aa10cd070cdcec9e3cf60f87fc6
 ---
 
-# Stage 02 human gate
+# Supabase Stage 02 human gate
 
-The Stage 02 gate was reopened after Stage 03 integration proved that the prior
-fixture modeled one graph node rather than the persisted six-node runtime. The
-corrected package is ready for renewed human review.
+The local PostgreSQL data package is complete and statically verified. Human
+review is required before Stage 03 implements the runtime adapter or applies
+DDL to a selected Supabase TEST target.
 
 ## Review checklist
 
-- [x] Request, success, and error shapes exactly match the accepted spec.
-- [x] Six-node pending and replacement/completed counts match runtime (`28` / `49`).
-- [x] Two owners and workspaces prove durable tenant isolation.
-- [x] Pending and completed projections are complete and ordered.
-- [x] Five corruption classes fail closed without partial events.
-- [x] Unknown and secret-bearing raw payloads cannot widen projection details.
-- [x] All fourteen acceptance criteria and twelve negative cases are mapped.
-- [x] Fixture truth and provenance remain explicit.
+- [x] Confirm `cfr_app` and the four-table read model are the intended first migration slice.
+- [x] Confirm the SQLite-to-PostgreSQL column, constraint, index, and trigger map is accurate.
+- [x] Confirm the reader role, private schema, forced RLS, explicit query predicates, and transaction-local tenant settings are acceptable.
+- [x] Confirm `anon`, `authenticated`, and `service_role` have no access to this schema.
+- [x] Confirm the deterministic fixture counts `2 / 2 / 2 / 77` and bound digests are acceptable for TEST parity.
+- [x] Confirm PostgreSQL execution, RLS probes, pool-reuse tests, and Supabase advisors remain mandatory in Stage 03.
+- [x] Accept the disclosed scope correction: non-trace subject-to-source-row binding and write-authority guards cannot be fully preserved with only four tables.
+- [x] Confirm `AC-SP-04` therefore remains partially satisfiable and D1 cannot be removed in this slice.
+- [x] Confirm no existing Supabase project has been selected or modified by inference.
+- [x] Choose `accepted`, `changes-requested`, or `rejected`.
 
-## Reviewed artifact
+## Reviewed artifacts
 
 | Artifact | SHA-256 |
 |---|---|
-| `factory/02_data/output/DATA_PACKAGE.md` | `a63729a4927b0b2688f0ce0e15f005cc62e013de97b79cdf8759aa6a078b6cb0` |
-| `factory/02_data/output/VERIFY.md` | `3938b14873f5e85b1486a736f095f677eb267ab1268eb34679726d75db26382f` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861` |
+| `factory/02_data/output/VERIFY.md` | `2db791528904ccbe7586018321fb23c7639e9aa10cd070cdcec9e3cf60f87fc6` |
 
 ## Decision
 
 `accepted`
 
-The human reviewer accepted the corrected runtime-aligned package and authorized
-Stage 03 to resume.
+The human accepted this data package and disclosed limitation in the Codex
+task on 2026-09-08T13:17:42+05:30. Stage 03 local implementation is
+authorized. This decision does not select a hosted Supabase target or authorize
+remote DDL; those actions still require an explicit TEST target and
+cost/organization decision.

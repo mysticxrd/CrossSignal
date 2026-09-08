@@ -14,15 +14,16 @@
     "demo:prepare": "node factory/05_ship/prepare.mjs",
     "verify:spec": "node factory/01_spec/verify.mjs",
     "verify:data": "tsx --test tests/flight-recorder-data.test.mjs && tsx factory/02_data/verify.mjs",
-    "verify:build": "tsx factory/03_build/verify.mjs",
+    "verify:build": "tsx --test tests/flight-recorder-build.test.mjs tests/supabase-trace-resolution.test.mjs && tsx factory/03_build/verify.mjs",
     "verify:release": "tsx factory/04_verify/verify.mjs",
     "verify:ship": "tsx factory/05_ship/verify.mjs",
-    "test": "npm run build && tsx --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs",
+    "test": "npm run build && tsx --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/supabase-trace-resolution.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
+    "postgres": "3.4.9",
     "react": "19.2.6",
     "react-dom": "19.2.6"
   },

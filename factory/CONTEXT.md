@@ -1,7 +1,7 @@
 ---
 type: pipeline-contract
 form: pipeline
-unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
+unit: supabase-postgres-authenticated-trace-resolution-parity
 ---
 
 # Company Flight Recorder - build factory
@@ -11,8 +11,9 @@ The flow in one line: specify the slice -> make its data executable -> build it
 
 This is the same MWP lifecycle used for Whipoff: every meaningful vertical
 slice makes one sequential pass through `spec -> data -> build -> verify ->
-ship`. The current run is the bounded L14 authenticated, tenant-scoped,
-redacted, ordered trace-resolution endpoint.
+ship`. The current run is the first bounded Supabase PostgreSQL cutover slice:
+authenticated, tenant-scoped, redacted, ordered trace-resolution parity while
+the accepted D1 implementation remains recoverable until verification.
 
 | Stage | One job | Primary output | Human check |
 |---|---|---|---|

@@ -1,91 +1,92 @@
 ---
 type: verification-record
 stage: 02_data
+unit: supabase-postgres-authenticated-trace-resolution-parity
 status: passed
-verified_at: 2026-08-31T10:24:04.803Z
+verified_at: 2026-09-08T13:03:00+05:30
+truth_mode: TEST
 ---
 
-# L14 Stage 02 verification
+# Supabase Stage 02 verification
 
 ## Result
 
-`passed`
-
-The corrected executable data package supplies two tenant-owned success traces, five
-fail-closed corruption variants, fourteen acceptance IDs, twelve negative
-cases, exact HTTP shapes, deterministic redaction evidence, and no durable
-product change.
+The Stage 02 data package passes executable fixture validation, static
+PostgreSQL contract validation, the existing D1 data and route suites, lint,
+and diff inspection. No PostgreSQL server was available locally and no hosted
+Supabase target is authorized, so the migration and transactional SQL test
+file have not yet executed against PostgreSQL. That execution remains a hard
+Stage 03 requirement and cannot be replaced by this static result.
 
 ## Environment
 
-| Property | Value |
+- Windows `Microsoft Windows NT 10.0.26200.0`
+- Node.js `v22.15.0`
+- Repository branch `codex/supabase-migration`
+- Local truth mode `TEST` with fixtures explicitly labeled `FIXTURE`
+- No remote Supabase project selected or mutated
+
+## Commands and evidence
+
+| Command | Time | Exit | Evidence |
+|---|---|---:|---|
+| `npm run verify:data` | 2026-09-08T13:03:00+05:30 | 0 | 9/9 existing data tests passed, then the Stage 02 verifier passed. |
+| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs` | 2026-09-08T12:58:00+05:30 | 0 | 57/57 tests passed, including L14 pending/completed parity, tenant failures, redaction, and no-mutation reads. |
+| `npm run lint` | 2026-09-08T13:03:00+05:30 | 0 | ESLint completed with no findings. |
+| `git diff --check` | 2026-09-08T13:03:00+05:30 | 0 | No whitespace errors. |
+
+The Windows npm shim was invoked through Node's installed `npm-cli.js`, as in
+the accepted repository workflow.
+
+## Corrected runner attempt
+
+An initial direct command, `node --test tests/flight-recorder-data.test.mjs
+tests/flight-recorder-build.test.mjs`, exited 1 before running the suites
+because native Node did not load imported `.ts` files. It was not repeated.
+The repository-declared `tsx` runner then executed both suites successfully as
+recorded above. This was a command correction, not a product or test change.
+
+## Stage verifier coverage
+
+`factory/02_data/verify.mjs` confirmed:
+
+- the upstream Stage 01 gate is closed, human-reviewed, and accepted;
+- all 14 declared input hashes and four executable artifact hashes are fresh;
+- exactly four tables are created in private schema `cfr_app`;
+- the reader role is no-login, least-privilege, and lacks `BYPASSRLS`;
+- all four tables enable and force RLS and have owner-scoped read policies;
+- `anon`, `authenticated`, and `service_role` have no schema or table access;
+- timestamps use `timestamptz`, payloads use `jsonb`, and event sequence uses `bigint`;
+- transaction-local actor/workspace settings, advisory append locking, constraints, indexes, and guards are present;
+- the PostgreSQL fixture has counts `2 / 2 / 2 / 77`, validates cleanly, and binds stable source, table, and package digests;
+- the SQL test contract covers role privileges, tenant isolation, transaction leakage, mutation denial, sequence gaps, trace subject binding, invalid transitions, human membership, and event immutability;
+- the partial non-trace subject-binding limitation and its D1-retention consequence are explicit;
+- no connection URI, Supabase secret key, or JWT-shaped token appears in the new Stage 02 artifacts.
+
+Verifier output:
+
+```text
+Supabase Stage 02 data verification passed: four private PostgreSQL tables, 77 deterministic fixture events, forced tenant RLS, least-privilege reader, transactional SQL tests, and explicit non-trace subject-binding limitation.
+```
+
+## PostgreSQL execution boundary
+
+`psql` was not present. Static checks cannot prove PostgreSQL syntax, migration
+atomicity, RLS behavior, transaction-pool tenant clearing, query plans, or
+Supabase advisors. Stage 03 must run the migration, deterministic load, and
+`0001_trace_resolution_read_model.tests.sql` against a selected TEST target,
+then capture security and performance advisors. Any failure blocks Stage 03.
+
+## Bound artifacts
+
+| Artifact | SHA-256 |
 |---|---|
-| OS | `Microsoft Windows NT 10.0.26200.0` |
-| Node.js | `v22.15.0` |
-| Git | `2.47.1.windows.1` |
-| Working branch | `codex/l14-authenticated-trace-resolution` |
-
-## Commands
-
-| Command | Exit | Relevant result |
-|---|---:|---|
-| `node factory/02_data/verify.mjs` | `0` | `2 tenant success traces, 5 corruptions, 14 acceptance IDs, 12 negative cases` |
-| `git diff --check` | `0` | No whitespace errors |
-| `git diff --name-only -- app db drizzle worker tests` | `0` | Empty; Stage 02 changed no durable product surface |
-
-The first verifier run found that explanatory prose cited `NEG-L14-11` before
-the ordered negative mapping. The document check was corrected to validate the
-complete unique ID set; canonical negative ordering remains independently
-enforced by `fixture.negativeCases` against `fixture.negativeIds`. No data
-contract or fixture value changed.
-
-A Stage 03 integration run then exposed that the accepted fixture represented
-one graph node while the persisted runtime emits all six. Stage 03 was
-preserved and removed from the working tree; this Stage 02 correction expands
-the same L04 graph event templates across all six registered nodes. The
-pending/completed contract counts now match the runtime at `28` and `49`.
-
-## Executable checks
-
-- The fixture validates with zero errors and has canonical digest
-  `3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4`.
-- Pending and completed success projections contain exactly 28 and 49 events.
-- Every event is contiguous and has only the twelve accepted event fields.
-- Every error has only `{ error: { code } }` and contains no partial events.
-- All non-disclosing attacks reuse byte-identical `trace_not_found` data.
-- Unknown secret-bearing events retain order with empty `details`.
-- Repeated-read before/after durable counts are identical.
-- The fixture root and nested values are deeply frozen.
-
-## Declared input bindings
-
-| Input | SHA-256 |
-|---|---|
-| `factory/02_data/CONTEXT.md` | `592edb4458d1eff71887ace8f33e240229dd31f66db28c7f54d9b3c5af4dadb7` |
-| `factory/01_spec/output/SPEC.md` | `b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371` |
-| `factory/01_spec/output/HUMAN_GATE.md` | `656fc931fe34749c2b1e3db29e6d15e80a0abae1c016d6047679ce410a45a584` |
-| `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
-| `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `factory/_lib/verify-kit.mjs` | `b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c` |
-| `app/chatgpt-auth.ts` | `4265a2e7c2dcb3a6f4b7026f762bf5b6e4caec76cc13c0a45987ee9a9f2e42cc` |
-| `app/crosssignal-auth.ts` | `4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0` |
-| `db/workspaces.ts` | `d7f5b0d47fd294f2055c8f9247d9b8f5a0a7a1eb9c86e2daf5cb9d917e1a8eb6` |
-| `db/flight-recorder-schema.ts` | `18f30283877491c7a15de0667134aa07cd1ff21e41f9b626f0377b145c46cd09` |
-| `db/flight-recorder-contracts.ts` | `e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192` |
-| `db/flight-recorder.ts` | `4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0` |
-| `tests/fixtures/l04-authority-trace.fixture.mjs` | `cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464` |
-
-## Output bindings at verification
-
-| Output | SHA-256 |
-|---|---|
-| `factory/02_data/output/DATA_PACKAGE.md` | `a63729a4927b0b2688f0ce0e15f005cc62e013de97b79cdf8759aa6a078b6cb0` |
-| `factory/02_data/output/HUMAN_GATE.md` | `1db548605ae225aa185096cb2e2a2bef10e698d84baa0737f55a5e5025b59b09` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861` |
+| `factory/02_data/verify.mjs` | `b8d155672cd1bb7d33f8b2eeda90778d98486258c69c944933d6ab5d530a002c` |
+| `factory/02_data/postgres/0001_trace_resolution_read_model.sql` | `11818cf9c18ad92029bb624018582f665481e7b4cd986a577370c3f2fd914cdb` |
+| `factory/02_data/postgres/0001_trace_resolution_read_model.tests.sql` | `29e37960cec710a707e011509ccdec56f051fbac95cbc250be266f236ae4fa0b` |
 | `factory/02_data/fixtures/l14-trace-resolution.fixture.mjs` | `d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d` |
-| `factory/02_data/verify.mjs` | `5729372ae6041ac66da09a51556d6c56b2963852221af3183753aef91ab0da5a` |
+| `factory/02_data/fixtures/supabase-trace-resolution.fixture.mjs` | `cfc5ee7e900595ba0fbc220bd8b6208671f5060da1dbec107a5301ad13dc95f1` |
 
-## Gate
-
-Verification has opened the Stage 02 human gate. It remains `pending`; Stage
-03 must not begin until a reviewer accepts and binds the final data package and
-verification hashes.
+This verification opens the Stage 02 human gate. It does not accept the gate,
+authorize hosted DDL, or satisfy Stage 03 PostgreSQL execution evidence.

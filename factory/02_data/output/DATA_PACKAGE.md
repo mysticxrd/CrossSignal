@@ -1,205 +1,207 @@
 ---
-type: stage-output
+type: data-package
 stage: 02_data
-unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
-status: ready-for-review
+unit: supabase-postgres-authenticated-trace-resolution-parity
+status: proposed
+truth_mode: TEST
 ---
 
-# L14 executable data package
+# Supabase PostgreSQL trace-resolution data package
 
-## Data decision
+## Decision
 
-The executable source for Stage 03 is
-`factory/02_data/fixtures/l14-trace-resolution.fixture.mjs`. It converts the
-accepted HTTP specification into deterministic identities, memberships,
-tenant-scoped traces, raw event rows, redacted success responses, stable error
-envelopes, corruption variants, and negative cases. It imports the active L04
-trace fixture so L14 does not invent a second event vocabulary or allowlist,
-then expands its graph template across the six-node persisted runtime registry.
+The first Supabase slice is a private, read-only PostgreSQL projection in the
+`cfr_app` schema. It contains the four accepted route dependencies, a no-login
+least-privilege reader role, forced row-level security, deterministic FIXTURE
+rows, and a transactional SQL verification contract. No hosted project has
+been selected and no remote DDL has been executed.
 
-The fixture is `FIXTURE` truth. It is contract data, not evidence of a deployed
-endpoint and not live tenant state.
+Stage 03 may use this package to implement and locally exercise the PostgreSQL
+adapter. Applying it to hosted Supabase remains separately gated by explicit
+TEST project selection.
 
-## Ownership and provenance
+## Executable artifacts
 
-| Object | Authority | Provenance |
+| Artifact | Purpose | SHA-256 |
 |---|---|---|
-| Authenticated user | Four `oai-authenticated-*` request headers parsed server-side | Existing ChatGPT authentication adapter |
-| Workspace access | Durable `(workspace_id, user_id, role='owner')` membership | Existing `workspace_members` contract |
-| Trace metadata | Durable row addressed by both `workspace_id` and `trace_id` | Existing `flight_traces` contract |
-| Trace history | All durable rows addressed by both `workspace_id` and `trace_id` | Existing append-only `flight_trace_events` contract |
-| Redacted event | Existing `projectFlightTraceEvents` behavior and L04 allowlist | Active L04 contracts and fixture |
-| HTTP envelope | Accepted L14 specification | Stage 01 accepted output |
+| `factory/02_data/postgres/0001_trace_resolution_read_model.sql` | Transactional schema, role, grants, RLS policies, indexes, and guards | `11818cf9c18ad92029bb624018582f665481e7b4cd986a577370c3f2fd914cdb` |
+| `factory/02_data/postgres/0001_trace_resolution_read_model.tests.sql` | Transactional privilege, isolation, leakage, sequence, transition, and immutability tests | `29e37960cec710a707e011509ccdec56f051fbac95cbc250be266f236ae4fa0b` |
+| `factory/02_data/fixtures/l14-trace-resolution.fixture.mjs` | Accepted provider-neutral L14 response contract | `d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d` |
+| `factory/02_data/fixtures/supabase-trace-resolution.fixture.mjs` | Four-table PostgreSQL FIXTURE transform and executable validator | `cfc5ee7e900595ba0fbc220bd8b6208671f5060da1dbec107a5301ad13dc95f1` |
 
-The route parameter `workspaceId` remains a requested resource key. The
-authenticated user plus durable membership supplies authority. Neither the
-fixture nor the eventual endpoint accepts a caller-supplied user, role, active
-workspace cookie, or tenant header as authority.
+## SQLite-to-PostgreSQL table map
 
-## Request data contract
+### `workspaces`
 
-```text
-method       = GET
-route        = /api/workspaces/{workspaceId}/traces/{traceId}
-workspaceId  = ^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$
-traceId      = ^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$
-query        = absent
-auth         = strict ChatGPT identity headers
-params       = Promise<{ workspaceId: string; traceId: string }>
-```
-
-Authentication precedes validation-backed database lookup. Malformed path data
-and any query parameter produce no database call. A valid request may reach a
-tenant-bound lookup only after strict identity exists.
-
-## Success data contract
-
-The success object has exactly six top-level keys:
-
-```text
-complete, eventCount, events, schemaVersion, trace, workspaceRef
-```
-
-`schemaVersion` is `l14.trace-resolution.v1`; `complete` is `true`;
-`eventCount` equals `events.length`. `trace` has exactly `id`, `state`,
-`traceKey`, and `truthMode`. Each event has exactly:
-
-```text
-actorDisplay, actorType, currentState, details, eventType, id,
-occurredAt, payloadHash, priorState, sequence, subjectRef, subjectType
-```
-
-The fixture supplies two successful states:
-
-| Fixture | Owner/workspace | Trace state | Event count | Purpose |
-|---|---|---:|---:|---|
-| `success.pendingA` | owner A / workspace A | `awaiting_approval` | `28` | Resolve a persisted six-node pending trace |
-| `success.completedB` | owner B / workspace B | `assessed` | `49` | Resolve the complete replacement/authority/effect/outcome trace |
-
-Both projections are contiguous from sequence `1`, contain every source row
-once, carry `FIXTURE` truth, and exclude raw row fields.
-
-## Error data contract
-
-Every error has exactly `{ "error": { "code": string } }`, contains no
-`events`, and is returned with `Cache-Control: private, no-store`.
-
-| Status | Code | Fixture key |
-|---:|---|---|
-| `400` | `invalid_trace_request` | `errors.invalid` |
-| `401` | `authentication_required` | `errors.unauthenticated` |
-| `404` | `trace_not_found` | `errors.notFound` |
-| `409` | `trace_projection_incomplete` | `errors.incomplete` |
-| `500` | `trace_resolution_unavailable` | `errors.unavailable` |
-
-Unauthorized workspace, absent workspace, absent trace, and a trace ID from a
-different tenant all reuse the identical `errors.notFound.body` object. Tests
-must compare serialized bytes, not merely status codes.
-
-## Integrity and redaction variants
-
-`L14_CORRUPTIONS` contains exactly five fail-closed histories:
-
-1. sequence gap;
-2. duplicate sequence;
-3. mixed-tenant row;
-4. invalid payload hash;
-5. broken subject-state head.
-
-Every variant resolves to `409 trace_projection_incomplete`, never a partial
-event prefix. The unknown-future-event variant remains a valid `200` event in
-sequence but has `details: {}`. Its raw payload contains an email address,
-action body, bearer token, and provider payload expressly to prove that unknown
-event types cannot widen the response.
-
-## Tenant fixture topology
-
-```text
-owner A --owner--> workspace A --contains--> pending trace A
-owner B --owner--> workspace B --contains--> completed trace B
-owner A --denied--> workspace B / completed trace B
-workspace A + trace B ---------------------> trace_not_found
-```
-
-Trace B is a real resource for owner B. Requests pairing trace B with owner A
-or workspace A must be indistinguishable from absence. This tests tenant
-non-disclosure without requiring an impossible duplicate global trace primary
-key.
-
-## Acceptance mapping
-
-| Criterion | Executable fixture evidence |
-|---|---|
-| `AC-L14-01` | `route`, `schemaVersion`, exact success key constants |
-| `AC-L14-02` | `NEG-L14-01`, `NEG-L14-02`, strict identity headers |
-| `AC-L14-03` | `memberships`, spoofed user/tenant case |
-| `AC-L14-04` | tenant topology and mixed-tenant corruption |
-| `AC-L14-05` | one shared `errors.notFound` object for three attacks |
-| `AC-L14-06` | `NEG-L14-11` before/after durable counts |
-| `AC-L14-07` | exact success, trace, and event key constants |
-| `AC-L14-08` | pending/completed event counts and contiguous validation |
-| `AC-L14-09` | active L04 projection data and unknown-event redaction |
-| `AC-L14-10` | five `L14_CORRUPTIONS`, all with no error events |
-| `AC-L14-11` | malformed/overlength identifiers and query case |
-| `AC-L14-12` | exact error keys, cache constant, unavailable masking case |
-| `AC-L14-13` | `success.pendingA` and `success.completedB` |
-| `AC-L14-14` | ordered `L14_NEGATIVE_CASES` set |
-
-## Negative mapping
-
-| ID | Fixture assertion |
-|---|---|
-| `NEG-L14-01` | Missing identity returns `401`, lookup count `0` |
-| `NEG-L14-02` | Development mode does not create an API identity |
-| `NEG-L14-03` | Spoofed tenant/user cannot grant access |
-| `NEG-L14-04` | Owner A requesting workspace B gets shared `404` bytes |
-| `NEG-L14-05` | Workspace A paired with trace B gets shared `404` bytes |
-| `NEG-L14-06` | Decoded slash and 129-character identifier fail before lookup |
-| `NEG-L14-07` | Field-selection query fails before lookup |
-| `NEG-L14-08` | All five corruptions return `409` without events |
-| `NEG-L14-09` | Unknown event remains ordered with empty details |
-| `NEG-L14-10` | Email/body/bearer/provider values never enter projection |
-| `NEG-L14-11` | Repeated reads preserve trace and event counts |
-| `NEG-L14-12` | Internal dependency detail is replaced by stable `500` code |
-
-## Stage 03 obligations
-
-- Consume these constants and fixture cases from product tests; do not copy
-  their values into a second test-only source.
-- Implement a strict non-redirecting authentication read.
-- Await App Router dynamic parameters.
-- Validate identifiers and empty query before durable lookup.
-- Bind both workspace and trace in every trace/event SQL query.
-- Reuse `projectFlightTraceEvents` and map its integrity error to `409`.
-- Snapshot durable counts around positive and negative handler calls.
-- Compare every response's exact keys, cache header, status, and serialized
-  error body.
-
-## Explicit exclusions
-
-The data package adds no product schema, migration, endpoint, UI, mutation,
-pagination, filter, CORS policy, live credential, or new trace projection.
-
-## Fixture binding
-
-| Fixture | SHA-256 | Canonical object digest |
+| SQLite column | PostgreSQL column/type | Constraint translation |
 |---|---|---|
-| `factory/02_data/fixtures/l14-trace-resolution.fixture.mjs` | `d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d` | `3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4` |
+| `id text` | `id text` | Primary key preserved. |
+| `name text` | `name text` | `NOT NULL` preserved. |
+| `slug text` | `slug text` | Unique constraint preserved as `uq_workspaces_slug`. |
+| `owner_user_id text` | `owner_user_id text` | Required value and lookup index preserved. A deferred composite FK requires the owner membership in the same load transaction; the direct FK to excluded `users` is deferred. |
+| `created_at text` | `created_at timestamptz` | Required and default-now semantics preserved with native time validation. |
+| `updated_at text` | `updated_at timestamptz` | Required and default-now semantics preserved with native time validation. |
+
+### `workspace_members`
+
+| SQLite column | PostgreSQL column/type | Constraint translation |
+|---|---|---|
+| `workspace_id text` | `workspace_id text` | Composite primary key member; FK to `workspaces(id)` with cascade preserved. |
+| `user_id text` | `user_id text` | Composite primary key member and lookup index preserved. The FK to excluded `users` is deferred. |
+| `role text` | `role text` | `NOT NULL` and owner-only check preserved. |
+| `joined_at text` | `joined_at timestamptz` | Required and default-now semantics preserved. |
+
+### `flight_traces`
+
+| SQLite column | PostgreSQL column/type | Constraint translation |
+|---|---|---|
+| `id text` | `id text` | Global primary key preserved. |
+| `workspace_id text` | `workspace_id text` | FK to `workspaces(id)` with cascade and unique `(workspace_id,id)` preserved. |
+| `trace_key text` | `trace_key text` | Required and unique within workspace preserved. |
+| `fixture_key text` | `fixture_key text` | Nullable; required when `truth_mode='FIXTURE'`. |
+| `truth_mode text` | `truth_mode text` | `LIVE`, `TEST`, and `FIXTURE` check preserved. |
+| `current_state text` | `current_state text` | Default and nine-state check preserved. |
+| `active_intent_id text` | `active_intent_id text` | Scalar and workspace lookup index preserved; write-path authority validation is deferred. |
+| `retention_class text` | `retention_class text` | Two-value check preserved. |
+| `retention_until text` | `retention_until timestamptz` | SQLite `unixepoch` validity check becomes native type validation. |
+| `created_by text` | `created_by text` | Composite owner membership FK preserved; direct FK to excluded `users` is deferred. |
+| `created_at text` | `created_at timestamptz` | Required and default-now semantics preserved. |
+| `updated_at text` | `updated_at timestamptz` | Required and default-now semantics preserved. |
+
+### `flight_trace_events`
+
+| SQLite column | PostgreSQL column/type | Constraint translation |
+|---|---|---|
+| `id text` | `id text` | Global primary key and unique `(workspace_id,id)` preserved. |
+| `workspace_id text` | `workspace_id text` | Workspace FK and every tenant-scoped unique/index prefix preserved. |
+| `trace_id text` | `trace_id text` | Composite FK to `(workspace_id,id)` and ordered lookup index preserved. |
+| `sequence integer` | `sequence bigint` | Positive check and unique `(workspace_id,trace_id,sequence)` preserved. |
+| `event_type text` | `event_type text` | Required open vocabulary preserved for forward-compatible redaction. |
+| `subject_type text` | `subject_type text` | Eight-value check preserved. |
+| `subject_id text` | `subject_id text` | Required subject reference preserved. |
+| `prior_state text` | `prior_state text` | Nullable initial-state semantics preserved. |
+| `current_state text` | `current_state text` | Required state preserved. |
+| `actor_type text` | `actor_type text` | Four-value check preserved. |
+| `actor_id text` | `actor_id text` | Nullable non-human actor and required owner member for human actor preserved by trigger. |
+| `payload_json text` | `payload_json jsonb` | JSON validity becomes native; adapter must select `payload_json::text` for the existing projector. |
+| `payload_hash text` | `payload_hash text` | Exact lowercase 64-hex check preserved with a PostgreSQL regex. |
+| `idempotency_key text` | `idempotency_key text` | Workspace uniqueness preserved. |
+| `occurred_at text` | `occurred_at timestamptz` | SQLite time validity becomes native and monotonic ordering remains trigger-enforced. |
+
+PostgreSQL adds the foreign-key-side and route indexes the read path needs:
+workspace owner, membership user, trace state, active intent, event subject,
+and `(workspace_id,trace_id,sequence)` order. PostgreSQL does not create foreign
+key indexes automatically, so every included referencing/filter column is
+covered explicitly or by a leading unique/primary-key prefix.
+
+## Guard map
+
+| SQLite guard | PostgreSQL result |
+|---|---|
+| `trg_flight_traces_identity_immutable` | Ported as a `SECURITY INVOKER` trigger with an empty function search path. |
+| Event update and non-FIXTURE delete guards | Ported. FIXTURE cleanup remains possible; durable TEST/LIVE event deletion fails. |
+| Global sequence and event-time guard | Ported with a per-trace transaction advisory lock to serialize concurrent append validation. |
+| Human actor membership | Ported against `workspace_members`. |
+| Trace subject binding | Ported: `subject_type='trace'` requires `subject_id=trace_id`; the composite trace FK prevents foreign workspace/trace rows. |
+| Per-subject head and state machine | Ported for all eight subject types. |
+| Non-trace subject-to-source-row binding | Deferred because its source tables are outside the accepted four-table slice. |
+| L08 active-intent and L04 execution-authority projection guards | Deferred with their write-path tables; the reader role cannot mutate either projection. |
+
+## Scope correction requiring human ownership
+
+The accepted Stage 01 text asks the four-table slice to preserve every subject
+binding guard. The SQLite non-trace guard queries `context_snapshots`,
+`reasoning_nodes`, `action_intents`, `policy_decisions`, `approval_grants`,
+`effect_attempts`, and outcome tables. Full referential enforcement therefore
+cannot coexist with a four-table schema.
+
+This package preserves the read contract, composite tenant/trace binding,
+human membership, sequence, time, immutability, and every subject state
+transition. It does not claim source-row referential proof for non-trace
+subjects or write-path authority. Stage 03 may prove read-only route parity,
+but `AC-SP-04` remains only partially satisfiable until a later write slice
+migrates the referenced tables or an accepted specification revision narrows
+that criterion. D1 cannot be removed while this limitation remains.
+
+## Tenant and privilege contract
+
+- `cfr_app` is a private schema and is not added to Supabase Data API exposed schemas.
+- `anon`, `authenticated`, and `service_role` receive neither schema usage nor table/function privileges.
+- `cfr_trace_reader` is `NOLOGIN`, non-superuser, non-creator, non-replication, and has no `BYPASSRLS`.
+- A separately managed runtime login may inherit `cfr_trace_reader`; its secret is never committed or sent to the browser.
+- All four tables enable and force RLS. Policies exist only for `SELECT TO cfr_trace_reader`.
+- Policies require transaction-local `app.current_user_id` and `app.current_workspace_id`; the membership row must be owner-scoped.
+- The resolver keeps explicit workspace/trace predicates in addition to RLS.
+- Hosted traffic must begin a read-only transaction, set both values locally, perform all reads, and end the transaction before returning the Supavisor transaction-mode connection.
+- Prepared statements remain disabled for transaction pooling; migration/test connections use direct or session mode over TLS.
+
+Custom settings carry server-asserted application identity. They are safe only
+behind the existing authenticated server boundary and do not replace that
+boundary. The read role itself has no mutation privilege.
+
+## Deterministic fixture contract
+
+The PostgreSQL fixture is labeled `FIXTURE` for a hosted `TEST` environment.
+It derives from the accepted L14 response fixture and exports four tables,
+stable counts, per-table SHA-256 digests, a source digest, and a package digest.
+
+| Table | Rows | Logical digest |
+|---|---:|---|
+| `workspaces` | 2 | `2f77d9452f259766ffe35d06d0090706b73e1f9383dfca08c8020509aaec5f2b` |
+| `workspace_members` | 2 | `a77b46faa3136fb5350b1f2523e9610ad7dc819bc8a4e4a63c9ff4a373c37a91` |
+| `flight_traces` | 2 | `44dfb50bac770ff9657cf94ed859ccd8423c9fb0140c8ca426a7ba0d784ab2de` |
+| `flight_trace_events` | 77 | `9f17bd65ffab0cd87122a58e72b2faad9b46409c24065fb6ef87fd43cc318b78` |
+
+Source digest: `3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4`.
+Package digest: `8d87c72cb8c8d84575f16b66672fe8094930b631dbba58cf7e9b2df0a8ed396e`.
+
+The fixture contains one 28-event pending trace and one 49-event completed
+trace. Human actor IDs are rebound from the reusable L04 template identity to
+the matching L14 workspace owner; actor IDs are not part of the public
+projection. JSON payloads become logical JSON values for `jsonb`; their stored
+source payload hashes and allowlisted public projections remain unchanged.
+
+## Load and verification sequence
+
+1. Apply the migration through the supported Supabase migration path using a direct or session connection.
+2. In one transaction, load workspaces, members, traces, then events ordered by workspace, trace, and sequence.
+3. Compare all four counts and logical digests with this package before enabling the adapter.
+4. Run `0001_trace_resolution_read_model.tests.sql`; it rolls back every test mutation.
+5. Verify owner A sees only 28 events, owner B sees only 49, an empty setting sees zero, and settings do not survive a transaction boundary.
+6. Run Supabase security and performance advisors. Any finding blocks hosted acceptance until resolved.
+7. Preserve the unchanged D1 database and configuration rollback path.
+
+Stage 02 validation is static because no local PostgreSQL client/server is
+available and no remote target is authorized. Stage 03 must execute the
+migration and SQL test contract against PostgreSQL; static validation cannot
+satisfy hosted acceptance.
+
+## Rollback
+
+The migration is additive and runs in one transaction. Before adapter
+selection, failure rolls the schema transaction back. After a TEST load, the
+dedicated test schema/project may be reset only under the later hosted target
+authorization. Application rollback selects D1 before a request begins; it
+does not copy PostgreSQL rows back to D1. No D1 migration, fixture, binding, or
+adapter is removed by this package.
 
 ## Declared input bindings
 
 | Input | SHA-256 |
 |---|---|
-| `factory/02_data/CONTEXT.md` | `592edb4458d1eff71887ace8f33e240229dd31f66db28c7f54d9b3c5af4dadb7` |
-| `factory/01_spec/output/SPEC.md` | `b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371` |
-| `factory/01_spec/output/HUMAN_GATE.md` | `656fc931fe34749c2b1e3db29e6d15e80a0abae1c016d6047679ce410a45a584` |
+| `factory/02_data/CONTEXT.md` | `b57f6e2f6009097f3e8b1bd211a0de0d720fd02d45be41fc45366dc621e0e465` |
+| `factory/01_spec/output/SPEC.md` | `0e1990a042bde9b443482f9862e85158414d5098ed6c9348bfb9a08a931741d7` |
+| `factory/01_spec/output/HUMAN_GATE.md` | `cfd37c326c0549f0168cd1c87384d1392ea79558515f23317fc698fe20a86c2f` |
 | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `factory/_lib/verify-kit.mjs` | `b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c` |
-| `app/chatgpt-auth.ts` | `4265a2e7c2dcb3a6f4b7026f762bf5b6e4caec76cc13c0a45987ee9a9f2e42cc` |
-| `app/crosssignal-auth.ts` | `4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0` |
-| `db/workspaces.ts` | `d7f5b0d47fd294f2055c8f9247d9b8f5a0a7a1eb9c86e2daf5cb9d917e1a8eb6` |
+| `db/schema.ts` | `a9b641b3d901dd496a2cbecb8ce0527d085a5348d0a935d4424b2dde92cc1496` |
 | `db/flight-recorder-schema.ts` | `18f30283877491c7a15de0667134aa07cd1ff21e41f9b626f0377b145c46cd09` |
-| `db/flight-recorder-contracts.ts` | `e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192` |
-| `db/flight-recorder.ts` | `4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0` |
-| `tests/fixtures/l04-authority-trace.fixture.mjs` | `cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464` |
+| `db/trace-resolution.ts` | `2c13169c911ed46ed96670361fb0b88382184dfb92e8e11da5c6e353f16536f9` |
+| `drizzle/` | `731872e4cf51b1fd99e860804622fd0e1a39903811590d7692f451a9fbaa2014` |
+| `tests/flight-recorder-data.test.mjs` | `d4be07a521bbfd19726d3ea2aa3bdd034620a2518a2375e8e4cf79ada8e032cf` |
+| `tests/flight-recorder-build.test.mjs` | `6829c8405785647baba19975f60cde2b9dff62fb927bd27176725d74159df73b` |
+| `factory/02_data/fixtures/l14-trace-resolution.fixture.mjs` | `d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d` |
+| `factory/_lib/verify-kit.mjs` | `b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c` |
+| `package.json` | `c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972` |
+
+The verifier recomputes these bindings and rejects drift.

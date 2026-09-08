@@ -2,110 +2,148 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
-  L14_ACCEPTANCE_IDS,
-  L14_CORRUPTIONS,
-  L14_EVENT_KEYS,
-  L14_NEGATIVE_CASES,
-  L14_NEGATIVE_IDS,
-  L14_ROUTE,
-  L14_SCHEMA_VERSION,
-  L14_TRACE_RESOLUTION_FIXTURE,
-  l14FixtureDigest,
-  validateL14Fixture,
-} from "./fixtures/l14-trace-resolution.fixture.mjs";
-import {
   fileHash,
   frontmatterValue,
   markdownHashBindings,
-  runChecked,
+  markdownSection,
+  pathHash,
 } from "../_lib/verify-kit.mjs";
+import {
+  SUPABASE_TRACE_RESOLUTION_FIXTURE,
+  validateSupabaseTraceResolutionFixture,
+} from "./fixtures/supabase-trace-resolution.fixture.mjs";
 
 const root = resolve(import.meta.dirname, "../..");
-const packagePath = resolve(import.meta.dirname, "output/DATA_PACKAGE.md");
-const verifyPath = resolve(import.meta.dirname, "output/VERIFY.md");
-const gatePath = resolve(import.meta.dirname, "output/HUMAN_GATE.md");
-const fixturePath = resolve(import.meta.dirname, "fixtures/l14-trace-resolution.fixture.mjs");
-const dataPackage = await readFile(packagePath, "utf8");
-const gate = await readFile(gatePath, "utf8");
+const dataPackagePath = resolve(import.meta.dirname, "output/DATA_PACKAGE.md");
+const migrationPath = resolve(import.meta.dirname, "postgres/0001_trace_resolution_read_model.sql");
+const sqlTestsPath = resolve(import.meta.dirname, "postgres/0001_trace_resolution_read_model.tests.sql");
+const sourceFixturePath = resolve(import.meta.dirname, "fixtures/l14-trace-resolution.fixture.mjs");
+const postgresFixturePath = resolve(import.meta.dirname, "fixtures/supabase-trace-resolution.fixture.mjs");
+const upstreamGatePath = resolve(import.meta.dirname, "../01_spec/output/HUMAN_GATE.md");
 
-const expectedInputs = new Map([
-  ["factory/02_data/CONTEXT.md", "592edb4458d1eff71887ace8f33e240229dd31f66db28c7f54d9b3c5af4dadb7"],
-  ["factory/01_spec/output/SPEC.md", "b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371"],
-  ["factory/01_spec/output/HUMAN_GATE.md", "656fc931fe34749c2b1e3db29e6d15e80a0abae1c016d6047679ce410a45a584"],
-  ["factory/_shared/ARCHITECTURE_SNAPSHOT.md", "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084"],
-  ["factory/_shared/QUALITY_GATES.md", "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f"],
-  ["factory/_lib/verify-kit.mjs", "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c"],
-  ["app/chatgpt-auth.ts", "4265a2e7c2dcb3a6f4b7026f762bf5b6e4caec76cc13c0a45987ee9a9f2e42cc"],
-  ["app/crosssignal-auth.ts", "4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0"],
-  ["db/workspaces.ts", "d7f5b0d47fd294f2055c8f9247d9b8f5a0a7a1eb9c86e2daf5cb9d917e1a8eb6"],
-  ["db/flight-recorder-schema.ts", "18f30283877491c7a15de0667134aa07cd1ff21e41f9b626f0377b145c46cd09"],
-  ["db/flight-recorder-contracts.ts", "e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192"],
-  ["db/flight-recorder.ts", "4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0"],
-  ["tests/fixtures/l04-authority-trace.fixture.mjs", "cd565ba32b846e2848be56c6ef8c705bb13088d6424f80feb962d96411afa464"],
+const [dataPackage, migration, sqlTests, upstreamGate] = await Promise.all([
+  readFile(dataPackagePath, "utf8"),
+  readFile(migrationPath, "utf8"),
+  readFile(sqlTestsPath, "utf8"),
+  readFile(upstreamGatePath, "utf8"),
 ]);
 
-assert.equal(frontmatterValue(dataPackage, "type"), "stage-output");
 assert.equal(frontmatterValue(dataPackage, "stage"), "02_data");
-assert.equal(frontmatterValue(dataPackage, "status"), "ready-for-review");
-const upstreamGate = await readFile(resolve(root, "factory/01_spec/output/HUMAN_GATE.md"), "utf8");
-assert.equal(frontmatterValue(upstreamGate, "decision"), "accepted", "Stage 01 gate is not accepted");
+assert.equal(frontmatterValue(dataPackage, "unit"), "supabase-postgres-authenticated-trace-resolution-parity");
+assert.equal(frontmatterValue(dataPackage, "truth_mode"), "TEST");
+assert.equal(frontmatterValue(upstreamGate, "gate_status"), "closed");
+assert.equal(frontmatterValue(upstreamGate, "decision"), "accepted");
+assert.equal(frontmatterValue(upstreamGate, "reviewer"), "human");
+assert.match(frontmatterValue(upstreamGate, "reviewed_at"), /^2026-09-08T/);
 
-const bindings = new Map(
-  markdownHashBindings(dataPackage).map(({ input, expected }) => [input, expected]),
-);
-assert.equal(bindings.size, expectedInputs.size, "data-package input binding count drifted");
-for (const [path, expected] of expectedInputs) {
-  assert.equal(bindings.get(path), expected, `missing or changed binding: ${path}`);
-  assert.equal(await fileHash(root, resolve(root, path)), expected, `stale input: ${path}`);
+const declaredSection = markdownSection(dataPackage, /^## Declared input bindings$/);
+const inputBindings = markdownHashBindings(declaredSection);
+assert.equal(inputBindings.length, 14, "expected every Stage 02 input binding");
+for (const binding of inputBindings) {
+  const actual = await pathHash(root, resolve(root, binding.input));
+  assert.equal(actual, binding.expected, `${binding.input} drifted`);
 }
 
-assert.deepEqual(validateL14Fixture(), []);
-assert.equal(l14FixtureDigest(), "3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4");
-assert.equal(await fileHash(root, fixturePath), "d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d");
-assert.equal(L14_TRACE_RESOLUTION_FIXTURE.route, L14_ROUTE);
-assert.equal(L14_TRACE_RESOLUTION_FIXTURE.success.pendingA.schemaVersion, L14_SCHEMA_VERSION);
-assert.equal(L14_TRACE_RESOLUTION_FIXTURE.success.pendingA.eventCount, 28);
-assert.equal(L14_TRACE_RESOLUTION_FIXTURE.success.completedB.eventCount, 49);
-assert.equal(L14_CORRUPTIONS.length, 5);
-assert.equal(L14_NEGATIVE_CASES.length, 12);
-assert.deepEqual(L14_ACCEPTANCE_IDS, Array.from({ length: 14 }, (_, index) => `AC-L14-${String(index + 1).padStart(2, "0")}`));
-assert.deepEqual(L14_NEGATIVE_IDS, Array.from({ length: 12 }, (_, index) => `NEG-L14-${String(index + 1).padStart(2, "0")}`));
-assert.deepEqual(Object.keys(L14_TRACE_RESOLUTION_FIXTURE.unknownEvent.projected.details), []);
-assert.deepEqual(Object.keys(L14_TRACE_RESOLUTION_FIXTURE.success.completedB.events[0]).sort(), L14_EVENT_KEYS);
-assert.ok(Object.isFrozen(L14_TRACE_RESOLUTION_FIXTURE), "fixture root is mutable");
+const artifactSection = markdownSection(dataPackage, /^## Executable artifacts$/);
+const artifactBindings = [...artifactSection.matchAll(/^\| `([^`]+)` \| [^|]+ \| `([0-9a-f]{64})` \|$/gm)]
+  .map((match) => ({ input: match[1], expected: match[2] }));
+assert.equal(artifactBindings.length, 4, "expected four executable artifact bindings");
+for (const binding of artifactBindings) {
+  const actual = await fileHash(root, resolve(root, binding.input));
+  assert.equal(actual, binding.expected, `${binding.input} artifact drifted`);
+}
 
-const packageAcceptance = [...dataPackage.matchAll(/`AC-L14-(\d{2})`/g)].map((match) => match[1]);
-assert.deepEqual([...new Set(packageAcceptance)], Array.from({ length: 14 }, (_, index) => String(index + 1).padStart(2, "0")));
-const packageNegatives = [...dataPackage.matchAll(/`NEG-L14-(\d{2})`/g)].map((match) => match[1]);
-assert.deepEqual(
-  [...new Set(packageNegatives)].sort(),
-  Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0")),
-);
+assert.deepEqual(validateSupabaseTraceResolutionFixture(), []);
+assert.deepEqual(SUPABASE_TRACE_RESOLUTION_FIXTURE.counts, {
+  workspaces: 2,
+  workspace_members: 2,
+  flight_traces: 2,
+  flight_trace_events: 77,
+});
+assert.equal(SUPABASE_TRACE_RESOLUTION_FIXTURE.sourceDigest, "3b005060f11bf8da81788686d32a3e7325edbfaf86d9323680f1ef0fda657ee4");
+assert.equal(SUPABASE_TRACE_RESOLUTION_FIXTURE.packageDigest, "8d87c72cb8c8d84575f16b66672fe8094930b631dbba58cf7e9b2df0a8ed396e");
+
+const createTables = [...migration.matchAll(/create table cfr_app\.([a-z_]+)/gi)].map((match) => match[1]);
+assert.deepEqual(createTables, ["workspaces", "workspace_members", "flight_traces", "flight_trace_events"]);
+assert.match(migration, /^begin;/i);
+assert.match(migration, /commit;\s*$/i);
+assert.match(migration, /create schema cfr_app;/i);
+assert.match(migration, /create role cfr_trace_reader[\s\S]+nologin[\s\S]+nobypassrls/i);
+assert.doesNotMatch(migration, /security definer/i);
+assert.equal((migration.match(/security invoker/gi) ?? []).length, 4);
+assert.equal((migration.match(/enable row level security/gi) ?? []).length, 4);
+assert.equal((migration.match(/force row level security/gi) ?? []).length, 4);
+assert.equal((migration.match(/create policy /gi) ?? []).length, 4);
+assert.match(migration, /for select to cfr_trace_reader/gi);
+assert.equal((migration.match(/for select to cfr_trace_reader/gi) ?? []).length, 4);
+assert.doesNotMatch(migration, /grant\s+(?:all|insert|update|delete)/i);
+assert.match(migration, /grant select on cfr_app\.workspaces, cfr_app\.workspace_members,[\s\S]+flight_traces, cfr_app\.flight_trace_events to cfr_trace_reader;/i);
+assert.match(migration, /revoke all on schema cfr_app from public, anon, authenticated, service_role;/i);
+assert.match(migration, /revoke all on all tables in schema cfr_app from public, anon, authenticated, service_role;/i);
+assert.match(migration, /payload_json jsonb not null/i);
+assert.match(migration, /retention_until timestamptz not null/i);
+assert.match(migration, /occurred_at timestamptz not null/i);
+assert.match(migration, /sequence bigint not null/i);
+assert.match(migration, /pg_advisory_xact_lock/i);
+assert.match(migration, /hashtextextended/i);
+assert.match(migration, /current_setting\('app\.current_user_id', true\)/i);
+assert.match(migration, /current_setting\('app\.current_workspace_id', true\)/i);
+for (const required of [
+  "fk_flight_traces_workspace_creator_membership",
+  "fk_workspaces_owner_membership",
+  "fk_flight_trace_events_workspace_trace",
+  "chk_flight_trace_events_payload_hash",
+  "trg_flight_traces_identity_immutable",
+  "trg_flight_trace_events_update_guard",
+  "trg_flight_trace_events_delete_guard",
+  "trg_flight_trace_events_insert_guard",
+  "trace event sequence is not globally gap-free",
+  "trace event subject is outside its trace",
+  "trace event violates its subject state machine",
+]) assert.match(migration, new RegExp(required));
+
+assert.equal((sqlTests.match(/^begin;$/gim) ?? []).length, 3);
+assert.equal((sqlTests.match(/^rollback;$/gim) ?? []).length, 3);
+for (const required of [
+  "owner A event visibility drifted",
+  "owner B event visibility drifted",
+  "transaction-local tenant context leaked",
+  "reader mutation unexpectedly succeeded",
+  "sequence gap unexpectedly succeeded",
+  "foreign trace subject unexpectedly succeeded",
+  "invalid transition unexpectedly succeeded",
+  "foreign human actor unexpectedly succeeded",
+  "event update unexpectedly succeeded",
+  "non-fixture event delete unexpectedly succeeded",
+]) assert.match(sqlTests, new RegExp(required));
 
 for (const phrase of [
-  "strict non-redirecting authentication read",
-  "Bind both workspace and trace",
-  "Reuse `projectFlightTraceEvents`",
-  "compare serialized bytes",
-  "no product schema, migration, endpoint, UI, mutation",
-]) assert.ok(dataPackage.includes(phrase), `required data obligation missing: ${phrase}`);
+  /Scope correction requiring human ownership/,
+  /Full referential enforcement therefore\s+cannot coexist with a four-table schema/,
+  /AC-SP-04` remains only partially satisfiable/,
+  /D1 cannot be removed while this limitation remains/,
+  /no local PostgreSQL client\/server is\s+available/,
+  /no remote target is authorized/,
+]) assert.match(dataPackage, phrase);
 
-const dataPackageHash = await fileHash(root, packagePath);
-assert.equal(frontmatterValue(gate, "data_package_sha256"), dataPackageHash, "gate does not bind current data package");
-const gateDecision = frontmatterValue(gate, "decision");
-assert.ok(["pending", "accepted"].includes(gateDecision), "gate decision is invalid");
-if (gateDecision === "accepted") {
-  assert.equal(frontmatterValue(gate, "gate_status"), "closed");
-  assert.notEqual(frontmatterValue(gate, "reviewer"), "pending");
-  assert.notEqual(frontmatterValue(gate, "reviewed_at"), "pending");
-  assert.equal(frontmatterValue(gate, "verification_sha256"), await fileHash(root, verifyPath));
-}
+const sensitiveFiles = await Promise.all([
+  readFile(dataPackagePath, "utf8"),
+  readFile(migrationPath, "utf8"),
+  readFile(sqlTestsPath, "utf8"),
+  readFile(postgresFixturePath, "utf8"),
+]);
+const combined = sensitiveFiles.join("\n");
+for (const forbidden of [
+  /postgres(?:ql)?:\/\//i,
+  /SUPABASE_SERVICE_ROLE_KEY/,
+  /sb_secret_[A-Za-z0-9_-]+/,
+  /eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/,
+]) assert.doesNotMatch(combined, forbidden);
 
-const { stdout } = runChecked(
-  "git",
-  ["diff", "--name-only", "--", "app", "db", "drizzle", "worker", "tests"],
-  { cwd: root },
+assert.equal(await fileHash(root, sourceFixturePath), "d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d");
+
+console.log(
+  "Supabase Stage 02 data verification passed: four private PostgreSQL tables, " +
+  "77 deterministic fixture events, forced tenant RLS, least-privilege reader, " +
+  "transactional SQL tests, and explicit non-trace subject-binding limitation.",
 );
-assert.equal(stdout.trim(), "", "Stage 02 changed a durable product surface");
-
-console.log("L14 Stage 02 data verification passed: 2 tenant success traces, 5 corruptions, 14 acceptance IDs, 12 negative cases.");

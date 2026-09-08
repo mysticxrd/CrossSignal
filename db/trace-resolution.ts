@@ -3,7 +3,7 @@ import {
   type PersistedTraceEventRow,
   type RedactedTraceEvent,
 } from "./flight-recorder-contracts";
-import { getD1 } from ".";
+import { getD1, getDatabaseProvider } from ".";
 
 export type TraceResolution = {
   workspaceRef: string;
@@ -29,11 +29,23 @@ type TraceResolutionRow = {
   truth_mode: "LIVE" | "TEST" | "FIXTURE";
 };
 
-export async function resolveFlightTrace(input: {
+export type TraceResolutionInput = {
   userId: string;
   workspaceId: string;
   traceId: string;
-}): Promise<TraceResolutionResult> {
+};
+
+type TraceResolver = (input: TraceResolutionInput) => Promise<TraceResolutionResult>;
+
+let supabaseResolverForTest: TraceResolver | null = null;
+
+export function installSupabaseTraceResolverForTest(resolver: TraceResolver | null): void {
+  supabaseResolverForTest = resolver;
+}
+
+export async function resolveFlightTraceFromD1(
+  input: TraceResolutionInput,
+): Promise<TraceResolutionResult> {
   const d1 = getD1();
   const membership = await d1
     .prepare(`SELECT workspace_id FROM workspace_members
@@ -91,4 +103,15 @@ export async function resolveFlightTrace(input: {
   } catch {
     return { kind: "incomplete" };
   }
+}
+
+export async function resolveFlightTrace(
+  input: TraceResolutionInput,
+): Promise<TraceResolutionResult> {
+  const provider = getDatabaseProvider();
+  if (provider === "d1") return resolveFlightTraceFromD1(input);
+
+  if (supabaseResolverForTest) return supabaseResolverForTest(input);
+  const { resolveFlightTraceFromSupabase } = await import("./supabase-trace-resolution");
+  return resolveFlightTraceFromSupabase(input);
 }

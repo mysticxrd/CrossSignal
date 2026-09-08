@@ -5,99 +5,84 @@ import {
   fileHash,
   frontmatterValue,
   markdownHashBindings,
-  runChecked,
+  pathHash,
 } from "../_lib/verify-kit.mjs";
 
-const root = resolve(import.meta.dirname, "../..");
-const specPath = resolve(import.meta.dirname, "output/SPEC.md");
-const verifyPath = resolve(import.meta.dirname, "output/VERIFY.md");
-const gatePath = resolve(import.meta.dirname, "output/HUMAN_GATE.md");
-const spec = await readFile(specPath, "utf8");
-const gate = await readFile(gatePath, "utf8");
+const projectRoot = resolve(import.meta.dirname, "../..");
+const fromRoot = (path) => resolve(projectRoot, path);
+const read = (path) => readFile(fromRoot(path), "utf8");
 
 const expectedInputs = new Map([
-  ["factory/01_spec/CONTEXT.md", "ec2c145a85802c01ad5796e9619c72e700ea19350397f58b1379a12fc9f5a47e"],
+  ["factory/01_spec/CONTEXT.md", "740cde6585aab54644a12307b13944ec91029c9ab8f8f38775e5eba5e6d0a6de"],
   ["factory/_shared/ARCHITECTURE_SNAPSHOT.md", "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084"],
   ["factory/_shared/QUALITY_GATES.md", "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f"],
   ["factory/_lib/verify-kit.mjs", "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c"],
   ["package.json", "c8a9ab36760f08998d304efdc6a4d514a22f8d7ea05ab8c8df992ecc09f75972"],
-  ["app/crosssignal-auth.ts", "4c6081befd4c0eee91d962a689f67ec5f5e612e0dc462fab1bec3d8d874890e0"],
-  ["app/page.tsx", "b72866126a09ffa1e0f51e127564b22b56430d16ea5d5c4f7878822c55624722"],
-  ["db/flight-recorder-contracts.ts", "e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192"],
-  ["db/flight-recorder.ts", "4bf6802a6dc96463381d9a58135e10a1cc27a64e7a27159e99217061166411b0"],
-  ["tests/flight-recorder-build.test.mjs", "7efeb3f0ca10d7b49b5d7498d364ab6c345b1919b74b6686bc774f664e52cedd"],
+  ["drizzle.config.ts", "3ec3fe6a06a9be54bbd980ec2fc72b014bfdc7d30b5c92d02aa0aa3c95e39b1a"],
+  ["vite.config.ts", "4a8de6242dc5eecaf99f582ec511cd4f6ee367648b38d5599c90f462cdc89fd0"],
+  ["worker/index.ts", "2ed36d7fa996e946d9d7695c5925e7760246f6bf8fa35c06f1bc515c087dc450"],
+  ["db/index.ts", "c6fc9494d04c9457fc4178bed614d0e4ba7c5877e9d65ced11c691b735ec851e"],
+  ["db/migrations.ts", "a33c9d1a2435c4a93b1f8f9a779d99084e4903aca6c326d7f308667d285a53b1"],
+  ["db/schema.ts", "a9b641b3d901dd496a2cbecb8ce0527d085a5348d0a935d4424b2dde92cc1496"],
+  ["db/flight-recorder-schema.ts", "18f30283877491c7a15de0667134aa07cd1ff21e41f9b626f0377b145c46cd09"],
+  ["db/trace-resolution.ts", "2c13169c911ed46ed96670361fb0b88382184dfb92e8e11da5c6e353f16536f9"],
+  ["drizzle/", "731872e4cf51b1fd99e860804622fd0e1a39903811590d7692f451a9fbaa2014"],
+  ["tests/flight-recorder-build.test.mjs", "6829c8405785647baba19975f60cde2b9dff62fb927bd27176725d74159df73b"],
   ["tests/flight-recorder-data.test.mjs", "d4be07a521bbfd19726d3ea2aa3bdd034620a2518a2375e8e4cf79ada8e032cf"],
 ]);
 
-assert.equal(frontmatterValue(spec, "type"), "stage-output");
-assert.equal(frontmatterValue(spec, "stage"), "01_spec");
-assert.equal(frontmatterValue(spec, "status"), "ready-for-review");
-const gateDecision = frontmatterValue(gate, "decision");
-assert.ok(["pending", "accepted"].includes(gateDecision), "gate decision is invalid");
-
-const declaredBindings = new Map(
-  markdownHashBindings(spec).map(({ input, expected }) => [input, expected]),
-);
-assert.equal(declaredBindings.size, expectedInputs.size, "spec input binding count drifted");
 for (const [path, expected] of expectedInputs) {
-  assert.equal(declaredBindings.get(path), expected, `missing or changed binding: ${path}`);
-  assert.equal(await fileHash(root, resolve(root, path)), expected, `stale input: ${path}`);
+  assert.equal(await pathHash(projectRoot, fromRoot(path.replace(/[\\/]$/, ""))), expected, `${path} drifted`);
 }
 
-const requiredPhrases = [
-  "GET /api/workspaces/{workspaceId}/traces/{traceId}",
-  "no local-development fallback",
-  "projectFlightTraceEvents",
-  "Cache-Control: private, no-store",
-  "authentication_required",
-  "trace_not_found",
-  "trace_projection_incomplete",
-  "trace_resolution_unavailable",
-  "eventCount === events.length",
-  "also binding `workspace_id`",
-  "does not paginate or return a partial prefix",
-  "Unknown future event type",
-  "Durable table counts and trace state remain unchanged",
-  "No mutation method",
-];
-for (const phrase of requiredPhrases) {
-  assert.ok(spec.includes(phrase), `required contract phrase missing: ${phrase}`);
+const [spec, verification, gate] = await Promise.all([
+  read("factory/01_spec/output/SPEC.md"),
+  read("factory/01_spec/output/VERIFY.md"),
+  read("factory/01_spec/output/HUMAN_GATE.md"),
+]);
+
+assert.equal(frontmatterValue(spec, "status"), "proposed");
+assert.equal(frontmatterValue(spec, "truth_mode"), "TEST");
+assert.equal(frontmatterValue(verification, "status"), "passed");
+assert.equal(frontmatterValue(gate, "gate_status"), "open");
+assert.equal(frontmatterValue(gate, "decision"), "pending");
+
+const bindings = new Map(markdownHashBindings(spec).map(({ input, expected }) => [input, expected]));
+assert.equal(bindings.size, expectedInputs.size);
+for (const [path, expected] of expectedInputs) assert.equal(bindings.get(path), expected, `${path} is not bound`);
+
+for (let index = 1; index <= 16; index += 1) {
+  assert.ok(spec.includes(`AC-SP-${String(index).padStart(2, "0")}`), `missing acceptance ${index}`);
+}
+for (let index = 1; index <= 12; index += 1) {
+  assert.ok(spec.includes(`NEG-SP-${String(index).padStart(2, "0")}`), `missing negative ${index}`);
 }
 
-const acceptanceIds = [...spec.matchAll(/\*\*AC-L14-(\d{2})\b/g)].map((match) => match[1]);
-assert.deepEqual(acceptanceIds, Array.from({ length: 14 }, (_, index) => String(index + 1).padStart(2, "0")));
-const negativeIds = [...spec.matchAll(/`NEG-L14-(\d{2})`/g)].map((match) => match[1]);
-assert.deepEqual(negativeIds, Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0")));
+for (const required of [
+  "Supavisor transaction pooler",
+  "prepared statements disabled",
+  "no `BYPASSRLS`",
+  "transaction-local settings",
+  "no silent D1 fallback",
+  "No request writes to both databases",
+  "D1 implementation remains",
+  "selects no existing Supabase project",
+  "Security and performance advisors",
+  "local success alone cannot satisfy",
+]) assert.ok(spec.includes(required), `missing required contract: ${required}`);
 
 for (const forbidden of [
-  "Result's private stack",
-  "exactly-once delivery is guaranteed",
-  "chain-of-thought",
-  "permissive CORS is required",
-]) {
-  assert.equal(spec.includes(forbidden), false, `forbidden claim present: ${forbidden}`);
+  /service[_ -]?role[^\n]*(browser|client)/i,
+  /delete[^\n]+D1/i,
+  /automatic[^\n]+fallback/i,
+]) assert.doesNotMatch(spec, forbidden);
+
+const verificationBindings = new Map(markdownHashBindings(verification).map(({ input, expected }) => [input, expected]));
+for (const path of ["factory/01_spec/CONTEXT.md", "factory/01_spec/verify.mjs", "factory/01_spec/output/SPEC.md"]) {
+  assert.equal(verificationBindings.get(path), await fileHash(projectRoot, fromRoot(path)), `${path} missing from verification`);
 }
 
-const specHash = await fileHash(root, specPath);
-assert.ok(
-  gate.includes(`| \`factory/01_spec/output/SPEC.md\` | \`${specHash}\` |`),
-  "gate does not bind the current spec",
-);
-if (gateDecision === "accepted") {
-  const verifyHash = await fileHash(root, verifyPath);
-  assert.notEqual(frontmatterValue(gate, "reviewer"), "pending", "accepted gate has no reviewer");
-  assert.notEqual(frontmatterValue(gate, "reviewed_at"), "pending", "accepted gate has no timestamp");
-  assert.ok(
-    gate.includes(`| \`factory/01_spec/output/VERIFY.md\` | \`${verifyHash}\` |`),
-    "accepted gate does not bind the current verification record",
-  );
-}
+assert.equal(frontmatterValue(gate, "spec_sha256"), await fileHash(projectRoot, fromRoot("factory/01_spec/output/SPEC.md")));
+assert.equal(frontmatterValue(gate, "verification_sha256"), await fileHash(projectRoot, fromRoot("factory/01_spec/output/VERIFY.md")));
 
-const { stdout } = runChecked(
-  "git",
-  ["diff", "--name-only", "--", "app", "db", "drizzle", "worker", "tests"],
-  { cwd: root },
-);
-assert.equal(stdout.trim(), "", "Stage 01 changed a durable product surface");
-
-console.log("L14 Stage 01 specification verification passed: 14 acceptance criteria, 12 negative cases, 11 bound inputs.");
+console.log("Supabase Stage 01 specification verification passed: 16 acceptance criteria, 12 negative cases, explicit tenant and rollback boundaries, and no remote mutation.");

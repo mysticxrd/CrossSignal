@@ -1,37 +1,47 @@
 ---
 type: human-gate
 stage: 01_spec
+unit: supabase-postgres-authenticated-trace-resolution-parity
 gate_status: closed
 decision: accepted
 reviewer: human
-reviewed_at: 2026-08-27T17:45:26.644Z
-spec_sha256: b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371
-verification_sha256: 780c09d4a94cf68fd2906f1d3c8447ded38e8eb339c92b7af57cdbdee3acc24b
+reviewed_at: 2026-09-08T12:36:27+05:30
+spec_sha256: 0e1990a042bde9b443482f9862e85158414d5098ed6c9348bfb9a08a931741d7
+verification_sha256: 462aacdc3df0afeb6bd353f51ccc1b1ae9d02d93b996e112421e349305ed5dde
 ---
 
-# Stage 01 human gate
+# Supabase Stage 01 human gate
 
-The human reviewer accepted the bounded L14 specification and authorized the
-factory to continue to Stage 02.
+The first database-replacement slice is specified as hosted Supabase
+PostgreSQL parity for the authenticated read-only trace-resolution endpoint.
+Human review is required before Stage 02 creates executable PostgreSQL schema,
+policy, migration, or fixture contracts.
 
 ## Review checklist
 
-- [x] The route and v1 response are exactly bounded.
-- [x] Authentication is strict and non-redirecting.
-- [x] Tenant isolation fails closed without resource-existence disclosure.
-- [x] The response reuses the complete ordered L04 redacted projection.
-- [x] Failure semantics and all fourteen acceptance criteria are observable.
-- [x] Explicit exclusions keep L14 read-only and prevent scope expansion.
+- [x] Confirm the four-table read slice is a useful first proof of the D1 replacement.
+- [x] Confirm the existing HTTP response and failure contracts remain unchanged.
+- [x] Confirm tenant isolation uses both explicit query predicates and PostgreSQL RLS.
+- [x] Confirm runtime credentials remain server-only and the Data API is not exposed.
+- [x] Confirm transaction pooling, disabled prepared statements, and TLS are explicit.
+- [x] Confirm no silent fallback or dual write is allowed.
+- [x] Confirm D1 remains recoverable until hosted Supabase evidence is accepted.
+- [x] Confirm all 16 acceptance criteria and 12 negative cases are sufficient.
+- [x] Confirm no existing Supabase project is selected or modified by inference.
+- [x] Choose `accepted`, `changes-requested`, or `rejected`.
 
-## Reviewed artifact
+## Reviewed artifacts
 
 | Artifact | SHA-256 |
 |---|---|
-| `factory/01_spec/output/SPEC.md` | `b09aafe97ecfdd4e6c3085426275b7505c906766023f374e2d7d68f2e2202371` |
-| `factory/01_spec/output/VERIFY.md` | `780c09d4a94cf68fd2906f1d3c8447ded38e8eb339c92b7af57cdbdee3acc24b` |
+| `factory/01_spec/output/SPEC.md` | `0e1990a042bde9b443482f9862e85158414d5098ed6c9348bfb9a08a931741d7` |
+| `factory/01_spec/output/VERIFY.md` | `462aacdc3df0afeb6bd353f51ccc1b1ae9d02d93b996e112421e349305ed5dde` |
 
 ## Decision
 
 `accepted`
 
-Accepted on the user's instruction to continue to Stage 02.
+The human accepted this specification in the Codex task on
+2026-09-08T12:36:27+05:30. Stage 02 may create the reviewed local PostgreSQL
+data contract. This decision does not select a hosted Supabase target or
+authorize remote DDL.

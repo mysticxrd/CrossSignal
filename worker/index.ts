@@ -4,6 +4,7 @@ import handler from "vinext/server/app-router-entry";
 
 interface Env {
   ASSETS: Fetcher;
+  CFR_DATABASE_PROVIDER?: "d1" | "supabase";
   DB: D1Database;
   IMAGES: {
     input(stream: ReadableStream): {
@@ -12,6 +13,7 @@ interface Env {
       };
     };
   };
+  SUPABASE_DATABASE_URL?: string;
 }
 
 interface ExecutionContext {
