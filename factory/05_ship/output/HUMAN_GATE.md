@@ -4,10 +4,10 @@ stage: 05_ship
 gate_status: closed
 decision: accepted
 reviewer: human
-reviewed_at: 2026-08-31T18:07:18Z
-release_manifest_sha256: 266b76349fd6cebb131cad5bf221aab27c77eab29f6a8f2c3bc3825212212bfe
+reviewed_at: 2026-09-08T06:47:05Z
+release_manifest_sha256: 6f35ec6d6fdce63369ae53f8fe56ebf405c6600f14929341b503ed3b92106012
 demo_script_sha256: 3f52ccb4f78243a9fb8e92d9182fb672eb8c2735c0b17c98dcc383cc4825f01a
-verification_sha256: d9e5cd89a008a68a861347bb3e26df04be782d101c8092f2d3520710c8c69893
+verification_sha256: 86c8b3a538f5bfe36e03515cb1cb710196f7b1680d03dff218db99b5068aba61
 ---
 
 # Stage 05 human gate
@@ -33,13 +33,13 @@ are fresh. Human review is required before commit and seal.
 
 | Artifact | SHA-256 |
 |---|---|
-| `factory/05_ship/output/RELEASE_MANIFEST.md` | `266b76349fd6cebb131cad5bf221aab27c77eab29f6a8f2c3bc3825212212bfe` |
+| `factory/05_ship/output/RELEASE_MANIFEST.md` | `6f35ec6d6fdce63369ae53f8fe56ebf405c6600f14929341b503ed3b92106012` |
 | `factory/05_ship/output/DEMO_SCRIPT.md` | `3f52ccb4f78243a9fb8e92d9182fb672eb8c2735c0b17c98dcc383cc4825f01a` |
-| `factory/05_ship/output/VERIFY.md` | `d9e5cd89a008a68a861347bb3e26df04be782d101c8092f2d3520710c8c69893` |
+| `factory/05_ship/output/VERIFY.md` | `86c8b3a538f5bfe36e03515cb1cb710196f7b1680d03dff218db99b5068aba61` |
 
 ## Decision
 
 `accepted`
 
-The human accepted the reviewed artifacts against the hashes above and
-authorized the complete L14 release commit and seal check.
+The human accepted the corrected release-head binding against the reviewed
+hashes above and authorized the complete L14 release commit and seal check.

@@ -3,7 +3,7 @@ type: release-manifest
 stage: 05_ship
 unit: authenticated-tenant-scoped-redacted-ordered-trace-resolution-endpoint
 status: passed
-verified_at: 2026-08-31T13:32:14Z
+verified_at: 2026-09-08T06:43:47Z
 truth_mode: FIXTURE
 release_id: l14-trace-resolution-v1
 ---
@@ -106,7 +106,7 @@ are separately hash-bound by `output/HUMAN_GATE.md`, avoiding self-reference.
 | Input | SHA-256 |
 |---|---|
 | `../../../.gitattributes` | `95990bcc46ebd855393090abf83dd7e8e1c63b0b07630f1e31131a70cd5a1e22` |
-| `../../../.gitignore` | `e9f7207e94bf8df2862022f34dfd9b0797a1914077d128fb961973db8aeae6f8` |
+| `../../../.gitignore` | `0ca90faf73973374e38f6292defb0aa54ad15fc5bac552be25365a7fcd127f90` |
 | `../../../.openai/hosting.json` | `438a425870b6a5c247e44231b0ecc3bc8e651c97d8fd6ca1863478825e58dfba` |
 | `AGENTS.md` | `222241ef15f8d1c00690811492d6a23f842bfc7067924c805e9214968d7e3caf` |
 | `app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts` | `418b13ecc92d5c5e7a075bab06e33b8195aea3205ebeacac66008cd53734d7e3` |
