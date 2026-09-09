@@ -1,7 +1,8 @@
 import type { ChatGPTUser } from "../app/chatgpt-auth";
 import type { WorkspaceSummary } from "../app/workspace-types";
-import { getD1 } from ".";
+import { getD1, getDatabaseProvider } from ".";
 import { ensureDatabaseCompatibility } from "./migrations";
+import { supabaseRuntime } from "./supabase-runtime";
 
 type WorkspaceRow = {
   id: string;
@@ -33,6 +34,7 @@ export async function ensureWorkspaceSchema(): Promise<void> {
 }
 
 export async function upsertOwner(user: ChatGPTUser): Promise<void> {
+  if (getDatabaseProvider() === "supabase") return;
   await ensureWorkspaceSchema();
   await getD1()
     .prepare(`INSERT INTO users (id, email, display_name)
@@ -48,6 +50,9 @@ export async function upsertOwner(user: ChatGPTUser): Promise<void> {
 export async function listOwnerWorkspaces(
   user: ChatGPTUser,
 ): Promise<WorkspaceSummary[]> {
+  if (getDatabaseProvider() === "supabase") {
+    return supabaseRuntime.listWorkspaces(user.userId);
+  }
   await upsertOwner(user);
   const result = await getD1()
     .prepare(`SELECT
@@ -96,9 +101,20 @@ export async function createOwnerWorkspace(
     throw new Error("Workspace name must be between 2 and 64 characters.");
   }
 
+  const id = crypto.randomUUID();
+  if (getDatabaseProvider() === "supabase") {
+    return supabaseRuntime.createWorkspace({
+      userId: user.userId,
+      workspace: {
+        id,
+        name,
+        slug: `${workspaceSlugBase(name)}-${id.slice(0, 8)}`,
+      },
+    });
+  }
+
   await upsertOwner(user);
   const d1 = getD1();
-  const id = crypto.randomUUID();
   const slug = await createUniqueSlug(name);
 
   await d1.batch([
@@ -129,6 +145,9 @@ export async function ownerCanAccessWorkspace(
   userId: string,
   workspaceId: string,
 ): Promise<boolean> {
+  if (getDatabaseProvider() === "supabase") {
+    return supabaseRuntime.canAccessWorkspace(userId, workspaceId);
+  }
   await ensureWorkspaceSchema();
   const row = await getD1()
     .prepare(`SELECT workspace_id FROM workspace_members

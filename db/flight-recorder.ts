@@ -22,8 +22,16 @@ import {
   FLIGHT_RECORDER_TRACE_KEY,
 } from "./flight-recorder-demo";
 import { reasoningRuntimeNow, runPersistedReasoningGraph } from "./flight-recorder-graph";
-import { getD1 } from ".";
+import { getD1, getDatabaseProvider } from ".";
 import { ensureDatabaseCompatibility } from "./migrations";
+import {
+  authorizeAndExecuteSupabase,
+  getOrCreateSupabaseFlightRecorderSnapshot,
+  readSupabaseFlightRecorderSnapshot,
+  replaceSupabasePendingIntent,
+  resetSupabaseFlightRecorderFixture,
+  setSupabaseWorkspaceKillSwitch,
+} from "./supabase-flight-recorder";
 import { ownerCanAccessWorkspace } from "./workspaces";
 
 type TraceRow = {
@@ -580,6 +588,9 @@ export async function getOrCreateFlightRecorderSnapshot(
   userId: string,
   workspaceId: string,
 ): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return getOrCreateSupabaseFlightRecorderSnapshot(userId, workspaceId);
+  }
   await requireOwner(userId, workspaceId);
   await materializePendingDemo(userId, workspaceId);
   return readFlightRecorderSnapshot(userId, workspaceId);
@@ -589,6 +600,9 @@ export async function readFlightRecorderSnapshot(
   userId: string,
   workspaceId: string,
 ): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return readSupabaseFlightRecorderSnapshot(userId, workspaceId);
+  }
   await requireOwner(userId, workspaceId);
   const trace = await findTrace(workspaceId);
   if (!trace) throw new Error("The onboarding-rescue trace is not ready.");
@@ -897,6 +911,9 @@ export async function replacePendingIntent(input: {
   subject: string;
   body: string;
 }): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return replaceSupabasePendingIntent(input);
+  }
   await requireOwner(input.userId, input.workspaceId);
   const trace = await findTrace(input.workspaceId);
   if (!trace || trace.current_state !== "awaiting_approval") {
@@ -974,6 +991,9 @@ export async function setWorkspaceKillSwitch(input: {
   workspaceId: string;
   engaged: boolean;
 }): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return setSupabaseWorkspaceKillSwitch(input);
+  }
   await requireOwner(input.userId, input.workspaceId);
   const head = await latestAuthorityControl(input.workspaceId);
   if (head.currentState === input.engaged) {
@@ -1050,6 +1070,9 @@ export async function authorizeAndExecute(input: {
   workspaceId: string;
   scenario: ExecutionScenario;
 }): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return authorizeAndExecuteSupabase(input);
+  }
   await requireOwner(input.userId, input.workspaceId);
   const trace = await findTrace(input.workspaceId);
   if (!trace || trace.current_state !== "awaiting_approval") {
@@ -1393,6 +1416,9 @@ export async function resetFlightRecorderFixture(
   userId: string,
   workspaceId: string,
 ): Promise<FlightRecorderSnapshot> {
+  if (getDatabaseProvider() === "supabase") {
+    return resetSupabaseFlightRecorderFixture(userId, workspaceId);
+  }
   await requireOwner(userId, workspaceId);
   const trace = await findTrace(workspaceId);
   if (trace) {
