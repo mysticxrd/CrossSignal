@@ -124,8 +124,19 @@ Deno.serve(async (request: Request) => {
       if (events.length === 0) return { kind: "incomplete" as const };
       return { kind: "found" as const, trace, events };
     });
+    console.log(JSON.stringify({
+      event: "trace_read_result",
+      userIdSha256: await sha256(input.userId),
+      workspaceId: input.workspaceId,
+      traceId: input.traceId,
+      kind: result.kind,
+    }));
     return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
-  } catch {
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "trace_read_failed",
+      error: error instanceof Error ? error.message : "unknown_error",
+    }));
     return json({ error: { code: "trace_resolution_unavailable" } }, 500);
   }
 });
