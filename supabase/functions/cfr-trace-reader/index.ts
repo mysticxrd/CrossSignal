@@ -68,13 +68,16 @@ Deno.serve(async (request: Request) => {
     return json({ error: { code: "invalid_request" } }, 400);
   }
 
+  const userIdSha256 = await sha256(input.userId);
+  const principalId = `sha256:${userIdSha256}`;
+
   try {
     const result = await sql.begin(async (transaction) => {
       await transaction`set transaction read only`;
       await transaction.unsafe("set local role cfr_trace_reader");
       await transaction`
         select
-          set_config('app.current_user_id', ${input.userId}, true),
+          set_config('app.current_user_id', ${principalId}, true),
           set_config('app.current_workspace_id', ${input.workspaceId}, true)
       `;
 
@@ -82,7 +85,7 @@ Deno.serve(async (request: Request) => {
         select workspace_id
         from cfr_app.workspace_members
         where workspace_id = ${input.workspaceId}
-          and user_id = ${input.userId}
+          and user_id = ${principalId}
           and role = 'owner'
         limit 1
       `;
@@ -126,7 +129,7 @@ Deno.serve(async (request: Request) => {
     });
     console.log(JSON.stringify({
       event: "trace_read_result",
-      userIdSha256: await sha256(input.userId),
+      userIdSha256,
       workspaceId: input.workspaceId,
       traceId: input.traceId,
       kind: result.kind,
