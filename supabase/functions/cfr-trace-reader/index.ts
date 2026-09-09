@@ -259,20 +259,20 @@ async function handleRuntime(input: Exclude<GatewayRequest, TraceRequest>, princ
     if (current) {
       await transaction`
         update cfr_app.workspace_runtime_states
-        set version = ${nextVersion}, snapshot_json = ${snapshotJson}::jsonb, updated_at = now()
+        set version = ${nextVersion}, snapshot_json = ${snapshotJson}::text::jsonb, updated_at = now()
         where workspace_id = ${input.workspaceId} and version = ${currentVersion}
       `;
     } else {
       await transaction`
         insert into cfr_app.workspace_runtime_states (workspace_id, version, snapshot_json)
-        values (${input.workspaceId}, ${nextVersion}, ${snapshotJson}::jsonb)
+        values (${input.workspaceId}, ${nextVersion}, ${snapshotJson}::text::jsonb)
       `;
     }
     await transaction`
       insert into cfr_app.workspace_runtime_events
         (workspace_id, sequence, event_type, actor_user_id, payload_json)
       values (${input.workspaceId}, ${nextVersion}, ${input.eventType}, ${principalId},
-        ${JSON.stringify({ priorVersion: currentVersion, nextVersion })}::jsonb)
+        ${JSON.stringify({ priorVersion: currentVersion, nextVersion })}::text::jsonb)
     `;
     return { kind: "saved" as const, version: nextVersion, snapshot: input.snapshot };
   });
