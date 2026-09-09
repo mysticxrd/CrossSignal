@@ -13,7 +13,8 @@ interface Env {
       };
     };
   };
-  SUPABASE_DATABASE_URL?: string;
+  SUPABASE_TRACE_FUNCTION_TOKEN?: string;
+  SUPABASE_TRACE_FUNCTION_URL?: string;
 }
 
 interface ExecutionContext {

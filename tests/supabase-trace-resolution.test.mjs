@@ -24,13 +24,14 @@ registerHooks({
 const runtimeEnv = (globalThis.__cfrCloudflareEnv ??= {});
 const {
   getDatabaseProvider,
-  getSupabaseDatabaseUrl,
+  getSupabaseTraceFunctionConfig,
 } = await import("../db/index.ts");
 const {
   installSupabaseTraceResolverForTest,
   resolveFlightTrace,
 } = await import("../db/trace-resolution.ts");
 const {
+  resolveFlightTraceWithSupabaseFunction,
   resolveFlightTraceWithSupabaseReader,
 } = await import("../db/supabase-trace-resolution.ts");
 const {
@@ -48,7 +49,8 @@ const {
 
 function resetRuntimeEnv() {
   delete runtimeEnv.CFR_DATABASE_PROVIDER;
-  delete runtimeEnv.SUPABASE_DATABASE_URL;
+  delete runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN;
+  delete runtimeEnv.SUPABASE_TRACE_FUNCTION_URL;
   delete runtimeEnv.DB;
   installSupabaseTraceResolverForTest(null);
 }
@@ -109,24 +111,81 @@ function fixtureReader({ membership = true, trace = true, rows } = {}) {
   };
 }
 
-test("database provider configuration is explicit and validates the Supavisor transaction endpoint", () => {
+test("database provider configuration is explicit and validates the Supabase trace function", () => {
   resetRuntimeEnv();
   assert.equal(getDatabaseProvider(), "d1");
 
   runtimeEnv.CFR_DATABASE_PROVIDER = "SUPABASE";
   assert.equal(getDatabaseProvider(), "supabase");
-  assert.throws(() => getSupabaseDatabaseUrl(), /configuration is unavailable/);
+  assert.throws(() => getSupabaseTraceFunctionConfig(), /configuration is unavailable/);
 
-  const directUrl = `${"postgresql:"}${"//"}reader:fixture@db.example.supabase.co:5432/postgres`;
-  runtimeEnv.SUPABASE_DATABASE_URL = directUrl;
-  assert.throws(() => getSupabaseDatabaseUrl(), /transaction pooler/);
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN = "a".repeat(64);
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_URL = "https://example.com/functions/v1/cfr-trace-reader";
+  assert.throws(() => getSupabaseTraceFunctionConfig(), /configuration is invalid/);
 
-  const transactionUrl = `${"postgresql:"}${"//"}reader.fixture:fixture@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
-  runtimeEnv.SUPABASE_DATABASE_URL = transactionUrl;
-  assert.equal(getSupabaseDatabaseUrl(), transactionUrl);
+  const functionUrl = "https://abcdefghijklmnopqrst.supabase.co/functions/v1/cfr-trace-reader";
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_URL = functionUrl;
+  assert.deepEqual(getSupabaseTraceFunctionConfig(), {
+    token: "a".repeat(64),
+    url: functionUrl,
+  });
 
   runtimeEnv.CFR_DATABASE_PROVIDER = "unknown";
   assert.throws(() => getDatabaseProvider(), /Unsupported database provider/);
+  resetRuntimeEnv();
+});
+
+test("Supabase function transport sends one authenticated request and projects its response", async () => {
+  resetRuntimeEnv();
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN = "t".repeat(64);
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_URL =
+    "https://abcdefghijklmnopqrst.supabase.co/functions/v1/cfr-trace-reader";
+  const input = {
+    userId: L14_TRACE_RESOLUTION_FIXTURE.identity.ownerA.userId,
+    workspaceId: L14_TRACE_RESOLUTION_FIXTURE.identity.workspaceA,
+    traceId: L14_TRACE_RESOLUTION_FIXTURE.identity.traceA,
+  };
+  let requests = 0;
+  const result = await resolveFlightTraceWithSupabaseFunction(input, async (url, init) => {
+    requests += 1;
+    assert.equal(url, runtimeEnv.SUPABASE_TRACE_FUNCTION_URL);
+    assert.equal(init.method, "POST");
+    assert.equal(init.headers["x-cfr-preview-token"], runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN);
+    assert.deepEqual(JSON.parse(init.body), input);
+    assert.ok(init.signal instanceof AbortSignal);
+    const trace = SUPABASE_TRACE_RESOLUTION_FIXTURE.tables.flight_traces
+      .find((item) => item.workspace_id === input.workspaceId && item.id === input.traceId);
+    return Response.json({
+      kind: "found",
+      trace: {
+        id: trace.id,
+        workspaceId: trace.workspace_id,
+        traceKey: trace.trace_key,
+        currentState: trace.current_state,
+        truthMode: trace.truth_mode,
+      },
+      events: rowsFor(input.workspaceId, input.traceId).map((row) => ({
+        ...row,
+        occurredAt: row.occurredAt.toISOString(),
+      })),
+    });
+  });
+  assert.equal(requests, 1);
+  assert.equal(result.kind, "found");
+  assert.equal(result.resolution.events.length, 28);
+  resetRuntimeEnv();
+});
+
+test("Supabase function transport preserves a tenant-safe not-found result", async () => {
+  resetRuntimeEnv();
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN = "t".repeat(64);
+  runtimeEnv.SUPABASE_TRACE_FUNCTION_URL =
+    "https://abcdefghijklmnopqrst.supabase.co/functions/v1/cfr-trace-reader";
+  const result = await resolveFlightTraceWithSupabaseFunction(
+    { userId: "owner", workspaceId: "workspace", traceId: "foreign-trace" },
+    async () => Response.json({ kind: "not_found" }, { status: 404 }),
+  );
+  assert.deepEqual(result, { kind: "not_found" });
   resetRuntimeEnv();
 });
 

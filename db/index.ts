@@ -6,7 +6,8 @@ import * as flightRecorderSchema from "./flight-recorder-schema";
 type CrossSignalRuntimeEnv = {
   DB?: D1Database;
   CFR_DATABASE_PROVIDER?: string;
-  SUPABASE_DATABASE_URL?: string;
+  SUPABASE_TRACE_FUNCTION_TOKEN?: string;
+  SUPABASE_TRACE_FUNCTION_URL?: string;
 };
 
 const runtimeEnv = env as unknown as CrossSignalRuntimeEnv;
@@ -20,26 +21,30 @@ export function getDatabaseProvider(): DatabaseProvider {
   throw new Error("Unsupported database provider configuration.");
 }
 
-export function getSupabaseDatabaseUrl(): string {
-  const connectionString = runtimeEnv.SUPABASE_DATABASE_URL?.trim();
-  if (!connectionString) {
-    throw new Error("Supabase database configuration is unavailable.");
-  }
+export function getSupabaseTraceFunctionConfig(): { token: string; url: string } {
+  const rawUrl = runtimeEnv.SUPABASE_TRACE_FUNCTION_URL?.trim();
+  const token = runtimeEnv.SUPABASE_TRACE_FUNCTION_TOKEN?.trim();
+  if (!rawUrl || !token) throw new Error("Supabase trace function configuration is unavailable.");
 
-  let parsed: URL;
+  let url: URL;
   try {
-    parsed = new URL(connectionString);
+    url = new URL(rawUrl);
   } catch {
-    throw new Error("Supabase database configuration is invalid.");
+    throw new Error("Supabase trace function configuration is invalid.");
   }
   if (
-    !["postgres:", "postgresql:"].includes(parsed.protocol)
-    || parsed.port !== "6543"
-    || !parsed.hostname.endsWith(".pooler.supabase.com")
+    url.protocol !== "https:"
+    || !/^[a-z0-9]{20}\.supabase\.co$/.test(url.hostname)
+    || url.pathname !== "/functions/v1/cfr-trace-reader"
+    || url.search
+    || url.hash
+    || url.username
+    || url.password
+    || token.length < 64
   ) {
-    throw new Error("Supabase database configuration must use the transaction pooler.");
+    throw new Error("Supabase trace function configuration is invalid.");
   }
-  return connectionString;
+  return { token, url: url.toString() };
 }
 
 export function getD1() {

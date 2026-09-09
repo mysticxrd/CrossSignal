@@ -15,10 +15,12 @@ tests for the first authenticated trace-resolution read slice.
   `2 / 2 / 2 / 77`. The test script rolls back its own mutations.
 - The migrations grant the SQL Editor's non-superuser `postgres` administrator
   membership in `cfr_trace_reader` so the hosted test can use `set local role`.
-  Application traffic must use a separate login that inherits only
-  `cfr_trace_reader`; it must never use `postgres` or a Data API service role.
-- Use a direct or session connection for migration work. Application traffic
-  uses the transaction pooler on port `6543` with prepared statements disabled.
+  The TEST Edge Function authenticates the owner-only Site with a dedicated
+  random token, opens a read-only transaction, and assumes `cfr_trace_reader`
+  before resolving any workspace or trace row.
+- The Site reaches Supabase over HTTPS. The Edge Function uses its managed
+  `SUPABASE_DB_URL` with prepared statements disabled, avoiding persistent TCP
+  sockets in the Cloudflare Worker.
 
-No project reference, password, connection string, service-role key, or LIVE
-data belongs in this directory.
+No project reference, plaintext gateway token, password, connection string,
+service-role key, or LIVE data belongs in this directory.
