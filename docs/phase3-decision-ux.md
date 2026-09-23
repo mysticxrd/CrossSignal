@@ -36,8 +36,9 @@ drop, $800 baseline-rate revenue gap, stable desktop countercheck, all three
 claims, and expandable raw observation references. It says the cause is
 unconfirmed and approval is unavailable because no response exists for this
 Case. The older onboarding Action control, Narrative trace, and Outcome pages
-remain a separate fixture; their approval control does not authorize this
-Case. No AI model, external action, or outcome measurement was added.
+sit under a separate **Onboarding demo** navigation label; their approval
+control does not authorize this Case. No AI model, external action, or outcome
+measurement was added.
 
 ## Verification
 
@@ -55,6 +56,21 @@ Case. No AI model, external action, or outcome measurement was added.
   SQL was run twice; the second execution changed no values.
 - `cfr-trace-reader` TEST Edge Function version 7 deployed ACTIVE with the
   existing custom token authentication and `verify_jwt=false` configuration.
+- The owner-private TEST Site deployed successfully at
+  `https://crosssignal-supabase-test.hishamxrd.chatgpt.site/`. A signed-in
+  owner saw the saved Case, exact metrics, all three claims, the blocked Case
+  response, and the expected investigation hash. Expanding a claim showed
+  its 14 dated observations and event IDs. Reload preserved the Case and
+  metrics. Navigation to the separate onboarding Action control and back
+  worked. Only one owner workspace was available in that browser session,
+  so cross-tenant isolation was verified at the restricted database role
+  and projection boundaries rather than through a workspace switch.
+- The TEST Site source was pushed from its separate manifest and built with
+  `vinext`. The Sites workflow pushed the source but its bundled Bash
+  packager could not parse a Windows path, so the same `prepare-site-build`
+  helper and tar archive steps were run with Windows-native paths before
+  the Sites private deployment call. The verified archive contained the
+  TEST hosting manifest and Worker entrypoint.
 
 ## Reproduce
 

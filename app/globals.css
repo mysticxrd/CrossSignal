@@ -1240,6 +1240,8 @@ code { font-family: var(--font-geist-mono), monospace; }
 
 .main-nav { margin-top: 28px; display: flex; flex-direction: column; gap: 4px; }
 .main-nav > span { margin: 0 9px 7px; color: #828983; font: 700 7px var(--font-geist-mono), monospace; letter-spacing: .13em; }
+.nav-item-group { width: 100%; }
+.nav-group-label { display: block; margin: 17px 9px 8px; color: #828983; font: 700 7px var(--font-geist-mono), monospace; letter-spacing: .13em; }
 .main-nav button { width: 100%; min-height: 42px; padding: 0 10px; display: grid; grid-template-columns: 22px 1fr 20px; align-items: center; gap: 8px; border: 0; border-radius: 8px; background: transparent; color: #606963; cursor: pointer; text-align: left; font-size: 10px; }
 .main-nav button:hover { background: rgba(255,255,255,.55); }
 .main-nav button.active { background: var(--control-dark); color: white; box-shadow: 0 8px 24px rgba(23,34,30,.13); }
@@ -1353,7 +1355,7 @@ code { font-family: var(--font-geist-mono), monospace; }
   .app-shell { display: block; }
   .sidebar { min-height: 0; height: auto; padding: 13px 15px; position: relative; display: grid; grid-template-columns: 1fr auto; gap: 10px; }
   .brand { padding: 0; }.brand small { display: none; }.workspace-control, .sidebar-pause, .owner-row { display: none; }
-  .main-nav { margin: 0; flex-direction: row; }.main-nav > span { display: none; }.main-nav button { width: auto; min-height: 38px; grid-template-columns: 18px 1fr auto; }.main-nav button > span { display: none; }
+  .main-nav { margin: 0; flex-direction: row; }.main-nav > span, .nav-group-label { display: none; }.nav-item-group { width: auto; }.main-nav button { width: auto; min-height: 38px; grid-template-columns: 18px 1fr auto; }.main-nav button > span { display: none; }
   .topbar { height: 54px; padding: 0 18px; }.topbar > div:first-child span, .topbar > div:first-child i, .demo-chip { display: none; }
   .content { padding: 28px 18px 55px; }.page-intro { align-items: flex-start; flex-direction: column; }.page-intro h1 { font-size: 43px; }
   .kill-switch-card { grid-template-columns: 40px 1fr; }.kill-switch { grid-column: 1 / -1; justify-self: stretch; justify-content: space-between; }

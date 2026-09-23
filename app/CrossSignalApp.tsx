@@ -689,18 +689,21 @@ export default function CrossSignalApp({
         <nav className="main-nav">
           <span>WORKSPACE</span>
           {navItems.map((item) => (
-            <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => setView(item.id)}>
+            <div className="nav-item-group" key={item.id}>
+            {item.id === "control" && <span className="nav-group-label">ONBOARDING DEMO</span>}
+            <button className={view === item.id ? "active" : ""} onClick={() => setView(item.id)}>
               <i aria-hidden="true">{item.id === "case" ? "▤" : item.id === "control" ? "◎" : item.id === "trace" ? "≋" : "↗"}</i>
               <span>{item.label}</span>
               {item.id === "case" && decisionCase.kind === "found" && <b>1</b>}
               {item.count && pendingAuthorization && <b>{item.count}</b>}
             </button>
+            </div>
           ))}
         </nav>
         <div className="sidebar-spacer" />
         <div className={`sidebar-pause ${snapshot.killSwitchEngaged ? "engaged" : ""}`}>
-          <span><i />{snapshot.killSwitchEngaged ? "ACTIONS PAUSED" : "ACTIONS AVAILABLE"}</span>
-          <p>{snapshot.killSwitchEngaged ? "The global kill switch is engaged." : "Exact authorization remains required."}</p>
+          <span><i />{view === "case" ? "NO CASE ACTION PROPOSED" : snapshot.killSwitchEngaged ? "ACTIONS PAUSED" : "ACTIONS AVAILABLE"}</span>
+          <p>{view === "case" ? "This Case cannot be authorized yet." : snapshot.killSwitchEngaged ? "The global kill switch is engaged." : "Exact authorization remains required."}</p>
         </div>
         <div className="owner-row"><span>{initials(ownerName)}</span><div><strong>{ownerName}</strong><small>{owner.email}</small></div></div>
       </aside>
