@@ -39,3 +39,20 @@ does not delete or overwrite existing rows. Run
 `supabase/tests/golden_revenue_leak.sql` afterwards for rollback-only database
 contract checks. See `docs/phase1-golden-revenue-leak.md` for the verified
 project state, metrics, tenancy checks, and limits.
+
+## Bounded Investigator
+
+After the golden Case fixture exists, apply
+`migrations/202609230003_bounded_case_investigations.sql` to the selected TEST
+project. Run `queries/golden_investigator_input.sql` under the restricted reader
+and save its `investigator_input` JSON as a local file. The query contains only
+the fixture owner and workspace IDs; do not point it at LIVE.
+
+Run `node scripts/verify-golden-investigator-snapshot.mjs <reader-export.json>`
+to recompute and validate the Case from persisted rows. Generate the setup SQL
+with `node scripts/generate-golden-investigation-sql.mjs <reader-export.json>`;
+then run `scenarios/golden_investigation.sql` as a TEST administrator. It inserts
+the content-hashed fixture artifact and linked citations without deleting or
+overwriting existing data. `tests/golden_investigation.sql` is a rollback-only
+negative database test. See `docs/phase2-bounded-investigator.md` for outcomes
+and limits.
