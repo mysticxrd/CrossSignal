@@ -18,7 +18,14 @@ type RuntimePutRequest = {
   eventType: string;
   snapshot: Record<string, unknown>;
 };
-type GatewayRequest = TraceRequest | WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
+type CaseDecisionReadRequest = {
+  operation: "case.decision.read";
+  userId: string;
+  workspaceId: string;
+  caseId: string;
+};
+type RuntimeRequest = WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
+type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest;
 
 const RUNTIME_EVENT_TYPES = new Set([
   "runtime.initialized",
@@ -81,6 +88,10 @@ function parseRequest(value: unknown): GatewayRequest | null {
   }
   if (value.operation === "workspace.access" || value.operation === "runtime.get") {
     return validIdentifier(value.workspaceId) ? value as WorkspaceAccessRequest | RuntimeGetRequest : null;
+  }
+  if (value.operation === "case.decision.read") {
+    return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
+      ? value as CaseDecisionReadRequest : null;
   }
   if (value.operation === "runtime.put") {
     if (
@@ -181,7 +192,89 @@ async function handleTrace(input: TraceRequest, principalId: string, userIdSha25
   return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
 }
 
-async function handleRuntime(input: Exclude<GatewayRequest, TraceRequest>, principalId: string, userIdSha256: string): Promise<Response> {
+async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: string, userIdSha256: string): Promise<Response> {
+  const result = await sql.begin(async (transaction) => {
+    await transaction`set transaction read only`;
+    await transaction.unsafe("set local role cfr_trace_reader");
+    await transaction`
+      select set_config('app.current_user_id', ${principalId}, true),
+        set_config('app.current_workspace_id', ${input.workspaceId}, true)
+    `;
+    if (!await hasOwnerMembership(transaction, principalId, input.workspaceId)) {
+      return { kind: "not_found" as const };
+    }
+    const [caseRow] = await transaction`
+      select workspace_id as "workspaceId", id, scenario_id as "scenarioId",
+        scenario_version::int as "scenarioVersion", scenario_hash as "scenarioHash",
+        title, status, truth_mode as "truthMode", content_hash as "contentHash"
+      from cfr_app.detected_cases
+      where workspace_id = ${input.workspaceId} and id = ${input.caseId}
+      limit 1
+    `;
+    if (!caseRow) return { kind: "not_found" as const };
+    const [signalRow] = await transaction`
+      select workspace_id as "workspaceId", id, case_id as "caseId", kind,
+        method_version as "methodVersion", detected, metrics_json as metrics,
+        content_hash as "contentHash"
+      from cfr_app.case_signals
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+      limit 1
+    `;
+    const evidenceRows = await transaction`
+      select workspace_id as "workspaceId", id, case_id as "caseId", source,
+        relation, claim, truth_mode as "truthMode", content_hash as "contentHash"
+      from cfr_app.case_evidence
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+      order by id
+    `;
+    const eventRows = await transaction`
+      select workspace_id as "workspaceId", id, scenario_id as "scenarioId",
+        truth_mode as "truthMode", source, window_key as "window", segment,
+        observed_day::text as "observedDay", starts, completed, captures,
+        revenue_cents::int as "revenueCents", content_hash as "contentHash"
+      from cfr_app.case_recorded_events
+      where workspace_id = ${input.workspaceId} and scenario_id = ${caseRow.scenarioId}
+      order by id
+    `;
+    const citationRows = await transaction`
+      select r.workspace_id as "workspaceId", r.evidence_id as "evidenceId",
+        r.event_id as "eventId"
+      from cfr_app.case_evidence_event_refs r
+      join cfr_app.case_evidence e
+        on e.workspace_id = r.workspace_id and e.id = r.evidence_id
+      where r.workspace_id = ${input.workspaceId} and e.case_id = ${input.caseId}
+      order by r.evidence_id, r.event_id
+    `;
+    const [investigationRow] = await transaction`
+      select id, artifact_json as artifact, content_hash as "contentHash"
+      from cfr_app.case_investigations
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+        and method_version = 'bounded-deterministic-v1'
+      limit 1
+    `;
+    if (!signalRow || !investigationRow) return { kind: "incomplete" as const };
+    const investigationCitations = await transaction`
+      select workspace_id as "workspaceId", investigation_id as "investigationId",
+        claim_id as "claimId", evidence_id as "evidenceId", event_id as "eventId"
+      from cfr_app.case_investigation_citations
+      where workspace_id = ${input.workspaceId}
+        and investigation_id = ${investigationRow.id}
+      order by claim_id, evidence_id, event_id
+    `;
+    return {
+      kind: "found" as const,
+      snapshot: { caseRow, signalRow, evidenceRows, eventRows, citationRows },
+      investigation: investigationRow.artifact,
+      investigationHash: investigationRow.contentHash,
+      investigationCitations,
+    };
+  });
+  console.log(JSON.stringify({ event: "case_decision_read_result", userIdSha256,
+    workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
+  return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
+}
+
+async function handleRuntime(input: RuntimeRequest, principalId: string, userIdSha256: string): Promise<Response> {
   if (input.operation === "workspace.list") {
     const workspaces = await sql.begin(async (transaction) => {
       await transaction`set transaction read only`;
@@ -304,9 +397,10 @@ Deno.serve(async (request: Request) => {
   const userIdSha256 = await sha256(input.userId);
   const principalId = `sha256:${userIdSha256}`;
   try {
-    return "operation" in input
-      ? await handleRuntime(input, principalId, userIdSha256)
-      : await handleTrace(input, principalId, userIdSha256);
+    if (!("operation" in input)) return await handleTrace(input, principalId, userIdSha256);
+    return input.operation === "case.decision.read"
+      ? await handleCaseDecision(input, principalId, userIdSha256)
+      : await handleRuntime(input, principalId, userIdSha256);
   } catch (error) {
     console.error(JSON.stringify({ event: "gateway_request_failed",
       operation: "operation" in input ? input.operation : "trace.read",

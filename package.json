@@ -19,6 +19,7 @@
     "verify:ship": "tsx factory/05_ship/verify.mjs",
     "verify:golden": "node scripts/generate-golden-revenue-leak-sql.mjs --check && node --test tests/golden-revenue-leak.test.mjs",
     "verify:investigator": "node --test tests/golden-revenue-leak.test.mjs tests/case-investigator.test.mjs",
+    "verify:decision": "node scripts/generate-owner-decision-fixture-sql.mjs --check && node --test tests/golden-revenue-leak.test.mjs tests/case-investigator.test.mjs tests/case-decision.test.mjs",
     "test": "npm run build && tsx --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/supabase-trace-resolution.test.mjs tests/supabase-runtime.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive",
     "db:generate": "drizzle-kit generate"

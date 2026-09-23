@@ -1,6 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import CaseDecisionView from "./CaseDecisionView";
+import type { DecisionCaseResult } from "../db/case-decision";
 import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import {
   authorizeAction,
@@ -19,16 +21,18 @@ import {
 } from "./workspace-actions";
 import type { OwnerSummary, WorkspaceSummary } from "./workspace-types";
 
-type View = "control" | "trace" | "outcome";
+type View = "case" | "control" | "trace" | "outcome";
 
 type CrossSignalAppProps = {
   owner: OwnerSummary;
   workspace: WorkspaceSummary;
   workspaces: WorkspaceSummary[];
   initialFlightRecorder: FlightRecorderSnapshot;
+  decisionCase: DecisionCaseResult;
 };
 
 const navItems: Array<{ id: View; label: string; count?: string }> = [
+  { id: "case", label: "Cases" },
   { id: "control", label: "Action control", count: "1" },
   { id: "trace", label: "Narrative trace" },
   { id: "outcome", label: "Outcome" },
@@ -93,9 +97,10 @@ export default function CrossSignalApp({
   workspace,
   workspaces,
   initialFlightRecorder,
+  decisionCase,
 }: CrossSignalAppProps) {
   const router = useRouter();
-  const [view, setView] = useState<View>("control");
+  const [view, setView] = useState<View>(decisionCase.kind === "found" ? "case" : "control");
   const [snapshot, setSnapshot] = useState(initialFlightRecorder);
   const [recipients, setRecipients] = useState(initialFlightRecorder.intent.recipients);
   const [subject, setSubject] = useState(initialFlightRecorder.intent.subject);
@@ -659,7 +664,7 @@ export default function CrossSignalApp({
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <button className="brand" onClick={() => setView("control")}>
+        <button className="brand" onClick={() => setView("case")}>
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span><strong>CrossSignal</strong><small>Human control for agent actions</small></span>
         </button>
@@ -682,11 +687,12 @@ export default function CrossSignalApp({
           )}
         </div>
         <nav className="main-nav">
-          <span>CONTROL PLANE</span>
+          <span>WORKSPACE</span>
           {navItems.map((item) => (
             <button key={item.id} className={view === item.id ? "active" : ""} onClick={() => setView(item.id)}>
-              <i aria-hidden="true">{item.id === "control" ? "◎" : item.id === "trace" ? "≋" : "↗"}</i>
+              <i aria-hidden="true">{item.id === "case" ? "▤" : item.id === "control" ? "◎" : item.id === "trace" ? "≋" : "↗"}</i>
               <span>{item.label}</span>
+              {item.id === "case" && decisionCase.kind === "found" && <b>1</b>}
               {item.count && pendingAuthorization && <b>{item.count}</b>}
             </button>
           ))}
@@ -702,9 +708,10 @@ export default function CrossSignalApp({
       <main className="main-panel">
         <header className="topbar">
           <div><span>{workspace.name}</span><i>/</i><strong>{navItems.find((item) => item.id === view)?.label}</strong></div>
-          <div><TruthBadge mode="FIXTURE" /><span className="demo-chip">ONBOARDING RESCUE · REVIEWED PLAYBOOK</span></div>
+          <div><TruthBadge mode="FIXTURE" /><span className="demo-chip">{view === "case" ? "REVENUE-LEAK CASE · INVESTIGATION" : "ONBOARDING RESCUE · REVIEWED PLAYBOOK"}</span></div>
         </header>
         <div className="content">
+          {view === "case" && <CaseDecisionView result={decisionCase} />}
           {view === "control" && renderControl()}
           {view === "trace" && renderTrace()}
           {view === "outcome" && renderOutcome()}

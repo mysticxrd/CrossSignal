@@ -6,6 +6,7 @@ import { ACTIVE_WORKSPACE_COOKIE } from "./workspace-config";
 import { selectAuthorizedWorkspace } from "./workspace-selection.mjs";
 import { listOwnerWorkspaces } from "../db/workspaces";
 import { getOrCreateFlightRecorderSnapshot } from "../db/flight-recorder";
+import { readCaseDecision } from "../db/case-decision";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,10 @@ export default async function Home() {
     workspaces,
     requestedWorkspaceId,
   );
-  const flightRecorder = await getOrCreateFlightRecorderSnapshot(
-    owner.userId,
-    workspace.id,
-  );
+  const [flightRecorder, decisionCase] = await Promise.all([
+    getOrCreateFlightRecorderSnapshot(owner.userId, workspace.id),
+    readCaseDecision(owner.userId, workspace.id),
+  ]);
 
   return (
     <CrossSignalApp
@@ -40,6 +41,7 @@ export default async function Home() {
       workspace={workspace}
       workspaces={workspaces}
       initialFlightRecorder={flightRecorder}
+      decisionCase={decisionCase}
     />
   );
 }
