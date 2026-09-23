@@ -1,9 +1,17 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { approveCaseResponseAction } from "./case-response-actions";
 import type { DecisionCaseResult } from "../db/case-decision";
 
 function percent(bps: number) { return `${(bps / 100).toFixed(2)}%`; }
 function money(cents: number) { return `$${(cents / 100).toFixed(2)}`; }
 
 export default function CaseDecisionView({ result }: { result: DecisionCaseResult }) {
+  const router = useRouter();
+  const [approvalBusy, startApproval] = useTransition();
+  const [approvalError, setApprovalError] = useState("");
   if (result.kind !== "found") {
     return <div className="case-page">
       <header className="case-heading"><span className="eyebrow">CASES</span><h1>Revenue signals</h1></header>
@@ -18,6 +26,16 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
 
   const record = result.case;
   const metrics = record.metrics;
+  const response = record.response;
+  const proposal = response.proposal;
+  function approve() {
+    setApprovalError("");
+    startApproval(async () => {
+      const saved = await approveCaseResponseAction(record.workspaceId, record.id, response.proposalHash);
+      if (saved.ok) router.refresh();
+      else setApprovalError(saved.error);
+    });
+  }
   return <div className="case-page">
     <header className="case-heading">
       <div><span className="eyebrow">CASE / DETECTED SIGNAL</span><h1>{record.title}</h1>
@@ -55,9 +73,28 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
           <strong>{percent(metrics.controlBaseline.conversionBps)} <i>→</i> {percent(metrics.controlObserved.conversionBps)}</strong>
           <p>This contradicts a campaign-wide checkout decline. It does not identify the cause of the Mobile Safari drop.</p>
         </section>
-        <section className="case-response"><span className="eyebrow">RESPONSE</span><h2>No response proposed</h2>
-          <p>The cause is unconfirmed. A specific action, recipients, scope, and cost must be prepared before approval can be offered for this Case.</p>
-          <span className="case-response-state">Approval unavailable</span>
+        <section className="case-response"><span className="eyebrow">CASE RESPONSE · TEST ONLY</span><h2>Validate checkout in TEST</h2>
+          <p>{proposal.intent.instruction}</p>
+          <dl className="case-response-details">
+            <div><dt>Target</dt><dd>{proposal.intent.target}</dd></div>
+            <div><dt>Scope</dt><dd>{proposal.intent.maxRuns} manual check · {proposal.intent.environment}</dd></div>
+            <div><dt>Recipients</dt><dd>{proposal.intent.recipients.length === 0 ? "None" : proposal.intent.recipients.join(", ")}</dd></div>
+            <div><dt>Cost cap</dt><dd>{money(proposal.intent.maxCostCents)}</dd></div>
+            <div><dt>Authority</dt><dd>Workspace owner · exact proposal hash</dd></div>
+            <div><dt>External write</dt><dd>None</dd></div>
+          </dl>
+          <p>{proposal.uncertainty}</p>
+          {response.approval ? <span className="case-response-state">Approved by workspace owner · {new Date(response.approval.approvedAt).toLocaleString()}</span>
+            : <button type="button" className="case-approve-button" disabled={approvalBusy} onClick={approve}>
+              {approvalBusy ? "Saving approval…" : "Approve exact TEST response"}
+            </button>}
+          {approvalError && <p role="alert" className="case-approval-error">{approvalError}</p>}
+          <p className="case-response-hash">Proposal hash <code>{response.proposalHash}</code></p>
+        </section>
+        <section className="case-response-outcome"><span className="eyebrow">OUTCOME PLAN</span><h2>Awaiting observation</h2>
+          <p><strong>{proposal.measurement.metric}</strong></p>
+          <p>Baseline: {proposal.measurement.baseline}. Follow-up: {proposal.measurement.followUp}.</p>
+          <p>Minimum {proposal.measurement.minimumStarts} eligible starts. Any future assessment is correlation only; no recovered revenue is claimed.</p>
         </section>
         <section className="case-provenance"><span className="eyebrow">RECORD</span><dl>
           <div><dt>Case</dt><dd><code>{record.id}</code></dd></div>

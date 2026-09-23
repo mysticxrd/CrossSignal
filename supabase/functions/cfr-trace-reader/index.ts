@@ -24,8 +24,16 @@ type CaseDecisionReadRequest = {
   workspaceId: string;
   caseId: string;
 };
+type CaseResponseApproveRequest = {
+  operation: "case.response.approve";
+  userId: string;
+  workspaceId: string;
+  caseId: string;
+  responseId: string;
+  responseHash: string;
+};
 type RuntimeRequest = WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
-type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest;
+type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest;
 
 const RUNTIME_EVENT_TYPES = new Set([
   "runtime.initialized",
@@ -92,6 +100,12 @@ function parseRequest(value: unknown): GatewayRequest | null {
   if (value.operation === "case.decision.read") {
     return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
       ? value as CaseDecisionReadRequest : null;
+  }
+  if (value.operation === "case.response.approve") {
+    return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
+      && validIdentifier(value.responseId)
+      && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
+      ? value as CaseResponseApproveRequest : null;
   }
   if (value.operation === "runtime.put") {
     if (
@@ -261,17 +275,73 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
         and investigation_id = ${investigationRow.id}
       order by claim_id, evidence_id, event_id
     `;
+    const [responseRow] = await transaction`
+      select workspace_id as "workspaceId", id, case_id as "caseId",
+        investigation_id as "investigationId", artifact_json as artifact,
+        content_hash as "contentHash"
+      from cfr_app.case_response_proposals
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+      limit 1
+    `;
+    if (!responseRow) return { kind: "incomplete" as const };
+    const [approvalRow] = await transaction`
+      select workspace_id as "workspaceId", response_id as "responseId",
+        proposal_hash as "proposalHash", approved_by as "approvedBy",
+        approved_at::text as "approvedAt"
+      from cfr_app.case_response_approvals
+      where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
+      limit 1
+    `;
     return {
       kind: "found" as const,
       snapshot: { caseRow, signalRow, evidenceRows, eventRows, citationRows },
       investigation: investigationRow.artifact,
       investigationHash: investigationRow.contentHash,
       investigationCitations,
+      responseRow,
+      approvalRow: approvalRow ?? null,
     };
   });
   console.log(JSON.stringify({ event: "case_decision_read_result", userIdSha256,
     workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
   return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
+}
+
+async function handleCaseResponseApprove(input: CaseResponseApproveRequest, principalId: string, userIdSha256: string): Promise<Response> {
+  const result = await sql.begin(async (transaction) => {
+    await configureRuntimeRole(transaction, principalId, input.workspaceId);
+    if (!await hasOwnerMembership(transaction, principalId, input.workspaceId)) {
+      return { kind: "not_found" as const };
+    }
+    const [proposal] = await transaction`
+      select id, content_hash as "contentHash" from cfr_app.case_response_proposals
+      where workspace_id = ${input.workspaceId} and id = ${input.responseId}
+        and case_id = ${input.caseId} and status = 'proposed' and truth_mode = 'FIXTURE'
+      limit 1
+    `;
+    if (!proposal) return { kind: "not_found" as const };
+    if (proposal.contentHash !== input.responseHash) return { kind: "conflict" as const };
+    const inserted = await transaction`
+      insert into cfr_app.case_response_approvals
+        (workspace_id, response_id, proposal_hash, approved_by)
+      values (${input.workspaceId}, ${input.responseId}, ${input.responseHash}, ${principalId})
+      on conflict do nothing
+      returning response_id
+    `;
+    const [approval] = await transaction`
+      select proposal_hash as "proposalHash", approved_by as "approvedBy",
+        approved_at::text as "approvedAt"
+      from cfr_app.case_response_approvals
+      where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+      limit 1
+    `;
+    if (!approval || approval.proposalHash !== input.responseHash) return { kind: "conflict" as const };
+    return { kind: "approved" as const, reused: inserted.length === 0,
+      approvedAt: approval.approvedAt };
+  });
+  console.log(JSON.stringify({ event: "case_response_approval_result", userIdSha256,
+    workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
+  return json(result, result.kind === "not_found" ? 404 : result.kind === "conflict" ? 409 : 200);
 }
 
 async function handleRuntime(input: RuntimeRequest, principalId: string, userIdSha256: string): Promise<Response> {
@@ -398,9 +468,13 @@ Deno.serve(async (request: Request) => {
   const principalId = `sha256:${userIdSha256}`;
   try {
     if (!("operation" in input)) return await handleTrace(input, principalId, userIdSha256);
-    return input.operation === "case.decision.read"
-      ? await handleCaseDecision(input, principalId, userIdSha256)
-      : await handleRuntime(input, principalId, userIdSha256);
+    if (input.operation === "case.decision.read") {
+      return await handleCaseDecision(input, principalId, userIdSha256);
+    }
+    if (input.operation === "case.response.approve") {
+      return await handleCaseResponseApprove(input, principalId, userIdSha256);
+    }
+    return await handleRuntime(input, principalId, userIdSha256);
   } catch (error) {
     console.error(JSON.stringify({ event: "gateway_request_failed",
       operation: "operation" in input ? input.operation : "trace.read",

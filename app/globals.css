@@ -1413,6 +1413,14 @@ code { font-family: var(--font-geist-mono), monospace; }
 .case-counter strong { display: block; margin: 17px 0 6px; font-size: 26px; letter-spacing: -.04em; }
 .case-response { border-color: #e2c1b0 !important; background: #fff8f3 !important; }
 .case-response-state { display: inline-block; margin-top: 8px; padding: 9px 11px; border: 1px solid #d8bbaa; border-radius: 7px; color: #80543e; font-size: 12px; font-weight: 700; }
+.case-response-details { margin: 18px 0; border-top: 1px solid #e4d0c4; }
+.case-response-details div { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid #e4d0c4; font-size: 12px; }
+.case-response-details dt { color: var(--control-muted); }.case-response-details dd { margin: 0; text-align: right; font-weight: 650; }
+.case-approve-button { margin-top: 7px; padding: 11px 13px; border: 0; border-radius: 7px; background: var(--control-green); color: white; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.case-approve-button:disabled { opacity: .6; cursor: wait; }
+.case-approval-error { color: #ae432d !important; }
+.case-response-hash { overflow-wrap: anywhere; font-size: 10px !important; }.case-response-hash code { font: inherit; }
+.case-response-outcome { background: #f5f8f5 !important; }
 .case-provenance dl { margin: 15px 0 0; }
 .case-provenance dl > div { padding: 9px 0; border-top: 1px solid var(--control-line); }
 .case-provenance dt { margin-bottom: 5px; color: var(--control-muted); font-size: 11px; }

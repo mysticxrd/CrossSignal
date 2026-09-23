@@ -1,11 +1,13 @@
 import { verifyInvestigation } from "./case-investigator.mjs";
+import { verifySavedCaseResponse } from "./case-response.mjs";
 import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
 
 // The UI accepts only a fully verified, persisted FIXTURE Case. The response
-// contains no evaluator ground truth, action intent, authority, or outcome.
+// contains no evaluator ground truth or executed action/outcome.
 export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENARIO.caseId) {
   if (!payload || payload.kind !== "found" || !payload.snapshot
-    || !payload.investigation || !Array.isArray(payload.investigationCitations)) {
+    || !payload.investigation || !Array.isArray(payload.investigationCitations)
+    || !Object.hasOwn(payload, "approvalRow")) {
     throw new TypeError("Case decision response is incomplete");
   }
   const scenario = { ...GOLDEN_SCENARIO, workspaceId };
@@ -23,6 +25,8 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
   if (contentHash(sort(payload.investigationCitations)) !== contentHash(sort(expectedRefs))) {
     throw new TypeError("Investigation citations differ");
   }
+  const response = verifySavedCaseResponse(payload.responseRow, payload.approvalRow,
+    payload.snapshot.caseRow, report, payload.investigationHash);
   const evidenceById = new Map(payload.snapshot.evidenceRows.map((row) => [row.id, row]));
   const eventById = new Map(payload.snapshot.eventRows.map((row) => [row.id, row]));
   const metrics = payload.snapshot.signalRow.metrics;
@@ -31,6 +35,7 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     truthMode: "FIXTURE", status: payload.snapshot.caseRow.status,
     scenarioId: scenario.id, signalId: payload.snapshot.signalRow.id,
     investigationId: report.id, investigationHash: payload.investigationHash,
+    response,
     summary: report.summary, limitations: report.limitations,
     metrics: {
       baseline: metrics.baseline, observed: metrics.observed,
