@@ -1,0 +1,13 @@
+{
+  "scenarioId": "golden-mobile-checkout-v1",
+  "expectedDetection": true,
+  "targetBaselineStarts": 140,
+  "targetBaselineCompleted": 28,
+  "targetObservedStarts": 140,
+  "targetObservedCompleted": 12,
+  "targetRelativeDropBps": 5714,
+  "controlRelativeDropBps": 0,
+  "projectedLeakCents": 80000,
+  "supportingEvidence": 2,
+  "contradictingEvidence": 1
+}

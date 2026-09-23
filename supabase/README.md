@@ -24,3 +24,18 @@ tests for the first authenticated trace-resolution read slice.
 
 No project reference, plaintext gateway token, password, connection string,
 service-role key, or LIVE data belongs in this directory.
+
+## Phase 1 golden revenue-leak fixture
+
+The additive `202609230001` and `202609230002` migrations add private Case,
+recorded-event, signal, and evidence tables. Apply them in lexical order to the
+selected TEST project only. The second migration covers an index added after
+the first migration had already run on TEST; it is a no-op on fresh installs.
+
+Run `npm run verify:golden`, then run
+`supabase/scenarios/golden_revenue_leak.sql` as a TEST administrator. The script
+is repeatable: it inserts missing synthetic rows and checks their hashes; it
+does not delete or overwrite existing rows. Run
+`supabase/tests/golden_revenue_leak.sql` afterwards for rollback-only database
+contract checks. See `docs/phase1-golden-revenue-leak.md` for the verified
+project state, metrics, tenancy checks, and limits.
