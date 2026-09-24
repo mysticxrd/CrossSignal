@@ -10,6 +10,13 @@ export type DecisionClaim = {
   id: string; finding: string; relation: "supports" | "contradicts";
   evidenceId: string; source: string; events: DecisionEvent[];
 };
+export type CaseCheckReceipt = {
+  workspaceId: string; responseId: string; proposalHash: string;
+  recordedBy: string; runReference: string;
+  captureStatus: "captured" | "not_captured" | "indeterminate";
+  checkedAt: string; recordedAt: string; contentHash: string;
+  supersedesReceiptHash?: string;
+};
 export type DecisionCase = {
   id: string; workspaceId: string; title: string; truthMode: "FIXTURE";
   status: string; scenarioId: string; signalId: string;
@@ -30,11 +37,12 @@ export type DecisionCase = {
     };
     proposalHash: string;
     approval: { approvedBy: string; approvedAt: string } | null;
-    receipt: {
-      workspaceId: string; responseId: string; proposalHash: string;
-      recordedBy: string; runReference: string;
-      captureStatus: "captured" | "not_captured" | "indeterminate";
-      checkedAt: string; recordedAt: string; contentHash: string;
+    receipt: CaseCheckReceipt | null;
+    trialReceipt: CaseCheckReceipt | null;
+    trialMarker: {
+      workspaceId: string; responseId: string; receiptHash: string;
+      markedBy: string; reason: "trial_submission";
+      markedAt: string; contentHash: string;
     } | null;
   };
   outcome: {
@@ -163,5 +171,35 @@ export async function recordSavedCaseCheck(
   } catch (error) {
     console.error("Case check receipt failed", error instanceof Error ? error.message : "unknown error");
     return { ok: false, error: "The TEST check receipt could not be saved." };
+  }
+}
+
+export async function markSavedCaseCheckTrial(
+  userId: string, workspaceId: string, caseId: string, responseId: string,
+  responseHash: string, receiptHash: string, fetcher: typeof fetch = fetch,
+): Promise<{ ok: true; reused: boolean } | { ok: false; error: string }> {
+  if (getDatabaseProvider() !== "supabase" || workspaceId !== "l14-workspace-a") {
+    return { ok: false, error: "This Case check is available in TEST only." };
+  }
+  try {
+    const config = getSupabaseTraceFunctionConfig();
+    const response = await fetcher(config.url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-cfr-preview-token": config.token },
+      body: JSON.stringify({ operation: "case.check.trial", userId, workspaceId,
+        caseId, responseId, responseHash, receiptHash }),
+      cache: "no-store",
+    });
+    if (!response.ok) return { ok: false, error: response.status === 409
+      ? "The receipt changed or was already used. Reload the Case."
+      : response.status === 404 ? "The Case receipt is unavailable."
+        : "The trial marker could not be saved." };
+    const result = await response.json();
+    return result?.kind === "marked" && typeof result.reused === "boolean"
+      ? { ok: true, reused: result.reused }
+      : { ok: false, error: "The trial marker response was invalid." };
+  } catch (error) {
+    console.error("Case trial marker failed", error instanceof Error ? error.message : "unknown error");
+    return { ok: false, error: "The trial marker could not be saved." };
   }
 }

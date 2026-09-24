@@ -1,5 +1,6 @@
 import { verifyInvestigation } from "./case-investigator.mjs";
-import { validateCaseCheckReceipt, verifySavedCaseResponse } from "./case-response.mjs";
+import { validateCaseCheckReceipt, validateCaseCheckTrialMarker,
+  validateCaseRecheckReceipt, verifySavedCaseResponse } from "./case-response.mjs";
 import { assessCaseFollowUp } from "./case-outcome.mjs";
 import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
 
@@ -9,6 +10,7 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
   if (!payload || payload.kind !== "found" || !payload.snapshot
     || !payload.investigation || !Array.isArray(payload.investigationCitations)
     || !Object.hasOwn(payload, "approvalRow") || !Object.hasOwn(payload, "receiptRow")
+    || !Object.hasOwn(payload, "trialMarkerRow") || !Object.hasOwn(payload, "recheckRow")
     || !Array.isArray(payload.followUpRows)) {
     throw new TypeError("Case decision response is incomplete");
   }
@@ -29,9 +31,16 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
   }
   const verifiedResponse = verifySavedCaseResponse(payload.responseRow, payload.approvalRow,
     payload.snapshot.caseRow, report, payload.investigationHash);
-  const receipt = validateCaseCheckReceipt(payload.receiptRow, verifiedResponse.approval,
+  const originalReceipt = validateCaseCheckReceipt(payload.receiptRow, verifiedResponse.approval,
     verifiedResponse.proposalHash, workspaceId, verifiedResponse.proposal.id);
-  const response = { ...verifiedResponse, receipt };
+  const trialMarker = validateCaseCheckTrialMarker(payload.trialMarkerRow, originalReceipt,
+    workspaceId, verifiedResponse.proposal.id);
+  const recheck = validateCaseRecheckReceipt(payload.recheckRow, trialMarker, originalReceipt,
+    verifiedResponse.approval, verifiedResponse.proposalHash, workspaceId,
+    verifiedResponse.proposal.id);
+  const receipt = trialMarker ? recheck : originalReceipt;
+  const response = { ...verifiedResponse, receipt, trialMarker,
+    trialReceipt: trialMarker ? originalReceipt : null };
   const outcome = assessCaseFollowUp(payload.followUpRows, receipt,
     response.proposal, payload.snapshot.signalRow.metrics);
   const evidenceById = new Map(payload.snapshot.evidenceRows.map((row) => [row.id, row]));

@@ -92,3 +92,56 @@ export function validateCaseCheckReceipt(receipt, approval, proposalHash, worksp
   }
   return receipt;
 }
+
+export function validateCaseCheckTrialMarker(marker, receipt, workspaceId, responseId) {
+  if (marker === null) return null;
+  const keys = ["workspaceId", "responseId", "receiptHash", "markedBy", "reason",
+    "markedAt", "contentHash"];
+  if (!marker || typeof marker !== "object" || Array.isArray(marker)
+    || Object.keys(marker).sort().join("|") !== keys.sort().join("|")
+    || !receipt || marker.workspaceId !== workspaceId || marker.responseId !== responseId
+    || marker.receiptHash !== receipt.contentHash
+    || typeof marker.markedBy !== "string" || !/^sha256:[0-9a-f]{64}$/.test(marker.markedBy)
+    || marker.reason !== "trial_submission"
+    || typeof marker.markedAt !== "string" || Number.isNaN(Date.parse(marker.markedAt))
+    || Date.parse(marker.markedAt) < Date.parse(receipt.checkedAt)) {
+    throw new TypeError("Saved Case trial marker is invalid");
+  }
+  const artifact = { workspaceId, responseId, receiptHash: marker.receiptHash,
+    markedBy: marker.markedBy, reason: marker.reason, markedAt: marker.markedAt };
+  if (marker.contentHash !== contentHash(artifact)) {
+    throw new TypeError("Saved Case trial marker hash differs");
+  }
+  return marker;
+}
+
+export function validateCaseRecheckReceipt(recheck, marker, original, approval,
+  proposalHash, workspaceId, responseId) {
+  if (recheck === null) return null;
+  const keys = ["workspaceId", "responseId", "proposalHash", "supersedesReceiptHash",
+    "recordedBy", "runReference", "captureStatus", "checkedAt", "recordedAt", "contentHash"];
+  if (!recheck || typeof recheck !== "object" || Array.isArray(recheck)
+    || Object.keys(recheck).sort().join("|") !== keys.sort().join("|")
+    || !marker || !original || !approval
+    || recheck.workspaceId !== workspaceId || recheck.responseId !== responseId
+    || recheck.proposalHash !== proposalHash
+    || recheck.supersedesReceiptHash !== marker.receiptHash
+    || typeof recheck.recordedBy !== "string" || !/^sha256:[0-9a-f]{64}$/.test(recheck.recordedBy)
+    || typeof recheck.runReference !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(recheck.runReference)
+    || recheck.runReference === original.runReference
+    || !["captured", "not_captured", "indeterminate"].includes(recheck.captureStatus)
+    || typeof recheck.checkedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recheck.checkedAt)
+    || typeof recheck.recordedAt !== "string" || Number.isNaN(Date.parse(recheck.recordedAt))
+    || Date.parse(recheck.checkedAt) <= Date.parse(marker.markedAt)
+    || Date.parse(recheck.checkedAt) > Date.parse(recheck.recordedAt)) {
+    throw new TypeError("Saved Case recheck receipt is invalid");
+  }
+  const artifact = { workspaceId, responseId, proposalHash,
+    supersedesReceiptHash: marker.receiptHash, recordedBy: recheck.recordedBy,
+    runReference: recheck.runReference, captureStatus: recheck.captureStatus,
+    checkedAt: recheck.checkedAt };
+  if (recheck.contentHash !== contentHash(artifact)) {
+    throw new TypeError("Saved Case recheck receipt hash differs");
+  }
+  return recheck;
+}

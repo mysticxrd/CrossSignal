@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { approveCaseResponseAction, recordCaseCheckAction } from "./case-response-actions";
+import { approveCaseResponseAction, markCaseCheckTrialAction,
+  recordCaseCheckAction } from "./case-response-actions";
 import type { DecisionCaseResult } from "../db/case-decision";
 
 function percent(bps: number) { return `${(bps / 100).toFixed(2)}%`; }
@@ -14,8 +15,12 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
   const [approvalError, setApprovalError] = useState("");
   const [checkBusy, startCheck] = useTransition();
   const [checkError, setCheckError] = useState("");
+  const [trialBusy, startTrial] = useTransition();
+  const [trialConfirm, setTrialConfirm] = useState(false);
+  const [trialError, setTrialError] = useState("");
   const [runReference, setRunReference] = useState("");
   const [captureStatus, setCaptureStatus] = useState<"captured" | "not_captured" | "indeterminate">("indeterminate");
+  const [checkPerformed, setCheckPerformed] = useState(false);
   if (result.kind !== "found") {
     return <div className="case-page">
       <header className="case-heading"><span className="eyebrow">CASES</span><h1>Revenue signals</h1></header>
@@ -47,6 +52,15 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
         response.proposalHash, runReference.trim(), captureStatus);
       if (saved.ok) router.refresh();
       else setCheckError(saved.error);
+    });
+  }
+  function markTrial() {
+    setTrialError("");
+    startTrial(async () => {
+      const saved = await markCaseCheckTrialAction(record.workspaceId, record.id,
+        response.proposalHash, response.receipt?.contentHash);
+      if (saved.ok) router.refresh();
+      else setTrialError(saved.error);
     });
   }
   return <div className="case-page">
@@ -102,17 +116,35 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
               {approvalBusy ? "Saving approval…" : "Approve exact TEST response"}
             </button>}
           {approvalError && <p role="alert" className="case-approval-error">{approvalError}</p>}
+          {response.trialReceipt && <div className="case-check-receipt">
+            <strong>Trial submission excluded from outcome evidence</strong>
+            <p>Original run reference {response.trialReceipt.runReference} · marked as trial {new Date(response.trialMarker!.markedAt).toLocaleString()}</p>
+            <p>Original receipt hash <code>{response.trialReceipt.contentHash}</code></p>
+          </div>}
           {response.receipt ? <div className="case-check-receipt">
-            <strong>Owner-attested TEST check recorded</strong>
+            <strong>{response.trialMarker ? "Owner-attested TEST recheck recorded" : "Owner-attested TEST check recorded"}</strong>
             <p>Run {response.receipt.runReference} · Payment capture {response.receipt.captureStatus.replaceAll("_", " ")} · {new Date(response.receipt.checkedAt).toLocaleString()}</p>
             <p>Receipt hash <code>{response.receipt.contentHash}</code></p>
+            {!response.trialMarker && <div>
+              <p>If this entry was only a trial submission, mark it as a trial. It stays in the audit trail and cannot support follow-up measurement.</p>
+              {trialConfirm ? <>
+                <button type="button" className="case-approve-button" disabled={trialBusy} onClick={markTrial}>
+                  {trialBusy ? "Marking trial…" : "Confirm trial submission"}
+                </button>
+                <button type="button" disabled={trialBusy} onClick={() => setTrialConfirm(false)}>Cancel</button>
+              </> : <button type="button" onClick={() => setTrialConfirm(true)}>This was only a trial</button>}
+              {trialError && <p role="alert" className="case-approval-error">{trialError}</p>}
+            </div>}
           </div> : response.approval ? <div className="case-check-form">
-            <p>After you perform the single manual TEST check, record its non-sensitive run reference and payment capture result. This records your attestation; it does not run checkout.</p>
+            <p>{response.trialMarker ? "The trial entry is excluded. After you perform one real TEST check, record a different run reference and its payment capture result."
+              : "After you perform the single manual TEST check, record its non-sensitive run reference and payment capture result. This records your attestation; it does not run checkout."}</p>
             <label>TEST run reference <input value={runReference} maxLength={64} pattern="[A-Za-z0-9_-]{8,64}" placeholder="test-run-1234" onChange={(event) => setRunReference(event.target.value)} /></label>
             <label>Payment capture <select value={captureStatus} onChange={(event) => setCaptureStatus(event.target.value as typeof captureStatus)}>
               <option value="captured">Captured</option><option value="not_captured">Not captured</option><option value="indeterminate">Indeterminate</option>
             </select></label>
-            <button type="button" className="case-approve-button" disabled={checkBusy || !/^[A-Za-z0-9_-]{8,64}$/.test(runReference)} onClick={recordCheck}>
+            <label><input type="checkbox" checked={checkPerformed} onChange={(event) => setCheckPerformed(event.target.checked)} /> I performed the manual TEST checkout, and this reference identifies that run.</label>
+            <button type="button" className="case-approve-button" disabled={checkBusy || !checkPerformed || !/^[A-Za-z0-9_-]{8,64}$/.test(runReference)
+              || runReference === response.trialReceipt?.runReference} onClick={recordCheck}>
               {checkBusy ? "Saving TEST check…" : "Record completed TEST check"}
             </button>
             {checkError && <p role="alert" className="case-approval-error">{checkError}</p>}
@@ -126,7 +158,9 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
             <p><strong>Correlation only · FIXTURE</strong> · Mobile Safari conversion {percent(record.outcome.incidentConversionBps!)} → {percent(record.outcome.conversionBps!)} across {record.outcome.starts} follow-up starts.</p>
             <p>{record.outcome.captures} TEST captures · {money(record.outcome.revenueCents!)} recorded. {record.outcome.limitation}</p>
             <details><summary>Inspect {record.outcome.eventIds.length} follow-up event IDs</summary><p className="case-response-hash">{record.outcome.eventIds.join(", ")}</p></details>
-          </> : <p>{record.outcome.status === "awaiting_check" ? "A completed owner-attested TEST check is required before follow-up observations."
+          </> : <p>{record.outcome.status === "awaiting_check" ? response.trialMarker
+            ? "The trial receipt is excluded. A new owner-attested TEST check is required before follow-up observations."
+            : "A completed owner-attested TEST check is required before follow-up observations."
             : record.outcome.status === "collecting" ? `${record.outcome.daysRecorded} follow-up day(s) recorded; seven paired days are required.`
               : record.outcome.status === "insufficient_starts" ? `${record.outcome.starts} eligible starts recorded; at least ${record.outcome.minimumStarts} are required.`
                 : "No separate follow-up observations have been recorded yet."} Any future assessment is correlation only; no recovered revenue is claimed.</p>}

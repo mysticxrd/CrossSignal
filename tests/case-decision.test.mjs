@@ -39,6 +39,8 @@ function payload() {
       artifact: proposal, contentHash: contentHash(proposal) },
     approvalRow: null,
     receiptRow: null,
+    trialMarkerRow: null,
+    recheckRow: null,
     followUpRows: [],
     investigationCitations: investigation.claims.flatMap((claim) => claim.eventIds.map((eventId) => ({
       workspaceId: scenario.workspaceId, investigationId: investigation.id,
@@ -112,7 +114,8 @@ test("Case read reprojects a saved TEST receipt and separate correlated follow-u
     for (const source of ["checkout_analytics", "payment_ledger"]) {
       const artifact = { workspaceId: scenario.workspaceId,
         id: `follow-up-${observedDay}-${source}`, caseId: scenario.caseId,
-        responseId: input.responseRow.id, source, segment: "mobile_safari", observedDay,
+        responseId: input.responseRow.id, receiptHash: input.receiptRow.contentHash,
+        source, segment: "mobile_safari", observedDay,
         starts: source === "checkout_analytics" ? 20 : 0,
         completed: source === "checkout_analytics" ? 3 : 0,
         captures: source === "payment_ledger" ? 3 : 0,
@@ -130,4 +133,41 @@ test("Case read reprojects a saved TEST receipt and separate correlated follow-u
   assert.equal(result.outcome.eventIds.length, 14);
   saved.followUpRows[0].workspaceId = "foreign-workspace";
   assert.throws(() => projectCaseDecision(saved, scenario.workspaceId));
+});
+
+test("trial receipt stays visible but cannot support outcome until a distinct recheck", () => {
+  const input = payload();
+  const owner = `sha256:${"a".repeat(64)}`;
+  input.approvalRow = { workspaceId: scenario.workspaceId,
+    responseId: input.responseRow.id, proposalHash: input.responseRow.contentHash,
+    approvedBy: owner, approvedAt: "2026-09-15T10:00:00.000Z" };
+  const original = { workspaceId: scenario.workspaceId, responseId: input.responseRow.id,
+    proposalHash: input.responseRow.contentHash, recordedBy: owner,
+    runReference: "trial-run-1234", captureStatus: "indeterminate",
+    checkedAt: "2026-09-15T10:05:00.000Z" };
+  input.receiptRow = { ...original, recordedAt: original.checkedAt,
+    contentHash: contentHash(original) };
+  const trial = { workspaceId: scenario.workspaceId, responseId: input.responseRow.id,
+    receiptHash: input.receiptRow.contentHash, markedBy: owner,
+    reason: "trial_submission", markedAt: "2026-09-16T10:00:00.000Z" };
+  input.trialMarkerRow = { ...trial, contentHash: contentHash(trial) };
+  const excluded = projectCaseDecision(JSON.parse(JSON.stringify(input)), scenario.workspaceId);
+  assert.equal(excluded.response.receipt, null);
+  assert.equal(excluded.response.trialReceipt.contentHash, input.receiptRow.contentHash);
+  assert.equal(excluded.outcome.status, "awaiting_check");
+  const tampered = JSON.parse(JSON.stringify(input));
+  tampered.trialMarkerRow.workspaceId = "foreign-workspace";
+  assert.throws(() => projectCaseDecision(tampered, scenario.workspaceId));
+  const recheck = { workspaceId: scenario.workspaceId, responseId: input.responseRow.id,
+    proposalHash: input.responseRow.contentHash,
+    supersedesReceiptHash: input.receiptRow.contentHash, recordedBy: owner,
+    runReference: "real-run-1234", captureStatus: "captured",
+    checkedAt: "2026-09-17T10:00:00.000Z" };
+  input.recheckRow = { ...recheck, recordedAt: recheck.checkedAt,
+    contentHash: contentHash(recheck) };
+  const verified = projectCaseDecision(JSON.parse(JSON.stringify(input)), scenario.workspaceId);
+  assert.equal(verified.response.receipt.contentHash, input.recheckRow.contentHash);
+  assert.equal(verified.outcome.status, "awaiting_follow_up_events");
+  input.recheckRow.runReference = input.receiptRow.runReference;
+  assert.throws(() => projectCaseDecision(input, scenario.workspaceId));
 });

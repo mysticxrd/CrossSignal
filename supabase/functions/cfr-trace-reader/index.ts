@@ -42,8 +42,18 @@ type CaseCheckRecordRequest = {
   runReference: string;
   captureStatus: "captured" | "not_captured" | "indeterminate";
 };
+type CaseCheckTrialRequest = {
+  operation: "case.check.trial";
+  userId: string;
+  workspaceId: string;
+  caseId: string;
+  responseId: string;
+  responseHash: string;
+  receiptHash: string;
+};
 type RuntimeRequest = WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
-type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest | CaseCheckRecordRequest;
+type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest
+  | CaseCheckRecordRequest | CaseCheckTrialRequest;
 
 const RUNTIME_EVENT_TYPES = new Set([
   "runtime.initialized",
@@ -124,6 +134,13 @@ function parseRequest(value: unknown): GatewayRequest | null {
       && typeof value.runReference === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value.runReference)
       && ["captured", "not_captured", "indeterminate"].includes(String(value.captureStatus))
       ? value as CaseCheckRecordRequest : null;
+  }
+  if (value.operation === "case.check.trial") {
+    return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
+      && validIdentifier(value.responseId)
+      && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
+      && typeof value.receiptHash === "string" && /^[0-9a-f]{64}$/.test(value.receiptHash)
+      ? value as CaseCheckTrialRequest : null;
   }
   if (value.operation === "runtime.put") {
     if (
@@ -321,9 +338,31 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
       limit 1
     `;
+    const [trialMarkerRow] = await transaction`
+      select workspace_id as "workspaceId", response_id as "responseId",
+        receipt_hash as "receiptHash", marked_by as "markedBy", reason,
+        to_char(marked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "markedAt",
+        content_hash as "contentHash"
+      from cfr_app.case_check_trial_markers
+      where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
+      limit 1
+    `;
+    const [recheckRow] = await transaction`
+      select workspace_id as "workspaceId", response_id as "responseId",
+        proposal_hash as "proposalHash", supersedes_receipt_hash as "supersedesReceiptHash",
+        recorded_by as "recordedBy", run_reference as "runReference",
+        capture_status as "captureStatus",
+        to_char(checked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "checkedAt",
+        to_char(recorded_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "recordedAt",
+        content_hash as "contentHash"
+      from cfr_app.case_check_recheck_receipts
+      where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
+      limit 1
+    `;
     const followUpRows = await transaction`
       select workspace_id as "workspaceId", id, case_id as "caseId",
-        response_id as "responseId", truth_mode as "truthMode", source, segment,
+        response_id as "responseId", receipt_hash as "receiptHash",
+        truth_mode as "truthMode", source, segment,
         observed_day::text as "observedDay", starts, completed, captures,
         revenue_cents::int as "revenueCents", content_hash as "contentHash",
         to_char(recorded_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "recordedAt"
@@ -340,6 +379,8 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       responseRow,
       approvalRow: approvalRow ?? null,
       receiptRow: receiptRow ?? null,
+      trialMarkerRow: trialMarkerRow ?? null,
+      recheckRow: recheckRow ?? null,
       followUpRows,
     };
   });
@@ -368,7 +409,45 @@ async function handleCaseCheckRecord(input: CaseCheckRecordRequest, principalId:
       limit 1
     `;
     if (!approval || approval.proposalHash !== input.responseHash) return { kind: "approval_required" as const };
+    const [trial] = await transaction`
+      select marker.receipt_hash as "receiptHash", marker.marked_at as "markedAt",
+        original.run_reference as "runReference"
+      from cfr_app.case_check_trial_markers marker
+      join cfr_app.case_response_receipts original
+        on original.workspace_id = marker.workspace_id and original.response_id = marker.response_id
+      where marker.workspace_id = ${input.workspaceId} and marker.response_id = ${input.responseId}
+      limit 1
+    `;
     const checkedAt = new Date().toISOString();
+    if (trial) {
+      if (input.runReference === trial.runReference
+        || Date.parse(checkedAt) <= Date.parse(trial.markedAt)) return { kind: "conflict" as const };
+      const artifact = { captureStatus: input.captureStatus, checkedAt,
+        proposalHash: input.responseHash, recordedBy: principalId,
+        responseId: input.responseId, runReference: input.runReference,
+        supersedesReceiptHash: trial.receiptHash, workspaceId: input.workspaceId };
+      const contentHash = await sha256(JSON.stringify(artifact));
+      const inserted = await transaction`
+        insert into cfr_app.case_check_recheck_receipts
+          (workspace_id, response_id, proposal_hash, supersedes_receipt_hash,
+           recorded_by, run_reference, capture_status, checked_at, recorded_at, content_hash)
+        values (${input.workspaceId}, ${input.responseId}, ${input.responseHash},
+          ${trial.receiptHash}, ${principalId}, ${input.runReference}, ${input.captureStatus},
+          ${checkedAt}::text::timestamptz, ${checkedAt}::text::timestamptz, ${contentHash})
+        on conflict do nothing returning response_id
+      `;
+      const [recheck] = await transaction`
+        select run_reference as "runReference", capture_status as "captureStatus",
+          content_hash as "contentHash"
+        from cfr_app.case_check_recheck_receipts
+        where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+        limit 1
+      `;
+      if (!recheck || recheck.runReference !== input.runReference
+        || recheck.captureStatus !== input.captureStatus) return { kind: "conflict" as const };
+      return { kind: "recorded" as const, reused: inserted.length === 0,
+        receiptHash: recheck.contentHash };
+    }
     const artifact = { captureStatus: input.captureStatus, checkedAt,
       proposalHash: input.responseHash, recordedBy: principalId,
       responseId: input.responseId, runReference: input.runReference,
@@ -399,6 +478,53 @@ async function handleCaseCheckRecord(input: CaseCheckRecordRequest, principalId:
     workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
   return json(result, result.kind === "not_found" ? 404
     : result.kind === "conflict" || result.kind === "approval_required" ? 409 : 200);
+}
+
+async function handleCaseCheckTrial(input: CaseCheckTrialRequest, principalId: string, userIdSha256: string): Promise<Response> {
+  const result = await sql.begin(async (transaction) => {
+    await configureRuntimeRole(transaction, principalId, input.workspaceId);
+    if (!await hasOwnerMembership(transaction, principalId, input.workspaceId)) {
+      return { kind: "not_found" as const };
+    }
+    const [proposal] = await transaction`
+      select content_hash as "contentHash" from cfr_app.case_response_proposals
+      where workspace_id = ${input.workspaceId} and id = ${input.responseId}
+        and case_id = ${input.caseId} and truth_mode = 'FIXTURE'
+      limit 1
+    `;
+    const [receipt] = await transaction`
+      select proposal_hash as "proposalHash", content_hash as "contentHash"
+      from cfr_app.case_response_receipts
+      where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+      limit 1
+    `;
+    if (!proposal || !receipt) return { kind: "not_found" as const };
+    if (proposal.contentHash !== input.responseHash
+      || receipt.proposalHash !== input.responseHash
+      || receipt.contentHash !== input.receiptHash) return { kind: "conflict" as const };
+    const markedAt = new Date().toISOString();
+    const artifact = { markedAt, markedBy: principalId, reason: "trial_submission",
+      receiptHash: input.receiptHash, responseId: input.responseId,
+      workspaceId: input.workspaceId };
+    const contentHash = await sha256(JSON.stringify(artifact));
+    const inserted = await transaction`
+      insert into cfr_app.case_check_trial_markers
+        (workspace_id, response_id, receipt_hash, marked_by, reason, marked_at, content_hash)
+      values (${input.workspaceId}, ${input.responseId}, ${input.receiptHash},
+        ${principalId}, 'trial_submission', ${markedAt}::text::timestamptz, ${contentHash})
+      on conflict do nothing returning response_id
+    `;
+    const [marker] = await transaction`
+      select receipt_hash as "receiptHash" from cfr_app.case_check_trial_markers
+      where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+      limit 1
+    `;
+    if (!marker || marker.receiptHash !== input.receiptHash) return { kind: "conflict" as const };
+    return { kind: "marked" as const, reused: inserted.length === 0 };
+  });
+  console.log(JSON.stringify({ event: "case_check_trial_result", userIdSha256,
+    workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
+  return json(result, result.kind === "not_found" ? 404 : result.kind === "conflict" ? 409 : 200);
 }
 
 async function handleCaseResponseApprove(input: CaseResponseApproveRequest, principalId: string, userIdSha256: string): Promise<Response> {
@@ -570,6 +696,9 @@ Deno.serve(async (request: Request) => {
     }
     if (input.operation === "case.check.record") {
       return await handleCaseCheckRecord(input, principalId, userIdSha256);
+    }
+    if (input.operation === "case.check.trial") {
+      return await handleCaseCheckTrial(input, principalId, userIdSha256);
     }
     return await handleRuntime(input, principalId, userIdSha256);
   } catch (error) {

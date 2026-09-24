@@ -7,7 +7,8 @@ import { buildCaseFollowUpSql } from "../scripts/generate-case-follow-up-sql.mjs
 const workspaceId = "l14-workspace-a";
 const caseId = "case-golden-mobile-checkout";
 const responseId = `response-${caseId}-v1`;
-const receipt = { workspaceId, responseId, checkedAt: "2026-09-15T10:00:00.000Z" };
+const receipt = { workspaceId, responseId, checkedAt: "2026-09-15T10:00:00.000Z",
+  contentHash: "c".repeat(64) };
 const response = { workspaceId, caseId, id: responseId, measurement: { minimumStarts: 100 } };
 const incidentMetrics = { observed: { conversionBps: 857 } };
 
@@ -18,7 +19,8 @@ function events() {
     const completed = 3;
     for (const source of ["checkout_analytics", "payment_ledger"]) {
       const artifact = { workspaceId, id: `follow-up-${observedDay}-${source}`,
-        caseId, responseId, source, segment: "mobile_safari", observedDay,
+        caseId, responseId, receiptHash: receipt.contentHash,
+        source, segment: "mobile_safari", observedDay,
         starts: source === "checkout_analytics" ? 20 : 0,
         completed: source === "checkout_analytics" ? completed : 0,
         captures: source === "payment_ledger" ? completed : 0,
@@ -64,6 +66,7 @@ test("foreign, tampered, duplicated, pre-check and inconsistent observations fai
     (rows) => { rows[0].workspaceId = "foreign-workspace"; },
     (rows) => { rows[0].completed = 99; },
     (rows) => { rows[0].truthMode = "LIVE"; },
+    (rows) => { rows[0].receiptHash = "d".repeat(64); },
     (rows) => { rows[0].groundTruth = "bug"; },
     (rows) => { rows[0].observedDay = "2026-09-14"; },
     (rows) => { rows.push({ ...rows[0] }); },
@@ -81,14 +84,18 @@ test("foreign, tampered, duplicated, pre-check and inconsistent observations fai
 });
 
 test("follow-up import is receipt-bound, repeatable and does not alter incident events", () => {
-  const input = { receipt: { ...receipt, caseId, contentHash: "c".repeat(64) },
-    events: events().map(({ truthMode, contentHash: hash, recordedAt, ...artifact }) => {
-      void truthMode; void hash; void recordedAt;
+  const input = { receipt: { ...receipt, caseId },
+    events: events().map(({ truthMode, contentHash: hash, recordedAt,
+      receiptHash, ...artifact }) => {
+      void truthMode; void hash; void recordedAt; void receiptHash;
       return artifact;
     }) };
   const sql = buildCaseFollowUpSql(input, "2026-09-23T12:00:00.000Z");
-  assert.match(sql, /case_response_receipts receipt/);
-  assert.match(sql, /receipt\.content_hash = 'c{64}'/);
+  assert.match(sql, /case_response_receipts original/);
+  assert.match(sql, /case_check_trial_markers marker/);
+  assert.match(sql, /case_check_recheck_receipts recheck/);
+  assert.match(sql, /coalesce\(recheck\.content_hash, original\.content_hash\) = 'c{64}'/);
+  assert.match(sql, /receipt_hash = 'c{64}'/);
   assert.match(sql, /on conflict do nothing/);
   assert.doesNotMatch(sql, /\b(delete|truncate|drop|update)\b/i);
   assert.throws(() => buildCaseFollowUpSql({ ...input, receipt: { ...input.receipt,

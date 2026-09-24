@@ -2,7 +2,7 @@ import { contentHash } from "./revenue-leak.mjs";
 
 const ID = /^[a-z0-9][a-z0-9_-]{0,127}$/;
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const ROW_KEYS = ["workspaceId", "id", "caseId", "responseId", "truthMode",
+const ROW_KEYS = ["workspaceId", "id", "caseId", "responseId", "receiptHash", "truthMode",
   "source", "segment", "observedDay", "starts", "completed", "captures",
   "revenueCents", "contentHash", "recordedAt"];
 
@@ -31,7 +31,8 @@ export function assessCaseFollowUp(rows, receipt, response, incidentMetrics) {
     if (!row || typeof row !== "object" || Array.isArray(row)
       || Object.keys(row).sort().join("|") !== [...ROW_KEYS].sort().join("|")
       || row.workspaceId !== receipt.workspaceId || row.caseId !== response.caseId
-      || row.responseId !== response.id || row.truthMode !== "FIXTURE"
+      || row.responseId !== response.id || row.receiptHash !== receipt.contentHash
+      || row.truthMode !== "FIXTURE"
       || typeof row.id !== "string" || !ID.test(row.id)
       || !["checkout_analytics", "payment_ledger"].includes(row.source)
       || row.segment !== "mobile_safari" || !validDay(row.observedDay)
@@ -48,7 +49,8 @@ export function assessCaseFollowUp(rows, receipt, response, incidentMetrics) {
       throw new TypeError("Follow-up observation counts are invalid");
     }
     const artifact = { workspaceId: row.workspaceId, id: row.id, caseId: row.caseId,
-      responseId: row.responseId, source: row.source, segment: row.segment,
+      responseId: row.responseId, receiptHash: row.receiptHash,
+      source: row.source, segment: row.segment,
       observedDay: row.observedDay, starts: row.starts, completed: row.completed,
       captures: row.captures, revenueCents: row.revenueCents };
     if (row.contentHash !== contentHash(artifact)) throw new TypeError("Follow-up observation hash differs");
