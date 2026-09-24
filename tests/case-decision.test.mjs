@@ -94,3 +94,40 @@ test("exact proposal approval survives reload and remains linked to the Case", (
   assert.equal(result.response.proposalHash, input.approvalRow.proposalHash);
   assert.equal(result.response.proposal.measurement.status, "awaiting_follow_up_events");
 });
+
+test("Case read reprojects a saved TEST receipt and separate correlated follow-up", () => {
+  const input = payload();
+  const approvedBy = `sha256:${"a".repeat(64)}`;
+  input.approvalRow = { workspaceId: scenario.workspaceId,
+    responseId: input.responseRow.id, proposalHash: input.responseRow.contentHash,
+    approvedBy, approvedAt: "2026-09-15T10:00:00.000Z" };
+  const receiptArtifact = { workspaceId: scenario.workspaceId, responseId: input.responseRow.id,
+    proposalHash: input.responseRow.contentHash, recordedBy: approvedBy,
+    runReference: "test-run-1234", captureStatus: "not_captured",
+    checkedAt: "2026-09-15T10:05:00.000Z" };
+  input.receiptRow = { ...receiptArtifact, recordedAt: receiptArtifact.checkedAt,
+    contentHash: contentHash(receiptArtifact) };
+  for (let day = 16; day <= 22; day += 1) {
+    const observedDay = `2026-09-${day}`;
+    for (const source of ["checkout_analytics", "payment_ledger"]) {
+      const artifact = { workspaceId: scenario.workspaceId,
+        id: `follow-up-${observedDay}-${source}`, caseId: scenario.caseId,
+        responseId: input.responseRow.id, source, segment: "mobile_safari", observedDay,
+        starts: source === "checkout_analytics" ? 20 : 0,
+        completed: source === "checkout_analytics" ? 3 : 0,
+        captures: source === "payment_ledger" ? 3 : 0,
+        revenueCents: source === "payment_ledger" ? 15000 : 0 };
+      input.followUpRows.push({ ...artifact, truthMode: "FIXTURE",
+        contentHash: contentHash(artifact), recordedAt: "2026-09-23T12:00:00.000Z" });
+    }
+  }
+  const saved = JSON.parse(JSON.stringify(input));
+  const result = projectCaseDecision(saved, scenario.workspaceId);
+  assert.equal(result.response.receipt.contentHash, input.receiptRow.contentHash);
+  assert.equal(result.outcome.status, "assessed");
+  assert.equal(result.outcome.label, "correlated_only");
+  assert.equal(result.outcome.conversionBps, 1500);
+  assert.equal(result.outcome.eventIds.length, 14);
+  saved.followUpRows[0].workspaceId = "foreign-workspace";
+  assert.throws(() => projectCaseDecision(saved, scenario.workspaceId));
+});

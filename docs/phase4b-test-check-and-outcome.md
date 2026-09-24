@@ -69,9 +69,10 @@ original 56 events. No causal effect or recovered-revenue number is produced.
   control, and the new "completed owner-attested TEST check required" pending
   state. The receipt form was correctly absent before approval. No approval
   button was clicked.
-- Eighteen focused tests passed for deterministic detection, Case citations,
+- Nineteen focused tests passed for deterministic detection, Case citations,
   receipt validation, cross-tenant rejection, seven-day outcome calculation,
-  and import generation. The full `vinext` build passed. Repository-wide
+  and import generation, including a JSON save/reload projection of a complete
+  receipt and correlated follow-up. The full `vinext` build passed. Repository-wide
   `tsc` still reports known archived Eve, Cloudflare ambient-type, and local
   Deno ambient-type errors; no new application TypeScript error remains.
 - In rollback-only TEST database transactions, the restricted owner role
