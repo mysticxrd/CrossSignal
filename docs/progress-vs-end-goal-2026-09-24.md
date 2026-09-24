@@ -1,5 +1,7 @@
 # CrossSignal progress against the end goal
 
+> **Latest — 25 September 2026:** A deterministic simulation assessment now binds the saved checkout run IDs, hashes, and event traces. Its lifecycle is awaiting runs → in progress → both chosen scenarios verified. This is harness coverage, not a repaired revenue leak. The Case remains unresolved; device verification and business outcomes remain pending. See [assessment evidence](phase4e-simulation-assessment.md). Next: a one-command golden-Case replay with a separate hidden-truth grader.
+
 > **Update — 25 September 2026:** The missing executable TEST target is now a bounded synthetic checkout harness. Two runs (simulated capture and decline) are saved with unique IDs and immutable traces; browser reload passed. The trial stays excluded. Actual Mobile Safari verification awaits device access; real capture and business outcome remain unverified. See [implementation and verification evidence](phase4d-synthetic-checkout-harness.md). The report below preserves the earlier 24 September assessment; its manual-check next step and version 9/v10 deployment references are superseded by this update (Site v10 / Edge v11). Next product milestone: a separately labeled simulated outcome and Case lifecycle assessment, followed by replay checks.
 
 **As of:** 2026-09-24

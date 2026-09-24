@@ -70,6 +70,15 @@ export type DecisionCase = {
   };
   claims: DecisionClaim[];
   simulatedCheckouts: SimulatedCheckout[];
+  simulationOutcome: {
+    methodVersion: "simulation-coverage-v1"; truthMode: "SIMULATED";
+    status: "awaiting_runs" | "in_progress" | "verified";
+    counts: { capture: number; decline: number }; runCount: number; contentHash: string;
+    actualChargedCents: 0; caseResolution: "unresolved";
+    deviceVerification: "pending"; businessOutcome: "not_measured";
+    transitions: { runId: string; runHash: string; executedAt: string; scenario: string;
+      result: string; eventIds: string[]; from: string; to: string }[];
+  };
 };
 export type DecisionCaseResult =
   | { kind: "found"; case: DecisionCase }

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { approveCaseResponseAction, markCaseCheckTrialAction } from "./case-response-actions";
 import SyntheticCheckoutPanel from "./SyntheticCheckoutPanel";
+import SimulationOutcomePanel from "./SimulationOutcomePanel";
 import type { DecisionCaseResult } from "../db/case-decision";
 
 function percent(bps: number) { return `${(bps / 100).toFixed(2)}%`; }
@@ -53,7 +54,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
     <header className="case-heading">
       <div><span className="eyebrow">CASE / DETECTED SIGNAL</span><h1>{record.title}</h1>
         <p>{record.summary}</p></div>
-      <div className="case-badges"><span className="truth-badge truth-fixture">FIXTURE</span><span className="truth-badge truth-test">TEST</span><span className="case-status">Ready for review</span></div>
+      <div className="case-badges"><span className="truth-badge truth-fixture">FIXTURE</span><span className="truth-badge truth-test">TEST</span><span className="case-status">Open · cause unconfirmed</span></div>
     </header>
 
     <section className="case-metrics" aria-label="Recorded anomaly">
@@ -64,7 +65,8 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
 
     <div className="case-layout">
       <div className="case-main">
-        <SyntheticCheckoutPanel record={record} />
+    <SyntheticCheckoutPanel record={record} />
+    <SimulationOutcomePanel outcome={record.simulationOutcome} />
         <section className="case-section">
           <div className="case-section-head"><div><span className="eyebrow">INVESTIGATION</span><h2>Evidence for the signal</h2></div><span>3 claims · 42 event references</span></div>
           <p className="case-section-lead">Every finding below is tied to saved observations. Open a claim to inspect its dates, segment, counts, and event IDs.</p>
@@ -123,7 +125,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
               {trialError && <p role="alert" className="case-approval-error">{trialError}</p>}
             </div>}
           </div> : response.approval ? <div className="case-check-form">
-            <p>Actual Mobile Safari verification is pending device access and an executable device-test target. The synthetic harness records simulations separately; it cannot complete this manual-check receipt.</p>
+            <p>Actual Mobile Safari verification is pending device access. The synthetic harness records simulations separately; it cannot complete this manual-check receipt.</p>
           </div> : null}
           <p className="case-response-hash">Proposal hash <code>{response.proposalHash}</code></p>
         </section>

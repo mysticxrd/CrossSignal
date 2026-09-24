@@ -4,6 +4,7 @@ import { validateCaseCheckReceipt, validateCaseCheckTrialMarker,
 import { assessCaseFollowUp } from "./case-outcome.mjs";
 import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
 import { verifySimulatedCheckouts } from "./case-checkout.mjs";
+import { assessCaseSimulation } from "./case-simulation-outcome.mjs";
 
 // The UI accepts only a fully verified, persisted FIXTURE Case. The response
 // contains no evaluator ground truth or executed action/outcome.
@@ -57,6 +58,8 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     response,
     outcome,
     simulatedCheckouts,
+    simulationOutcome: assessCaseSimulation(payload.checkoutRows, workspaceId, caseId,
+      response.proposal.id, response.proposalHash),
     summary: report.summary, limitations: report.limitations,
     metrics: {
       baseline: metrics.baseline, observed: metrics.observed,

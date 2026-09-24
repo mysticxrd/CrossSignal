@@ -112,6 +112,17 @@ test("a simulated capture cannot become a real receipt or measured Case outcome"
   assert.equal(result.response.receipt, null);
   assert.equal(result.outcome.status, "awaiting_check");
   assert.equal(result.outcome.label, null);
+  assert.equal(result.simulationOutcome.status, "in_progress");
+  const declined = buildSimulatedCheckout({ workspaceId: scenario.workspaceId,
+    caseId: scenario.caseId, responseId: input.responseRow.id, proposalHash: input.responseRow.contentHash,
+    runId: "sim_12345678-1234-4123-8123-123456789abd", scenario: "decline",
+    recordedBy: artifact.recordedBy, executedAt: "2026-09-24T12:01:00.000Z" });
+  input.checkoutRows.push({ artifact: declined, contentHash: contentHash(declined) });
+  const verified = projectCaseDecision(JSON.parse(JSON.stringify(input)), scenario.workspaceId);
+  assert.equal(verified.simulationOutcome.status, "verified");
+  assert.equal(verified.simulationOutcome.caseResolution, "unresolved");
+  assert.equal(verified.response.receipt, null);
+  assert.equal(verified.outcome.status, "awaiting_check");
 });
 
 test("Case read reprojects a saved TEST receipt and separate correlated follow-up", () => {
