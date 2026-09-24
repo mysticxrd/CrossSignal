@@ -1421,6 +1421,11 @@ code { font-family: var(--font-geist-mono), monospace; }
 .case-approval-error { color: #ae432d !important; }
 .case-response-hash { overflow-wrap: anywhere; font-size: 10px !important; }.case-response-hash code { font: inherit; }
 .case-response-outcome { background: #f5f8f5 !important; }
+.case-check-form { display: grid; gap: 10px; margin-top: 14px; border-top: 1px solid #e4d0c4; padding-top: 12px; }
+.case-check-form label { display: grid; gap: 5px; color: var(--control-muted); font-size: 11px; font-weight: 650; }
+.case-check-form input, .case-check-form select { width: 100%; border: 1px solid #d8bbaa; border-radius: 6px; padding: 8px; background: white; color: #303a35; font: inherit; }
+.case-check-receipt { margin-top: 14px; padding: 10px; border: 1px solid #b9d3c3; border-radius: 7px; background: #f3faf5; overflow-wrap: anywhere; font-size: 11px; }
+.case-check-receipt p { margin: 6px 0 0; }
 .case-provenance dl { margin: 15px 0 0; }
 .case-provenance dl > div { padding: 9px 0; border-top: 1px solid var(--control-line); }
 .case-provenance dt { margin-bottom: 5px; color: var(--control-muted); font-size: 11px; }

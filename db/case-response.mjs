@@ -65,3 +65,30 @@ export function verifySavedCaseResponse(row, approval, caseRow, investigation, i
   }
   return { proposal: expected, proposalHash: expectedHash, approval };
 }
+
+export function validateCaseCheckReceipt(receipt, approval, proposalHash, workspaceId, responseId) {
+  if (receipt === null) return null;
+  const keys = ["workspaceId", "responseId", "proposalHash", "recordedBy", "runReference",
+    "captureStatus", "checkedAt", "recordedAt", "contentHash"];
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)
+    || Object.keys(receipt).sort().join("|") !== keys.sort().join("|")
+    || !approval || receipt.workspaceId !== workspaceId || receipt.responseId !== responseId
+    || receipt.proposalHash !== proposalHash
+    || typeof receipt.recordedBy !== "string" || !/^sha256:[0-9a-f]{64}$/.test(receipt.recordedBy)
+    || typeof receipt.runReference !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(receipt.runReference)
+    || !["captured", "not_captured", "indeterminate"].includes(receipt.captureStatus)
+    || typeof receipt.checkedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(receipt.checkedAt)
+    || Number.isNaN(Date.parse(receipt.checkedAt))
+    || typeof receipt.recordedAt !== "string" || Number.isNaN(Date.parse(receipt.recordedAt))
+    || Date.parse(receipt.checkedAt) < Date.parse(approval.approvedAt)
+    || Date.parse(receipt.checkedAt) > Date.parse(receipt.recordedAt)) {
+    throw new TypeError("Saved Case check receipt is invalid");
+  }
+  const artifact = { workspaceId, responseId, proposalHash,
+    recordedBy: receipt.recordedBy, runReference: receipt.runReference,
+    captureStatus: receipt.captureStatus, checkedAt: receipt.checkedAt };
+  if (receipt.contentHash !== contentHash(artifact)) {
+    throw new TypeError("Saved Case check receipt hash differs");
+  }
+  return receipt;
+}

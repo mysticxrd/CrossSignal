@@ -38,6 +38,8 @@ function payload() {
       caseId: proposal.caseId, investigationId: proposal.investigationId,
       artifact: proposal, contentHash: contentHash(proposal) },
     approvalRow: null,
+    receiptRow: null,
+    followUpRows: [],
     investigationCitations: investigation.claims.flatMap((claim) => claim.eventIds.map((eventId) => ({
       workspaceId: scenario.workspaceId, investigationId: investigation.id,
       claimId: claim.id, evidenceId: claim.evidenceId, eventId,
@@ -58,6 +60,7 @@ test("verified saved Case projects a bounded decision view across save and reloa
   assert.equal("action" in result, false);
   assert.equal(result.response.proposal.intent.externalWrite, false);
   assert.equal(result.response.approval, null);
+  assert.equal(result.response.receipt, null);
 });
 
 test("tenant, signal, report, and citation changes cannot enter the decision view", () => {

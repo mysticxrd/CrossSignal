@@ -30,6 +30,20 @@ export type DecisionCase = {
     };
     proposalHash: string;
     approval: { approvedBy: string; approvedAt: string } | null;
+    receipt: {
+      workspaceId: string; responseId: string; proposalHash: string;
+      recordedBy: string; runReference: string;
+      captureStatus: "captured" | "not_captured" | "indeterminate";
+      checkedAt: string; recordedAt: string; contentHash: string;
+    } | null;
+  };
+  outcome: {
+    status: "awaiting_check" | "awaiting_follow_up_events" | "collecting" | "insufficient_starts" | "assessed";
+    label: "correlated_only" | null; eventIds: string[];
+    daysRecorded?: number; starts?: number; minimumStarts?: number;
+    completed?: number; captures?: number; revenueCents?: number;
+    conversionBps?: number; incidentConversionBps?: number; changeBps?: number;
+    limitation?: string; days?: string[];
   };
   summary: string; limitations: string[];
   metrics: {
@@ -117,5 +131,37 @@ export async function approveSavedCaseResponse(
   } catch (error) {
     console.error("Case response approval failed", error instanceof Error ? error.message : "unknown error");
     return { ok: false, error: "Approval could not be saved." };
+  }
+}
+
+export async function recordSavedCaseCheck(
+  userId: string, workspaceId: string, caseId: string, responseId: string,
+  responseHash: string, runReference: string,
+  captureStatus: "captured" | "not_captured" | "indeterminate",
+  fetcher: typeof fetch = fetch,
+): Promise<{ ok: true; reused: boolean } | { ok: false; error: string }> {
+  if (getDatabaseProvider() !== "supabase" || workspaceId !== "l14-workspace-a") {
+    return { ok: false, error: "This Case check is available in TEST only." };
+  }
+  try {
+    const config = getSupabaseTraceFunctionConfig();
+    const response = await fetcher(config.url, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-cfr-preview-token": config.token },
+      body: JSON.stringify({ operation: "case.check.record", userId, workspaceId,
+        caseId, responseId, responseHash, runReference, captureStatus }),
+      cache: "no-store",
+    });
+    if (!response.ok) return { ok: false, error: response.status === 409
+      ? "An approval is required, or a different check receipt is already saved. Reload the Case."
+      : response.status === 404 ? "The Case response is unavailable."
+        : "The TEST check receipt could not be saved." };
+    const result = await response.json();
+    return result?.kind === "recorded" && typeof result.reused === "boolean"
+      ? { ok: true, reused: result.reused }
+      : { ok: false, error: "The TEST check receipt response was invalid." };
+  } catch (error) {
+    console.error("Case check receipt failed", error instanceof Error ? error.message : "unknown error");
+    return { ok: false, error: "The TEST check receipt could not be saved." };
   }
 }

@@ -1,5 +1,6 @@
 import { verifyInvestigation } from "./case-investigator.mjs";
-import { verifySavedCaseResponse } from "./case-response.mjs";
+import { validateCaseCheckReceipt, verifySavedCaseResponse } from "./case-response.mjs";
+import { assessCaseFollowUp } from "./case-outcome.mjs";
 import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
 
 // The UI accepts only a fully verified, persisted FIXTURE Case. The response
@@ -7,7 +8,8 @@ import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
 export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENARIO.caseId) {
   if (!payload || payload.kind !== "found" || !payload.snapshot
     || !payload.investigation || !Array.isArray(payload.investigationCitations)
-    || !Object.hasOwn(payload, "approvalRow")) {
+    || !Object.hasOwn(payload, "approvalRow") || !Object.hasOwn(payload, "receiptRow")
+    || !Array.isArray(payload.followUpRows)) {
     throw new TypeError("Case decision response is incomplete");
   }
   const scenario = { ...GOLDEN_SCENARIO, workspaceId };
@@ -25,8 +27,13 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
   if (contentHash(sort(payload.investigationCitations)) !== contentHash(sort(expectedRefs))) {
     throw new TypeError("Investigation citations differ");
   }
-  const response = verifySavedCaseResponse(payload.responseRow, payload.approvalRow,
+  const verifiedResponse = verifySavedCaseResponse(payload.responseRow, payload.approvalRow,
     payload.snapshot.caseRow, report, payload.investigationHash);
+  const receipt = validateCaseCheckReceipt(payload.receiptRow, verifiedResponse.approval,
+    verifiedResponse.proposalHash, workspaceId, verifiedResponse.proposal.id);
+  const response = { ...verifiedResponse, receipt };
+  const outcome = assessCaseFollowUp(payload.followUpRows, receipt,
+    response.proposal, payload.snapshot.signalRow.metrics);
   const evidenceById = new Map(payload.snapshot.evidenceRows.map((row) => [row.id, row]));
   const eventById = new Map(payload.snapshot.eventRows.map((row) => [row.id, row]));
   const metrics = payload.snapshot.signalRow.metrics;
@@ -36,6 +43,7 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     scenarioId: scenario.id, signalId: payload.snapshot.signalRow.id,
     investigationId: report.id, investigationHash: payload.investigationHash,
     response,
+    outcome,
     summary: report.summary, limitations: report.limitations,
     metrics: {
       baseline: metrics.baseline, observed: metrics.observed,

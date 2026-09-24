@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildGoldenCaseResponse, verifySavedCaseResponse } from "../db/case-response.mjs";
+import { buildGoldenCaseResponse, validateCaseCheckReceipt, verifySavedCaseResponse } from "../db/case-response.mjs";
 import { contentHash } from "../db/revenue-leak.mjs";
 
 const caseRow = { workspaceId: "l14-workspace-a", id: "case-golden-mobile-checkout",
@@ -46,4 +46,32 @@ test("response and exact approval reject malformed, cross-tenant and modified da
     approvedBy: `sha256:${"a".repeat(64)}`, approvedAt: "2026-09-23T12:00:00Z" },
   caseRow, investigation, investigationHash));
   assert.throws(() => buildGoldenCaseResponse({ ...caseRow, truthMode: "LIVE" }, investigation, investigationHash));
+});
+
+test("owner TEST check receipt survives reload and rejects missing authority or altered evidence", () => {
+  const saved = row();
+  const approval = { workspaceId: caseRow.workspaceId, responseId: saved.id,
+    proposalHash: saved.contentHash, approvedBy: `sha256:${"a".repeat(64)}`,
+    approvedAt: "2026-09-24T10:00:00.000Z" };
+  const artifact = { workspaceId: caseRow.workspaceId, responseId: saved.id,
+    proposalHash: saved.contentHash, recordedBy: approval.approvedBy,
+    runReference: "test-run-1234", captureStatus: "not_captured",
+    checkedAt: "2026-09-24T10:05:00.000Z" };
+  const receipt = { ...artifact, recordedAt: artifact.checkedAt, contentHash: contentHash(artifact) };
+  assert.deepEqual(validateCaseCheckReceipt(JSON.parse(JSON.stringify(receipt)), approval,
+    saved.contentHash, caseRow.workspaceId, saved.id), receipt);
+  assert.throws(() => validateCaseCheckReceipt(receipt, null, saved.contentHash,
+    caseRow.workspaceId, saved.id));
+  for (const change of [
+    (value) => { value.workspaceId = "foreign-workspace"; },
+    (value) => { value.runReference = "other-run-1234"; },
+    (value) => { value.captureStatus = "captured"; },
+    (value) => { value.checkedAt = "2026-09-24T09:59:00.000Z"; },
+    (value) => { value.groundTruth = "checkout bug"; },
+  ]) {
+    const modified = JSON.parse(JSON.stringify(receipt));
+    change(modified);
+    assert.throws(() => validateCaseCheckReceipt(modified, approval,
+      saved.contentHash, caseRow.workspaceId, saved.id));
+  }
 });

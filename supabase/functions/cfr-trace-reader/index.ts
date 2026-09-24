@@ -32,8 +32,18 @@ type CaseResponseApproveRequest = {
   responseId: string;
   responseHash: string;
 };
+type CaseCheckRecordRequest = {
+  operation: "case.check.record";
+  userId: string;
+  workspaceId: string;
+  caseId: string;
+  responseId: string;
+  responseHash: string;
+  runReference: string;
+  captureStatus: "captured" | "not_captured" | "indeterminate";
+};
 type RuntimeRequest = WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
-type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest;
+type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest | CaseCheckRecordRequest;
 
 const RUNTIME_EVENT_TYPES = new Set([
   "runtime.initialized",
@@ -106,6 +116,14 @@ function parseRequest(value: unknown): GatewayRequest | null {
       && validIdentifier(value.responseId)
       && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
       ? value as CaseResponseApproveRequest : null;
+  }
+  if (value.operation === "case.check.record") {
+    return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
+      && validIdentifier(value.responseId)
+      && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
+      && typeof value.runReference === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value.runReference)
+      && ["captured", "not_captured", "indeterminate"].includes(String(value.captureStatus))
+      ? value as CaseCheckRecordRequest : null;
   }
   if (value.operation === "runtime.put") {
     if (
@@ -292,6 +310,27 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
       limit 1
     `;
+    const [receiptRow] = await transaction`
+      select workspace_id as "workspaceId", response_id as "responseId",
+        proposal_hash as "proposalHash", recorded_by as "recordedBy",
+        run_reference as "runReference", capture_status as "captureStatus",
+        to_char(checked_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "checkedAt",
+        to_char(recorded_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "recordedAt",
+        content_hash as "contentHash"
+      from cfr_app.case_response_receipts
+      where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
+      limit 1
+    `;
+    const followUpRows = await transaction`
+      select workspace_id as "workspaceId", id, case_id as "caseId",
+        response_id as "responseId", truth_mode as "truthMode", source, segment,
+        observed_day::text as "observedDay", starts, completed, captures,
+        revenue_cents::int as "revenueCents", content_hash as "contentHash",
+        to_char(recorded_at at time zone 'utc', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "recordedAt"
+      from cfr_app.case_follow_up_events
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+      order by observed_day, source
+    `;
     return {
       kind: "found" as const,
       snapshot: { caseRow, signalRow, evidenceRows, eventRows, citationRows },
@@ -300,11 +339,66 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       investigationCitations,
       responseRow,
       approvalRow: approvalRow ?? null,
+      receiptRow: receiptRow ?? null,
+      followUpRows,
     };
   });
   console.log(JSON.stringify({ event: "case_decision_read_result", userIdSha256,
     workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
   return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
+}
+
+async function handleCaseCheckRecord(input: CaseCheckRecordRequest, principalId: string, userIdSha256: string): Promise<Response> {
+  const result = await sql.begin(async (transaction) => {
+    await configureRuntimeRole(transaction, principalId, input.workspaceId);
+    if (!await hasOwnerMembership(transaction, principalId, input.workspaceId)) {
+      return { kind: "not_found" as const };
+    }
+    const [proposal] = await transaction`
+      select id, content_hash as "contentHash" from cfr_app.case_response_proposals
+      where workspace_id = ${input.workspaceId} and id = ${input.responseId}
+        and case_id = ${input.caseId} and truth_mode = 'FIXTURE'
+      limit 1
+    `;
+    if (!proposal) return { kind: "not_found" as const };
+    if (proposal.contentHash !== input.responseHash) return { kind: "conflict" as const };
+    const [approval] = await transaction`
+      select proposal_hash as "proposalHash" from cfr_app.case_response_approvals
+      where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+      limit 1
+    `;
+    if (!approval || approval.proposalHash !== input.responseHash) return { kind: "approval_required" as const };
+    const checkedAt = new Date().toISOString();
+    const artifact = { captureStatus: input.captureStatus, checkedAt,
+      proposalHash: input.responseHash, recordedBy: principalId,
+      responseId: input.responseId, runReference: input.runReference,
+      workspaceId: input.workspaceId };
+    const contentHash = await sha256(JSON.stringify(artifact));
+    const inserted = await transaction`
+      insert into cfr_app.case_response_receipts
+        (workspace_id, response_id, proposal_hash, recorded_by,
+         run_reference, capture_status, checked_at, recorded_at, content_hash)
+      values (${input.workspaceId}, ${input.responseId}, ${input.responseHash},
+        ${principalId}, ${input.runReference}, ${input.captureStatus},
+        ${checkedAt}::text::timestamptz, ${checkedAt}::text::timestamptz, ${contentHash})
+      on conflict do nothing returning response_id
+    `;
+    const [receipt] = await transaction`
+      select run_reference as "runReference", capture_status as "captureStatus",
+        content_hash as "contentHash"
+      from cfr_app.case_response_receipts
+      where workspace_id = ${input.workspaceId} and response_id = ${input.responseId}
+      limit 1
+    `;
+    if (!receipt || receipt.runReference !== input.runReference
+      || receipt.captureStatus !== input.captureStatus) return { kind: "conflict" as const };
+    return { kind: "recorded" as const, reused: inserted.length === 0,
+      receiptHash: receipt.contentHash };
+  });
+  console.log(JSON.stringify({ event: "case_check_record_result", userIdSha256,
+    workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
+  return json(result, result.kind === "not_found" ? 404
+    : result.kind === "conflict" || result.kind === "approval_required" ? 409 : 200);
 }
 
 async function handleCaseResponseApprove(input: CaseResponseApproveRequest, principalId: string, userIdSha256: string): Promise<Response> {
@@ -473,6 +567,9 @@ Deno.serve(async (request: Request) => {
     }
     if (input.operation === "case.response.approve") {
       return await handleCaseResponseApprove(input, principalId, userIdSha256);
+    }
+    if (input.operation === "case.check.record") {
+      return await handleCaseCheckRecord(input, principalId, userIdSha256);
     }
     return await handleRuntime(input, principalId, userIdSha256);
   } catch (error) {

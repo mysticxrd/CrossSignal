@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { approveCaseResponseAction } from "./case-response-actions";
+import { approveCaseResponseAction, recordCaseCheckAction } from "./case-response-actions";
 import type { DecisionCaseResult } from "../db/case-decision";
 
 function percent(bps: number) { return `${(bps / 100).toFixed(2)}%`; }
@@ -12,6 +12,10 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
   const router = useRouter();
   const [approvalBusy, startApproval] = useTransition();
   const [approvalError, setApprovalError] = useState("");
+  const [checkBusy, startCheck] = useTransition();
+  const [checkError, setCheckError] = useState("");
+  const [runReference, setRunReference] = useState("");
+  const [captureStatus, setCaptureStatus] = useState<"captured" | "not_captured" | "indeterminate">("indeterminate");
   if (result.kind !== "found") {
     return <div className="case-page">
       <header className="case-heading"><span className="eyebrow">CASES</span><h1>Revenue signals</h1></header>
@@ -34,6 +38,15 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
       const saved = await approveCaseResponseAction(record.workspaceId, record.id, response.proposalHash);
       if (saved.ok) router.refresh();
       else setApprovalError(saved.error);
+    });
+  }
+  function recordCheck() {
+    setCheckError("");
+    startCheck(async () => {
+      const saved = await recordCaseCheckAction(record.workspaceId, record.id,
+        response.proposalHash, runReference.trim(), captureStatus);
+      if (saved.ok) router.refresh();
+      else setCheckError(saved.error);
     });
   }
   return <div className="case-page">
@@ -89,12 +102,34 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
               {approvalBusy ? "Saving approval…" : "Approve exact TEST response"}
             </button>}
           {approvalError && <p role="alert" className="case-approval-error">{approvalError}</p>}
+          {response.receipt ? <div className="case-check-receipt">
+            <strong>Owner-attested TEST check recorded</strong>
+            <p>Run {response.receipt.runReference} · Payment capture {response.receipt.captureStatus.replaceAll("_", " ")} · {new Date(response.receipt.checkedAt).toLocaleString()}</p>
+            <p>Receipt hash <code>{response.receipt.contentHash}</code></p>
+          </div> : response.approval ? <div className="case-check-form">
+            <p>After you perform the single manual TEST check, record its non-sensitive run reference and payment capture result. This records your attestation; it does not run checkout.</p>
+            <label>TEST run reference <input value={runReference} maxLength={64} pattern="[A-Za-z0-9_-]{8,64}" placeholder="test-run-1234" onChange={(event) => setRunReference(event.target.value)} /></label>
+            <label>Payment capture <select value={captureStatus} onChange={(event) => setCaptureStatus(event.target.value as typeof captureStatus)}>
+              <option value="captured">Captured</option><option value="not_captured">Not captured</option><option value="indeterminate">Indeterminate</option>
+            </select></label>
+            <button type="button" className="case-approve-button" disabled={checkBusy || !/^[A-Za-z0-9_-]{8,64}$/.test(runReference)} onClick={recordCheck}>
+              {checkBusy ? "Saving TEST check…" : "Record completed TEST check"}
+            </button>
+            {checkError && <p role="alert" className="case-approval-error">{checkError}</p>}
+          </div> : null}
           <p className="case-response-hash">Proposal hash <code>{response.proposalHash}</code></p>
         </section>
-        <section className="case-response-outcome"><span className="eyebrow">OUTCOME PLAN</span><h2>Awaiting observation</h2>
+        <section className="case-response-outcome"><span className="eyebrow">OUTCOME PLAN</span><h2>{record.outcome.status === "assessed" ? "Observed TEST follow-up" : "Awaiting observation"}</h2>
           <p><strong>{proposal.measurement.metric}</strong></p>
           <p>Baseline: {proposal.measurement.baseline}. Follow-up: {proposal.measurement.followUp}.</p>
-          <p>Minimum {proposal.measurement.minimumStarts} eligible starts. Any future assessment is correlation only; no recovered revenue is claimed.</p>
+          {record.outcome.status === "assessed" ? <>
+            <p><strong>Correlation only · FIXTURE</strong> · Mobile Safari conversion {percent(record.outcome.incidentConversionBps!)} → {percent(record.outcome.conversionBps!)} across {record.outcome.starts} follow-up starts.</p>
+            <p>{record.outcome.captures} TEST captures · {money(record.outcome.revenueCents!)} recorded. {record.outcome.limitation}</p>
+            <details><summary>Inspect {record.outcome.eventIds.length} follow-up event IDs</summary><p className="case-response-hash">{record.outcome.eventIds.join(", ")}</p></details>
+          </> : <p>{record.outcome.status === "awaiting_check" ? "A completed owner-attested TEST check is required before follow-up observations."
+            : record.outcome.status === "collecting" ? `${record.outcome.daysRecorded} follow-up day(s) recorded; seven paired days are required.`
+              : record.outcome.status === "insufficient_starts" ? `${record.outcome.starts} eligible starts recorded; at least ${record.outcome.minimumStarts} are required.`
+                : "No separate follow-up observations have been recorded yet."} Any future assessment is correlation only; no recovered revenue is claimed.</p>}
         </section>
         <section className="case-provenance"><span className="eyebrow">RECORD</span><dl>
           <div><dt>Case</dt><dd><code>{record.id}</code></dd></div>
