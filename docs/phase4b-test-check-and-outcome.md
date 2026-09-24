@@ -55,6 +55,20 @@ original 56 events. No causal effect or recovered-revenue number is produced.
   preview-token authentication (`verify_jwt=false`). Its shared server-side
   preview token remains a TEST-only gateway credential; production approval
   and attestation need user-bound credentials.
+- The separate owner-private TEST Site source was pushed at commit
+  `2671f62545a15d5477f62d1871e9b62d873147d3` and deployed as Site
+  version 7, deployment `appgdep_6ab4901459fc81919349564262a7a1b6`,
+  at `https://crosssignal-supabase-test.hishamxrd.chatgpt.site/`. The first
+  archive attempt had the Worker entrypoint at the wrong level and was
+  rejected before saving. The corrected archive contained root TEST hosting
+  metadata and `dist/server/index.js`; version 7 saved and deployed
+  successfully. Its Sites archive hash was
+  `sha256:21c9073eaf4e606c7df13b943ab22b10806ca5a387e0cda244eedabb1ee89a2d`.
+- A signed-in browser reload of Site version 7 preserved the Case signal,
+  three claims, 42 evidence references, exact proposal hash, owner approval
+  control, and the new "completed owner-attested TEST check required" pending
+  state. The receipt form was correctly absent before approval. No approval
+  button was clicked.
 - Eighteen focused tests passed for deterministic detection, Case citations,
   receipt validation, cross-tenant rejection, seven-day outcome calculation,
   and import generation. The full `vinext` build passed. Repository-wide
