@@ -3,6 +3,7 @@ import test from "node:test";
 import { projectCaseDecision } from "../db/case-decision.mjs";
 import { investigatePersistedCase } from "../db/case-investigator.mjs";
 import { buildGoldenCaseResponse } from "../db/case-response.mjs";
+import { buildSimulatedCheckout } from "../supabase/functions/_shared/case-checkout.mjs";
 import { buildGoldenEvents, contentHash, detectRevenueLeak, GOLDEN_SCENARIO } from "../db/revenue-leak.mjs";
 
 const scenario = { ...GOLDEN_SCENARIO, workspaceId: "l14-workspace-a" };
@@ -42,6 +43,7 @@ function payload() {
     trialMarkerRow: null,
     recheckRow: null,
     followUpRows: [],
+    checkoutRows: [],
     investigationCitations: investigation.claims.flatMap((claim) => claim.eventIds.map((eventId) => ({
       workspaceId: scenario.workspaceId, investigationId: investigation.id,
       claimId: claim.id, evidenceId: claim.evidenceId, eventId,
@@ -95,6 +97,21 @@ test("exact proposal approval survives reload and remains linked to the Case", (
   assert.equal(result.response.approval.approvedBy, input.approvalRow.approvedBy);
   assert.equal(result.response.proposalHash, input.approvalRow.proposalHash);
   assert.equal(result.response.proposal.measurement.status, "awaiting_follow_up_events");
+});
+
+test("a simulated capture cannot become a real receipt or measured Case outcome", () => {
+  const input = payload();
+  const artifact = buildSimulatedCheckout({ workspaceId: scenario.workspaceId,
+    caseId: scenario.caseId, responseId: input.responseRow.id, proposalHash: input.responseRow.contentHash,
+    runId: "sim_12345678-1234-4123-8123-123456789abc", scenario: "capture",
+    recordedBy: `sha256:${"a".repeat(64)}`, executedAt: "2026-09-24T12:00:00.000Z" });
+  input.checkoutRows = [{ artifact, contentHash: contentHash(artifact) }];
+  const result = projectCaseDecision(JSON.parse(JSON.stringify(input)), scenario.workspaceId);
+  assert.equal(result.simulatedCheckouts[0].captureStatus, "simulated_captured");
+  assert.equal(result.response.approval, null); // simulation does not reuse manual approval
+  assert.equal(result.response.receipt, null);
+  assert.equal(result.outcome.status, "awaiting_check");
+  assert.equal(result.outcome.label, null);
 });
 
 test("Case read reprojects a saved TEST receipt and separate correlated follow-up", () => {
@@ -151,10 +168,17 @@ test("trial receipt stays visible but cannot support outcome until a distinct re
     receiptHash: input.receiptRow.contentHash, markedBy: owner,
     reason: "trial_submission", markedAt: "2026-09-16T10:00:00.000Z" };
   input.trialMarkerRow = { ...trial, contentHash: contentHash(trial) };
+  const simulated = buildSimulatedCheckout({ workspaceId: scenario.workspaceId, caseId: scenario.caseId,
+    responseId: input.responseRow.id, proposalHash: input.responseRow.contentHash,
+    runId: "sim_12345678-1234-4123-8123-123456789abc", scenario: "capture", recordedBy: owner,
+    executedAt: "2026-09-24T12:00:00.000Z" });
+  input.checkoutRows = [{ artifact: simulated, contentHash: contentHash(simulated) }];
   const excluded = projectCaseDecision(JSON.parse(JSON.stringify(input)), scenario.workspaceId);
   assert.equal(excluded.response.receipt, null);
   assert.equal(excluded.response.trialReceipt.contentHash, input.receiptRow.contentHash);
   assert.equal(excluded.outcome.status, "awaiting_check");
+  assert.equal(excluded.simulatedCheckouts.length, 1);
+  assert.equal(excluded.response.trialMarker.contentHash, input.trialMarkerRow.contentHash);
   const tampered = JSON.parse(JSON.stringify(input));
   tampered.trialMarkerRow.workspaceId = "foreign-workspace";
   assert.throws(() => projectCaseDecision(tampered, scenario.workspaceId));

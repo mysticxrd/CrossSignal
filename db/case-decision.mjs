@@ -3,6 +3,7 @@ import { validateCaseCheckReceipt, validateCaseCheckTrialMarker,
   validateCaseRecheckReceipt, verifySavedCaseResponse } from "./case-response.mjs";
 import { assessCaseFollowUp } from "./case-outcome.mjs";
 import { contentHash, GOLDEN_SCENARIO } from "./revenue-leak.mjs";
+import { verifySimulatedCheckouts } from "./case-checkout.mjs";
 
 // The UI accepts only a fully verified, persisted FIXTURE Case. The response
 // contains no evaluator ground truth or executed action/outcome.
@@ -11,7 +12,7 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     || !payload.investigation || !Array.isArray(payload.investigationCitations)
     || !Object.hasOwn(payload, "approvalRow") || !Object.hasOwn(payload, "receiptRow")
     || !Object.hasOwn(payload, "trialMarkerRow") || !Object.hasOwn(payload, "recheckRow")
-    || !Array.isArray(payload.followUpRows)) {
+    || !Array.isArray(payload.followUpRows) || !Array.isArray(payload.checkoutRows)) {
     throw new TypeError("Case decision response is incomplete");
   }
   const scenario = { ...GOLDEN_SCENARIO, workspaceId };
@@ -43,6 +44,8 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     trialReceipt: trialMarker ? originalReceipt : null };
   const outcome = assessCaseFollowUp(payload.followUpRows, receipt,
     response.proposal, payload.snapshot.signalRow.metrics);
+  const simulatedCheckouts = verifySimulatedCheckouts(payload.checkoutRows, workspaceId,
+    caseId, response.proposal.id, response.proposalHash);
   const evidenceById = new Map(payload.snapshot.evidenceRows.map((row) => [row.id, row]));
   const eventById = new Map(payload.snapshot.eventRows.map((row) => [row.id, row]));
   const metrics = payload.snapshot.signalRow.metrics;
@@ -53,6 +56,7 @@ export function projectCaseDecision(payload, workspaceId, caseId = GOLDEN_SCENAR
     investigationId: report.id, investigationHash: payload.investigationHash,
     response,
     outcome,
+    simulatedCheckouts,
     summary: report.summary, limitations: report.limitations,
     metrics: {
       baseline: metrics.baseline, observed: metrics.observed,

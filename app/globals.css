@@ -1426,6 +1426,18 @@ code { font-family: var(--font-geist-mono), monospace; }
 .case-check-form input, .case-check-form select { width: 100%; border: 1px solid #d8bbaa; border-radius: 6px; padding: 8px; background: white; color: #303a35; font: inherit; }
 .case-check-receipt { margin-top: 14px; padding: 10px; border: 1px solid #b9d3c3; border-radius: 7px; background: #f3faf5; overflow-wrap: anywhere; font-size: 11px; }
 .case-check-receipt p { margin: 6px 0 0; }
+.synthetic-checkout { margin-bottom: 24px; border: 1px solid #b9d3c3; padding: 22px; border-radius: 10px; background: #f3faf5; }
+.synthetic-checkout > p { font-size: 13px; line-height: 1.6; }
+.synthetic-controls { display: flex; align-items: end; gap: 14px; flex-wrap: wrap; margin-top: 18px; }
+.synthetic-controls label { display: grid; gap: 6px; font-size: 12px; font-weight: 650; }
+.synthetic-controls select { max-width: 100%; padding: 10px; border: 1px solid #91afa0; background: white; color: #263e33; border-radius: 5px; font: inherit; }
+.synthetic-history { overflow-wrap: anywhere; font-size: 12px; }
+.synthetic-history details { padding: 12px 0; border-top: 1px solid #c5dacf; }
+.synthetic-history summary { cursor: pointer; font-weight: 650; }
+.synthetic-history ol { padding-left: 20px; }
+.synthetic-history li { padding: 6px 0; }
+.synthetic-run-id, .synthetic-limit { font-size: 11px; overflow-wrap: anywhere; }
+.synthetic-device { padding-top: 12px; border-top: 1px solid #c5dacf; }
 .case-provenance dl { margin: 15px 0 0; }
 .case-provenance dl > div { padding: 9px 0; border-top: 1px solid var(--control-line); }
 .case-provenance dt { margin-bottom: 5px; color: var(--control-muted); font-size: 11px; }

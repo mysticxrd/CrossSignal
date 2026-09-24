@@ -2,8 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { approveCaseResponseAction, markCaseCheckTrialAction,
-  recordCaseCheckAction } from "./case-response-actions";
+import { approveCaseResponseAction, markCaseCheckTrialAction } from "./case-response-actions";
+import SyntheticCheckoutPanel from "./SyntheticCheckoutPanel";
 import type { DecisionCaseResult } from "../db/case-decision";
 
 function percent(bps: number) { return `${(bps / 100).toFixed(2)}%`; }
@@ -13,14 +13,9 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
   const router = useRouter();
   const [approvalBusy, startApproval] = useTransition();
   const [approvalError, setApprovalError] = useState("");
-  const [checkBusy, startCheck] = useTransition();
-  const [checkError, setCheckError] = useState("");
   const [trialBusy, startTrial] = useTransition();
   const [trialConfirm, setTrialConfirm] = useState(false);
   const [trialError, setTrialError] = useState("");
-  const [runReference, setRunReference] = useState("");
-  const [captureStatus, setCaptureStatus] = useState<"captured" | "not_captured" | "indeterminate">("indeterminate");
-  const [checkPerformed, setCheckPerformed] = useState(false);
   if (result.kind !== "found") {
     return <div className="case-page">
       <header className="case-heading"><span className="eyebrow">CASES</span><h1>Revenue signals</h1></header>
@@ -43,15 +38,6 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
       const saved = await approveCaseResponseAction(record.workspaceId, record.id, response.proposalHash);
       if (saved.ok) router.refresh();
       else setApprovalError(saved.error);
-    });
-  }
-  function recordCheck() {
-    setCheckError("");
-    startCheck(async () => {
-      const saved = await recordCaseCheckAction(record.workspaceId, record.id,
-        response.proposalHash, runReference.trim(), captureStatus);
-      if (saved.ok) router.refresh();
-      else setCheckError(saved.error);
     });
   }
   function markTrial() {
@@ -78,6 +64,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
 
     <div className="case-layout">
       <div className="case-main">
+        <SyntheticCheckoutPanel record={record} />
         <section className="case-section">
           <div className="case-section-head"><div><span className="eyebrow">INVESTIGATION</span><h2>Evidence for the signal</h2></div><span>3 claims · 42 event references</span></div>
           <p className="case-section-lead">Every finding below is tied to saved observations. Open a claim to inspect its dates, segment, counts, and event IDs.</p>
@@ -100,7 +87,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
           <strong>{percent(metrics.controlBaseline.conversionBps)} <i>→</i> {percent(metrics.controlObserved.conversionBps)}</strong>
           <p>This contradicts a campaign-wide checkout decline. It does not identify the cause of the Mobile Safari drop.</p>
         </section>
-        <section className="case-response"><span className="eyebrow">CASE RESPONSE · TEST ONLY</span><h2>Validate checkout in TEST</h2>
+        <section className="case-response"><span className="eyebrow">SAVED MANUAL-CHECK RESPONSE · TEST ONLY</span><h2>Actual device check pending</h2>
           <p>{proposal.intent.instruction}</p>
           <dl className="case-response-details">
             <div><dt>Target</dt><dd>{proposal.intent.target}</dd></div>
@@ -136,18 +123,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
               {trialError && <p role="alert" className="case-approval-error">{trialError}</p>}
             </div>}
           </div> : response.approval ? <div className="case-check-form">
-            <p>{response.trialMarker ? "The trial entry is excluded. After you perform one real TEST check, record a different run reference and its payment capture result."
-              : "After you perform the single manual TEST check, record its non-sensitive run reference and payment capture result. This records your attestation; it does not run checkout."}</p>
-            <label>TEST run reference <input value={runReference} maxLength={64} pattern="[A-Za-z0-9_-]{8,64}" placeholder="test-run-1234" onChange={(event) => setRunReference(event.target.value)} /></label>
-            <label>Payment capture <select value={captureStatus} onChange={(event) => setCaptureStatus(event.target.value as typeof captureStatus)}>
-              <option value="captured">Captured</option><option value="not_captured">Not captured</option><option value="indeterminate">Indeterminate</option>
-            </select></label>
-            <label><input type="checkbox" checked={checkPerformed} onChange={(event) => setCheckPerformed(event.target.checked)} /> I performed the manual TEST checkout, and this reference identifies that run.</label>
-            <button type="button" className="case-approve-button" disabled={checkBusy || !checkPerformed || !/^[A-Za-z0-9_-]{8,64}$/.test(runReference)
-              || runReference === response.trialReceipt?.runReference} onClick={recordCheck}>
-              {checkBusy ? "Saving TEST check…" : "Record completed TEST check"}
-            </button>
-            {checkError && <p role="alert" className="case-approval-error">{checkError}</p>}
+            <p>Actual Mobile Safari verification is pending device access and an executable device-test target. The synthetic harness records simulations separately; it cannot complete this manual-check receipt.</p>
           </div> : null}
           <p className="case-response-hash">Proposal hash <code>{response.proposalHash}</code></p>
         </section>
@@ -159,7 +135,7 @@ export default function CaseDecisionView({ result }: { result: DecisionCaseResul
             <p>{record.outcome.captures} TEST captures · {money(record.outcome.revenueCents!)} recorded. {record.outcome.limitation}</p>
             <details><summary>Inspect {record.outcome.eventIds.length} follow-up event IDs</summary><p className="case-response-hash">{record.outcome.eventIds.join(", ")}</p></details>
           </> : <p>{record.outcome.status === "awaiting_check" ? response.trialMarker
-            ? "The trial receipt is excluded. A new owner-attested TEST check is required before follow-up observations."
+            ? "The trial receipt is excluded. Simulated runs do not supply a real check or follow-up observations. Actual Mobile Safari verification remains pending device access."
             : "A completed owner-attested TEST check is required before follow-up observations."
             : record.outcome.status === "collecting" ? `${record.outcome.daysRecorded} follow-up day(s) recorded; seven paired days are required.`
               : record.outcome.status === "insufficient_starts" ? `${record.outcome.starts} eligible starts recorded; at least ${record.outcome.minimumStarts} are required.`

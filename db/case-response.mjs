@@ -76,6 +76,7 @@ export function validateCaseCheckReceipt(receipt, approval, proposalHash, worksp
     || receipt.proposalHash !== proposalHash
     || typeof receipt.recordedBy !== "string" || !/^sha256:[0-9a-f]{64}$/.test(receipt.recordedBy)
     || typeof receipt.runReference !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(receipt.runReference)
+    || /^sim_/i.test(receipt.runReference)
     || !["captured", "not_captured", "indeterminate"].includes(receipt.captureStatus)
     || typeof receipt.checkedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(receipt.checkedAt)
     || Number.isNaN(Date.parse(receipt.checkedAt))
@@ -129,6 +130,7 @@ export function validateCaseRecheckReceipt(recheck, marker, original, approval,
     || typeof recheck.recordedBy !== "string" || !/^sha256:[0-9a-f]{64}$/.test(recheck.recordedBy)
     || typeof recheck.runReference !== "string" || !/^[A-Za-z0-9_-]{8,64}$/.test(recheck.runReference)
     || recheck.runReference === original.runReference
+    || /^sim_/i.test(recheck.runReference)
     || !["captured", "not_captured", "indeterminate"].includes(recheck.captureStatus)
     || typeof recheck.checkedAt !== "string" || !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(recheck.checkedAt)
     || typeof recheck.recordedAt !== "string" || Number.isNaN(Date.parse(recheck.recordedAt))

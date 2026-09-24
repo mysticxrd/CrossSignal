@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>CrossSignal · Progress toward the end goal</title>
+  <style>
+    :root {
+      --ink: #17252e;
+      --muted: #52636b;
+      --paper: #f8f8f5;
+      --surface: #ffffff;
+      --line: #d9e0df;
+      --teal: #166c61;
+      --teal-soft: #e8f3f0;
+      --blue: #365b73;
+      --blue-soft: #eaf1f5;
+      --amber: #8b601a;
+      --amber-soft: #fff1d6;
+      --quiet: #eef0ee;
+      --focus: #0b68ad;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 "Segoe UI", Inter, system-ui, sans-serif; }
+    a { color: var(--teal); text-underline-offset: .18em; }
+    a:focus-visible, summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+    .page { max-width: 1160px; margin: 0 auto; padding: 32px 28px 80px; }
+    .eyebrow { color: var(--teal); font-size: .78rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+    .masthead { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+    .date { color: var(--muted); font-size: .9rem; white-space: nowrap; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { max-width: 780px; margin: 36px 0 14px; font-size: clamp(2.05rem, 5vw, 4rem); line-height: 1.09; letter-spacing: -.055em; font-weight: 760; }
+    h2 { font-size: clamp(1.4rem, 2.4vw, 2rem); letter-spacing: -.035em; line-height: 1.2; margin-bottom: 12px; }
+    h3 { font-size: 1.08rem; margin-bottom: 8px; }
+    .lede { max-width: 720px; color: var(--muted); font-size: 1.12rem; line-height: 1.55; }
+    .hero { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(245px, .75fr); gap: 28px; align-items: stretch; padding: 18px 0 46px; }
+    .hero-copy { padding: 0 0 10px; }
+    .hero-copy .hint { display: inline-block; margin-top: 12px; color: var(--muted); font-size: .88rem; }
+    .boundary { background: var(--amber-soft); border-left: 5px solid #c68b2f; padding: 22px 24px; align-self: end; }
+    .boundary strong { display: block; margin: 6px 0 8px; font-size: 1.35rem; line-height: 1.2; }
+    .boundary p { margin: 0; color: #5b4c35; }
+    .boundary .eyebrow { color: var(--amber); }
+    .section { padding-top: 28px; border-top: 1px solid var(--line); margin-top: 28px; }
+    .section-intro { color: var(--muted); max-width: 760px; }
+    .outcome-lane { list-style: none; padding: 0; margin: 30px 0 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+    .outcome-lane li { position: relative; min-width: 0; padding: 20px 18px 22px; border-top: 5px solid var(--line); background: var(--surface); }
+    .outcome-lane li::after { content: ""; position: absolute; top: -7px; right: -12px; width: 12px; height: 2px; background: var(--line); }
+    .outcome-lane li:last-child::after { display: none; }
+    .outcome-lane .done { border-color: var(--teal); }
+    .outcome-lane .limited { border-color: var(--blue); }
+    .outcome-lane .waiting { border-color: #c68b2f; }
+    .lane-no { display: block; font-size: .76rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 10px; }
+    .lane-title { font-size: 1.22rem; font-weight: 750; line-height: 1.2; }
+    .lane-copy { color: var(--muted); font-size: .91rem; margin: 12px 0 0; }
+    .tag { display: inline-block; padding: 3px 8px; border-radius: 3px; font-size: .72rem; font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+    .tag.done { background: var(--teal-soft); color: var(--teal); }
+    .tag.limited { background: var(--blue-soft); color: var(--blue); }
+    .tag.waiting { background: var(--amber-soft); color: var(--amber); }
+    .tag.future { background: var(--quiet); color: var(--muted); }
+    .lane-tag { margin-top: 18px; }
+    .callout { margin: 22px 0 0; color: var(--muted); font-size: .95rem; }
+    .path { list-style: none; padding: 0; margin: 26px 0 0; border-top: 1px solid var(--line); }
+    .path li { display: grid; grid-template-columns: 48px minmax(145px, 220px) minmax(0, 1fr) 108px; gap: 14px; align-items: center; border-bottom: 1px solid var(--line); padding: 16px 0; }
+    .path-no { color: var(--muted); font-variant-numeric: tabular-nums; font-size: .86rem; }
+    .path-name { font-weight: 740; }
+    .path-detail { color: var(--muted); font-size: .93rem; }
+    .path .tag { justify-self: start; }
+    .next-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; margin-top: 24px; }
+    .next-now { padding: 26px; background: var(--teal); color: white; }
+    .next-now .eyebrow, .next-now p { color: #d5ebe5; }
+    .next-now strong { display: block; max-width: 420px; margin: 8px 0; font-size: 1.5rem; line-height: 1.2; }
+    .next-now p { max-width: 500px; margin: 0; }
+    .next-later { padding: 24px 26px; background: var(--surface); }
+    .next-later ol { margin: 12px 0 0; padding-left: 20px; }
+    .next-later li + li { margin-top: 10px; }
+    .big-picture { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 24px; }
+    .big-picture > div { padding: 4px 0; }
+    .big-picture p { color: var(--muted); }
+    .big-picture .rule { width: 48px; height: 4px; background: var(--teal); margin: 0 0 18px; }
+    .big-picture > div:last-child .rule { background: var(--line); }
+    .subtle { color: var(--muted); font-size: .9rem; }
+    details { border-top: 1px solid var(--line); padding: 18px 0; }
+    details:last-child { border-bottom: 1px solid var(--line); }
+    summary { font-weight: 720; color: var(--ink); }
+    details p, details ul { color: var(--muted); max-width: 820px; }
+    details p:first-of-type { margin-top: 14px; }
+    details li + li { margin-top: 7px; }
+    footer { color: var(--muted); font-size: .84rem; margin-top: 36px; }
+    @media (max-width: 800px) {
+      .hero, .next-grid, .big-picture { grid-template-columns: 1fr; }
+      .boundary { align-self: auto; }
+      .outcome-lane { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .outcome-lane li:nth-child(2)::after { display: none; }
+      .path li { grid-template-columns: 32px minmax(130px, 1fr) auto; gap: 8px; }
+      .path-detail { grid-column: 2 / -1; }
+    }
+    @media (max-width: 520px) {
+      .page { padding: 20px 18px 48px; }
+      .masthead { align-items: start; flex-direction: column; gap: 3px; }
+      .hero { padding-bottom: 28px; }
+      .outcome-lane { grid-template-columns: 1fr; }
+      .outcome-lane li::after { display: none; }
+      .path li { grid-template-columns: 28px minmax(0, 1fr) auto; }
+      .tag { font-size: .65rem; }
+    }
+    @media print {
+      body { background: white; }
+      .page { max-width: none; padding: 0; }
+      a { color: inherit; }
+      details:not([open]) > *:not(summary) { display: block; }
+      .next-now { print-color-adjust: exact; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="masthead">
+      <span class="eyebrow">CrossSignal / progress review</span>
+      <time class="date" datetime="2026-09-25">Updated 25 September 2026</time>
+    </header>
+
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>Checkout simulation works. The outcome is still missing.</h1>
+        <p class="lede">The Case now runs a free synthetic checkout. Simulated success and decline both save and reload with traceable run IDs. Actual Mobile Safari verification awaits device access.</p>
+        <span class="hint">Private TEST slice · LIVE unchanged · no paid model evaluation</span>
+      </div>
+      <aside class="boundary" aria-label="Current limiting proof">
+        <span class="eyebrow">The current limit</span>
+        <strong>2 simulated runs<br>0 measured outcomes</strong>
+        <p>Actual charge: $0. The original trial remains excluded. No real payment capture is claimed.</p>
+      </aside>
+    </div>
+
+    <section class="section" aria-labelledby="human-journey">
+      <h2 id="human-journey">The operator's journey</h2>
+      <p class="section-intro">This is the shortest way to see the gap between the product promise and today's proof.</p>
+      <ol class="outcome-lane">
+        <li class="done">
+          <span class="lane-no">01 / Detect</span>
+          <span class="lane-title">A leak is visible</span>
+          <p class="lane-copy">Recorded TEST events show Mobile Safari conversion falling from 20.00% to 8.57%.</p>
+          <span class="tag done lane-tag">Verified</span>
+        </li>
+        <li class="limited">
+          <span class="lane-no">02 / Investigate</span>
+          <span class="lane-title">Evidence is traceable</span>
+          <p class="lane-copy">Three deterministic claims cite 42 observations, including a desktop countercheck. Cause remains unknown.</p>
+          <span class="tag limited lane-tag">Bounded</span>
+        </li>
+        <li class="done">
+          <span class="lane-no">03 / Decide</span>
+          <span class="lane-title">A safe step is approved</span>
+          <p class="lane-copy">One exact, zero-cost TEST manual-check response has owner approval.</p>
+          <span class="tag done lane-tag">Saved</span>
+        </li>
+        <li class="waiting">
+          <span class="lane-no">04 / Measure</span>
+          <span class="lane-title">Simulation is traceable</span>
+          <p class="lane-copy">Success and decline have unique run IDs. A Case outcome has not yet been assessed.</p>
+          <span class="tag waiting lane-tag">Waiting</span>
+        </li>
+      </ol>
+      <p class="callout">The synthetic <strong>$800 projected gap</strong> estimates the baseline-rate difference. It is not live loss or recovered revenue.</p>
+    </section>
+
+    <section class="section" aria-labelledby="build-path">
+      <h2 id="build-path">Build path</h2>
+      <p class="section-intro">Working software now executes a bounded synthetic checkout. Case outcome assessment and the wider evaluated MVP remain ahead.</p>
+      <ol class="path">
+        <li><span class="path-no">01</span><span class="path-name">Contract</span><span class="path-detail">Validated Case, event, signal, evidence, and scenario shapes; evaluator truth kept separate.</span><span class="tag done">Built</span></li>
+        <li><span class="path-no">02</span><span class="path-name">Recorder</span><span class="path-detail">56 preserved synthetic observations; repeatable setup with hash checks.</span><span class="tag done">Built</span></li>
+        <li><span class="path-no">03</span><span class="path-name">Signals</span><span class="path-detail">Deterministic conversion anomaly and stable desktop control.</span><span class="tag done">Built</span></li>
+        <li><span class="path-no">04</span><span class="path-name">Investigator</span><span class="path-detail">Evidence-bound deterministic report. No model, root-cause finding, or competing-hypothesis search.</span><span class="tag limited">Limited</span></li>
+        <li><span class="path-no">05</span><span class="path-name">Decision UX</span><span class="path-detail">Private Case view, uncertainty, citations, exact TEST response, and saved approval.</span><span class="tag done">Built</span></li>
+        <li><span class="path-no">06</span><span class="path-name">Action / Outcome</span><span class="path-detail">Executable simulation, immutable traces, and trial exclusion work. Device verification and Case outcome remain pending.</span><span class="tag limited">Partial</span></li>
+        <li><span class="path-no">07</span><span class="path-name">Replay / Evaluation</span><span class="path-detail">One golden scenario exists; replay harness, benchmark, and model comparisons do not.</span><span class="tag future">Future</span></li>
+      </ol>
+    </section>
+
+    <section class="section" aria-labelledby="next-move">
+      <h2 id="next-move">What moves the project forward</h2>
+      <div class="next-grid">
+        <div class="next-now">
+          <span class="eyebrow">Next concrete proof</span>
+          <strong>Connect simulated runs to a simulated Case outcome.</strong>
+          <p>Keep simulation evidence separate from actual device checks and business results. Mobile Safari verification remains pending device access.</p>
+        </div>
+        <div class="next-later">
+          <span class="eyebrow">After that</span>
+          <ol>
+            <li>Define a bounded simulated assessment and Case closure/reopen rules.</li>
+            <li>Replay the golden Case with evaluator truth kept hidden.</li>
+            <li>Build model investigation and broader evaluation in separately reviewed slices.</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="north-star">
+      <h2 id="north-star">The larger end goal</h2>
+      <div class="big-picture">
+        <div>
+          <div class="rule" aria-hidden="true"></div>
+          <h3>Selected product goal</h3>
+          <p>Detect a revenue leak, test supporting and contradictory evidence, approve a safe Case-bound response, and measure what happened.</p>
+        </div>
+        <div>
+          <div class="rule" aria-hidden="true"></div>
+          <h3>Proposed portfolio MVP</h3>
+          <p>Add a model-assisted investigator, competing hypotheses, approved simulated action, Case closure, hidden-truth replay, a proposed 100-scenario benchmark, fault tests, and experiment reports.</p>
+        </div>
+      </div>
+      <p class="subtle">No completion percentage is shown: the proposal's scope and benchmark exit threshold have not been accepted as a new governed run.</p>
+    </section>
+
+    <section class="section" aria-labelledby="evidence">
+      <h2 id="evidence">Evidence, when you need it</h2>
+      <details>
+        <summary>What was verified in the repository?</summary>
+        <p><strong>24/24 focused tests passed</strong>; production builds passed. Database checks covered tenant isolation, immutable runs, and the 20-run cap. Browser success, decline, and reload passed. Read the <a href="phase4d-synthetic-checkout-harness.md">checkout implementation and verification evidence</a> for run IDs, hashes, deployment references, and limits.</p>
+        <p>Read the <a href="progress-vs-end-goal-2026-09-24.md">full progress report</a> or the dated implementation records: <a href="phase1-golden-revenue-leak.md">foundation</a>, <a href="phase2-bounded-investigator.md">Investigator</a>, <a href="phase3-decision-ux.md">Decision UX</a>, <a href="phase4-case-response-approval.md">approval</a>, <a href="phase4b-test-check-and-outcome.md">receipt path</a>, and <a href="phase4c-trial-receipt-recovery.md">trial correction</a>.</p>
+      </details>
+      <details>
+        <summary>What do the Notion notes say?</summary>
+        <p>The <a href="https://app.notion.com/p/3c6cb716dfb481e498f0e5dccd0f9e8f">Project Flight Log</a> states the selected Case goal. The <a href="https://app.notion.com/p/3d3cb716dfb4811dbc78ef6385011a0a">Revenue Leak Investigator proposal</a> defines the larger portfolio MVP. The <a href="https://app.notion.com/p/3e5cb716dfb481d3b451d7fd487565c9">latest journal entry</a> records the trial exclusion and zero real rechecks/follow-up events.</p>
+      </details>
+      <details>
+        <summary>What is accepted, and what is not?</summary>
+        <p>The historical L14 factory stages remain complete; the current work is unsealed and has no new human gate acceptance. Those earlier gates do not accept this revenue-leak Case. The latest verified deployment is owner-private TEST Site version 10 with Edge Function v11 on the existing Free-plan Supabase project. LIVE remains unchanged on D1.</p>
+      </details>
+    </section>
+
+    <footer>CrossSignal progress snapshot · updated 25 September 2026 · Source: repository, TEST browser checks, and linked Notion notes. This page is a visual reading aid for the <a href="progress-vs-end-goal-2026-09-24.md">detailed report</a>.</footer>
+  </main>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import postgres from "npm:postgres@3.4.9";
+import { buildSimulatedCheckout, canonicalCheckout, CHECKOUT_LIMIT, RUN_ID } from "../_shared/case-checkout.mjs";
 
 type TraceRequest = { userId: string; workspaceId: string; traceId: string };
 type WorkspaceListRequest = { operation: "workspace.list"; userId: string };
@@ -51,9 +52,13 @@ type CaseCheckTrialRequest = {
   responseHash: string;
   receiptHash: string;
 };
+type CaseCheckoutRequest = {
+  operation: "case.checkout.simulate"; userId: string; workspaceId: string; caseId: string;
+  responseId: string; responseHash: string; runId: string; scenario: "capture" | "decline";
+};
 type RuntimeRequest = WorkspaceListRequest | WorkspaceCreateRequest | WorkspaceAccessRequest | RuntimeGetRequest | RuntimePutRequest;
 type GatewayRequest = TraceRequest | RuntimeRequest | CaseDecisionReadRequest | CaseResponseApproveRequest
-  | CaseCheckRecordRequest | CaseCheckTrialRequest;
+  | CaseCheckRecordRequest | CaseCheckTrialRequest | CaseCheckoutRequest;
 
 const RUNTIME_EVENT_TYPES = new Set([
   "runtime.initialized",
@@ -132,8 +137,16 @@ function parseRequest(value: unknown): GatewayRequest | null {
       && validIdentifier(value.responseId)
       && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
       && typeof value.runReference === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value.runReference)
+      && !/^sim_/i.test(value.runReference)
       && ["captured", "not_captured", "indeterminate"].includes(String(value.captureStatus))
       ? value as CaseCheckRecordRequest : null;
+  }
+  if (value.operation === "case.checkout.simulate") {
+    return Object.keys(value).sort().join("|") === "caseId|operation|responseHash|responseId|runId|scenario|userId|workspaceId"
+      && validIdentifier(value.workspaceId) && validIdentifier(value.caseId) && validIdentifier(value.responseId)
+      && typeof value.responseHash === "string" && /^[0-9a-f]{64}$/.test(value.responseHash)
+      && typeof value.runId === "string" && RUN_ID.test(value.runId)
+      && (value.scenario === "capture" || value.scenario === "decline") ? value as CaseCheckoutRequest : null;
   }
   if (value.operation === "case.check.trial") {
     return validIdentifier(value.workspaceId) && validIdentifier(value.caseId)
@@ -359,6 +372,12 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       where workspace_id = ${input.workspaceId} and response_id = ${responseRow.id}
       limit 1
     `;
+    const checkoutRows = await transaction`
+      select artifact_json as artifact, content_hash as "contentHash"
+      from cfr_app.case_simulated_checkouts
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}
+      order by executed_at desc, run_id limit 21
+    `;
     const followUpRows = await transaction`
       select workspace_id as "workspaceId", id, case_id as "caseId",
         response_id as "responseId", receipt_hash as "receiptHash",
@@ -382,11 +401,51 @@ async function handleCaseDecision(input: CaseDecisionReadRequest, principalId: s
       trialMarkerRow: trialMarkerRow ?? null,
       recheckRow: recheckRow ?? null,
       followUpRows,
+      checkoutRows,
     };
   });
   console.log(JSON.stringify({ event: "case_decision_read_result", userIdSha256,
     workspaceId: input.workspaceId, caseId: input.caseId, kind: result.kind }));
   return json(result, result.kind === "not_found" ? 404 : result.kind === "incomplete" ? 409 : 200);
+}
+
+async function handleSimulatedCheckout(input: CaseCheckoutRequest, principalId: string): Promise<Response> {
+  const result = await sql.begin(async (transaction) => {
+    await configureRuntimeRole(transaction, principalId, input.workspaceId);
+    if (!await hasOwnerMembership(transaction, principalId, input.workspaceId)) return { kind: "not_found" };
+    const [proposal] = await transaction`
+      select content_hash from cfr_app.case_response_proposals
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId} and id = ${input.responseId}
+    `;
+    if (!proposal) return { kind: "not_found" };
+    if (proposal.content_hash !== input.responseHash) return { kind: "conflict" };
+    await transaction`select pg_advisory_xact_lock(hashtextextended(${input.workspaceId + '/' + input.caseId + '/synthetic-checkout'}, 0))`;
+    const [existing] = await transaction`
+      select scenario, recorded_by, case_id, proposal_hash from cfr_app.case_simulated_checkouts
+      where workspace_id = ${input.workspaceId} and run_id = ${input.runId}
+    `;
+    if (existing) return existing.scenario === input.scenario && existing.recorded_by === principalId
+      && existing.case_id === input.caseId && existing.proposal_hash === input.responseHash
+      ? { kind: "simulated", runId: input.runId, reused: true } : { kind: "conflict" };
+    const [count] = await transaction`select count(*)::int as total from cfr_app.case_simulated_checkouts
+      where workspace_id = ${input.workspaceId} and case_id = ${input.caseId}`;
+    if (count.total >= CHECKOUT_LIMIT) return { kind: "limit_reached" };
+    const artifact = buildSimulatedCheckout({ workspaceId: input.workspaceId, caseId: input.caseId,
+      responseId: input.responseId, proposalHash: input.responseHash, runId: input.runId,
+      scenario: input.scenario, recordedBy: principalId, executedAt: new Date().toISOString() });
+    const hash = await sha256(canonicalCheckout(artifact));
+    await transaction`
+      insert into cfr_app.case_simulated_checkouts
+        (workspace_id, case_id, response_id, proposal_hash, run_id, scenario, recorded_by,
+         executed_at, truth_mode, artifact_json, content_hash)
+      values (${input.workspaceId}, ${input.caseId}, ${input.responseId}, ${input.responseHash},
+        ${input.runId}, ${input.scenario}, ${principalId}, ${artifact.executedAt}::text::timestamptz,
+        'SIMULATED', ${JSON.stringify(artifact)}::text::jsonb, ${hash})
+    `;
+    return { kind: "simulated", runId: input.runId, reused: false };
+  });
+  return json(result, result.kind === "not_found" ? 404 : result.kind === "conflict" ? 409
+    : result.kind === "limit_reached" ? 429 : 200);
 }
 
 async function handleCaseCheckRecord(input: CaseCheckRecordRequest, principalId: string, userIdSha256: string): Promise<Response> {
@@ -699,6 +758,9 @@ Deno.serve(async (request: Request) => {
     }
     if (input.operation === "case.check.trial") {
       return await handleCaseCheckTrial(input, principalId, userIdSha256);
+    }
+    if (input.operation === "case.checkout.simulate") {
+      return await handleSimulatedCheckout(input, principalId);
     }
     return await handleRuntime(input, principalId, userIdSha256);
   } catch (error) {

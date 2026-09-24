@@ -10,6 +10,12 @@ export type DecisionClaim = {
   id: string; finding: string; relation: "supports" | "contradicts";
   evidenceId: string; source: string; events: DecisionEvent[];
 };
+export type SimulatedCheckout = {
+  runId: string; scenario: "capture" | "decline"; executedAt: string;
+  captureStatus: "simulated_captured" | "simulated_declined"; contentHash: string;
+  truthMode: "SIMULATED"; chargedCents: 0; deviceVerification: "pending"; businessOutcome: "not_measured";
+  events: { id: string; sequence: number; type: string; at: string }[];
+};
 export type CaseCheckReceipt = {
   workspaceId: string; responseId: string; proposalHash: string;
   recordedBy: string; runReference: string;
@@ -63,6 +69,7 @@ export type DecisionCase = {
     expectedRevenueCents: number; projectedLeakCents: number;
   };
   claims: DecisionClaim[];
+  simulatedCheckouts: SimulatedCheckout[];
 };
 export type DecisionCaseResult =
   | { kind: "found"; case: DecisionCase }
@@ -172,6 +179,36 @@ export async function recordSavedCaseCheck(
     console.error("Case check receipt failed", error instanceof Error ? error.message : "unknown error");
     return { ok: false, error: "The TEST check receipt could not be saved." };
   }
+}
+
+export async function executeSavedCaseCheckout(
+  userId: string, workspaceId: string, caseId: string, responseId: string,
+  responseHash: string, runId: string, scenario: "capture" | "decline", fetcher: typeof fetch = fetch,
+): Promise<{ ok: true; runId: string; reused: boolean } | { ok: false; error: string }> {
+  if (getDatabaseProvider() !== "supabase" || workspaceId !== "l14-workspace-a") {
+    return { ok: false, error: "Synthetic checkout is available in this TEST Case only." };
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 10_000);
+  try {
+    const config = getSupabaseTraceFunctionConfig();
+    const response = await fetcher(config.url, {
+      method: "POST", headers: { "content-type": "application/json", "x-cfr-preview-token": config.token },
+      body: JSON.stringify({ operation: "case.checkout.simulate", userId, workspaceId,
+        caseId, responseId, responseHash, runId, scenario }), cache: "no-store", signal: controller.signal,
+    });
+    if (!response.ok) return { ok: false, error: response.status === 429
+      ? "The 20-run limit for this Case has been reached. Saved runs remain available."
+      : response.status === 409 ? "The run ID or Case changed. Reload and inspect saved runs."
+        : response.status === 404 ? "This TEST Case is unavailable."
+          : "Simulation could not be confirmed. Retry the same run ID." };
+    const result = await response.json();
+    return result?.kind === "simulated" && result.runId === runId && typeof result.reused === "boolean"
+      ? { ok: true, runId, reused: result.reused }
+      : { ok: false, error: "Simulation response was invalid. Retry the same run ID." };
+  } catch {
+    return { ok: false, error: "Simulation could not be confirmed. Retry the same run ID." };
+  } finally { clearTimeout(timer); }
 }
 
 export async function markSavedCaseCheckTrial(
