@@ -1,0 +1,2401 @@
+{
+  "replayVersion": "golden-case-replay-v1",
+  "source": "local-fixture",
+  "environment": "offline",
+  "scenarioId": "golden-mobile-checkout-v1",
+  "workspaceId": "l14-workspace-a",
+  "caseId": "case-golden-mobile-checkout",
+  "detection": {
+    "eventCount": 56,
+    "caseStatus": "detected",
+    "signal": {
+      "id": "signal-golden-mobile-checkout-v1",
+      "caseId": "case-golden-mobile-checkout",
+      "workspaceId": "l14-workspace-a",
+      "kind": "conversion_drop",
+      "methodVersion": "deterministic-v1",
+      "detected": true,
+      "metrics": {
+        "baseline": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "observed": {
+          "starts": 140,
+          "completed": 12,
+          "captures": 12,
+          "revenueCents": 60000,
+          "conversionBps": 857
+        },
+        "controlBaseline": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "controlObserved": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "relativeDropBps": 5714,
+        "controlRelativeDropBps": 0,
+        "expectedRevenueCents": 140000,
+        "projectedLeakCents": 80000
+      },
+      "truthMode": "FIXTURE"
+    },
+    "evidence": [
+      {
+        "id": "evidence-mobile-funnel",
+        "source": "checkout_analytics",
+        "relation": "supports",
+        "claim": "Mobile Safari checkout conversion fell",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout"
+        ],
+        "caseId": "case-golden-mobile-checkout",
+        "workspaceId": "l14-workspace-a",
+        "truthMode": "FIXTURE"
+      },
+      {
+        "id": "evidence-mobile-payment",
+        "source": "payment_ledger",
+        "relation": "supports",
+        "claim": "Captured Mobile Safari revenue fell",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment"
+        ],
+        "caseId": "case-golden-mobile-checkout",
+        "workspaceId": "l14-workspace-a",
+        "truthMode": "FIXTURE"
+      },
+      {
+        "id": "evidence-desktop-control",
+        "source": "checkout_analytics",
+        "relation": "contradicts",
+        "claim": "Campaign-wide checkout decline",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout"
+        ],
+        "caseId": "case-golden-mobile-checkout",
+        "workspaceId": "l14-workspace-a",
+        "truthMode": "FIXTURE"
+      }
+    ]
+  },
+  "snapshot": {
+    "caseRow": {
+      "workspaceId": "l14-workspace-a",
+      "id": "case-golden-mobile-checkout",
+      "scenarioId": "golden-mobile-checkout-v1",
+      "scenarioVersion": 1,
+      "scenarioHash": "a64ceed227160af35ddd4baf6f88a7d13c0de6ce05e751beeca765aaf016d5dc",
+      "title": "Mobile Safari checkout revenue leak",
+      "status": "detected",
+      "truthMode": "FIXTURE",
+      "contentHash": "f969c7fb24aabcb5e4b2946190b665a3f21625674905d1386967ad2bc322bd68"
+    },
+    "signalRow": {
+      "workspaceId": "l14-workspace-a",
+      "id": "signal-golden-mobile-checkout-v1",
+      "caseId": "case-golden-mobile-checkout",
+      "kind": "conversion_drop",
+      "methodVersion": "deterministic-v1",
+      "detected": true,
+      "metrics": {
+        "baseline": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "observed": {
+          "starts": 140,
+          "completed": 12,
+          "captures": 12,
+          "revenueCents": 60000,
+          "conversionBps": 857
+        },
+        "controlBaseline": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "controlObserved": {
+          "starts": 140,
+          "completed": 28,
+          "captures": 28,
+          "revenueCents": 140000,
+          "conversionBps": 2000
+        },
+        "relativeDropBps": 5714,
+        "controlRelativeDropBps": 0,
+        "expectedRevenueCents": 140000,
+        "projectedLeakCents": 80000
+      },
+      "contentHash": "ed81248cffc39ef935783633e240d4d961080d640e12eb4cb9da4c58a5bb2d09"
+    },
+    "evidenceRows": [
+      {
+        "workspaceId": "l14-workspace-a",
+        "id": "evidence-mobile-funnel",
+        "caseId": "case-golden-mobile-checkout",
+        "source": "checkout_analytics",
+        "relation": "supports",
+        "claim": "Mobile Safari checkout conversion fell",
+        "truthMode": "FIXTURE",
+        "contentHash": "a75f237a27c1ebdc88bf92faed04d78b2114af3eb349212df9af72802d3b8bff"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "id": "evidence-mobile-payment",
+        "caseId": "case-golden-mobile-checkout",
+        "source": "payment_ledger",
+        "relation": "supports",
+        "claim": "Captured Mobile Safari revenue fell",
+        "truthMode": "FIXTURE",
+        "contentHash": "4e9fd7e6bfdb420f5777d0a06a4c84155d9038a411ce6d71270313ced91d892e"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "id": "evidence-desktop-control",
+        "caseId": "case-golden-mobile-checkout",
+        "source": "checkout_analytics",
+        "relation": "contradicts",
+        "claim": "Campaign-wide checkout decline",
+        "truthMode": "FIXTURE",
+        "contentHash": "20d99a038c9ede25fc0ea919dda2a14816d0bdf48af83b5e2de2edc122507c3c"
+      }
+    ],
+    "eventRows": [
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-24",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "8d1ead9739d1c73c9387eeb68a49d3dccee5978735497069569bd90a7923978a"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-24",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "138ead5ce614a534dea9c1b7f94cf4c899d4ba607b3c493caa94530b1e201bef"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-25",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "adf22f380379f8cdfbcb7ae86c988b4495ef735954fc6793eafe18e26a13ab51"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-25",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "68ed5d310cf9e53bcfbed6e3a8e8ff2b082dad783dd069bb10a1174577ee5cda"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-26",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "ddff263c14842e8bb68a7dc0b7599f07717ae6be671ce2711d6ef03014cdfe53"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-26",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "56f298f76c7ea04c1e93d7e937a3067c6404a8cbd87fafaa4c6dde25cf5790a4"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-27",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "b63bade2c0b54f703a203a34b3ca5ebef278773131521123df2a50a654af3e6a"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-27",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "bac1025e36f66a84a133979e7da90b8d0a25702d600d75b42ac5020873b31bf1"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-28",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "1b233ada0a338cd97eb0089bf3a02bea8769a44d0744ed220d1d1be802773e0d"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-28",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "e63aae7c7dcf69d249f48ac185cc69205a25ccea023e3c9be5714c83b5fd20ba"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-29",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "963196d26e93a898b2fcbf7f9eaa4df8f024182ab32924c11a5a14f213ef8a84"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-29",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "3242bec4e60dbc5df821b9df9cdbc48c7b2dd84c5ecdaacfa4aba3f78520aa70"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-30",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "16bafb1cb3daf3900833003e52255702683a7626f05d4b72cc8c40bd900240cb"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "mobile_safari",
+        "observedDay": "2026-07-30",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "b635b9e6ff065f98d71932bc4e040c5acbd65c324734a592cdb5a2467e648df4"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-24",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "27f531d8b9be15f8a4a086340c31d498bbaa61874806690cb43e70f58ca2f8c1"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-24",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "a5c048767547ef1ce1eefd13d64e0a937a85a9e2d5dfa8065ab8716ca30666eb"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-25",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "4738822eeb38b5545fed07f6bd24df69712a963c6a355d729eac7157616920e9"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-25",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "6da94faff3a52223c6cd6326b5e09cd63d3d6a38ca5d9f76e0dff62d4ec53ea4"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-26",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "9334e9ff789649f8633f8e2f569edd3c288b4e0bdd7b0ace7ef19a7a68ed49db"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-26",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "6a03f5fea46d4dbf8f2bda5707548819269b6a7e0f6c8ee4b031ea4ae80701f1"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-27",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "c34ed34a7ef7e747b0590b46da8551564ccf10f766f6f4bc8e322c38fab3b1ec"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-27",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "4bf9a2cc24ba0dc8efc8ee6b9d7e859d0b935ac288ed0950e4a813304eb0536f"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-28",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "0f468564aaf8df53a9846e6a47cfc9b3d6ab452251166a1e197e0c8d5d653b51"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-28",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "e0dd64738a89d6274957496db9bc541175ce90314cf360998a5189ae805061c6"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-29",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "d921ff6398235a7564199e9987bf2f63e4306b131df0cd62ec95c9766a9872ea"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-29",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "4415604423f53a472484edf3c47055d9051ce0ca5edfa74b67ba64903f5bcf06"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-30",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "0862d0f698241392ce12c39d83c6f3340df91dc6fc570b1a7902bf998f47a39e"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "baseline",
+        "segment": "desktop",
+        "observedDay": "2026-07-30",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "bfdfd2e4ee8121f500325b5bbd0a62f3f7b34433c0c65f46f50bfcf7f8b3f645"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-01",
+        "starts": 20,
+        "completed": 2,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "a4e5798e9cc960997969c9441425f8090fd9799b7e4e5061e34dfe04d98e18d5"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-01",
+        "starts": 0,
+        "completed": 0,
+        "captures": 2,
+        "revenueCents": 10000,
+        "truthMode": "FIXTURE",
+        "contentHash": "ffb31adeeaf08f96aee137d309c8c1f6277329355bd0650d265dfb7b0e252546"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-02",
+        "starts": 20,
+        "completed": 2,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "2e26d56190cb7dde3ab30fc460e9407891996c50f44103dbe7ca0d52261d28dc"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-02",
+        "starts": 0,
+        "completed": 0,
+        "captures": 2,
+        "revenueCents": 10000,
+        "truthMode": "FIXTURE",
+        "contentHash": "1d621ecf9a4c96a3e1b013da0a2bc4902bcd971e5b5a3e5b08b59221b2d50989"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-03",
+        "starts": 20,
+        "completed": 2,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "74a76293948d73021c817cd19b1b110874fa45ae5629832fec3f91804add2be2"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-03",
+        "starts": 0,
+        "completed": 0,
+        "captures": 2,
+        "revenueCents": 10000,
+        "truthMode": "FIXTURE",
+        "contentHash": "8dc94a69ca79f80ed08d2fe6ce9b2927ef1a403d04874215273b63ae2967059b"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-04",
+        "starts": 20,
+        "completed": 2,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "900124f1ec6ce1131b03a3dd05420ff512ee9b1b490155b881dbfe4a520c2bc5"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-04",
+        "starts": 0,
+        "completed": 0,
+        "captures": 2,
+        "revenueCents": 10000,
+        "truthMode": "FIXTURE",
+        "contentHash": "748ea3ca2ea0db8482c70c34a89231d9eb77d79982a74c483c5e3f9d05c7ffd6"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-05",
+        "starts": 20,
+        "completed": 2,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "3f87cd7ce65901b94b65bbb2a555c181ebd763ef29bbd6281293c623fde2f8e3"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-05",
+        "starts": 0,
+        "completed": 0,
+        "captures": 2,
+        "revenueCents": 10000,
+        "truthMode": "FIXTURE",
+        "contentHash": "abeee1d1ad84b4960fb4d9a0c5a6813485270bdca08f5e02d4f487252722c45b"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-06",
+        "starts": 20,
+        "completed": 1,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "445c42ccef5e8e7b3aa6c2432daba5da0145ffb49d8e481a57050504daf89d8d"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-06",
+        "starts": 0,
+        "completed": 0,
+        "captures": 1,
+        "revenueCents": 5000,
+        "truthMode": "FIXTURE",
+        "contentHash": "a20b6f95acff43221c6a0fe645a99d8605822ad9e087a8bba6c54056d44a26fc"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-07",
+        "starts": 20,
+        "completed": 1,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "aedacac5e5f00b8388cdcddc395e2ca4c1d77e621d8713e20a16520552d0b331"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "mobile_safari",
+        "observedDay": "2026-08-07",
+        "starts": 0,
+        "completed": 0,
+        "captures": 1,
+        "revenueCents": 5000,
+        "truthMode": "FIXTURE",
+        "contentHash": "8d24694a3fe66c902ac8ebfc79e576c26efff54b2717369fd2e9eeed1af1079e"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-01",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "c78fef8766be17a62f74429278e77a5f708aac03074b2098986f701a6019cc05"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-01-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-01",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "8039889274ab9e53205302aacc43a3c6c3facf1d2044e830637160e53f1d19de"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-02",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "f463bb6c41aab738510d8a9a0d85ce837272f03964d9e2a8ebfdfb79fd276f88"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-02-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-02",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "dbad037dfd37de7df3cf2ac264090f8612538e5e7a382e0bea7b318a2a1c7415"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-03",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "2114aa3a4ecf8d0ef1dae780584f9e61f39ce5d06650e2aaf4b166d0c594c2d7"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-03-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-03",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "455c5427c9e0d3e990ef0af09806477f393aa56bb991f9ed4b370cdc0b9e844a"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-04",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "0d0e59f5abd5bb335c30226ff6d7c2842ec14107a8c7869a5db4067fb466f669"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-04-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-04",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "ec5f6d5c6d08614bd3e71433d663d008f21f033845db9835590f4f7b77a60b70"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-05",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "541caef7c57fd424a6a1caf3f1bf072b23338b441e0cd3df479290865ce5455c"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-05-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-05",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "e52c91d475fae1e1d53ee8f24b6e5ce4c8d32677f42a71f37811e6484f2d82b5"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-06",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "6584816d03f6259de1204d54314d18a2c52f530383cf0dabc9a7002f60261d00"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-06-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-06",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "4cb99d18ca119ef0789d18784abc60e67a6e93c6a3ade4f5a3e1596ae5ce3284"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "checkout_analytics",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-07",
+        "starts": 20,
+        "completed": 4,
+        "captures": 0,
+        "revenueCents": 0,
+        "truthMode": "FIXTURE",
+        "contentHash": "fbf67abf6e2498ce014db2d8f0310da3aae13c3d21e683b6a6d3a32d6cc33dc2"
+      },
+      {
+        "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-07-payment",
+        "workspaceId": "l14-workspace-a",
+        "scenarioId": "golden-mobile-checkout-v1",
+        "source": "payment_ledger",
+        "window": "observed",
+        "segment": "desktop",
+        "observedDay": "2026-08-07",
+        "starts": 0,
+        "completed": 0,
+        "captures": 4,
+        "revenueCents": 20000,
+        "truthMode": "FIXTURE",
+        "contentHash": "f3860cb315cdf5e07c90b75a208b4d94544e3d964963d373b3c13b4087e4b541"
+      }
+    ],
+    "citationRows": [
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-funnel",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-mobile-payment",
+        "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "evidenceId": "evidence-desktop-control",
+        "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout"
+      }
+    ]
+  },
+  "investigation": {
+    "id": "investigation-case-golden-mobile-checkout",
+    "workspaceId": "l14-workspace-a",
+    "caseId": "case-golden-mobile-checkout",
+    "scenarioId": "golden-mobile-checkout-v1",
+    "methodVersion": "bounded-deterministic-v1",
+    "truthMode": "FIXTURE",
+    "status": "ready_for_review",
+    "assessment": "targeted_drop_supported_cause_unconfirmed",
+    "sourceCaseHash": "f969c7fb24aabcb5e4b2946190b665a3f21625674905d1386967ad2bc322bd68",
+    "sourceSignalHash": "ed81248cffc39ef935783633e240d4d961080d640e12eb4cb9da4c58a5bb2d09",
+    "summary": "Recorded Mobile Safari conversion and captured revenue fell while desktop remained stable. The cause is unconfirmed.",
+    "claims": [
+      {
+        "id": "claim-mobile-conversion",
+        "relation": "supports",
+        "evidenceId": "evidence-mobile-funnel",
+        "finding": "Mobile Safari checkout conversion fell from 20.00% to 8.57% across the recorded windows.",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout"
+        ]
+      },
+      {
+        "id": "claim-mobile-revenue",
+        "relation": "supports",
+        "evidenceId": "evidence-mobile-payment",
+        "finding": "Captured Mobile Safari revenue fell from $1400.00 to $600.00; the baseline-rate projection exceeds observed revenue by $800.00.",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment",
+          "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment",
+          "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment"
+        ]
+      },
+      {
+        "id": "claim-desktop-control",
+        "relation": "contradicts",
+        "evidenceId": "evidence-desktop-control",
+        "finding": "Desktop checkout conversion stayed at 20.00%, contradicting a campaign-wide checkout decline.",
+        "eventIds": [
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout",
+          "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout",
+          "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout"
+        ]
+      }
+    ],
+    "limitations": [
+      "This is a synthetic FIXTURE incident, not a LIVE revenue loss.",
+      "The observed pattern does not identify a root cause or establish causality."
+    ]
+  },
+  "investigationCitations": [
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-conversion",
+      "evidenceId": "evidence-mobile-funnel",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-mobile-revenue",
+      "evidenceId": "evidence-mobile-payment",
+      "eventId": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout"
+    },
+    {
+      "workspaceId": "l14-workspace-a",
+      "investigationId": "investigation-case-golden-mobile-checkout",
+      "claimId": "claim-desktop-control",
+      "evidenceId": "evidence-desktop-control",
+      "eventId": "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout"
+    }
+  ],
+  "decision": {
+    "truthMode": "FIXTURE",
+    "status": "detected",
+    "metrics": {
+      "baseline": {
+        "starts": 140,
+        "completed": 28,
+        "captures": 28,
+        "revenueCents": 140000,
+        "conversionBps": 2000
+      },
+      "observed": {
+        "starts": 140,
+        "completed": 12,
+        "captures": 12,
+        "revenueCents": 60000,
+        "conversionBps": 857
+      },
+      "controlBaseline": {
+        "starts": 140,
+        "completed": 28,
+        "captures": 28,
+        "revenueCents": 140000,
+        "conversionBps": 2000
+      },
+      "controlObserved": {
+        "starts": 140,
+        "completed": 28,
+        "captures": 28,
+        "revenueCents": 140000,
+        "conversionBps": 2000
+      },
+      "relativeDropBps": 5714,
+      "controlRelativeDropBps": 0,
+      "expectedRevenueCents": 140000,
+      "projectedLeakCents": 80000
+    },
+    "claims": [
+      {
+        "id": "claim-mobile-conversion",
+        "finding": "Mobile Safari checkout conversion fell from 20.00% to 8.57% across the recorded windows.",
+        "relation": "supports",
+        "evidenceId": "evidence-mobile-funnel",
+        "source": "checkout_analytics",
+        "events": [
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-checkout",
+            "observedDay": "2026-07-24",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-checkout",
+            "observedDay": "2026-07-25",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-checkout",
+            "observedDay": "2026-07-26",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-checkout",
+            "observedDay": "2026-07-27",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-checkout",
+            "observedDay": "2026-07-28",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-checkout",
+            "observedDay": "2026-07-29",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-checkout",
+            "observedDay": "2026-07-30",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-checkout",
+            "observedDay": "2026-08-01",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 2,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-checkout",
+            "observedDay": "2026-08-02",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 2,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-checkout",
+            "observedDay": "2026-08-03",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 2,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-checkout",
+            "observedDay": "2026-08-04",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 2,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-checkout",
+            "observedDay": "2026-08-05",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 2,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-checkout",
+            "observedDay": "2026-08-06",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 1,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-checkout",
+            "observedDay": "2026-08-07",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 1,
+            "captures": 0,
+            "revenueCents": 0
+          }
+        ]
+      },
+      {
+        "id": "claim-mobile-revenue",
+        "finding": "Captured Mobile Safari revenue fell from $1400.00 to $600.00; the baseline-rate projection exceeds observed revenue by $800.00.",
+        "relation": "supports",
+        "evidenceId": "evidence-mobile-payment",
+        "source": "payment_ledger",
+        "events": [
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-24-payment",
+            "observedDay": "2026-07-24",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-25-payment",
+            "observedDay": "2026-07-25",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-26-payment",
+            "observedDay": "2026-07-26",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-27-payment",
+            "observedDay": "2026-07-27",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-28-payment",
+            "observedDay": "2026-07-28",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-29-payment",
+            "observedDay": "2026-07-29",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-mobile_safari-2026-07-30-payment",
+            "observedDay": "2026-07-30",
+            "window": "baseline",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 4,
+            "revenueCents": 20000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-01-payment",
+            "observedDay": "2026-08-01",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 2,
+            "revenueCents": 10000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-02-payment",
+            "observedDay": "2026-08-02",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 2,
+            "revenueCents": 10000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-03-payment",
+            "observedDay": "2026-08-03",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 2,
+            "revenueCents": 10000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-04-payment",
+            "observedDay": "2026-08-04",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 2,
+            "revenueCents": 10000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-05-payment",
+            "observedDay": "2026-08-05",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 2,
+            "revenueCents": 10000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-06-payment",
+            "observedDay": "2026-08-06",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 1,
+            "revenueCents": 5000
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-mobile_safari-2026-08-07-payment",
+            "observedDay": "2026-08-07",
+            "window": "observed",
+            "segment": "mobile_safari",
+            "source": "payment_ledger",
+            "starts": 0,
+            "completed": 0,
+            "captures": 1,
+            "revenueCents": 5000
+          }
+        ]
+      },
+      {
+        "id": "claim-desktop-control",
+        "finding": "Desktop checkout conversion stayed at 20.00%, contradicting a campaign-wide checkout decline.",
+        "relation": "contradicts",
+        "evidenceId": "evidence-desktop-control",
+        "source": "checkout_analytics",
+        "events": [
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-24-checkout",
+            "observedDay": "2026-07-24",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-25-checkout",
+            "observedDay": "2026-07-25",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-26-checkout",
+            "observedDay": "2026-07-26",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-27-checkout",
+            "observedDay": "2026-07-27",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-28-checkout",
+            "observedDay": "2026-07-28",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-29-checkout",
+            "observedDay": "2026-07-29",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-baseline-desktop-2026-07-30-checkout",
+            "observedDay": "2026-07-30",
+            "window": "baseline",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-01-checkout",
+            "observedDay": "2026-08-01",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-02-checkout",
+            "observedDay": "2026-08-02",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-03-checkout",
+            "observedDay": "2026-08-03",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-04-checkout",
+            "observedDay": "2026-08-04",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-05-checkout",
+            "observedDay": "2026-08-05",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-06-checkout",
+            "observedDay": "2026-08-06",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          },
+          {
+            "id": "golden-mobile-checkout-v1-observed-desktop-2026-08-07-checkout",
+            "observedDay": "2026-08-07",
+            "window": "observed",
+            "segment": "desktop",
+            "source": "checkout_analytics",
+            "starts": 20,
+            "completed": 4,
+            "captures": 0,
+            "revenueCents": 0
+          }
+        ]
+      }
+    ],
+    "response": {
+      "proposalHash": "c3612015967709408c8aa9801434e37f0a665af7127d25fbec5ef97dd1eee754",
+      "approvalPresent": true,
+      "effectiveReceipt": null,
+      "trialReceiptHash": "a13e5583c0bfa31be8e2a101a3f3ca2ec889bacf7749b605c5e8542070e36e7a",
+      "trialMarkerHash": "f6f60c0eb8818fd220e31b94b3af5f89d962d65227ad57f544715259c5542629"
+    },
+    "outcome": {
+      "status": "awaiting_check",
+      "label": null,
+      "eventIds": []
+    },
+    "simulationOutcome": {
+      "methodVersion": "simulation-coverage-v1",
+      "truthMode": "SIMULATED",
+      "workspaceId": "l14-workspace-a",
+      "caseId": "case-golden-mobile-checkout",
+      "responseId": "response-case-golden-mobile-checkout-v1",
+      "proposalHash": "c3612015967709408c8aa9801434e37f0a665af7127d25fbec5ef97dd1eee754",
+      "status": "verified",
+      "criteria": "One verified capture scenario and one verified decline scenario",
+      "counts": {
+        "capture": 1,
+        "decline": 1
+      },
+      "runCount": 2,
+      "transitions": [
+        {
+          "runId": "sim_12345678-1234-4123-8123-123456789ab0",
+          "runHash": "5f287e2ab8eee6909e25807c0af6ef5aac16aa19370c68b40b831132094a43ed",
+          "executedAt": "2026-09-24T12:00:00.000Z",
+          "scenario": "capture",
+          "result": "simulated_captured",
+          "eventIds": [
+            "sim_12345678-1234-4123-8123-123456789ab0-started",
+            "sim_12345678-1234-4123-8123-123456789ab0-capture",
+            "sim_12345678-1234-4123-8123-123456789ab0-completed"
+          ],
+          "from": "awaiting_runs",
+          "to": "in_progress"
+        },
+        {
+          "runId": "sim_12345678-1234-4123-8123-123456789ab1",
+          "runHash": "bc025ac89177670c2f160c6280aac4b7e8cbb91b171b0b53e07e8cf61c83a3ce",
+          "executedAt": "2026-09-24T12:01:00.000Z",
+          "scenario": "decline",
+          "result": "simulated_declined",
+          "eventIds": [
+            "sim_12345678-1234-4123-8123-123456789ab1-started",
+            "sim_12345678-1234-4123-8123-123456789ab1-capture",
+            "sim_12345678-1234-4123-8123-123456789ab1-completed"
+          ],
+          "from": "in_progress",
+          "to": "verified"
+        }
+      ],
+      "actualChargedCents": 0,
+      "caseResolution": "unresolved",
+      "deviceVerification": "pending",
+      "businessOutcome": "not_measured",
+      "contentHash": "9b34956cc3289f25b6561677c3342900b40113d008dec00f979f5f32c2bef86a"
+    },
+    "simulatedCheckouts": [
+      {
+        "workspaceId": "l14-workspace-a",
+        "caseId": "case-golden-mobile-checkout",
+        "responseId": "response-case-golden-mobile-checkout-v1",
+        "proposalHash": "c3612015967709408c8aa9801434e37f0a665af7127d25fbec5ef97dd1eee754",
+        "runId": "sim_12345678-1234-4123-8123-123456789ab1",
+        "scenario": "decline",
+        "recordedBy": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executedAt": "2026-09-24T12:01:00.000Z",
+        "methodVersion": "synthetic-checkout-v1",
+        "truthMode": "SIMULATED",
+        "environment": "TEST",
+        "product": "Synthetic test order",
+        "currency": "USD",
+        "orderCents": 5000,
+        "chargedCents": 0,
+        "captureStatus": "simulated_declined",
+        "deviceVerification": "pending",
+        "businessOutcome": "not_measured",
+        "events": [
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab1-started",
+            "sequence": 1,
+            "type": "simulated_checkout_started",
+            "at": "2026-09-24T12:01:00.000Z"
+          },
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab1-capture",
+            "sequence": 2,
+            "type": "simulated_declined",
+            "at": "2026-09-24T12:01:00.000Z"
+          },
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab1-completed",
+            "sequence": 3,
+            "type": "simulated_checkout_completed",
+            "at": "2026-09-24T12:01:00.000Z"
+          }
+        ],
+        "contentHash": "bc025ac89177670c2f160c6280aac4b7e8cbb91b171b0b53e07e8cf61c83a3ce"
+      },
+      {
+        "workspaceId": "l14-workspace-a",
+        "caseId": "case-golden-mobile-checkout",
+        "responseId": "response-case-golden-mobile-checkout-v1",
+        "proposalHash": "c3612015967709408c8aa9801434e37f0a665af7127d25fbec5ef97dd1eee754",
+        "runId": "sim_12345678-1234-4123-8123-123456789ab0",
+        "scenario": "capture",
+        "recordedBy": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "executedAt": "2026-09-24T12:00:00.000Z",
+        "methodVersion": "synthetic-checkout-v1",
+        "truthMode": "SIMULATED",
+        "environment": "TEST",
+        "product": "Synthetic test order",
+        "currency": "USD",
+        "orderCents": 5000,
+        "chargedCents": 0,
+        "captureStatus": "simulated_captured",
+        "deviceVerification": "pending",
+        "businessOutcome": "not_measured",
+        "events": [
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab0-started",
+            "sequence": 1,
+            "type": "simulated_checkout_started",
+            "at": "2026-09-24T12:00:00.000Z"
+          },
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab0-capture",
+            "sequence": 2,
+            "type": "simulated_captured",
+            "at": "2026-09-24T12:00:00.000Z"
+          },
+          {
+            "id": "sim_12345678-1234-4123-8123-123456789ab0-completed",
+            "sequence": 3,
+            "type": "simulated_checkout_completed",
+            "at": "2026-09-24T12:00:00.000Z"
+          }
+        ],
+        "contentHash": "5f287e2ab8eee6909e25807c0af6ef5aac16aa19370c68b40b831132094a43ed"
+      }
+    ]
+  },
+  "belowThreshold": {
+    "detected": false,
+    "caseStatus": "no_signal"
+  },
+  "coverageGuards": {
+    "captureOnlyStatus": "in_progress",
+    "repeatedCaptureStatus": "in_progress",
+    "reorderedAssessmentHash": "9b34956cc3289f25b6561677c3342900b40113d008dec00f979f5f32c2bef86a"
+  },
+  "failures": [
+    {
+      "id": "missing_event",
+      "outcome": "rejected",
+      "reason": "recorded event set is incomplete or duplicated"
+    },
+    {
+      "id": "duplicate_event",
+      "outcome": "rejected",
+      "reason": "recorded event set is incomplete or duplicated"
+    },
+    {
+      "id": "foreign_event",
+      "outcome": "rejected",
+      "reason": "event tenant or scenario mismatch"
+    },
+    {
+      "id": "missing_evidence_citation",
+      "outcome": "rejected",
+      "reason": "evidence citation set is incomplete"
+    },
+    {
+      "id": "foreign_snapshot",
+      "outcome": "rejected",
+      "reason": "Case scenario, tenant, or truth boundary is invalid"
+    },
+    {
+      "id": "changed_investigation_claim",
+      "outcome": "rejected",
+      "reason": "investigation artifact differs from recorded-event derivation"
+    },
+    {
+      "id": "foreign_decision_citation",
+      "outcome": "rejected",
+      "reason": "Investigation citations differ"
+    },
+    {
+      "id": "injected_evaluator_answer",
+      "outcome": "rejected",
+      "reason": "investigator input has unknown or missing fields"
+    },
+    {
+      "id": "tampered_simulated_trace",
+      "outcome": "rejected",
+      "reason": "Synthetic checkout artifact differs"
+    },
+    {
+      "id": "duplicate_simulated_run",
+      "outcome": "rejected",
+      "reason": "Synthetic checkout binding differs"
+    },
+    {
+      "id": "live_simulated_artifact",
+      "outcome": "rejected",
+      "reason": "Synthetic checkout artifact differs"
+    },
+    {
+      "id": "simulation_as_real_receipt",
+      "outcome": "rejected",
+      "reason": "Saved Case check receipt is invalid"
+    }
+  ]
+}

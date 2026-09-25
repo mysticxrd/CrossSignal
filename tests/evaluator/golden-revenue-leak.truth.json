@@ -9,5 +9,18 @@
   "controlRelativeDropBps": 0,
   "projectedLeakCents": 80000,
   "supportingEvidence": 2,
-  "contradictingEvidence": 1
+  "contradictingEvidence": 1,
+  "eventCount": 56,
+  "citationCount": 42,
+  "expectedEvidence": [
+    { "id": "evidence-mobile-funnel", "source": "checkout_analytics", "segment": "mobile_safari", "relation": "supports", "references": 14 },
+    { "id": "evidence-mobile-payment", "source": "payment_ledger", "segment": "mobile_safari", "relation": "supports", "references": 14 },
+    { "id": "evidence-desktop-control", "source": "checkout_analytics", "segment": "desktop", "relation": "contradicts", "references": 14 }
+  ],
+  "expectedFailureCases": [
+    "missing_event", "duplicate_event", "foreign_event", "missing_evidence_citation",
+    "foreign_snapshot", "changed_investigation_claim", "foreign_decision_citation",
+    "injected_evaluator_answer", "tampered_simulated_trace", "duplicate_simulated_run",
+    "live_simulated_artifact", "simulation_as_real_receipt"
+  ]
 }
