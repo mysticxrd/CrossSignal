@@ -1,0 +1,15 @@
+{
+  "expectedCases": [
+    { "id": "golden", "detected": true, "relativeDropBps": 5714 },
+    { "id": "moderate_mobile_drop", "detected": false, "relativeDropBps": 2500 },
+    { "id": "broad_checkout_drop", "detected": false, "controlRelativeDropBps": 7500 },
+    { "id": "low_mobile_volume", "detected": false, "baselineStarts": 70 },
+    { "id": "revenue_offset", "detected": false, "projectedLeakCents": 0 },
+    { "id": "severe_mobile_drop", "detected": true, "relativeDropBps": 7500 },
+    { "id": "no_mobile_drop", "detected": false, "relativeDropBps": 0 }
+  ],
+  "expectedRejected": [
+    "missing_observation", "duplicate_observation", "foreign_workspace",
+    "ledger_mismatch", "live_scenario", "evaluator_injection"
+  ]
+}

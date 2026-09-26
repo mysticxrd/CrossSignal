@@ -61,6 +61,12 @@ Case: `case-golden-mobile-checkout`; workspace: `l14-workspace-a`.
 
 ## Limits and next milestone
 
+**Next-step correction — 2026-09-26:** The simulation assessment and golden
+replay mentioned below are complete. The current milestone is
+[A01 synthetic investigation and approved intervention](a01-synthetic-investigation-handoff.md).
+The dated limits remain evidence; actual device and payment verification are
+separate future work, not prerequisites for the synthetic milestone.
+
 - Actual Mobile Safari verification awaits device access. Desktop in-app browser simulation is not device or payment verification.
 - No real payment capture, recovered revenue, causal diagnosis, or measured business outcome is claimed. The synthetic $800 incident projection is unchanged.
 - Idempotent retry handling is implemented; a deliberate duplicate HTTP retry was not exercised in the browser. SQL uniqueness and local duplicate/tamper checks passed.

@@ -44,3 +44,6 @@ yarn-error.log*
 # local workflow builds and durable local workflow state, including archives
 **/.eve/
 **/.output/
+
+# Generated local CLI version cache; preserve on disk, exclude from releases.
+/supabase/.temp/cli-latest

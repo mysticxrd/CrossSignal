@@ -66,6 +66,13 @@ not a new human acceptance of this Case correction.
 
 ## Next real-world step
 
+**Scope clarification — 2026-09-26:** This remains a future real-world
+verification path. It is not a prerequisite for the synthetic hiring MVP.
+Replay is now implemented, and the next product milestone is
+[A01 synthetic investigation and intervention](a01-synthetic-investigation-handoff.md).
+The original sequence below is historical; the receipt exclusion and genuine
+observation requirements remain in force for any future real-world check.
+
 After actually performing one Mobile Safari checkout check in TEST, the owner
 records a distinct, non-sensitive run reference and the observed capture
 result. Only then may seven genuinely new paired TEST follow-up days be

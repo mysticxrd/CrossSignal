@@ -1,6 +1,41 @@
 # CrossSignal progress against the end goal
 
-> **Latest — 25 September 2026:** A deterministic simulation assessment now binds the saved checkout run IDs, hashes, and event traces. Its lifecycle is awaiting runs → in progress → both chosen scenarios verified. This is harness coverage, not a repaired revenue leak. The Case remains unresolved; device verification and business outcomes remain pending. See [assessment evidence](phase4e-simulation-assessment.md). Next: a one-command golden-Case replay with a separate hidden-truth grader.
+## Current direction — 26 September 2026
+
+The hiring goal is a Revenue Leak Investigator for a replayable synthetic
+company. **Next milestone: A01, one complete investigation and approved
+simulated intervention**, with competing explanations, contradiction search,
+observed synthetic recovery or uncertainty, and independent grading.
+
+See the [current direction and repository reconciliation](hiring-mvp-direction.md),
+[A01 acceptance checklist and handoff](a01-synthetic-investigation-handoff.md),
+and [fresh verification evidence](hiring-mvp-reconciliation-evidence.md).
+
+The golden replay is committed at `d802898`; the seven-variant detector matrix
+and six invalid-input probes remain uncommitted and preserved. All **29/29**
+focused tests pass on 2026-09-26. Neither scripted findings nor capture/decline
+coverage demonstrates model investigation or intervention-driven recovery.
+
+Real checkout, payment sandbox, actual Mobile Safari verification, and genuine
+business recovery are separate future work, not prerequisites. Retain Mobile
+Safari as regression coverage and keep the trial excluded. All new A01 outcomes
+must be SIMULATED. After A01 passes, recommend five and ten causally different
+incidents and baseline comparisons before the broader 100-case program.
+
+**Next required decision:** review the completed A01 handoff and authorize the
+human-owned next-run transition required by `factory/CONTEXT.md`. Historical
+L14 gates remain accepted, but the current checkout is unsealed and has no
+active stage. The handoff is a candidate, not an accepted Stage 01 or A01 build.
+
+## Historical assessment — 24–25 September 2026
+
+The dated observations below are preserved for provenance. Their status,
+deployment references, and suggested sequence describe those checkpoints;
+the current direction above supersedes their next-step guidance.
+
+> **Update — 25 September 2026:** A [local scenario matrix](phase6-local-scenario-matrix.md) now runs seven designed FIXTURE counterfactuals and six invalid inputs through the existing detector, with a separate hidden-truth grader and repeatability check. It extends the [one-command golden replay](phase5-golden-case-replay.md) but is not a model evaluation or the proposed 100-case benchmark. No observable payment checkout is configured; actual Mobile Safari payment verification, the real receipt, and business outcomes remain pending.
+
+> **Update — 25 September 2026:** A deterministic simulation assessment binds the saved checkout run IDs, hashes, and event traces. Its lifecycle is awaiting runs → in progress → both chosen scenarios verified. This is harness coverage, not a repaired revenue leak. The Case remains unresolved; device verification and business outcomes remain pending. See [assessment evidence](phase4e-simulation-assessment.md).
 
 > **Update — 25 September 2026:** The missing executable TEST target is now a bounded synthetic checkout harness. Two runs (simulated capture and decline) are saved with unique IDs and immutable traces; browser reload passed. The trial stays excluded. Actual Mobile Safari verification awaits device access; real capture and business outcome remain unverified. See [implementation and verification evidence](phase4d-synthetic-checkout-harness.md). The report below preserves the earlier 24 September assessment; its manual-check next step and version 9/v10 deployment references are superseded by this update (Site v10 / Edge v11). Next product milestone: a separately labeled simulated outcome and Case lifecycle assessment, followed by replay checks.
 
@@ -36,7 +71,11 @@ The implementation has reached **Action/Outcome plumbing**, but the end-to-end C
 - Development checkout: branch `codex/phase3-decision-ux`, baseline commit `d1311c3feda612ac1722929ea85b45891eb33e6c`. Latest recorded private TEST deployment: Site version 9 and `cfr-trace-reader` v10 on Supabase Free project `tonuxepirauyqcwbwenw`. LIVE remains on D1. TEST uses a shared server-side preview credential; production authority needs user-bound credentials.
 - `node factory/status.mjs` reports the **historical L14** five-stage factory run complete, accepted, and sealed with no active stage. That acceptance belongs to the earlier trace-resolution work. It does **not** accept this revenue-leak Case or the proposed portfolio MVP. The [architecture snapshot](../factory/_shared/ARCHITECTURE_SNAPSHOT.md) describes that prior onboarding-rescue proof and the human-gated factory.
 
-## Next gates
+## Historical next gates — superseded on 26 September 2026
+
+The original sequence below is retained as history. Use the A01 handoff and
+current gate above; the real-check prerequisite and request to implement an
+already completed golden replay no longer govern development.
 
 1. **Finish the current bounded Action/Outcome proof.** After a real Mobile Safari checkout check in TEST, the owner records a distinct, non-sensitive run reference and observed capture result. Collect seven genuinely new paired follow-up days with at least 100 eligible starts. Save and reload the resulting Case assessment; label any change as correlation only.
 2. **Charter the next governed revenue-leak run.** Define its bounded outcome, evaluator-visible acceptance evidence, owner, and review date, then obtain its own human Stage 01 gate. Existing L14 acceptance does not transfer.

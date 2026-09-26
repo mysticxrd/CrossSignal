@@ -2,6 +2,19 @@
 
 One job: route work without loading the whole repository.
 
+## Current product direction — 2026-09-26
+
+Read [Hiring MVP direction](docs/hiring-mvp-direction.md) before choosing the
+next product task. The selected milestone is one complete synthetic A01
+investigation and approved intervention. Existing Mobile Safari replay and
+the local detector matrix remain regression coverage. Real checkout, payment
+sandbox, device verification, and business recovery are separate future work.
+
+The retained factory and architecture snapshot describe historical L14 work.
+They do not establish hiring-MVP completion. The [A01 handoff](docs/a01-synthetic-investigation-handoff.md)
+is a reviewable candidate, not an accepted stage or a replacement factory run.
+Use `factory/CONTEXT.md` for the existing human-owned transition and gates.
+
 ## Routes
 
 | Work | Read | Operating mode |

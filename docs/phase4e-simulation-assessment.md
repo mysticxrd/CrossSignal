@@ -43,4 +43,14 @@ The existing Sites workflow pushed the exact source. Its Windows Bash packaging 
 
 ## Next milestone
 
-One-command local golden-Case replay with a separate hidden-truth grader, covering detection, citation integrity, simulation assessment, and safe failure cases. This is not yet implemented. Model investigation, incident closure/reopening decisions, actual device verification, and real-business measurement remain separate future work.
+**Superseded on 2026-09-26:** The one-command local golden-Case replay and
+separate grader are implemented and committed at `d802898`; see
+[Phase 5 evidence](phase5-golden-case-replay.md). The local detector matrix
+also exists as uncommitted regression coverage.
+
+The next product milestone is [A01 synthetic investigation and intervention](a01-synthetic-investigation-handoff.md),
+subject to the existing next-run transition and human gates. It must connect
+an investigated cause to an exactly approved simulated remedy and observed
+synthetic result. Actual device verification and real-business measurement
+remain separate future work and are not prerequisites. See
+[current development direction](hiring-mvp-direction.md).
