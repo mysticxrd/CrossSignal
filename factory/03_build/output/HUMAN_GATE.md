@@ -1,59 +1,36 @@
 ---
-type: human-gate
+unit: a01-synthetic-revenue-investigation
 stage: 03_build
-unit: supabase-postgres-authenticated-trace-resolution-parity
 gate_status: closed
 decision: accepted
-reviewer: human
-reviewed_at: 2026-09-08T23:36:16+05:30
-build_evidence_sha256: fd78d61f7d54762359fb164b6ee5a0a4497a6ad7322d06a5028fa748b39b9050
-verification_sha256: eb8429b82a6c3be6fafbf1205a9a300cc394f2d4f4ebc7adab89e1ddb0e217a7
+reviewer: user (explicit acceptance in this task)
+reviewed_at: 2026-09-26T18:00:46.374Z
+build_evidence_sha256: bf6b679736e38e67a853415785510f4f3cfe4e3e7518d4b01d8e6bd1774680ea
+verification_sha256: bcda5d299cfea309c4bcb0ea43ea56ffe5435cb853418135b5c15020cda099bf
 ---
 
-# Supabase Stage 03 human gate
+# Human review — A01 Build
 
-The accepted trace-resolution slice is implemented locally and has passed
-hosted TEST verification in Supabase project `tonuxepirauyqcwbwenw`. Human
-review is required before Stage 04.
+Review [BUILD_EVIDENCE.md](BUILD_EVIDENCE.md), [VERIFY.md](VERIFY.md), the
+[Case report](replay/checkout.md) and [unapproved preview](preview/preview.md).
+These hashes bind the exact review package. Automated verification opens this
+gate and cannot accept it.
 
-## Review checklist
+The user accepted Stage 02 Data, authorizing this implementation. Per AGENTS.md
+and factory/CONTEXT.md, a person must accept or request changes here before
+Stage 04 begins. Record reviewer, review time and decision against these hashes.
 
-- [x] Confirm explicit `d1` and `supabase` provider selection, with no silent
-  fallback, is acceptable.
-- [x] Confirm the Supabase adapter's read-only transaction, transaction-local
-  tenant settings, explicit predicates, TLS, and transaction-pooler constraints
-  are acceptable.
-- [x] Confirm the hosted fixture counts `2 / 2 / 2 / 77` and owner results of
-  28 and 49 events are correct.
-- [x] Confirm cross-tenant reads, missing-context reads, reader mutations,
-  sequence gaps, invalid transitions, foreign subjects, and event mutations
-  were denied as required.
-- [x] Accept the trace-subject correction: later trace-subject events bind to
-  the first source trace subject in that trace rather than assuming the source
-  subject equals the read-model trace ID.
-- [x] Confirm the final Supabase Advisor state of six fresh-dataset `Unused
-  Index` INFO notices is acceptable after all warning-level findings were
-  cleared.
-- [x] Confirm the short-lived runtime probe role and local secret files were
-  removed and that no persistent runtime credential exists yet.
-- [x] Confirm D1 remains the rollback path because the four-table slice does not
-  preserve full non-trace subject binding or write authority.
-- [x] Confirm persistent runtime credentials and deployed route configuration
-  remain later work and are not authorized by accepting this gate alone.
-- [x] Choose `accepted`, `changes-requested`, or `rejected`.
+## Scope of acceptance
 
-## Reviewed artifacts
+Accept the local deterministic Case lifecycle, exact approval control,
+intervention-dependent simulator, durable history, separate grader and scoped
+verification evidence. Model evaluation and actual human runtime approval
+remain NOT_RUN. Accepting Build does not grant any simulated rollback, claim
+full AI hiring proof or authorize a LIVE effect.
 
-| Artifact | SHA-256 |
-|---|---|
-| `factory/03_build/output/BUILD_EVIDENCE.md` | `fd78d61f7d54762359fb164b6ee5a0a4497a6ad7322d06a5028fa748b39b9050` |
-| `factory/03_build/output/VERIFY.md` | `eb8429b82a6c3be6fafbf1205a9a300cc394f2d4f4ebc7adab89e1ddb0e217a7` |
+## Reviewer notes
 
-## Decision
-
-`accepted`
-
-The human accepted this Stage 03 TEST build and its disclosed boundaries in the
-Codex task on 2026-09-08T23:36:16+05:30. Stage 04 verification may now begin;
-this decision does not create persistent database credentials or authorize a
-deployment.
+The user explicitly accepted this exact Build package. The reviewed artifact
+hashes above are unchanged; the timestamp records application of that decision.
+Stage 04 verification is authorized. This is not a runtime rollback grant,
+model-quality endorsement or acceptance of later stages.

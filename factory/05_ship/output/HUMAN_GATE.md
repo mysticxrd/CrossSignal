@@ -1,52 +1,25 @@
 ---
-type: human-gate
+unit: a01-synthetic-revenue-investigation
 stage: 05_ship
-unit: supabase-postgres-authenticated-trace-resolution-parity
 gate_status: closed
 decision: accepted
-reviewer: human
-reviewed_at: 2026-09-09T00:02:08+05:30
-release_manifest_sha256: 697e52ff7aae064cfeb51df807029b2268138647a7f54de79ac2b9e8c0db7324
-demo_script_sha256: c0166ba62e5771ea9cb0dedc1e25b0a3e021a739ae82976cc4468f9e6106a3bb
-verification_sha256: bb69589871a52a9f031acd13b72ed7ade9611ba1023259871f219bc18dc9b4f1
+reviewer: user (continue following final packaging review)
+reviewed_at: 2026-09-29T06:00:57.5878709Z
+release_manifest_sha256: 3ae5a01cfa442f66d42c6aeb97fac5c17159be4f83235e212ce9597f0b90a542
+demo_script_sha256: 8b3a6b1ae9b99f207b6cb90dd3dfbcb6718fd2d0945074d1e178a8acf8176bf8
+verification_sha256: 2f23b01e66e1c1ff5ec8b8633617f8c972b35cd9b68445de86aff51c12a12c74
 ---
 
-# Supabase Stage 05 final human gate
+# Final packaging review
 
-This gate binds the evaluator-facing TEST release candidate to product commit
-`a6bd74eba5ab3a709ae959690932521c856e76e1`.
+Review [release manifest](RELEASE_MANIFEST.md), run [the cold demo](DEMO_SCRIPT.md)
+and inspect [verification](VERIFY.md). AGENTS.md requires this human gate before
+the complete release is committed and sealed. Acceptance applies to the local
+deterministic mechanics preview with its explicit remaining proof gaps.
 
-## Cold-review checklist
+It is not runtime rollback approval, model evaluation, production deployment,
+actual Mobile Safari verification or a business outcome. No publish is proposed.
 
-- [x] Run `npm ci` in a clean checkout or confirm the locked dependency install.
-- [x] Run `npm run verify:build`, `npm run verify:release`,
-  `npm run verify:ship`, and `npm run build`.
-- [x] Confirm the release is consistently labeled TEST.
-- [x] Confirm hosted counts `2 / 2 / 2 / 77`, owner results `28 / 49`, zero
-  cross-tenant visibility, and SELECT-only reader authority.
-- [x] Confirm zero security advisories and five fresh-dataset `Unused Index`
-  INFO notices are represented accurately.
-- [x] Confirm the empty Supabase migration ledger is disclosed.
-- [x] Confirm no deployed Supabase route or persistent credential is claimed.
-- [x] Confirm D1 remains the rollback path and complete replacement is not
-  claimed.
-- [x] Confirm the product commit and cold reviewer path are sufficient for the
-  portfolio proof.
-- [x] Choose `accepted`, `changes-requested`, or `rejected`.
+## Reviewer notes
 
-## Reviewed artifacts
-
-| Artifact | SHA-256 |
-|---|---|
-| `factory/05_ship/output/RELEASE_MANIFEST.md` | `697e52ff7aae064cfeb51df807029b2268138647a7f54de79ac2b9e8c0db7324` |
-| `factory/05_ship/output/DEMO_SCRIPT.md` | `c0166ba62e5771ea9cb0dedc1e25b0a3e021a739ae82976cc4468f9e6106a3bb` |
-| `factory/05_ship/output/VERIFY.md` | `bb69589871a52a9f031acd13b72ed7ade9611ba1023259871f219bc18dc9b4f1` |
-
-## Decision
-
-`accepted`
-
-The human accepted this evaluator-facing TEST release and its disclosed limits
-in the Codex task on 2026-09-09T00:02:08+05:30. This acceptance authorizes the
-repository release seal; it does not authorize deployment or persistent
-database credentials.
+The user instructed "continue" after the final packaging review and its stated acceptance requirement. This authorizes finalizing, committing and sealing this exact local deterministic mechanics package. Reviewed artifact hashes are unchanged. Model evaluation and actual human runtime approval remain NOT_RUN; no runtime intervention or deployment is authorized by this gate.

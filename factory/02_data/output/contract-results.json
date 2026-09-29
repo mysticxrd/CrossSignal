@@ -1,0 +1,29 @@
+{
+  "scope": "DATA_CONTRACT_ONLY",
+  "fixtures": {
+    "complete": 20,
+    "limited": 13,
+    "injection": 21
+  },
+  "branches": {
+    "checkout": 190,
+    "notifications": 120,
+    "none": 120
+  },
+  "artifactSha256": "1b921bcc39c4b8698f6110c1cd98340902c7d3eeb1115a49defa5d19a0ea1129",
+  "rejectedContracts": 19,
+  "isolation": {
+    "deniedReads": 4,
+    "deniedWrites": 1,
+    "deniedChildren": 1,
+    "answerEnvironmentAbsent": true
+  },
+  "storage": {
+    "rejections": 11,
+    "interruptedTransactionRolledBack": true,
+    "committedEffectsAfterReopen": 1,
+    "committedWorldRevisions": 2,
+    "committedTimelineEvents": 1
+  },
+  "modelEvaluation": "NOT_RUN"
+}

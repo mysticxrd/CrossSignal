@@ -1,0 +1,175 @@
+{
+  "sourceCommit": "58b2aa09b7208bb9a7b9b3cee5a12adeb54c8a11",
+  "sealCommand": "node factory/seal.mjs",
+  "sealResult": "passed before transition",
+  "files": [
+    {
+      "path": "factory/CONTEXT.md",
+      "sha256": "9cb1f010e194fd1e2463cca6cd39454c17d902f0b45d073e1fc3fa80fc7cba77"
+    },
+    {
+      "path": "factory/seal.mjs",
+      "sha256": "3677085ff09b983e03dd69b7b27d060eca32fa155464f7df3de3dad11bafb65e"
+    },
+    {
+      "path": "factory/status.mjs",
+      "sha256": "a1bfc445aeab8e9672885c13bc73aabf0aaef0a90f9d44f8ae17cf36b2cfbbe5"
+    },
+    {
+      "path": "factory/01_spec/CONTEXT.md",
+      "sha256": "740cde6585aab54644a12307b13944ec91029c9ab8f8f38775e5eba5e6d0a6de"
+    },
+    {
+      "path": "factory/01_spec/verify.mjs",
+      "sha256": "7d2c5a802dad275b5eae2946cb366b5a1d573aa947a8472c6b200a67a5747cf9"
+    },
+    {
+      "path": "factory/01_spec/output/HUMAN_GATE.md",
+      "sha256": "cfd37c326c0549f0168cd1c87384d1392ea79558515f23317fc698fe20a86c2f"
+    },
+    {
+      "path": "factory/01_spec/output/SPEC.md",
+      "sha256": "0e1990a042bde9b443482f9862e85158414d5098ed6c9348bfb9a08a931741d7"
+    },
+    {
+      "path": "factory/01_spec/output/VERIFY.md",
+      "sha256": "462aacdc3df0afeb6bd353f51ccc1b1ae9d02d93b996e112421e349305ed5dde"
+    },
+    {
+      "path": "factory/02_data/CONTEXT.md",
+      "sha256": "b57f6e2f6009097f3e8b1bd211a0de0d720fd02d45be41fc45366dc621e0e465"
+    },
+    {
+      "path": "factory/02_data/verify.mjs",
+      "sha256": "b8d155672cd1bb7d33f8b2eeda90778d98486258c69c944933d6ab5d530a002c"
+    },
+    {
+      "path": "factory/02_data/fixtures/l14-trace-resolution.fixture.mjs",
+      "sha256": "d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d"
+    },
+    {
+      "path": "factory/02_data/fixtures/supabase-trace-resolution.fixture.mjs",
+      "sha256": "cfc5ee7e900595ba0fbc220bd8b6208671f5060da1dbec107a5301ad13dc95f1"
+    },
+    {
+      "path": "factory/02_data/output/DATA_PACKAGE.md",
+      "sha256": "325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861"
+    },
+    {
+      "path": "factory/02_data/output/HUMAN_GATE.md",
+      "sha256": "d24286f9b772d9fa66ef3775dbf3d8fdaac5dacf481b088f0745b7069abf3220"
+    },
+    {
+      "path": "factory/02_data/output/VERIFY.md",
+      "sha256": "2db791528904ccbe7586018321fb23c7639e9aa10cd070cdcec9e3cf60f87fc6"
+    },
+    {
+      "path": "factory/02_data/postgres/0001_trace_resolution_read_model.sql",
+      "sha256": "11818cf9c18ad92029bb624018582f665481e7b4cd986a577370c3f2fd914cdb"
+    },
+    {
+      "path": "factory/02_data/postgres/0001_trace_resolution_read_model.tests.sql",
+      "sha256": "29e37960cec710a707e011509ccdec56f051fbac95cbc250be266f236ae4fa0b"
+    },
+    {
+      "path": "factory/03_build/CONTEXT.md",
+      "sha256": "f0395528d80dfcf6a6a673a34e590ee97001fe5c586817ed6dbb956e986915f7"
+    },
+    {
+      "path": "factory/03_build/generate-supabase-fixture-sql.mjs",
+      "sha256": "0f29bd1dd28980650e7943b3f3de574ec65547641e2b3eb0270798390446f270"
+    },
+    {
+      "path": "factory/03_build/verify.mjs",
+      "sha256": "8fdfb9ddf96550fcd897b001131220e3af5fd67caec9f6ae1170d73570d093d7"
+    },
+    {
+      "path": "factory/03_build/output/BUILD_EVIDENCE.md",
+      "sha256": "fd78d61f7d54762359fb164b6ee5a0a4497a6ad7322d06a5028fa748b39b9050"
+    },
+    {
+      "path": "factory/03_build/output/HUMAN_GATE.md",
+      "sha256": "5163d553740de8884e89aa4029426649cf01fc60411ae0cb453a09543682e1db"
+    },
+    {
+      "path": "factory/03_build/output/VERIFY.md",
+      "sha256": "eb8429b82a6c3be6fafbf1205a9a300cc394f2d4f4ebc7adab89e1ddb0e217a7"
+    },
+    {
+      "path": "factory/04_verify/CONTEXT.md",
+      "sha256": "620f3b24cb8f9722a2802ff3195f449b681b97f7f3e8c62e1f9fa773b5f6e2fa"
+    },
+    {
+      "path": "factory/04_verify/verify.mjs",
+      "sha256": "f5356169f428b6fcf957f14c054aefd014badc92347d2f0126be32046b6b1afe"
+    },
+    {
+      "path": "factory/04_verify/output/HUMAN_GATE.md",
+      "sha256": "fbf8624d50ac73178470afed7060585f98d7a5406c601a59bdc3293f786d669f"
+    },
+    {
+      "path": "factory/04_verify/output/VERIFICATION_REPORT.md",
+      "sha256": "ebe9841398a48f82aad95b2a15fee1c4adafd57afd5101636a9b670758cf8b6b"
+    },
+    {
+      "path": "factory/04_verify/output/VERIFY.md",
+      "sha256": "6fde2f59e9db80fb43b51ee24936f3e26aecb48555abfb6ed0b9950a8ddf6c61"
+    },
+    {
+      "path": "factory/05_ship/CONTEXT.md",
+      "sha256": "2489ff3b131b3d401e8923d551e5331c06f3e6b3d8c4e1340c8275f87829287f"
+    },
+    {
+      "path": "factory/05_ship/prepare.mjs",
+      "sha256": "0a100b5c6e96788794403b70b4d52abe591e41eea5e1fd2f06ff0cb58d944093"
+    },
+    {
+      "path": "factory/05_ship/verify.mjs",
+      "sha256": "db06a9c17bdd92c6a2b81fa09dbf19016120e4a3d45ff5b6add9f7539332ec7d"
+    },
+    {
+      "path": "factory/05_ship/output/DEMO_SCRIPT.md",
+      "sha256": "c0166ba62e5771ea9cb0dedc1e25b0a3e021a739ae82976cc4468f9e6106a3bb"
+    },
+    {
+      "path": "factory/05_ship/output/HUMAN_GATE.md",
+      "sha256": "575ada9fd8525395881e72c10bd7341b5abe7efc1ff56555eaec693ddbbbce5e"
+    },
+    {
+      "path": "factory/05_ship/output/RELEASE_MANIFEST.md",
+      "sha256": "697e52ff7aae064cfeb51df807029b2268138647a7f54de79ac2b9e8c0db7324"
+    },
+    {
+      "path": "factory/05_ship/output/VERIFY.md",
+      "sha256": "bb69589871a52a9f031acd13b72ed7ade9611ba1023259871f219bc18dc9b4f1"
+    },
+    {
+      "path": "factory/_lib/CONTEXT.md",
+      "sha256": "e435006786a8068efe031bb3a160c0fd8ea02acbd2d8c43d6e2874c95567478b"
+    },
+    {
+      "path": "factory/_lib/factory-state.mjs",
+      "sha256": "72870904445d54f01eea443ed5a5de1b2af2fd19df66e085a52bf47982594d28"
+    },
+    {
+      "path": "factory/_lib/factory-tools.test.mjs",
+      "sha256": "a200bbe88cfa199f7bf0b4f7314bb200a6f232c75433791c8d51b96b370764c1"
+    },
+    {
+      "path": "factory/_lib/verify-kit.mjs",
+      "sha256": "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c"
+    },
+    {
+      "path": "factory/_shared/ARCHITECTURE_SNAPSHOT.md",
+      "sha256": "e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084"
+    },
+    {
+      "path": "factory/_shared/QUALITY_GATES.md",
+      "sha256": "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f"
+    },
+    {
+      "path": "factory/_templates/stage/CONTEXT.md",
+      "sha256": "4acc6b033afee6220b7fc0bb5c640d383b199911853df36ddc26f925e51c1736"
+    }
+  ]
+}

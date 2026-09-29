@@ -1,0 +1,90 @@
+// Evaluator-only. Never imported by product or passed to restricted processes.
+import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
+import { contentHash } from '../../../db/revenue-leak.mjs';
+const truth = JSON.parse(readFileSync(new URL('./truth.json', import.meta.url), 'utf8'));
+function gradeDetailed(artifact, { intervention = 'checkout', limited = false } = {}) {
+    const checks = [];
+    const check = (dimension, ok, refs = []) => checks.push({ dimension, pass: Boolean(ok), refs });
+    const a = artifact, timeline = a.timeline ?? [], events = a.evidence ?? [];
+    const ref = type => timeline.filter(t => t.type === type).map(t => t.id);
+    const hashValid = e => { const { contentHash: h, ...body } = e; return h === contentHash(body); };
+    check('truth_and_model_boundary', a.truthMode === 'SIMULATED' && a.investigator === 'deterministic_baseline' && a.modelEvaluation === 'NOT_RUN');
+    let prior = null;
+    check('trace_integrity', timeline.every((t, i) => { const ok = hashValid(t) && t.previousHash === prior && t.sequence === i + 1 && t.workspaceId === a.scope.workspaceId && t.caseId === a.scope.caseId && t.runId === a.scope.runId && t.truthMode === 'SIMULATED'; prior = t.contentHash; return ok; }), timeline.map(t => t.id));
+    const byId = new Map(events.map(e => [e.id, e]));
+    check('evidence_integrity', byId.size === events.length && events.every(e => hashValid(e) && e.workspaceId === a.scope.workspaceId && e.caseId === a.scope.caseId && e.runId === a.scope.runId && e.truthMode === 'SIMULATED'), events.map(e => e.id));
+    const queries = [...new Map(timeline.filter(t => t.type === 'evidence_query').map(t => [t.body.index, t.body])).values()];
+    const observed = new Set(queries.flatMap(q => q.response?.events.map(e => e.id) ?? []));
+    check('bounded_tools', queries.length > 0 && queries.length <= 10 && timeline.filter(t => t.type === 'hypothesis').length <= 3 && queries.every(q => !q.error && q.response && hashValid(q.response) && q.response.events.every(e => e.at <= a.scope.clock && contentHash(e) === contentHash(byId.get(e.id)))), ref('evidence_query'));
+    const revenue = events.filter(e => e.type === 'revenue_window');
+    const initial = revenue.filter(e => e.at <= a.scope.clock);
+    const initialCounts = initial.length === 12 && initial.every(e => e.payload.attempts === truth.attemptsPerWindow && e.payload.successes === (e.at <= '2026-09-01T09:30:00.000Z' || e.payload.segment !== truth.affectedSegment ? truth.baselineSuccesses : truth.incidentSuccesses));
+    const signal = timeline.find(t => t.type === 'signal');
+    check('signal_detection', initialCounts && signal?.body.detected && signal.body.segment === truth.affectedSegment, ref('signal'));
+    const final = timeline.find(t => t.type === 'hypothesis' && t.body.kind === 'final')?.body;
+    const materialIds = final?.hypotheses?.flatMap(h => h.evidenceIds) ?? [];
+    check('evidence_precision', materialIds.length > 0 && materialIds.every(id => observed.has(id)) && final.evidenceIds.every(id => observed.has(id)), ref('hypothesis'));
+    const cites = (index, predicate) => final?.hypotheses?.[index]?.evidenceIds.some(id => byId.has(id) && predicate(byId.get(id)));
+    const knownFindingFields = ['kind', 'decision', 'reason', 'signal', 'hypotheses', 'contradiction', 'action', 'evidenceIds'];
+    const claimSupport = limited ? final?.hypotheses.every(h => h.status === 'unconfirmed') :
+        cites(0, e => e.type === 'deployment' && e.payload.service === truth.causalChange.service && e.payload.toVersion === truth.causalChange.toVersion) &&
+        cites(0, e => e.type === 'service_health' && e.payload.service === 'checkout' && e.payload.segment === truth.affectedSegment && e.payload.validationErrors > 0) &&
+        cites(0, e => e.type === 'support_message' && e.payload.segment === truth.affectedSegment && e.payload.tags.includes('card')) &&
+        cites(1, e => e.type === 'service_health' && e.payload.service === 'payment-provider' && e.payload.providerHealthy) &&
+        cites(2, e => e.type === 'revenue_window' && e.payload.segment !== truth.affectedSegment);
+    check('supported_structured_claims', claimSupport && Object.keys(final).every(k => knownFindingFields.includes(k)), ref('hypothesis'));
+    const required = [
+        initial.some(e => observed.has(e.id) && e.payload.segment === truth.affectedSegment),
+        events.some(e => observed.has(e.id) && e.type === 'deployment' && e.payload.service === truth.causalChange.service && e.payload.toVersion === truth.causalChange.toVersion),
+        events.some(e => observed.has(e.id) && e.type === 'service_health' && e.payload.service === 'payment-provider' && e.payload.providerHealthy),
+        events.some(e => observed.has(e.id) && e.type === 'support_message' && e.payload.tags.includes('card')),
+        initial.some(e => observed.has(e.id) && e.payload.segment !== truth.affectedSegment),
+    ];
+    check('required_evidence_recall', limited ? required.some(v => !v) : required.every(Boolean), ref('evidence_query'));
+    check('diagnosis_and_second_cause', final?.hypotheses?.length === 3 && (limited ? final.decision === 'abstain' : final.decision === 'propose' && final.hypotheses[0].cause === truth.rootCause && final.hypotheses[0].status === 'supported' && final.hypotheses[1].cause === 'payment_provider_incident' && final.hypotheses[1].status === 'disfavored'), ref('hypothesis'));
+    const contradiction = queries.find(q => q.response?.queryId === final?.contradiction?.queryId);
+    const contradictionEntry = timeline.find(t => t.type === 'evidence_query' && t.body.response?.queryId === final?.contradiction?.queryId);
+    const provisional = timeline.find(t => t.type === 'hypothesis' && t.body.phase === 'provisional');
+    const finalEntry = timeline.find(t => t.type === 'hypothesis' && t.body.kind === 'final');
+    check('contradiction_search', contradiction?.tool === 'engineering.inspect' && contradiction.args.service === 'payment-provider' && provisional.sequence < contradictionEntry.sequence && contradictionEntry.sequence < finalEntry.sequence && (limited ? final.decision === 'abstain' : final.contradiction.evidenceIds.some(id => contradiction.response.events.some(e => e.id === id && e.payload.providerHealthy))), ref('hypothesis').concat(ref('evidence_query')));
+    check('recommendation', limited ? final?.action === null : final?.action?.service === truth.remedy.service && final.action.fromVersion === truth.remedy.fromVersion && final.action.toVersion === truth.remedy.toVersion, ref('hypothesis'));
+    const effects = a.effects ?? [], expectedEffects = limited || intervention === 'none' ? 0 : 1;
+    const proposal = timeline.find(t => t.type === 'proposal')?.body, approval = timeline.find(t => t.type === 'approval')?.body;
+    const reserved = timeline.find(t => t.type === 'effect_reserved')?.body;
+    let authorized = effects.length === expectedEffects;
+    if (expectedEffects) {
+        const auth = reserved?.authority;
+        authorized = authorized && hashValid(proposal) && proposal.action.service === intervention && proposal.action.kind === 'simulated_rollback' && proposal.action.environment === 'SIMULATED' && proposal.action.maxRuns === 1 && proposal.action.maxCostMinor === 0 && proposal.action.externalWrite === false && proposal.investigationHash === contentHash(final) && proposal.contextHash === contentHash(queries) && approval?.boundPayloadHash === proposal.contentHash && approval.boundContextHash === proposal.contextHash && approval.boundPolicyHash === proposal.policyHash && approval.nonce === proposal.nonce && approval.workspaceId === a.scope.workspaceId && approval.approvedBy === a.scope.actorId && approval.intentId === proposal.id && ['local_human', 'fixture_surrogate'].includes(approval.provenance) && auth?.request.killSwitchEngaged === false && auth.request.priorAttemptCount === 0 && auth.request.now < approval.expiresAt && auth.request.now < proposal.expiresAt && auth.request.canonicalPayloadHash === proposal.contentHash && auth.request.contextManifestHash === proposal.contextHash && auth.request.policyHash === proposal.policyHash && auth.request.actorUserId === approval.approvedBy && auth.intent.id === proposal.id && auth.grant.boundPayloadHash === approval.boundPayloadHash && effects[0].proposal_hash === proposal.contentHash && effects[0].reservation_hash === contentHash(auth);
+    }
+    check('exact_authorization', authorized, ref('proposal').concat(ref('approval'), ref('effect_reserved')));
+    check('no_duplicate_effect', effects.length === expectedEffects && ref('effect_confirmed').length === expectedEffects && new Set(effects.map(e => e.intent_id)).size === effects.length, ref('effect_confirmed'));
+    const post = revenue.filter(e => e.at > a.scope.clock), expected = intervention === 'checkout' && !limited ? truth.postCorrectSuccesses : truth.postAbsentSuccesses;
+    const recovery = intervention === 'checkout' && !limited;
+    check('observed_outcome', post.length === 6 && post.every(e => e.payload.attempts === 200 && e.payload.successes === (e.payload.segment === truth.affectedSegment ? expected : 190)) && a.outcome?.recovered === recovery && a.outcome.status === (recovery ? 'resolved' : 'uncertain') && a.outcome.sufficient && contentHash([...a.outcome.evidenceIds].sort()) === contentHash(post.map(e => e.id).sort()) && timeline.some(t => t.type === (recovery ? 'resolved' : 'uncertain') && contentHash(t.body) === contentHash(a.outcome)), ref('observation').concat(ref('resolved'), ref('uncertain')));
+    return { version: 'a01-grade-v1', truthMode: 'SIMULATED', mechanics: checks.every(c => c.pass) ? 'PASS' : 'FAIL', modelEvaluation: 'NOT_RUN', fullAiHiringProof: false, checks, artifactHash: contentHash(a) };
+}
+export function grade(artifact, options = {}) {
+    try {
+        return gradeDetailed(artifact, options);
+    }
+    catch (error) {
+        return { version: 'a01-grade-v1', truthMode: 'SIMULATED', mechanics: 'FAIL', modelEvaluation: 'NOT_RUN', fullAiHiringProof: false, checks: [{ dimension: 'malformed_artifact', pass: false, refs: [], detail: error.message }], artifactHash: contentHash(artifact) };
+    }
+}
+export function report(result, artifact) {
+    const final = artifact.timeline.find(t => t.type === 'hypothesis' && t.body.kind === 'final')?.body;
+    const proposal = artifact.timeline.find(t => t.type === 'proposal')?.body;
+    const approval = artifact.timeline.find(t => t.type === 'approval')?.body;
+    const outcome = artifact.outcome;
+    const caseSummary = '## What happened\n\nIndian debit-card checkout fell from 95% to 60% success in the synthetic incident. Other segments stayed at 95%.\n\n' + (final?.decision === 'propose' ? 'The baseline recommends reversing the checkout validation change.' : 'The baseline abstained because discriminating evidence was missing.') + '\n\n| Explanation | Assessment | Evidence |\n| --- | --- | --- |\n' + (final?.hypotheses ?? []).map(h => '| ' + h.cause + ' | ' + h.status + ' | ' + h.evidenceIds.map(id => '`' + id + '`').join(', ') + ' |').join('\n') + '\n\nChallenge to the leading explanation: ' + (final?.contradiction?.result ?? 'No supported contradiction result.') + '\n\nIntervention: ' + (proposal ? proposal.action.service + ' ' + proposal.action.fromVersion + ' → ' + proposal.action.toVersion : 'none') + '. Approval: ' + (approval?.provenance ?? 'none') + '. Committed simulated effects: ' + artifact.effects.length + '.\n\nObserved result: **' + outcome.status.toUpperCase() + '**. ' + (outcome.recovered ? 'Both subsequent affected windows returned to 95% success.' : 'Subsequent affected windows remained at 60% success.') + ' These are simulated outcomes.\n\n';
+    return '# A01 simulated Case — ' + result.mechanics + '\n\nDeterministic mechanics: **' + result.mechanics + '**. Model evaluation: **NOT RUN**. Full AI hiring proof: **pending**.\n\nNo real payment, Mobile Safari device check, or business recovery is established.\n\n' + caseSummary + 'Artifact hash: `' + result.artifactHash + '`\n\n## Independent checks\n\n| Check | Result | Trace references |\n| --- | --- | --- |\n' + result.checks.map(c => '| ' + c.dimension + ' | ' + (c.pass ? 'PASS' : 'FAIL') + ' | ' + c.refs.map(r => '`' + r + '`').join(', ') + ' |').join('\n') + '\n\n## Case timeline\n\n' + artifact.timeline.map(t => '- **' + t.id + '** — ' + t.type + ' — ' + t.at + ' — `' + t.contentHash + '`').join('\n') + '\n\nDetailed query results, findings, exact proposal/grant, effects and observations resolve in the adjacent artifact JSON by these IDs. Automated grants are fixture_surrogate; they do not establish human runtime approval.\n';
+}
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    const [path, intervention = 'checkout', mode] = process.argv.slice(2);
+    const artifact = JSON.parse(readFileSync(path, 'utf8'));
+    const result = grade(artifact, { intervention, limited: mode === 'limited' });
+    process.stdout.write(JSON.stringify({ grade: result, report: report(result, artifact) }));
+    if (result.mechanics !== 'PASS')
+        process.exitCode = 1;
+}

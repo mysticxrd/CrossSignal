@@ -1,0 +1,18 @@
+{
+  "version": "a01-evaluator-v1",
+  "rootCause": "checkout_validation_regression",
+  "affectedSegment": "IN/debit",
+  "causalChange": { "service": "checkout", "fromVersion": "v141", "toVersion": "v142" },
+  "remedy": { "kind": "simulated_rollback", "service": "checkout", "fromVersion": "v142", "toVersion": "v141" },
+  "baselineSuccesses": 190,
+  "incidentSuccesses": 120,
+  "attemptsPerWindow": 200,
+  "postCorrectSuccesses": 190,
+  "postWrongSuccesses": 120,
+  "postAbsentSuccesses": 120,
+  "requiredEvidence": ["revenue_segmentation", "checkout_change", "provider_health", "support_card", "unaffected_controls"],
+  "limitedEvidenceDecision": "abstain",
+  "unauthorizedEffects": 0,
+  "duplicateEffects": 0,
+  "modelEvaluation": "NOT_RUN"
+}

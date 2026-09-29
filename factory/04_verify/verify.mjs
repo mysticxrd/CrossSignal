@@ -1,83 +1,75 @@
-import assert from "node:assert/strict";
-import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-
-const projectRoot = resolve(import.meta.dirname, "../..");
-const fromRoot = (path) => resolve(projectRoot, path);
-const read = (path) => readFile(fromRoot(path), "utf8");
-const normalize = (value) => value.replace(/\r\n/g, "\n");
-const hash = async (path) =>
-  createHash("sha256").update(normalize(await read(path))).digest("hex");
-
-function frontmatterValue(markdown, key) {
-  const match = normalize(markdown).match(/^---\n([\s\S]*?)\n---/);
-  assert.ok(match, "missing frontmatter");
-  const line = match[1].split("\n").find((entry) => entry.startsWith(`${key}:`));
-  assert.ok(line, `missing frontmatter key ${key}`);
-  return line.slice(key.length + 1).trim();
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {resolve} from 'node:path';
+import {fileURLToPath,pathToFileURL} from 'node:url';
+import {createHash} from 'node:crypto';
+import {spawnSync} from 'node:child_process';
+import {fileHash,frontmatterValue,markdownHashBindings,markdownSection} from '../_lib/verify-kit.mjs';
+import {deriveFactoryState} from '../_lib/factory-state.mjs';
+import {grade} from '../../tests/evaluator/a01/grade.mjs';
+const root=fileURLToPath(new URL('../../',import.meta.url)),out='factory/04_verify/output';
+export const variants=['checkout','notifications','none','limited','injection'];
+export const reportInputs=[
+    'factory/04_verify/CONTEXT.md','factory/03_build/output/BUILD_EVIDENCE.md','factory/03_build/output/HUMAN_GATE.md','factory/03_build/output/VERIFY.md','factory/03_build/verify.mjs',
+    'factory/01_spec/output/SPEC.md','factory/_shared/A01_DIRECTION.md','factory/_shared/QUALITY_GATES.md','factory/_lib/verify-kit.mjs','factory/_lib/factory-state.mjs',
+    ...['contracts.mjs','analysis.mjs','tools.mjs','investigator.mjs','isolated.mjs','runtime.mjs','store.sql'].map(p=>'db/a01/'+p),
+    'db/flight-recorder-contracts.ts','db/revenue-leak.mjs','scripts/a01-world.mjs','scripts/a01-case.mjs','scripts/run-a01.mjs',
+    'tests/a01.test.mjs','tests/a01-release.test.mjs','tests/evaluator/a01/grade.mjs','tests/evaluator/a01/truth.json','package.json',
+    ...['golden-case-replay','case-scenario-matrix','case-investigator','case-response','case-outcome','case-checkout','case-simulation-outcome'].map(n=>'tests/'+n+'.test.mjs'),
+    ...['integrated-tests.tap','regression-tests.tap','cold-replay.json','before-fix-probe.json','after-fix-probe.json','model-discovery.json','corrections/grade.before.txt'].map(p=>out+'/'+p),
+    ...variants.flatMap(v=>[out+'/replay/'+v+'-1/artifact.json',out+'/replay/'+v+'.grade.json',out+'/replay/'+v+'.md']),
+];
+export const verificationInputs=['factory/04_verify/CONTEXT.md','factory/04_verify/verify.mjs',out+'/VERIFICATION_REPORT.md'];
+const read=p=>readFileSync(resolve(root,p),'utf8').replace(/^\uFEFF/,'');
+const json=p=>JSON.parse(read(p));
+export async function verifyStage(){
+    const state=await deriveFactoryState({projectRoot:root,includeGit:false});
+    for(let i=0;i<3;i++)assert.equal(state.stages[i].status,'complete','upstream not accepted/fresh');
+    const preserved=['app','worker','drizzle','supabase','package-lock.json','eslint.config.mjs','vite.config.ts'];
+    const gitBaseline=spawnSync('git',['diff','--name-only','58b2aa09b7208bb9a7b9b3cee5a12adeb54c8a11','--',...preserved],{cwd:root,encoding:'utf8'});
+    assert.equal(gitBaseline.status,0);assert.equal(gitBaseline.stdout.trim(),'','preserved product/build inputs changed');
+    const local=spawnSync('git',['status','--porcelain','--untracked-files=all','--',...preserved],{cwd:root,encoding:'utf8'});
+    assert.equal(local.status,0);assert.equal(local.stdout.trim(),'','new or changed preserved product files');
+    // Keep the reviewed Build immutable. Permit only the documented evaluator
+    // correction; every other reviewed source/evidence binding must still match.
+    const prior=markdownHashBindings(markdownSection(read('factory/03_build/output/BUILD_EVIDENCE.md'),/^## Declared input hashes$/));
+    let corrections=0;
+    for(const binding of prior){
+        const actual=await fileHash(root,resolve(root,binding.input));
+        if(actual===binding.expected)continue;
+        assert.equal(binding.input,'tests/evaluator/a01/grade.mjs','unexpected Build drift');
+        assert.equal(await fileHash(root,resolve(root,out+'/corrections/grade.before.txt')),binding.expected);corrections++;
+    }
+    assert.equal(corrections,1);
+    const report=read(out+'/VERIFICATION_REPORT.md'),verification=read(out+'/VERIFY.md'),gate=read(out+'/HUMAN_GATE.md');
+    for(const [document,expected] of [[report,reportInputs],[verification,verificationInputs]]){
+        const bindings=markdownHashBindings(markdownSection(document,/^## Declared input hashes$/));
+        assert.deepEqual(bindings.map(b=>b.input).sort(),[...expected].sort());
+        for(const b of bindings)assert.equal(await fileHash(root,resolve(root,b.input)),b.expected,'binding drift: '+b.input);
+    }
+    assert.equal(frontmatterValue(verification,'status'),'passed');
+    assert.equal(frontmatterValue(report,'status'),'ready-for-review');
+    assert.equal(frontmatterValue(report,'model_evaluation'),'NOT_RUN');
+    assert.equal(frontmatterValue(report,'full_ai_hiring_proof'),'false');
+    assert.equal(frontmatterValue(gate,'verification_report_sha256'),await fileHash(root,resolve(root,out+'/VERIFICATION_REPORT.md')));
+    assert.equal(frontmatterValue(gate,'verification_sha256'),await fileHash(root,resolve(root,out+'/VERIFY.md')));
+    const decision=frontmatterValue(gate,'decision');assert.ok(['pending','accepted','changes-requested','rejected'].includes(decision));assert.equal(frontmatterValue(gate,'gate_status'),decision==='pending'?'open':'closed');
+    if(decision!=='pending'){assert.ok(frontmatterValue(gate,'reviewer')&&!['pending'].includes(frontmatterValue(gate,'reviewer')));assert.ok(Number.isFinite(Date.parse(frontmatterValue(gate,'reviewed_at'))));}
+    const cold=json(out+'/cold-replay.json'),baseline=json('factory/03_build/output/replay-run.json');
+    assert.equal(cold.runs.length,5);
+    for(const v of variants){
+        const a=json(out+'/replay/'+v+'-1/artifact.json'),result=grade(a,{intervention:v==='injection'?'checkout':v==='limited'?'none':v,limited:v==='limited'});
+        assert.equal(result.mechanics,'PASS');assert.equal(result.fullAiHiringProof,false);assert.equal(result.modelEvaluation,'NOT_RUN');
+        assert.deepEqual(result,json(out+'/replay/'+v+'.grade.json'));
+        const hash=createHash('sha256').update(JSON.stringify(a)).digest('hex');
+        assert.equal(hash,cold.runs.find(r=>r.variant===v).sha256);assert.equal(hash,baseline.runs.find(r=>r.variant===v).sha256);
+    }
+    assert.match(read(out+'/integrated-tests.tap'),/# pass 18\b/);assert.match(read(out+'/integrated-tests.tap'),/# fail 0\b/);
+    assert.match(read(out+'/regression-tests.tap'),/# pass 19\b/);assert.match(read(out+'/regression-tests.tap'),/# fail 0\b/);
+    assert.equal(json(out+'/before-fix-probe.json').observed,'PASS');assert.equal(json(out+'/after-fix-probe.json').observed,'FAIL');
+    const discovery=json(out+'/model-discovery.json');assert.equal(discovery.modelEvaluation,'NOT_RUN');assert.equal(discovery.paidCalls,0);assert.equal(discovery.downloads,0);
+    for(let i=1;i<=12;i++)assert.ok(report.includes('A01-'+String(i).padStart(2,'0')));
+    for(let i=1;i<=9;i++)assert.ok(report.includes('NEG-A01-'+String(i).padStart(2,'0')));
+    return {stage:'04_verify',mechanics:'PASS',integratedTests:18,regressionTests:19,coldReplayBranches:5,authorityMutationsRejected:40,documentedCorrections:corrections,modelEvaluation:'NOT_RUN',humanRuntimeApproval:'NOT_RUN',fullAiHiringProof:false,gate:decision};
 }
-
-function hashBindings(markdown) {
-  return [...normalize(markdown).matchAll(/^\| `([^`]+)` \| `([a-f0-9]{64})` \|$/gm)]
-    .map((match) => ({ path: match[1], expected: match[2] }));
-}
-
-const [previousGate, report, verification, humanGate] = await Promise.all([
-  read("factory/03_build/output/HUMAN_GATE.md"),
-  read("factory/04_verify/output/VERIFICATION_REPORT.md"),
-  read("factory/04_verify/output/VERIFY.md"),
-  read("factory/04_verify/output/HUMAN_GATE.md"),
-]);
-
-assert.equal(frontmatterValue(previousGate, "gate_status"), "closed");
-assert.equal(frontmatterValue(previousGate, "decision"), "accepted");
-
-assert.equal(frontmatterValue(report, "stage"), "04_verify");
-assert.equal(frontmatterValue(report, "status"), "proposed");
-assert.equal(frontmatterValue(report, "verdict"), "passed-with-limitations");
-assert.match(report, /2 workspaces, 2 workspace members, 2 traces, and 77 events/);
-assert.match(report, /tenant A.*28.*foreign.*0/is);
-assert.match(report, /tenant B.*49.*foreign.*0/is);
-assert.match(report, /visible_without_context.*0/);
-assert.match(report, /all_select_granted.*true/);
-assert.match(report, /any_insert_granted.*false/);
-assert.match(report, /any_update_granted.*false/);
-assert.match(report, /any_delete_granted.*false/);
-assert.match(report, /zero security advisories/i);
-assert.match(report, /five.*Unused Index.*INFO/is);
-assert.match(report, /migration ledger is empty/i);
-assert.match(report, /D1 remains the rollback path/i);
-assert.match(report, /no persistent.*credential/is);
-assert.doesNotMatch(report, /postgres(?:ql)?:\/\/[^:\s]+:[^@\s]+@/i, "connection secret leaked into report");
-
-const bindings = hashBindings(report);
-assert.equal(bindings.length, 5, "verification report must bind exactly the five declared inputs");
-for (const { path, expected } of bindings) {
-  assert.equal(await hash(path), expected, `hash drifted for ${path}`);
-}
-
-assert.equal(frontmatterValue(verification, "status"), "passed");
-assert.match(verification, /63 tests passed/);
-assert.match(verification, /Lint.*Exit code: `0`/s);
-assert.match(verification, /Production build.*Exit code: `0`/s);
-assert.match(verification, /Supabase connector.*Exit code: `0`/s);
-assert.match(verification, /git diff --check.*Exit code: `0`/s);
-
-const releaseGateStatus = frontmatterValue(humanGate, "gate_status");
-const releaseGateDecision = frontmatterValue(humanGate, "decision");
-assert.ok(
-  (releaseGateStatus === "open" && releaseGateDecision === "pending") ||
-    (releaseGateStatus === "closed" && releaseGateDecision === "accepted"),
-  "Stage 04 gate must be open for review or closed with acceptance",
-);
-assert.equal(
-  frontmatterValue(humanGate, "verification_report_sha256"),
-  await hash("factory/04_verify/output/VERIFICATION_REPORT.md"),
-);
-assert.equal(
-  frontmatterValue(humanGate, "verification_sha256"),
-  await hash("factory/04_verify/output/VERIFY.md"),
-);
-
-console.log("Stage 04 release verification passed.");
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)console.log(JSON.stringify(await verifyStage(),null,2));

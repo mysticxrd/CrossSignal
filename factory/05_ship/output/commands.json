@@ -1,0 +1,29 @@
+{
+  "node": "v22.15.0",
+  "platform": "win32",
+  "architecture": "x64",
+  "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+  "commands": [
+    {
+      "command": "node factory/04_verify/verify.mjs",
+      "startedAt": "2026-09-29T05:56:15.601Z",
+      "completedAt": "2026-09-29T05:56:16.056Z",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "command": "node --experimental-strip-types scripts/run-a01.mjs",
+      "startedAt": "2026-09-29T05:56:16.056Z",
+      "completedAt": "2026-09-29T05:56:32.400Z",
+      "exitCode": 0,
+      "stderr": ""
+    },
+    {
+      "command": "node --experimental-strip-types --test tests/a01-release.test.mjs",
+      "startedAt": "2026-09-29T05:56:32.413Z",
+      "completedAt": "2026-09-29T05:56:34.562Z",
+      "exitCode": 0,
+      "stderr": ""
+    }
+  ]
+}

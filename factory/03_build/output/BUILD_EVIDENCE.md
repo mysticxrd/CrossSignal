@@ -1,137 +1,220 @@
 ---
-type: build-evidence
+unit: a01-synthetic-revenue-investigation
 stage: 03_build
-unit: supabase-postgres-authenticated-trace-resolution-parity
-status: proposed
-truth_mode: TEST
-target_project_ref: tonuxepirauyqcwbwenw
+status: ready-for-review
+truth_mode: SIMULATED
+prepared_at: 2026-09-26T17:57:48.577Z
 ---
 
-# Supabase authenticated trace-resolution build evidence
+# A01 Build — local investigation, approval and intervention
 
-## Outcome
+The user accepted the exact Spec and Data packages. This stage implements the
+local deterministic lifecycle and leaves its own human gate open. The primary
+review is the [checkout report](replay/checkout.md), its
+[complete artifact](replay/checkout-1/artifact.json), and an
+[unapproved operator preview](preview/preview.md).
 
-The accepted authenticated trace-resolution slice now has a Supabase
-PostgreSQL implementation and hosted TEST proof. Runtime selection is explicit:
-`CFR_DATABASE_PROVIDER=d1` keeps the existing D1 resolver, while
-`CFR_DATABASE_PROVIDER=supabase` requires a Supavisor transaction-pooler URL on
-port `6543` and dispatches to the PostgreSQL adapter. There is no silent
-provider fallback.
+## Run and review
 
-The PostgreSQL adapter opens one read-only transaction, sets
-`app.current_user_id` and `app.current_workspace_id` as transaction-local
-settings, and retains explicit tenant predicates in every read. It uses
-`postgres@3.4.9` with TLS, prepared statements disabled, and a one-connection
-client suitable for the selected transaction-pooler path.
+One command from work/crosssignal-phase1:
 
-## Hosted TEST target
-
-The selected target is Supabase project `company-flight-recorder-test`, project
-reference `tonuxepirauyqcwbwenw`, in organization `CrossSignal`. At execution
-time the dashboard showed the Free Plan, Nano/free compute, Mumbai
-`ap-south-1`, and a healthy project. The Data API was disabled and automatic
-RLS was enabled.
-
-All three repository migrations were applied in lexical order. The exact
-accepted fixture then loaded 2 workspaces, 2 workspace members, 2 traces, and 77 events. Its package digest was
-`8d87c72cb8c8d84575f16b66672fe8094930b631dbba58cf7e9b2df0a8ed396e`.
-
-## Hosted corrections and verification
-
-The first fixture attempt failed transactionally with PostgreSQL error `23514`
-because the accepted source data identifies its trace subject as
-`trace_l04_onboarding`, while the read-model trace IDs are `l14-trace-a` and
-`l14-trace-b`. No fixture rows committed. The trigger was corrected so later
-`subject_type='trace'` events bind to the first trace-subject event in that
-trace and still reject subject switching. The correction is preserved in the
-initial migration and in migration `202609080002` for already-created targets.
-
-Hosted transactional SQL verification passed after the migration granted the
-SQL Editor's non-superuser `postgres` administrator membership in
-`cfr_trace_reader`. The tests explicitly use `SET LOCAL ROLE cfr_trace_reader`;
-application traffic must never use `postgres`. The verified observations were:
-
-- the pending trace returned 28 events for its owner;
-- the completed trace returned 49 events for its owner;
-- both cross-tenant reads returned zero rows;
-- missing transaction-local tenant settings returned zero rows;
-- reader mutation, sequence gaps, invalid transitions, foreign trace subjects,
-  and event mutation were rejected; and
-- all test mutations rolled back.
-
-The Supabase Advisor Center was refreshed after the RLS-expression and
-foreign-key index fixes. The final state contained only six `Unused Index` INFO
-notices. These are expected for a newly loaded 77-event TEST dataset; the
-indexes serve accepted tenant queries and integrity paths. The earlier Auth RLS
-Initialization Plan warnings and unindexed foreign-key notices were cleared.
-Supabase documents the remaining advisory at
-<https://supabase.com/docs/guides/observability/advisors?queryGroups=lint&lint=0005_unused_index>.
-
-## Runtime adapter proof
-
-A short-lived login inheriting only `cfr_trace_reader` exercised the real
-`db/supabase-trace-resolution.ts` adapter through Supavisor's transaction
-endpoint. The safe result was:
-
-```json
-{"provider":"supabase","pooler":"transaction","pendingEvents":28,"completedEvents":49,"crossTenant":"not_found"}
+```powershell
+node --experimental-strip-types scripts/run-a01.mjs
 ```
 
-The cross-tenant adapter result was `not_found`.
+Five comparisons each run twice in fresh child processes and separate SQLite
+stores. A separate grader consumes the finished artifacts and its private
+answer file. Reports, grades and full trace JSON are written to a new ignored
+outputs/a01/replay-* directory; previous runs remain on disk. The logical
+run-0001 identity is intentionally identical across the two independent replay
+stores to test deterministic replay, not two dispatches in one durable run.
+Interactive prepared Cases receive new run IDs.
 
-The login's membership was revoked, the role was dropped, and the local probe
-script and secret file were deleted immediately afterward. A hosted query
-confirmed `probe_removed: true`. No database password, OAuth token, connection
-string, or runtime login is retained in the repository or Stage 03 evidence.
+For exact operator approval, run:
 
-## Bound implementation artifacts
+```powershell
+node --experimental-strip-types scripts/a01-case.mjs prepare
+```
 
-| Artifact | SHA-256 |
-|---|---|
-| `db/postgres-trace-schema.ts` | `870aa3a1fc9d960fe8b21d319907500cab2c48f6583f7e8fb892756a60a93209` |
-| `db/supabase-trace-resolution.ts` | `4f9070ff076be6adb01f60489e523b50e1c9947a299550967189c3112bb2e70d` |
-| `db/index.ts` | `6bebce0b0cd7008c395ab9997a65ac695d931ce2edd483fc7eba00cbf93ff02e` |
-| `db/trace-resolution.ts` | `97d14e05c37db95218931adc30cca2e6172b7605bdfd1809b0ad31d18c835e7f` |
-| `worker/index.ts` | `b88b7a6c166e97e61687cae6d106a4130648b9abc460b05677c59a2699215c7a` |
-| `supabase/migrations/202609080001_trace_resolution_read_model.sql` | `7bb8095610b9f1a7f881c5e74f8b4be3caf4b7eece95da2a36d66f88afd897f2` |
-| `supabase/migrations/202609080002_fix_trace_subject_binding.sql` | `f4f243fbd5b2a11e0b87b542938d59a2591663b498605bcbf81fddaf57b9091d` |
-| `supabase/migrations/202609080003_optimize_trace_read_model.sql` | `b5b3b26fedd72c244dab4a9ce22b164ae34137f20e700bbec1231cdf71e505e8` |
-| `supabase/tests/trace_resolution_read_model.sql` | `ce0496f547b53e081d0c06c2ddd7fab5ca9a7f5b6ae2d644aaeea17799b9c6aa` |
-| `supabase/README.md` | `e4d93dddb8bea6e69b27505a1da6eb225ad33c5d54030be6ccdfe5e2f94b7eec` |
-| `factory/03_build/generate-supabase-fixture-sql.mjs` | `0f29bd1dd28980650e7943b3f3de574ec65547641e2b3eb0270798390446f270` |
-| `tests/supabase-trace-resolution.test.mjs` | `9974d804edbc7ce4b7be20fecd0350e03010132a5f959bdcf5817c1292c11850` |
-| `package.json` | `36de379db867a33162a44a026a51206e40df01571f1551c686f4e6b050df7369` |
-| `package-lock.json` | `0f5c0194664c27837a14a008344c9f51a7f51942569f9350d70006ee876d2b21` |
+The printed preview shows the proposed service/version rollback, zero-cost cap,
+evidence, exact payload hash and approval command. inspect reloads that Case;
+approve binds the displayed hash; resume recovers an already approved Case.
+pause/unpause controls this local simulator. No action is taken by prepare.
+The saved preview has no grant and no effect. Automated replay grants are
+fixture_surrogate; no human runtime approval has been performed in this stage.
 
-## Declared input bindings
+## Implemented surfaces and reuse
+
+| Surface | Responsibility |
+| --- | --- |
+| db/a01/contracts.mjs and store.sql | Promote the accepted typed DATA boundaries and local append-only schema |
+| db/a01/tools.mjs | Tenant/time bounded, paginated observable queries with exact response hashes |
+| db/a01/investigator.mjs | Explicit deterministic baseline; three competing explanations, provisional ranking, falsification query, supported proposal or abstention |
+| db/a01/analysis.mjs | Segment signal metrics and sufficient new-window recovery; rolling later observations can reopen the Case |
+| db/a01/isolated.mjs | Fixed restricted investigator/tool process, stdin/stdout protocol; no evaluator or world imports |
+| db/a01/runtime.mjs | Trusted operator host, durable query budget, trace chain, immutable proposal/grant, exact authority, transactional world/effect reservation and restart |
+| scripts/a01-world.mjs | Private service-version/transaction mechanics; no grader-answer comparison |
+| scripts/a01-case.mjs and run-a01.mjs | Local approval/inspection commands and separate replay/grader orchestration |
+| tests/evaluator/a01/ | Evaluator-only truth, independent structured rubric and readable report |
+
+Canonical hashing reuses db/revenue-leak.mjs. Exact execution authority and
+citation/secret checks reuse db/flight-recorder-contracts.ts. Existing modules
+are unchanged. The old Investigator, Mobile Safari response/checkout/outcome,
+and existing replay scripts remain separate regression paths.
+
+Initial observations are validated, canonicalized by timestamp/ID and frozen
+by hash. Every query attempt is durably recorded before tool dispatch, including
+failures, with at most ten attempts and three hypothesis revisions. Failed or
+interrupted evidence calls end visibly with abstention rather than a blind
+restart. Successful responses preserve query hashes and exact returned IDs.
+The baseline ranks checkout, payment-provider and acquisition/mix explanations;
+its provider-health query follows the provisional hypothesis and precedes the
+final recommendation. Support text is treated as untrusted evidence.
+
+The trusted host derives scope from the local Case and validates all proposal
+fields. A fresh control-file read checks the local simulator's Global Pause
+immediately before effect reservation; missing or malformed state fails closed.
+Payload, context, policy, actor, nonce, expiry and prior attempts are rechecked
+through the existing authority validator. One SQLite IMMEDIATE transaction
+appends the effect reservation, changed world revision and confirmation.
+A process exit before commit leaves none of that transaction; committed state
+survives reopen. This adapter performs no external dispatch, so SQLite commit
+recovery determines its outcome; it makes no general exactly-once network claim.
+Observations and later reopening append history without rewriting resolution.
+
+## Observable evidence
+
+| Comparison | Result | Report |
+| --- | --- | --- |
+| Approved checkout rollback | One effect; affected windows recover to 190/200, Case resolved | [checkout](replay/checkout.md) |
+| Approved unrelated rollback | One effect; affected windows stay 120/200, Case uncertain | [notifications](replay/notifications.md) |
+| No intervention | Zero effects; affected windows stay 120/200, Case uncertain | [none](replay/none.md) |
+| Limited evidence | Abstention; zero effects and no recovery | [limited](replay/limited.md) |
+| Injected support text | No authority bypass; normal exact surrogate approval required | [injection](replay/injection.md) |
+
+All five independently grade PASS for their designed mechanics. These are
+five variants of one A01 incident, not five causally different incidents or an
+accuracy benchmark. [Replay identities/hashes](replay-run.json) record two fresh
+matching runs per variant. Copies of the first artifacts and all grade/report
+outputs are retained here for review. Trace references resolve by event ID in
+each artifact's timeline, evidence and tool-response arrays.
+
+Fourteen [integrated tests](a01-tests.tap) and nineteen
+[existing regressions](regression-tests.tap) passed. A focused
+[grader tampering rerun](grader-tamper-tests.tap) additionally checks rehashed
+irrelevant-but-existing citations and undeclared material claims. Deliberate
+checks cover foreign/time/argument bounds, out-of-order and duplicate input,
+missing/mismatched/manual/expired/mutated approval, Global Pause, double execution,
+crash during reservation, reopening, missing observations, insufficient evidence,
+failed-call budgets, injected content and changed cause/remedy/outcome/citations.
+
+The actual restricted runtime denied reads of evaluator truth, world code,
+Spec, an alternate traversal path, trusted host code and output/report location;
+writes and child-process creation were denied. An injected synthetic evaluator
+environment sentinel was not inherited. Exact files, not whole repository
+directories, are on the runtime allowlist. The grader runs only after product
+completion, with no feedback channel into investigation.
+
+## Preservation and limitations
+
+All 42 historical factory files still match their raw-byte preservation
+manifest. Existing product/hosted surfaces and excluded receipt data have no
+changes from the sealed baseline. The retained CLI cache also has its original
+hash. No repository was replaced, no remote/hosted mutation was performed,
+and existing TEST/LIVE data was not touched. The original uncommitted run
+transition and reviewed artifacts are preserved.
+
+This is a local CLI/readable-preview slice; the existing web app was not changed.
+The actor is a trusted local operator, not a remote authenticated user. Node's
+permission checks cover this fixed runtime; no arbitrary-code OS sandbox is
+claimed. Hash chains establish consistency, not authenticity against an owner
+rewriting all files. The independent rubric validates structured claims and
+citation support; natural-language model quality is not evaluated.
+
+No suitable local model was found in the limited PATH/default Ollama-manifest
+checks. No model was downloaded or called. Model evaluation is NOT_RUN and
+fullAiHiringProof is false in every grade. No actual Mobile Safari verification,
+payment capture or real recovered revenue is established by these SIMULATED
+results. Model integration/evaluation remains separate from deterministic proof.
+
+## Next human gate
+
+Review the complete report and unapproved preview, then accept or request
+changes to this Build. AGENTS.md requires human acceptance before Stage 04
+Verify. Build acceptance does not grant a rollback or accept later-stage work.
+Stage 04/05 outputs remain absent. Current changes are uncommitted.
+
+## Declared input roles
+
+The stage contract, accepted upstream artifacts and shared references are
+freshness dependencies. Existing modules are observed baselines. New product,
+test and copied replay/preview evidence are stage-owned historical bindings.
+The tables bind exact reviewed files using normalized-text SHA-256.
+
+## Declared input hashes
 
 | Input | SHA-256 |
-|---|---|
-| `factory/03_build/CONTEXT.md` | `f0395528d80dfcf6a6a673a34e590ee97001fe5c586817ed6dbb956e986915f7` |
-| `factory/02_data/output/DATA_PACKAGE.md` | `325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861` |
-| `factory/02_data/output/HUMAN_GATE.md` | `d24286f9b772d9fa66ef3775dbf3d8fdaac5dacf481b088f0745b7069abf3220` |
-| `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | `e0093b6835dfd1ae43b9619fbb50bdba14efac2ed3cab6185ea4eba1af5a3084` |
+| --- | --- |
+| `factory/03_build/CONTEXT.md` | `ac359d97f61b2b1aa12498e373e921fe7f8e1452c56efe19db9ee7c6365f3774` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `2a3c7d8c5668eee58992284edbe0d14774ea6057a4a3991031816a39ab638eae` |
+| `factory/02_data/output/HUMAN_GATE.md` | `d4d6b90656fd3e4244d4fd6adf997278cc438d5a8971ccc5c9983d7ba9a92537` |
+| `factory/02_data/output/VERIFY.md` | `08fd239cf1eaecebb3ced35deb41dfcd4b25c1daf3b0e8d2cf5c3afc963d2986` |
+| `factory/01_spec/output/SPEC.md` | `0f37074fcb86ec12e38bf51d4b4a1be8231206f7d463f60d67a51282ac510da5` |
+| `factory/_shared/A01_DIRECTION.md` | `7a97909697409fff0f0ccb6ac58f812b54ccff11ed34d03cc4659051ba6dbb43` |
 | `factory/_shared/QUALITY_GATES.md` | `081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f` |
-| `factory/02_data/postgres/0001_trace_resolution_read_model.sql` | `11818cf9c18ad92029bb624018582f665481e7b4cd986a577370c3f2fd914cdb` |
-| `factory/02_data/postgres/0001_trace_resolution_read_model.tests.sql` | `29e37960cec710a707e011509ccdec56f051fbac95cbc250be266f236ae4fa0b` |
-| `factory/02_data/fixtures/supabase-trace-resolution.fixture.mjs` | `cfc5ee7e900595ba0fbc220bd8b6208671f5060da1dbec107a5301ad13dc95f1` |
-| `db/index.ts` | `6bebce0b0cd7008c395ab9997a65ac695d931ce2edd483fc7eba00cbf93ff02e` |
-| `db/trace-resolution.ts` | `97d14e05c37db95218931adc30cca2e6172b7605bdfd1809b0ad31d18c835e7f` |
-| `db/flight-recorder-contracts.ts` | `e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192` |
-| `app/trace-resolution.ts` | `256b25f5350fe4c383f949dff9c6a2cdce7265626fbba62d1ee7439382f082fd` |
-| `app/api/workspaces/[workspaceId]/traces/[traceId]/route.ts` | `418b13ecc92d5c5e7a075bab06e33b8195aea3205ebeacac66008cd53734d7e3` |
-| `worker/index.ts` | `b88b7a6c166e97e61687cae6d106a4130648b9abc460b05677c59a2699215c7a` |
-| `vite.config.ts` | `4a8de6242dc5eecaf99f582ec511cd4f6ee367648b38d5599c90f462cdc89fd0` |
-| `package.json` | `36de379db867a33162a44a026a51206e40df01571f1551c686f4e6b050df7369` |
-| `package-lock.json` | `0f5c0194664c27837a14a008344c9f51a7f51942569f9350d70006ee876d2b21` |
-| `tests/flight-recorder-build.test.mjs` | `6829c8405785647baba19975f60cde2b9dff62fb927bd27176725d74159df73b` |
 | `factory/_lib/verify-kit.mjs` | `b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c` |
-
-## Remaining boundary
-
-This slice does not justify removing D1. The accepted four-table scope still
-cannot preserve full non-trace subject binding or write-authority guards. The
-Supabase adapter is implemented and proven in TEST, but no persistent
-least-privilege runtime login or deployment secret has been created. That
-credential and deployed route configuration belong to a later human-approved
-step after this Stage 03 gate.
+| `factory/_lib/factory-state.mjs` | `72870904445d54f01eea443ed5a5de1b2af2fd19df66e085a52bf47982594d28` |
+| `factory/02_data/a01/contracts.mjs` | `8b77841481c500720797e0bea831eeb93d3c3f3842dd524010c4935b57d840cd` |
+| `factory/02_data/a01/world.mjs` | `fb4418c81baf594da576df26a34fd3d8213605742627cc0631cff392261e3112` |
+| `factory/02_data/a01/store.sql` | `62cef9c7e19194d8a01877cda7cf6cc1e7bf0b41f4a79f356943ddca58e44028` |
+| `factory/02_data/a01/evaluator/truth.json` | `036540566b97ba5f07e87723b0df5f42b3494240204560dbaf8aa92820463940` |
+| `factory/02_data/a01/observable/001.json` | `5f0908daeb35cbfffd039201452f9bfabf72181a6a9f61efdcee9ebb2ce84fd4` |
+| `factory/02_data/a01/observable/002.json` | `98dc8a8406c300ada4d9de1b1e92162537e01e2632a7e8f7bbd678fbbe2113c7` |
+| `factory/02_data/a01/observable/003.json` | `b78e8c829011cebfab2f42bb5406cd7b7b7a58ea997cd35a9cd70fe27af9c5ed` |
+| `db/revenue-leak.mjs` | `a5b0c4891a44477d9d236ee9c00fa37a20dffa5ad21991215be96565ea1f22b2` |
+| `db/case-investigator.mjs` | `f39ffdb2a1be45ca27dacab39eb888c01bd3f3ee34fb7f29e7ed17fb7e37e3c1` |
+| `db/flight-recorder-contracts.ts` | `e6d61497b43979aeb8dd9154c49aec7a04949a8db22ea30107dd82c05f796192` |
+| `scripts/run-golden-case-replay.mjs` | `8c45e2033c2b0e105065d8a8c4ecb41276ec928cf3f3a4d62a208b4793cfe797` |
+| `db/a01/contracts.mjs` | `85ba1e5637da4a9e64d3271c97e0c1a88c6c4dabde5b54965f223f60977a1270` |
+| `db/a01/analysis.mjs` | `dc14d941c7a9014723541f43c2d578e384cfe85f133d1c41d3ee56cab02e94a8` |
+| `db/a01/tools.mjs` | `b70012e358ab8bab0a0ebee29b070137d413831d4586440bb3d634767dd55ab2` |
+| `db/a01/investigator.mjs` | `a497a22c6675365285f077dc1d52994103647b6735ee228a3991fbacb1b841bf` |
+| `db/a01/isolated.mjs` | `806ceb1c12fd2ff2e0c97eb0e15da50aa95da6431b3685aff5ee984cc2f8e920` |
+| `db/a01/runtime.mjs` | `77f5c841f27a654ee222dfd6cce5591c6f3af577374099e7b80813d9cc49401c` |
+| `db/a01/store.sql` | `ee9d8f9903f1a710acbe69158d772b43b17a3a8dbd43ee16c0ec4163a34d5691` |
+| `scripts/a01-world.mjs` | `5918ea89403cb6cb5a7e6bfbcc5c10c62429807375f9a31600169b5237a8c42d` |
+| `scripts/a01-case.mjs` | `9381635873ba12ac16e6cb6fad424a2d5090147d2953883b30a2bddb4432c91e` |
+| `scripts/run-a01.mjs` | `90441ca63b033f3122b2e6c8a95a5acc31a41f0484c0fc330eaddc810be661a9` |
+| `tests/a01.test.mjs` | `a779f75cd02c4766443b339003c9903b2475e9d4dd8165971df4d60664e8e087` |
+| `tests/evaluator/a01/grade.mjs` | `8c2d284f99c6b2bd78e2e2f88bd1a73696b5eee722dedcb9bd2839e55782d800` |
+| `tests/evaluator/a01/truth.json` | `036540566b97ba5f07e87723b0df5f42b3494240204560dbaf8aa92820463940` |
+| `package.json` | `a3e13c18962d9b5b1f4d68bf7114921e479ac240189918663e0960dec19d4274` |
+| `tests/golden-case-replay.test.mjs` | `b2ccfa374ed845bbc936ba1f6b470a5f4f38608bd8918308663d9111ccc3e8f8` |
+| `tests/case-scenario-matrix.test.mjs` | `59dc6bf4db827ac8f246e0ef6be596de249259d940a0f500f4813adb78c32398` |
+| `tests/case-investigator.test.mjs` | `6287e385b207227e016a5ad0b72c48b7be5a263d5514cec19b8cb3fb9c818a15` |
+| `tests/case-response.test.mjs` | `4d89d998ec12f94e8c09b65a10c81093c689bb99246b08a46b2f0ace15aa0d5e` |
+| `tests/case-outcome.test.mjs` | `a8cdf6d602f37c750e86ee95e43bc4d246da84c632c2950dced85ad6cf6775c0` |
+| `tests/case-checkout.test.mjs` | `4f8fbfb6cb31ca0aee36e8877f46f30a045d93537f60fbda274726048069a9f4` |
+| `tests/case-simulation-outcome.test.mjs` | `a438d027c9fcc7f91a906b5fda79c590c2fb0d8303aadd7c96fce95ff0e2f1b5` |
+| `factory/03_build/output/a01-tests.tap` | `9bf942fd3c6aa4bbdbf8d9fb00f8f63e3fd933ff2993dc341f417765211a6ff6` |
+| `factory/03_build/output/grader-tamper-tests.tap` | `d5a3108f192e129173486dcc0d3fae5e81c5cf9b510c5bd8efa8b115e209ece3` |
+| `factory/03_build/output/regression-tests.tap` | `3e0148915af84b6188a6e556f34e6225d629137dc8762a31f8ecae7d0a30a855` |
+| `factory/03_build/output/replay-run.json` | `e66f6e3674e3ebf9e0c6fa69424a1954116f2157178cbd924bdd6c40c377dff3` |
+| `factory/03_build/output/replay/checkout-1/artifact.json` | `6cd2f8547c00e8016d514327807e7f38fcb07e4241130f64bd03ec07a637667d` |
+| `factory/03_build/output/replay/checkout.grade.json` | `72618c9c83d477da87d73858d04bc026906f639d91cad1ef70fb9e361492dbc4` |
+| `factory/03_build/output/replay/checkout.md` | `6583da1e2aebd1aa1db1c2a7db1fb12b6f51f4fd71e95c0d4eb6bd55f6238b53` |
+| `factory/03_build/output/replay/notifications-1/artifact.json` | `50033daf73311a0171034793a4e1377c0e514e6ec258812fb0b19b10a6f277c3` |
+| `factory/03_build/output/replay/notifications.grade.json` | `0222d1b05405cec7cd85f2621f72642a676bcb55cf3569a201afa0e28f7350a5` |
+| `factory/03_build/output/replay/notifications.md` | `6659b6474c6b81e185779133ad1776c4301e94121e0d4c39cf18099dd7e474b1` |
+| `factory/03_build/output/replay/none-1/artifact.json` | `778096df08cfdb6a4ee496a6160ace986149a282d5aa2625d58e0ad9fd1008e7` |
+| `factory/03_build/output/replay/none.grade.json` | `fc69e37614d38da42821653282977498563cc17f80552a3c947fc0c8a990285f` |
+| `factory/03_build/output/replay/none.md` | `eada01183b273ae2346d2531d0e7555681909c5b80e45088b84ead22c8097419` |
+| `factory/03_build/output/replay/limited-1/artifact.json` | `6dfee498582122ff7cc57763396e0c1e7adc31399fc870b7dd3f15d6e0123b5a` |
+| `factory/03_build/output/replay/limited.grade.json` | `619faf980ced72d5b5338f8ec6cced606a101792e5736a161209ad4ebe2b5e30` |
+| `factory/03_build/output/replay/limited.md` | `9265f9659d262215fa101c2d83fd39eb4b310d76f7f54969d2db2d666db86872` |
+| `factory/03_build/output/replay/injection-1/artifact.json` | `56c2923a6f8ae49c16756635e01261e3291135fa792c07b29e62ed549ddc71cc` |
+| `factory/03_build/output/replay/injection.grade.json` | `d8b7a999a5f4bdab35dd042832eabf9b4cae2844d79d1e91612f0f46be66f5ba` |
+| `factory/03_build/output/replay/injection.md` | `acecb27f58ce1aa6288b7c99135dc1911b27f54a59078813e270e2523b53b19f` |
+| `factory/03_build/output/preview/preview.md` | `7ff6a0d33fd5a2f0482af4992fe305378a1bd2a47a59acf5b01d8dafe39bbf27` |
+| `factory/03_build/output/preview/proposal.json` | `077c48afc471172e4d50861bb02a36eb42659d5927dbe474182ff2221e19f4a3` |
+| `factory/03_build/output/preview/artifact.json` | `f59217a195488a2964afd6e5d2faa7df80fa1fa7f36cfb1af0eb68da5bc1b1ec` |

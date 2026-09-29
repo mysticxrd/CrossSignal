@@ -12,7 +12,7 @@ See the [current direction and repository reconciliation](hiring-mvp-direction.m
 and [fresh verification evidence](hiring-mvp-reconciliation-evidence.md).
 
 The golden replay is committed at `d802898`; the seven-variant detector matrix
-and six invalid-input probes remain uncommitted and preserved. All **29/29**
+and six invalid-input probes are preserved in sealed baseline `58b2aa0`. All **29/29**
 focused tests pass on 2026-09-26. Neither scripted findings nor capture/decline
 coverage demonstrates model investigation or intervention-driven recovery.
 
@@ -22,10 +22,14 @@ Safari as regression coverage and keep the trial excluded. All new A01 outcomes
 must be SIMULATED. After A01 passes, recommend five and ten causally different
 incidents and baseline comparisons before the broader 100-case program.
 
-**Next required decision:** review the completed A01 handoff and authorize the
-human-owned next-run transition required by `factory/CONTEXT.md`. Historical
-L14 gates remain accepted, but the current checkout is unsealed and has no
-active stage. The handoff is a candidate, not an accepted Stage 01 or A01 build.
+The user confirmed the next-run transition with “continue.” The complete L14
+factory is preserved with matching hashes. A01 is now at `01_spec`:
+[Spec](../factory/01_spec/output/SPEC.md),
+[verification](../factory/01_spec/output/VERIFY.md), and
+[pending human gate](../factory/01_spec/output/HUMAN_GATE.md).
+**Next required decision:** review and accept or request changes to these
+exact Spec outputs before Data. A01 implementation and model evaluation remain
+pending; later stages have no outputs.
 
 ## Historical assessment — 24–25 September 2026
 

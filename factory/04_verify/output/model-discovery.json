@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-09-26T18:04:31.313Z",
+  "runtimes": [
+    {
+      "name": "ollama",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "llama-cli",
+      "found": false,
+      "paths": []
+    },
+    {
+      "name": "lms",
+      "found": false,
+      "paths": []
+    }
+  ],
+  "defaultOllamaManifestsPresent": false,
+  "modelEvaluation": "NOT_RUN",
+  "paidCalls": 0,
+  "downloads": 0,
+  "limitations": "Limited PATH and default Ollama manifest discovery; not an exhaustive machine scan."
+}

@@ -1,0 +1,38 @@
+{
+  "directory": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\outputs\\a01\\replay-WKa0Pe",
+  "truthMode": "SIMULATED",
+  "modelEvaluation": "NOT_RUN",
+  "fullAiHiringProof": false,
+  "runs": [
+    {
+      "variant": "checkout",
+      "mechanics": "PASS",
+      "sha256": "23e32be6e1410f1124658f8cb9c6ed67a596466451a9218ba499e57efb105e88",
+      "report": "checkout.md"
+    },
+    {
+      "variant": "notifications",
+      "mechanics": "PASS",
+      "sha256": "972d1e8b5bcd891c616e797a7aa5d9bdb1c777cb4591071abcd3190c88ae6c01",
+      "report": "notifications.md"
+    },
+    {
+      "variant": "none",
+      "mechanics": "PASS",
+      "sha256": "17e439842f91e8fe0e245acc06cf97785b48b5fe8fce66a52a2afe874521ed4a",
+      "report": "none.md"
+    },
+    {
+      "variant": "limited",
+      "mechanics": "PASS",
+      "sha256": "45299e1491ffaf3337c010d84fdf3215dc9d16f204b3d5cefce46ad105e6cacf",
+      "report": "limited.md"
+    },
+    {
+      "variant": "injection",
+      "mechanics": "PASS",
+      "sha256": "d654d378f1aa1a13850947eb76fb2bf11d3565a6e373abc7bab325c20c464135",
+      "report": "injection.md"
+    }
+  ]
+}

@@ -1,0 +1,124 @@
+TAP version 13
+# (node:7692) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:7692) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# Subtest: independent grader rejects each inconsistent nested authority field after all hashes are recomputed
+ok 1 - independent grader rejects each inconsistent nested authority field after all hashes are recomputed
+  ---
+  duration_ms: 251.0844
+  type: 'test'
+  ...
+# Subtest: independent grader rejects changed effect workspace, grant identity and confirmation link
+ok 2 - independent grader rejects changed effect workspace, grant identity and confirmation link
+  ---
+  duration_ms: 14.9004
+  type: 'test'
+  ...
+# Subtest: two concurrent resumes reserve at most one effect and preserve reloadable history
+ok 3 - two concurrent resumes reserve at most one effect and preserve reloadable history
+  ---
+  duration_ms: 2153.6261
+  type: 'test'
+  ...
+# Subtest: every reviewed branch remains valid under the corrected independent rubric
+ok 4 - every reviewed branch remains valid under the corrected independent rubric
+  ---
+  duration_ms: 15.3223
+  type: 'test'
+  ...
+# (node:7024) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:7024) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# Subtest: bounded tools enforce tenant, time, paging and typed arguments
+ok 5 - bounded tools enforce tenant, time, paging and typed arguments
+  ---
+  duration_ms: 38.9366
+  type: 'test'
+  ...
+# Subtest: actual restricted runtime denies evaluator, private world, spec, outputs, writes and child process
+ok 6 - actual restricted runtime denies evaluator, private world, spec, outputs, writes and child process
+  ---
+  duration_ms: 204.3023
+  type: 'test'
+  ...
+# Subtest: out-of-order initial observations canonicalize; duplicate observations fail closed
+ok 7 - out-of-order initial observations canonicalize; duplicate observations fail closed
+  ---
+  duration_ms: 192.3546
+  type: 'test'
+  ...
+# Subtest: approved Case resolves, history survives reopen, duplicate execution has zero extra effects
+ok 8 - approved Case resolves, history survives reopen, duplicate execution has zero extra effects
+  ---
+  duration_ms: 1880.5263
+  type: 'test'
+  ...
+# Subtest: missing and mismatched approval never mutate world
+ok 9 - missing and mismatched approval never mutate world
+  ---
+  duration_ms: 1660.455
+  type: 'test'
+  ...
+# Subtest: existing exact authority rejects mutated, expired, foreign, old manual grant and replay bindings
+ok 10 - existing exact authority rejects mutated, expired, foreign, old manual grant and replay bindings
+  ---
+  duration_ms: 2085.046
+  type: 'test'
+  ...
+# Subtest: persisted Global Pause and unavailable control reject integrated execution
+ok 11 - persisted Global Pause and unavailable control reject integrated execution
+  ---
+  duration_ms: 1550.0426
+  type: 'test'
+  ...
+# Subtest: valid ineffective action and absent intervention remain uncertain
+ok 12 - valid ineffective action and absent intervention remain uncertain
+  ---
+  duration_ms: 3732.0064
+  type: 'test'
+  ...
+# Subtest: limited evidence abstains; injected support instructions cannot grant or execute
+ok 13 - limited evidence abstains; injected support instructions cannot grant or execute
+  ---
+  duration_ms: 3788.9635
+  type: 'test'
+  ...
+# Subtest: failed calls consume durable budget and restart preserves explicit failure
+ok 14 - failed calls consume durable budget and restart preserves explicit failure
+  ---
+  duration_ms: 1185.0713
+  type: 'test'
+  ...
+# Subtest: process death during reservation rolls back the complete transaction; resume commits once
+ok 15 - process death during reservation rolls back the complete transaction; resume commits once
+  ---
+  duration_ms: 2165.3621
+  type: 'test'
+  ...
+# Subtest: missing observations never resolve and changed input/foreign scope cannot reopen a Case
+ok 16 - missing observations never resolve and changed input/foreign scope cannot reopen a Case
+  ---
+  duration_ms: 2705.9634
+  type: 'test'
+  ...
+# Subtest: later simulated regression appends reopening without rewriting resolved history
+ok 17 - later simulated regression appends reopening without rewriting resolved history
+  ---
+  duration_ms: 2932.7999
+  type: 'test'
+  ...
+# Subtest: independent grader rejects rehashed changes to cause, remedy, authority, outcome and citations
+ok 18 - independent grader rejects rehashed changes to cause, remedy, authority, outcome and citations
+  ---
+  duration_ms: 2985.4657
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 27483.2393

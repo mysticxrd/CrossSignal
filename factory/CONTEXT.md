@@ -1,7 +1,7 @@
 ---
 type: pipeline-contract
 form: pipeline
-unit: supabase-postgres-authenticated-trace-resolution-parity
+unit: a01-synthetic-revenue-investigation
 ---
 
 # Company Flight Recorder - build factory
@@ -11,9 +11,14 @@ The flow in one line: specify the slice -> make its data executable -> build it
 
 This is the same MWP lifecycle used for Whipoff: every meaningful vertical
 slice makes one sequential pass through `spec -> data -> build -> verify ->
-ship`. The current run is the first bounded Supabase PostgreSQL cutover slice:
-authenticated, tenant-scoped, redacted, ordered trace-resolution parity while
-the accepted D1 implementation remains recoverable until verification.
+ship`. The current run is one synthetic A01 revenue-leak investigation through
+an exactly approved simulated intervention and observed outcome. Its source is
+`_shared/A01_DIRECTION.md`; the existing quality gates remain in force.
+
+The user confirmed the run transition and Stage 01 entry on 2026-09-26.
+`TRANSITION.md` binds the sealed baseline and complete preserved L14 run.
+Historical acceptance does not accept A01. Use `node factory/status.mjs` to
+derive the active stage; later stage outputs remain absent until authorized.
 
 | Stage | One job | Primary output | Human check |
 |---|---|---|---|

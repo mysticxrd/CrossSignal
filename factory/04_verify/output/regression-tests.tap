@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: capture and decline are deterministic simulations with unique trace references and zero charge
+ok 1 - capture and decline are deterministic simulations with unique trace references and zero charge
+  ---
+  duration_ms: 4.9323
+  type: 'test'
+  ...
+# Subtest: invalid checkout input cannot introduce real modes, arbitrary amounts, or evaluator data
+ok 2 - invalid checkout input cannot introduce real modes, arbitrary amounts, or evaluator data
+  ---
+  duration_ms: 0.4432
+  type: 'test'
+  ...
+# Subtest: saved simulations survive reload; changed tenant, result, trace, hash and duplicates fail closed
+ok 3 - saved simulations survive reload; changed tenant, result, trace, hash and duplicates fail closed
+  ---
+  duration_ms: 3.5848
+  type: 'test'
+  ...
+# Subtest: Investigator reads only the verified Case, raw events, and citations
+ok 4 - Investigator reads only the verified Case, raw events, and citations
+  ---
+  duration_ms: 60.2368
+  type: 'test'
+  ...
+# Subtest: event and row order do not change the investigation, and JSON save/reload verifies
+ok 5 - event and row order do not change the investigation, and JSON save/reload verifies
+  ---
+  duration_ms: 57.706
+  type: 'test'
+  ...
+# Subtest: tenant, truth, data, and citation tampering fail closed
+ok 6 - tenant, truth, data, and citation tampering fail closed
+  ---
+  duration_ms: 69.2879
+  type: 'test'
+  ...
+# Subtest: persisted setup SQL matches the bounded report without evaluator answers or destructive steps
+ok 7 - persisted setup SQL matches the bounded report without evaluator answers or destructive steps
+  ---
+  duration_ms: 13.6277
+  type: 'test'
+  ...
+# Subtest: seven separately recorded days produce only a correlation label
+ok 8 - seven separately recorded days produce only a correlation label
+  ---
+  duration_ms: 20.2218
+  type: 'test'
+  ...
+# Subtest: missing receipt and incomplete or low-volume follow-up stay pending
+ok 9 - missing receipt and incomplete or low-volume follow-up stay pending
+  ---
+  duration_ms: 2.4377
+  type: 'test'
+  ...
+# Subtest: foreign, tampered, duplicated, pre-check and inconsistent observations fail closed
+ok 10 - foreign, tampered, duplicated, pre-check and inconsistent observations fail closed
+  ---
+  duration_ms: 3.6498
+  type: 'test'
+  ...
+# Subtest: follow-up import is receipt-bound, repeatable and does not alter incident events
+ok 11 - follow-up import is receipt-bound, repeatable and does not alter incident events
+  ---
+  duration_ms: 3.2469
+  type: 'test'
+  ...
+# Subtest: TEST response has exact intent, scope, recipients, cost, authority and measurement
+ok 12 - TEST response has exact intent, scope, recipients, cost, authority and measurement
+  ---
+  duration_ms: 2.3882
+  type: 'test'
+  ...
+# Subtest: response and exact approval reject malformed, cross-tenant and modified data
+ok 13 - response and exact approval reject malformed, cross-tenant and modified data
+  ---
+  duration_ms: 2.7409
+  type: 'test'
+  ...
+# Subtest: owner TEST check receipt survives reload and rejects missing authority or altered evidence
+ok 14 - owner TEST check receipt survives reload and rejects missing authority or altered evidence
+  ---
+  duration_ms: 1.5511
+  type: 'test'
+  ...
+# Subtest: counterfactual replay is repeatable and hidden grader rejects altered labels, metrics, and traces
+ok 15 - counterfactual replay is repeatable and hidden grader rejects altered labels, metrics, and traces
+  ---
+  duration_ms: 761.8569
+  type: 'test'
+  ...
+# Subtest: simulation lifecycle requires both chosen scenarios, never closes the revenue Case
+ok 16 - simulation lifecycle requires both chosen scenarios, never closes the revenue Case
+  ---
+  duration_ms: 19.7628
+  type: 'test'
+  ...
+# Subtest: assessment is stable across reload/order and binds every run hash and trace
+ok 17 - assessment is stable across reload/order and binds every run hash and trace
+  ---
+  duration_ms: 4.0097
+  type: 'test'
+  ...
+# Subtest: assessment fails closed on foreign, duplicated, or tampered records
+ok 18 - assessment fails closed on foreign, duplicated, or tampered records
+  ---
+  duration_ms: 1.6151
+  type: 'test'
+  ...
+# Subtest: fresh offline product replays are identical and the separate grader accepts them
+ok 19 - fresh offline product replays are identical and the separate grader accepts them
+  ---
+  duration_ms: 890.7299
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1108.6954

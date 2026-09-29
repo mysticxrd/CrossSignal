@@ -1,0 +1,97 @@
+TAP version 13
+# (node:28444) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:28444) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# Subtest: bounded tools enforce tenant, time, paging and typed arguments
+ok 1 - bounded tools enforce tenant, time, paging and typed arguments
+  ---
+  duration_ms: 17.1546
+  type: 'test'
+  ...
+# Subtest: actual restricted runtime denies evaluator, private world, spec, outputs, writes and child process
+ok 2 - actual restricted runtime denies evaluator, private world, spec, outputs, writes and child process
+  ---
+  duration_ms: 74.331
+  type: 'test'
+  ...
+# Subtest: out-of-order initial observations canonicalize; duplicate observations fail closed
+ok 3 - out-of-order initial observations canonicalize; duplicate observations fail closed
+  ---
+  duration_ms: 215.9917
+  type: 'test'
+  ...
+# Subtest: approved Case resolves, history survives reopen, duplicate execution has zero extra effects
+ok 4 - approved Case resolves, history survives reopen, duplicate execution has zero extra effects
+  ---
+  duration_ms: 1755.4357
+  type: 'test'
+  ...
+# Subtest: missing and mismatched approval never mutate world
+ok 5 - missing and mismatched approval never mutate world
+  ---
+  duration_ms: 2071.9059
+  type: 'test'
+  ...
+# Subtest: existing exact authority rejects mutated, expired, foreign, old manual grant and replay bindings
+ok 6 - existing exact authority rejects mutated, expired, foreign, old manual grant and replay bindings
+  ---
+  duration_ms: 2224.4726
+  type: 'test'
+  ...
+# Subtest: persisted Global Pause and unavailable control reject integrated execution
+ok 7 - persisted Global Pause and unavailable control reject integrated execution
+  ---
+  duration_ms: 1715.0895
+  type: 'test'
+  ...
+# Subtest: valid ineffective action and absent intervention remain uncertain
+ok 8 - valid ineffective action and absent intervention remain uncertain
+  ---
+  duration_ms: 4988.6175
+  type: 'test'
+  ...
+# Subtest: limited evidence abstains; injected support instructions cannot grant or execute
+ok 9 - limited evidence abstains; injected support instructions cannot grant or execute
+  ---
+  duration_ms: 3846.2875
+  type: 'test'
+  ...
+# Subtest: failed calls consume durable budget and restart preserves explicit failure
+ok 10 - failed calls consume durable budget and restart preserves explicit failure
+  ---
+  duration_ms: 2747.8323
+  type: 'test'
+  ...
+# Subtest: process death during reservation rolls back the complete transaction; resume commits once
+ok 11 - process death during reservation rolls back the complete transaction; resume commits once
+  ---
+  duration_ms: 3429.6186
+  type: 'test'
+  ...
+# Subtest: missing observations never resolve and changed input/foreign scope cannot reopen a Case
+ok 12 - missing observations never resolve and changed input/foreign scope cannot reopen a Case
+  ---
+  duration_ms: 3102.3472
+  type: 'test'
+  ...
+# Subtest: later simulated regression appends reopening without rewriting resolved history
+ok 13 - later simulated regression appends reopening without rewriting resolved history
+  ---
+  duration_ms: 2883.9063
+  type: 'test'
+  ...
+# Subtest: independent grader rejects rehashed changes to cause, remedy, authority, outcome and citations
+ok 14 - independent grader rejects rehashed changes to cause, remedy, authority, outcome and citations
+  ---
+  duration_ms: 4010.8366
+  type: 'test'
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 33322.2654

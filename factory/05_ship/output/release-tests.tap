@@ -1,0 +1,37 @@
+TAP version 13
+# (node:15084) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# (node:15084) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# Subtest: independent grader rejects each inconsistent nested authority field after all hashes are recomputed
+ok 1 - independent grader rejects each inconsistent nested authority field after all hashes are recomputed
+  ---
+  duration_ms: 123.7805
+  type: 'test'
+  ...
+# Subtest: independent grader rejects changed effect workspace, grant identity and confirmation link
+ok 2 - independent grader rejects changed effect workspace, grant identity and confirmation link
+  ---
+  duration_ms: 12.7855
+  type: 'test'
+  ...
+# Subtest: two concurrent resumes reserve at most one effect and preserve reloadable history
+ok 3 - two concurrent resumes reserve at most one effect and preserve reloadable history
+  ---
+  duration_ms: 1784.8589
+  type: 'test'
+  ...
+# Subtest: every reviewed branch remains valid under the corrected independent rubric
+ok 4 - every reviewed branch remains valid under the corrected independent rubric
+  ---
+  duration_ms: 16.4806
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2094.1654

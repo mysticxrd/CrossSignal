@@ -1,92 +1,88 @@
 ---
-type: verification-record
+unit: a01-synthetic-revenue-investigation
 stage: 02_data
-unit: supabase-postgres-authenticated-trace-resolution-parity
 status: passed
-verified_at: 2026-09-08T13:03:00+05:30
-truth_mode: TEST
+verified_at: 2026-09-26T17:30:38.802Z
+scope: DATA_CONTRACT_ONLY
 ---
 
-# Supabase Stage 02 verification
+# A01 Data verification
 
-## Result
+Environment: Windows, Node v22.15.0, existing authoritative checkout at
+C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1.
+All runs are local and SIMULATED. No model or paid service was called.
 
-The Stage 02 data package passes executable fixture validation, static
-PostgreSQL contract validation, the existing D1 data and route suites, lint,
-and diff inspection. No PostgreSQL server was available locally and no hosted
-Supabase target is authorized, so the migration and transactional SQL test
-file have not yet executed against PostgreSQL. That execution remains a hard
-Stage 03 requirement and cannot be replaced by this static result.
+## Commands and results
 
-## Environment
+| Command | Exit | Observed result |
+| --- | ---: | --- |
+| node factory/01_spec/verify.mjs | 0 | Accepted Spec remains fresh; 12 criteria, 9 failure experiments, 16 input hashes and corruption probes pass |
+| node factory/02_data/verify.mjs --check-data | 0 | Repeatability, data/query/proposal, isolation and temporary SQLite checks pass |
+| git diff --name-only 58b2aa0 -- app db scripts tests supabase worker drizzle | 0 | Empty: existing product and regression surfaces unchanged from the sealed baseline |
+| git diff --check | 0 | No whitespace errors |
+| node factory/02_data/verify.mjs | 0 | Full contract checks, saved fixtures/results, all declared bindings and pending gate hashes pass |
+| node factory/status.mjs | 0 | Spec complete/accepted/fresh; Data active with open gate and fresh dependencies; later stages never-run |
 
-- Windows `Microsoft Windows NT 10.0.26200.0`
-- Node.js `v22.15.0`
-- Repository branch `codex/supabase-migration`
-- Local truth mode `TEST` with fixtures explicitly labeled `FIXTURE`
-- No remote Supabase project selected or mutated
+The full command, node factory/02_data/verify.mjs, repeats these contract checks
+and validates the assembled record: 23 exact Data bindings, four verification
+bindings, saved generated fixtures/results, and pending gate artifact hashes.
+The assembled record passed before handoff. Verification opens the gate; it
+never accepts it.
 
-## Commands and evidence
+## Repeatability and reference branches
 
-| Command | Time | Exit | Evidence |
-|---|---|---:|---|
-| `npm run verify:data` | 2026-09-08T13:03:00+05:30 | 0 | 9/9 existing data tests passed, then the Stage 02 verifier passed. |
-| `node_modules/.bin/tsx.cmd --test tests/flight-recorder-build.test.mjs` | 2026-09-08T12:58:00+05:30 | 0 | 57/57 tests passed, including L14 pending/completed parity, tenant failures, redaction, and no-mutation reads. |
-| `npm run lint` | 2026-09-08T13:03:00+05:30 | 0 | ESLint completed with no findings. |
-| `git diff --check` | 2026-09-08T13:03:00+05:30 | 0 | No whitespace errors. |
+Two fresh authoring processes produced byte-identical output, SHA-256
+1b921bcc39c4b8698f6110c1cd98340902c7d3eeb1115a49defa5d19a0ea1129.
+Saved fixtures contain 20 complete, 13 limited, and 21 injection observations.
+Private state generates 190/200 affected successes in each post-checkout-rollback
+window and 120/200 after the unrelated rollback or no action. Control segments
+remain 190/200. Expected values are read only by the verifier from evaluator truth.
+See [contract-results.json](contract-results.json) for exact machine results and
+[DATA_PACKAGE.md](DATA_PACKAGE.md) for event references and contract semantics.
 
-The Windows npm shim was invoked through Node's installed `npm-cli.js`, as in
-the accepted repository workflow.
+## Deliberate failures and persistence
 
-## Corrected runner attempt
+- Nineteen malformed observable, query and proposal inputs were rejected,
+  covering foreign scope, LIVE, duplicate/future evidence, inconsistent totals,
+  unknown fields/tools, paging context, excessive limits, manual-check action,
+  missing citations, expiry and action caps.
+- Eleven invalid storage operations were rejected, covering missing labels or
+  action, foreign/mismatched grants, missing/duplicate effects and history mutation.
+- A child process exited during an uncommitted transaction. Reopening retained
+  zero effects, one initial world revision and no timeline event. Effect, new
+  world checkpoint and timeline were rolled back together.
+- After committing those records, reopening retained one effect, two world
+  revisions and one timeline event. Tests use a disposable local database.
+- Restricted fixed-runner probes denied four private reads (including alternate
+  path), one write and child-process creation. No evaluator secret environment
+  value was inherited. The denied content was never returned by the probe.
 
-An initial direct command, `node --test tests/flight-recorder-data.test.mjs
-tests/flight-recorder-build.test.mjs`, exited 1 before running the suites
-because native Node did not load imported `.ts` files. It was not repeated.
-The repository-declared `tsx` runner then executed both suites successfully as
-recorded above. This was a command correction, not a product or test change.
+## Scope and limits
 
-## Stage verifier coverage
+The executable DATA modules and their syntax/imports were exercised by the
+stage verifier. Application build, application lint, hosted migration and full
+product-suite runs are not applicable to these stage-only data artifacts; the
+tracked product surfaces listed above have no change. This is not a new full
+product regression claim. Node reports its SQLite experimental-feature warning.
 
-`factory/02_data/verify.mjs` confirmed:
+The permission probe verifies the tested fixed Node process boundary; it does
+not establish an OS sandbox against arbitrary native code. Product tool-host
+isolation, budget enforcement, injection behavior, hypothesis updates, exact
+human approval, integrated execution and hidden-truth behavioral grading remain
+Build/Verify obligations. Reference transitions and surrogate storage grants
+are not approved product effects. Model evaluation is NOT_RUN.
 
-- the upstream Stage 01 gate is closed, human-reviewed, and accepted;
-- all 14 declared input hashes and four executable artifact hashes are fresh;
-- exactly four tables are created in private schema `cfr_app`;
-- the reader role is no-login, least-privilege, and lacks `BYPASSRLS`;
-- all four tables enable and force RLS and have owner-scoped read policies;
-- `anon`, `authenticated`, and `service_role` have no schema or table access;
-- timestamps use `timestamptz`, payloads use `jsonb`, and event sequence uses `bigint`;
-- transaction-local actor/workspace settings, advisory append locking, constraints, indexes, and guards are present;
-- the PostgreSQL fixture has counts `2 / 2 / 2 / 77`, validates cleanly, and binds stable source, table, and package digests;
-- the SQL test contract covers role privileges, tenant isolation, transaction leakage, mutation denial, sequence gaps, trace subject binding, invalid transitions, human membership, and event immutability;
-- the partial non-trace subject-binding limitation and its D1-retention consequence are explicit;
-- no connection URI, Supabase secret key, or JWT-shaped token appears in the new Stage 02 artifacts.
+No TEST or LIVE data was modified. The excluded trial receipt, existing tenant
+checks and Mobile Safari regression remain in the unchanged product surfaces.
+These results establish neither actual Mobile Safari verification nor payment
+capture or recovered business revenue. The historical factory is preserved in
+the transition archive; the Data gate remains pending.
 
-Verifier output:
+## Declared input hashes
 
-```text
-Supabase Stage 02 data verification passed: four private PostgreSQL tables, 77 deterministic fixture events, forced tenant RLS, least-privilege reader, transactional SQL tests, and explicit non-trace subject-binding limitation.
-```
-
-## PostgreSQL execution boundary
-
-`psql` was not present. Static checks cannot prove PostgreSQL syntax, migration
-atomicity, RLS behavior, transaction-pool tenant clearing, query plans, or
-Supabase advisors. Stage 03 must run the migration, deterministic load, and
-`0001_trace_resolution_read_model.tests.sql` against a selected TEST target,
-then capture security and performance advisors. Any failure blocks Stage 03.
-
-## Bound artifacts
-
-| Artifact | SHA-256 |
-|---|---|
-| `factory/02_data/output/DATA_PACKAGE.md` | `325c122ed0983a40f25a04a88697c2aa7536fb099dce49f0a369f837c70b1861` |
-| `factory/02_data/verify.mjs` | `b8d155672cd1bb7d33f8b2eeda90778d98486258c69c944933d6ab5d530a002c` |
-| `factory/02_data/postgres/0001_trace_resolution_read_model.sql` | `11818cf9c18ad92029bb624018582f665481e7b4cd986a577370c3f2fd914cdb` |
-| `factory/02_data/postgres/0001_trace_resolution_read_model.tests.sql` | `29e37960cec710a707e011509ccdec56f051fbac95cbc250be266f236ae4fa0b` |
-| `factory/02_data/fixtures/l14-trace-resolution.fixture.mjs` | `d219e789eb364782fdb9974c48caf1b385b49e134e6352af860c93c0d3e4dd0d` |
-| `factory/02_data/fixtures/supabase-trace-resolution.fixture.mjs` | `cfc5ee7e900595ba0fbc220bd8b6208671f5060da1dbec107a5301ad13dc95f1` |
-
-This verification opens the Stage 02 human gate. It does not accept the gate,
-authorize hosted DDL, or satisfy Stage 03 PostgreSQL execution evidence.
+| Input | SHA-256 |
+| --- | --- |
+| `factory/02_data/CONTEXT.md` | `e42afae22dd29acc2601970afa0b2ea93d1a0e602195f9819e417b07bafca6f7` |
+| `factory/02_data/verify.mjs` | `474d2ba52f542db02a309f8f41a302163937de352bbbf5ea98d9f55044b868d1` |
+| `factory/02_data/output/DATA_PACKAGE.md` | `2a3c7d8c5668eee58992284edbe0d14774ea6057a4a3991031816a39ab638eae` |
+| `factory/02_data/output/contract-results.json` | `c66ddec72fdb94879efb5195df0baa9b01e6ae4437cfd52a67623bff2bed98e5` |

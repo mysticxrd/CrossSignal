@@ -26,7 +26,10 @@
     "replay:matrix": "node scripts/run-case-scenario-matrix.mjs",
     "test": "npm run build && tsx --test factory/_lib/factory-tools.test.mjs tests/rendered-html.test.mjs tests/icm-workspace.test.mjs tests/flight-recorder-data.test.mjs tests/flight-recorder-build.test.mjs tests/supabase-trace-resolution.test.mjs tests/supabase-runtime.test.mjs tests/flight-recorder-release.test.mjs tests/flight-recorder-ship.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern _archive",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "replay:a01": "node --experimental-strip-types scripts/run-a01.mjs",
+    "a01:prepare": "node --experimental-strip-types scripts/a01-case.mjs prepare",
+    "verify:a01": "node --experimental-strip-types --test tests/a01.test.mjs"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

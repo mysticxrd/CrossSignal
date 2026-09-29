@@ -10,17 +10,23 @@ investigation and approved intervention. Existing Mobile Safari replay and
 the local detector matrix remain regression coverage. Real checkout, payment
 sandbox, device verification, and business recovery are separate future work.
 
-The retained factory and architecture snapshot describe historical L14 work.
-They do not establish hiring-MVP completion. The [A01 handoff](docs/a01-synthetic-investigation-handoff.md)
-is a reviewable candidate, not an accepted stage or a replacement factory run.
-Use `factory/CONTEXT.md` for the existing human-owned transition and gates.
+The current factory run is A01. Start with `factory/CONTEXT.md`, then its
+active stage. Spec, Data, Build and Verify were explicitly accepted. Stage 05
+packages the local mechanics preview for final review, with model/human-demo
+gaps still explicit. See the [current release checkpoint](docs/a01-release-status.md).
+The direction/handoff documents are preserved Spec source snapshots. The
+[transition record](factory/TRANSITION.md) binds the sealed baseline and
+preserved historical L14 run. The prior compiled architecture snapshot is
+historical; A01 uses `factory/_shared/A01_DIRECTION.md` and the existing
+quality gates. Neither historical acceptance nor phase numbers establishes
+hiring-MVP completion.
 
 ## Routes
 
 | Work | Read | Operating mode |
 |---|---|---|
 | Feature, schema, security, authority, external effect, or public-behavior change | `factory/CONTEXT.md`, then the active stage contract | Full ICM/MWP pass |
-| Product or architecture question | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` | Read-only answer or source-edit proposal |
+| Current product or architecture question | `docs/hiring-mvp-direction.md`, `factory/_shared/A01_DIRECTION.md` | Read-only answer or source-edit proposal |
 | Tiny single-file change with no schema, security, authority, or public-contract effect | The target file and its nearest test | Express lane: edit, targeted test, stop |
 | Incident or cross-cutting refactor | Affected code and tests only | Direct engineering workflow; back-port only recurring lessons |
 | Historical audit | `_archive/2026-08-12-crosssignal-phase-00/README.md` | Load archive files by explicit path |

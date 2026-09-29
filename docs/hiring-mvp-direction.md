@@ -2,7 +2,11 @@
 
 Updated: 2026-09-26. This is the current product-priority and session-handoff
 record. It supersedes older next-step guidance in the dated progress and phase
-notes. It does not replace accepted factory artifacts or record a human gate.
+notes. The user confirmed continuation: prior work is committed and sealed at
+`58b2aa09b7208bb9a7b9b3cee5a12adeb54c8a11`, the complete historical factory is
+preserved, and the new A01 Spec is prepared for human review. No A01 stage gate
+has been accepted. See [transition](../factory/TRANSITION.md) and
+[Stage 01 Spec](../factory/01_spec/output/SPEC.md).
 
 ## Goal and next milestone
 
@@ -21,7 +25,7 @@ and genuine business recovery are separately labeled future verification.
 None is a prerequisite for this synthetic milestone. Simulated time advances
 locally; the milestone does not wait for seven real calendar days.
 
-## Verified repository state
+## Repository state at the correction checkpoint
 
 The authoritative product checkout is
 `C:\Users\hisha\ChatGPT\CrossSignal\work\crosssignal-phase1`:
@@ -37,7 +41,7 @@ The authoritative product checkout is
 - The nested `origin` still names the obsolete OneDrive path. No remote
   operation, clone, initialization, reset, clean, or replacement occurred.
 
-These are observations on the correction date, not permanent assumptions.
+These are observations before the subsequent `58b2aa0` baseline commit, not permanent assumptions.
 Recheck Git state before the next task. [Verification evidence](hiring-mvp-reconciliation-evidence.md)
 records the commands, preserved hashes, and limits.
 
@@ -103,22 +107,21 @@ answers from inputs/responses/prompts, and verify attempted disclosure fails.
 
 ## Current gate and next decision
 
-`node factory/status.mjs` reports all five historical L14 stages complete,
-accepted, and fresh; **active stage: none; release: unsealed** because the
-worktree contains changes. There is no currently authorized A01 build stage.
+The user confirmed the next-run transition with “continue.” The previous run
+was sealed at `58b2aa0`; its full 42-file factory tree and accepted gates were
+preserved with matching hashes. The generated CLI cache file remains on disk
+under a narrow ignore rule. The matrix is now committed.
 
-[factory/CONTEXT.md](../factory/CONTEXT.md), “Seal and start the next run,”
-requires a sealed commit and a human-owned run transition before Stage 01.
-The existing gates are preserved. The A01 handoff is complete enough to review
-between runs; it is not a newly instantiated or accepted factory stage.
+The active run is A01, stage `01_spec`. Review
+[SPEC.md](../factory/01_spec/output/SPEC.md) and its
+[verification record](../factory/01_spec/output/VERIFY.md). The
+[human gate](../factory/01_spec/output/HUMAN_GATE.md) is pending; Data, Build,
+Verify, and Ship remain never-run. This is a specification result, not an
+implemented A01 investigation or model evaluation.
 
-**Next required decision:** review the A01 handoff and authorize the next-run
-transition, including preservation of the current uncommitted work and how to
-establish the required clean baseline without deleting or committing unrelated
-files. Then prepare and review the new Stage 01 outputs using this handoff.
-Do not infer Stage 01 acceptance from this strategy correction.
-
-After the required transition, follow Spec → Data → Build → Verify → Ship,
-stopping at each existing human gate. Once the A01 milestone passes, recommend
-five, then ten causally different incidents with deterministic and model
-baseline comparisons. Do not start those expansions within this milestone.
+**Next required decision:** accept, request changes to, or reject the exact
+Stage 01 artifacts. After acceptance, Data defines executable observations,
+isolation, world-state transitions, durable records, and approval contracts.
+No payment-provider setup is needed. Follow the remaining existing human
+gates. After A01 passes, recommend five and ten causally different incidents
+with baseline comparisons; do not begin that expansion within this milestone.
