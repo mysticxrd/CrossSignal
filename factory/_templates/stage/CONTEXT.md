@@ -57,6 +57,11 @@ Commit stage outputs at every gate decision.
 Freeze next-stage checks with optional `next_checks_sha256` from
 `node factory/status.mjs --checks-hash NN_stage`.
 
+Optional gate fields:
+
+    human_minutes: <recorded minutes>
+    next_checks_sha256: <next-stage checks hash>
+
 ## Failure routing
 
 Correct this stage or an upstream source. Never patch a later stage to hide an

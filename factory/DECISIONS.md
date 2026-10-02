@@ -186,3 +186,18 @@ The A01 release test initially could not open the old replay path. The current r
 Every discovered frozen Build copy was audited. The two preserved benchmark-subscription test copies under chatgpt-subscription/measured-profile/prior-current and gemini-resume/prior-current fail with ERR_MODULE_NOT_FOUND for their absent sibling db/benchmark/contracts.mjs; the gemini-runner-v1/execution-source test copy passes. These remain preserved evidence copies outside the current suite, not legacy classifications or weakened tests. No stage verifier or preflight is invoked by npm test or CI. The three dangling scripts (verify:release, verify:ship, demo:prepare) remain unchanged.
 
 Review is required only where REVIEW.md is listed, bound as review_sha256 and to the current first primary hash. Stage 03 gets REVIEW.md on its later Build re-run; this diet leaves its required-output order and gate unchanged. A missing next_checks_sha256 remains explicitly unlocked legacy. Current gates are never edited to add locks or human_minutes.
+
+## D-12 — Read-only gate scoreboard
+
+- Date: 2026-10-03
+- Decided by: Owner (metrics and no-guess rule); Codex (current-run history filtering)
+- Scope: Derive cycle time, human minutes, committed repair rounds and first-pass acceptance without a status store.
+- Source: owner pasted request; recorded review times: `factory/01_spec/output/HUMAN_GATE.md@62787d1:8`, `factory/02_data/output/HUMAN_GATE.md@62787d1:8`; gate template: `factory/_templates/stage/CONTEXT.md@82fc35f:46-62`.
+
+Owner words, verbatim:
+
+Show n/a for missing data. Never guess.
+
+Add human_minutes and next_checks_sha256 to the template's gate section.
+
+Cycle time uses the two recorded reviewed_at values with explicit time zones. Missing/invalid dates and human_minutes produce n/a; a recorded zero remains zero. Repair rounds count only committed gate versions for the current contract unit, and first-pass acceptance uses its first recorded review decision. Older runs, uncommitted repairs and deleted gate versions do not masquerade as new reviews. No gate or stage output is written.

@@ -26,6 +26,7 @@ After activation run `node factory/status.mjs`; status is derived, never an
 editable program table. Complete requires passed VERIFY, accepted hash-bound
 HUMAN_GATE and fresh dependencies. The first incomplete stage is active.
 Read only that stage's contract, declared inputs and its two shared references.
+Inspect cycle time, human minutes, repair rounds and first-pass acceptance with `node factory/scoreboard.mjs` (`--json` optional).
 Do not load later stages, the archive, dependencies or the whole source vault.
 
 Freshness dependencies are upstream outputs/gates, current contract and shared
