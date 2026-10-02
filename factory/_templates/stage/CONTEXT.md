@@ -32,6 +32,7 @@ runtime stores such as `outputs/` keep hash bindings.
 ## Outputs
 
 - `output/PRIMARY.md`
+- `output/REVIEW.md` - fresh context; follow `../_templates/REVIEW_BRIEF.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md` - created or completed by the reviewer
 
@@ -53,6 +54,8 @@ The reviewer edits the primary output if needed, records reviewed hashes and a
 decision in `HUMAN_GATE.md`, and chooses `accepted`, `changes-requested`, or
 `rejected`. Do not begin the next stage without `accepted`.
 Commit stage outputs at every gate decision.
+Freeze next-stage checks with optional `next_checks_sha256` from
+`node factory/status.mjs --checks-hash NN_stage`.
 
 ## Failure routing
 

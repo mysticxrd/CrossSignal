@@ -32,6 +32,7 @@ Do not load: archive content, unrelated repository or source vault.
 
 - `output/RELEASE_MANIFEST.md`
 - `output/DEMO_SCRIPT.md`
+- `output/REVIEW.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 

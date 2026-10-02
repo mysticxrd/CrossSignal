@@ -165,3 +165,24 @@ Owner words, verbatim:
 In stripHash, make a spread copy of the row, then delete contentHash and truthMode from the copy. This keeps the key order.
 
 Both files are in B01's preservation baseline, which remains unchanged. The spread/delete operation preserves remaining key order and values; removing escapes inside the separator string preserves the resulting string. No behavior changes. Lint, verify:a01, case-investigator, golden-revenue-leak and the nearest grader suite passed. The B01 resume must use the D-06 Git preservation replacement before runner continuation.
+
+## D-11 — Fresh review, frozen checks and offline CI
+
+- Date: 2026-10-03
+- Decided by: Owner (requirements); Codex (test classification and fixture routing)
+- Scope: Factory review binding, optional next-stage check locks and Windows offline CI.
+- Source: owner pasted request; old assertions: `tests/icm-workspace.test.mjs@62787d1:88-209`, `tests/flight-recorder-ship.test.mjs@62787d1:11-96`; fixture dependency: `tests/a01-release.test.mjs@62787d1:10`, `tests/a01-path-compat.mjs@62787d1:1-23`; packaging: `tests/rendered-html.test.mjs@62787d1:183-210`.
+
+Owner words, verbatim:
+
+Move a suite to test:legacy only if it fails because it asserts the retired Flight Recorder or Supabase-trace product. Cite the assertion.
+
+Never delete or weaken a test.
+
+The original workspace suite and flight-recorder-ship suite run under test:legacy. Ship expects old RELEASE_MANIFEST, VERIFICATION_REPORT, DEMO_SCRIPT and accepted Verify gate, all absent in B01; its assertion blocks remain unchanged. Passing Flight Recorder/Supabase suites remain in the current offline selection.
+
+The A01 release test initially could not open the old replay path. The current runner preloads the existing a01-path-compat fixture bridge, preserving all grader and concurrency assertions; it is not classified as legacy. The packaging assertion block is copied unchanged to rendered-html-build.test.mjs and excluded with the build: app/layout.tsx imports Google fonts, and the installed fonts plugin fetches uncached font CSS and files during builds. No build, deployment or provider call is run here.
+
+Every discovered frozen Build copy was audited. The two preserved benchmark-subscription test copies under chatgpt-subscription/measured-profile/prior-current and gemini-resume/prior-current fail with ERR_MODULE_NOT_FOUND for their absent sibling db/benchmark/contracts.mjs; the gemini-runner-v1/execution-source test copy passes. These remain preserved evidence copies outside the current suite, not legacy classifications or weakened tests. No stage verifier or preflight is invoked by npm test or CI. The three dangling scripts (verify:release, verify:ship, demo:prepare) remain unchanged.
+
+Review is required only where REVIEW.md is listed, bound as review_sha256 and to the current first primary hash. Stage 03 gets REVIEW.md on its later Build re-run; this diet leaves its required-output order and gate unchanged. A missing next_checks_sha256 remains explicitly unlocked legacy. Current gates are never edited to add locks or human_minutes.

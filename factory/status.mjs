@@ -1,5 +1,8 @@
 import { deriveFactoryState } from "./_lib/factory-state.mjs";
 import { measureBudgets } from "./_lib/budgets.mjs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { checksHash } from "./_lib/verify-kit.mjs";
 
 function note(stage) {
   if (stage.reasons.length > 0) return stage.reasons[0];
@@ -15,6 +18,7 @@ export function formatFactoryState(state) {
     STATUS: stage.status,
     GATE: stage.gate,
     DEPS: stage.dependencies,
+    CHECKS: stage.checks,
     HEAD: stage.head,
     NOTE: note(stage),
   }));
@@ -47,14 +51,28 @@ export function formatFactoryState(state) {
   return lines.join("\n");
 }
 
-const json = process.argv.includes("--json");
-deriveFactoryState()
-  .then(async (state) => {
-    state.budgets = await measureBudgets(undefined, state.activeStage);
-    process.stdout.write(`${json ? JSON.stringify(state, null, 2) : formatFactoryState(state)}\n`);
-    if (process.argv.includes("--strict") && state.budgets.breaches.length > 0) process.exitCode = 1;
-  })
-  .catch((error) => {
+export function strictFailure(state) {
+  return (state.budgets?.breaches.length ?? 0) > 0 || state.stages.some((stage) => stage.checks === "changed");
+}
+
+async function main(args) {
+  const hashIndex = args.indexOf("--checks-hash");
+  if (hashIndex >= 0) {
+    const stage = args[hashIndex + 1];
+    if (!/^\d{2}_[a-z0-9_-]+$/.test(stage ?? "")) throw new Error("--checks-hash requires NN_stage");
+    const hash = await checksHash(fileURLToPath(new URL(`./${stage}/`, import.meta.url)));
+    process.stdout.write(`${hash}\n`);
+    return;
+  }
+  const state = await deriveFactoryState();
+  state.budgets = await measureBudgets(undefined, state.activeStage);
+  process.stdout.write(`${args.includes("--json") ? JSON.stringify(state, null, 2) : formatFactoryState(state)}\n`);
+  if (args.includes("--strict") && strictFailure(state)) process.exitCode = 1;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main(process.argv.slice(2)).catch((error) => {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
   });
+}

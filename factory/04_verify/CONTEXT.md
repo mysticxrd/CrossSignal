@@ -30,6 +30,7 @@ Do not load: Ship, unrelated repository, source vault or old archive contents.
 ## Outputs
 
 - `output/VERIFICATION_REPORT.md`
+- `output/REVIEW.md`
 - `output/VERIFY.md`
 - `output/HUMAN_GATE.md`
 

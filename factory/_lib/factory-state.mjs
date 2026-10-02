@@ -2,6 +2,7 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  checksHash,
   fileHash,
   frontmatterValue,
   markdownHashBindings,
@@ -125,6 +126,18 @@ async function inspectStage(projectRoot, stage, priorStages, isFinal, hashCache)
     if (expected !== actual) gateReasons.push(`human gate does not bind current ${primaryNames[index]}`);
   }
 
+  const reviewIndex = primaryNames.indexOf("REVIEW.md");
+  if (reviewIndex >= 0) {
+    const review = primaryDocuments[reviewIndex];
+    const primaryIndex = primaryNames.findIndex((name) => name !== "REVIEW.md");
+    if (frontmatterValue(review, "reviewer") !== "fresh-context") gateReasons.push("REVIEW.md requires a fresh-context reviewer");
+    if (frontmatterValue(review, "verdict") !== "pass") gateReasons.push("REVIEW.md has not passed");
+    if (primaryIndex < 0 || frontmatterValue(review, "primary_sha256") !== await fileHash(projectRoot, primaryPaths[primaryIndex])) {
+      gateReasons.push("REVIEW.md does not bind the current primary output");
+    }
+    if (!/^(?:#{1,6} +)?findings\b/im.test(review)) gateReasons.push("REVIEW.md lacks findings");
+  }
+
   const manifestSection = markdownSection(
     primaryDocuments[0] ?? "",
     /^## Declared input (?:hashes|bindings)$/,
@@ -203,6 +216,25 @@ export async function deriveFactoryState({ projectRoot = defaultProjectRoot, inc
     stages.push(
       await inspectStage(projectRoot, stage, definitions.slice(0, index), index === definitions.length - 1, hashCache),
     );
+    const current = stages.at(-1);
+    current.checks = "unlocked";
+    if (index > 0) {
+      const previousGate = join(definitions[index - 1].outputPath, "HUMAN_GATE.md");
+      if (await exists(previousGate)) {
+        const gate = await readFile(previousGate, "utf8");
+        const expected = gate.match(/^next_checks_sha256:[ \t]*([^\r\n]*)$/m)?.[1]?.trim();
+        if (expected) {
+          const actual = await checksHash(dirname(stage.contextPath));
+          current.checks = expected === actual ? "locked" : "changed";
+          current.checksExpected = expected;
+          current.checksActual = actual;
+          if (current.checks === "changed") {
+            if (current.status === "complete") current.status = "stale";
+            current.reasons.push("locked checks changed since the previous gate");
+          }
+        }
+      }
+    }
   }
   const activeStage = stages.find((stage) => stage.status !== "complete")?.name ?? null;
   const state = { stages, activeStage };

@@ -87,3 +87,23 @@ export function changedSince(commit, paths = [], { cwd = resolve(import.meta.dir
   const untracked = git(["--literal-pathspecs", "ls-files", "--others", "--exclude-standard", "-z", "--", ...paths]);
   return [...new Set([...tracked.split("\0"), ...untracked.split("\0")].filter(Boolean))].sort();
 }
+
+export async function checksHash(stageDir) {
+  const root = resolve(stageDir);
+  const files = [];
+  async function visit(directory) {
+    for (const entry of await readdir(directory, { withFileTypes: true })) {
+      if (directory === root && entry.name === "output") continue;
+      const path = resolve(directory, entry.name);
+      if (entry.isDirectory()) await visit(path);
+      else if (entry.isFile()) files.push(path);
+    }
+  }
+  await visit(root);
+  files.sort((left, right) => {
+    const a = repositoryPath(root, left), b = repositoryPath(root, right);
+    return a < b ? -1 : a > b ? 1 : 0;
+  });
+  const lines = await Promise.all(files.map(async (file) => `${repositoryPath(root, file)}\0${await fileHash(root, file)}\n`));
+  return sha256(lines.join(""));
+}
