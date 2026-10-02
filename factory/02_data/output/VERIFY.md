@@ -1,88 +1,57 @@
 ---
-unit: a01-synthetic-revenue-investigation
+type: stage-verification
+unit: b01-api-behavioral-benchmark
 stage: 02_data
 status: passed
-verified_at: 2026-09-26T17:30:38.802Z
-scope: DATA_CONTRACT_ONLY
+prepared_at: 2026-10-01T15:48:42.558Z
+model_evaluation: NOT_RUN
+human_runtime_approval: NOT_RUN
 ---
 
-# A01 Data verification
+# Data verification
 
-Environment: Windows, Node v22.15.0, existing authoritative checkout at
-C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1.
-All runs are local and SIMULATED. No model or paid service was called.
+Windows; Node v22.15.0; existing dependencies; no installation/download.
+The following commands completed with exit 0 during preparation:
 
-## Commands and results
-
-| Command | Exit | Observed result |
-| --- | ---: | --- |
-| node factory/01_spec/verify.mjs | 0 | Accepted Spec remains fresh; 12 criteria, 9 failure experiments, 16 input hashes and corruption probes pass |
-| node factory/02_data/verify.mjs --check-data | 0 | Repeatability, data/query/proposal, isolation and temporary SQLite checks pass |
-| git diff --name-only 58b2aa0 -- app db scripts tests supabase worker drizzle | 0 | Empty: existing product and regression surfaces unchanged from the sealed baseline |
-| git diff --check | 0 | No whitespace errors |
-| node factory/02_data/verify.mjs | 0 | Full contract checks, saved fixtures/results, all declared bindings and pending gate hashes pass |
-| node factory/status.mjs | 0 | Spec complete/accepted/fresh; Data active with open gate and fresh dependencies; later stages never-run |
-
-The full command, node factory/02_data/verify.mjs, repeats these contract checks
-and validates the assembled record: 23 exact Data bindings, four verification
-bindings, saved generated fixtures/results, and pending gate artifact hashes.
-The assembled record passed before handoff. Verification opens the gate; it
-never accepts it.
-
-## Repeatability and reference branches
-
-Two fresh authoring processes produced byte-identical output, SHA-256
-1b921bcc39c4b8698f6110c1cd98340902c7d3eeb1115a49defa5d19a0ea1129.
-Saved fixtures contain 20 complete, 13 limited, and 21 injection observations.
-Private state generates 190/200 affected successes in each post-checkout-rollback
-window and 120/200 after the unrelated rollback or no action. Control segments
-remain 190/200. Expected values are read only by the verifier from evaluator truth.
-See [contract-results.json](contract-results.json) for exact machine results and
-[DATA_PACKAGE.md](DATA_PACKAGE.md) for event references and contract semantics.
-
-## Deliberate failures and persistence
-
-- Nineteen malformed observable, query and proposal inputs were rejected,
-  covering foreign scope, LIVE, duplicate/future evidence, inconsistent totals,
-  unknown fields/tools, paging context, excessive limits, manual-check action,
-  missing citations, expiry and action caps.
-- Eleven invalid storage operations were rejected, covering missing labels or
-  action, foreign/mismatched grants, missing/duplicate effects and history mutation.
-- A child process exited during an uncommitted transaction. Reopening retained
-  zero effects, one initial world revision and no timeline event. Effect, new
-  world checkpoint and timeline were rolled back together.
-- After committing those records, reopening retained one effect, two world
-  revisions and one timeline event. Tests use a disposable local database.
-- Restricted fixed-runner probes denied four private reads (including alternate
-  path), one write and child-process creation. No evaluator secret environment
-  value was inherited. The denied content was never returned by the probe.
-
-## Scope and limits
-
-The executable DATA modules and their syntax/imports were exercised by the
-stage verifier. Application build, application lint, hosted migration and full
-product-suite runs are not applicable to these stage-only data artifacts; the
-tracked product surfaces listed above have no change. This is not a new full
-product regression claim. Node reports its SQLite experimental-feature warning.
-
-The permission probe verifies the tested fixed Node process boundary; it does
-not establish an OS sandbox against arbitrary native code. Product tool-host
-isolation, budget enforcement, injection behavior, hypothesis updates, exact
-human approval, integrated execution and hidden-truth behavioral grading remain
-Build/Verify obligations. Reference transitions and surrogate storage grants
-are not approved product effects. Model evaluation is NOT_RUN.
-
-No TEST or LIVE data was modified. The excluded trial receipt, existing tenant
-checks and Mobile Safari regression remain in the unchanged product surfaces.
-These results establish neither actual Mobile Safari verification nor payment
-capture or recovered business revenue. The historical factory is preserved in
-the transition archive; the Data gate remains pending.
-
-## Declared input hashes
-
-| Input | SHA-256 |
+| Command | Evidence |
 | --- | --- |
-| `factory/02_data/CONTEXT.md` | `e42afae22dd29acc2601970afa0b2ea93d1a0e602195f9819e417b07bafca6f7` |
-| `factory/02_data/verify.mjs` | `474d2ba52f542db02a309f8f41a302163937de352bbbf5ea98d9f55044b868d1` |
-| `factory/02_data/output/DATA_PACKAGE.md` | `2a3c7d8c5668eee58992284edbe0d14774ea6057a4a3991031816a39ab638eae` |
-| `factory/02_data/output/contract-results.json` | `c66ddec72fdb94879efb5195df0baa9b01e6ae4437cfd52a67623bff2bed98e5` |
+| node factory/01_spec/verify.mjs | Accepted/fresh Spec hashes and 118 archived files verified |
+| node factory/02_data/verify.mjs --prepare | 13 deterministic checks; 7 negative package mutations; 22 hash bindings |
+| node node_modules/eslint/bin/eslint.js factory/02_data/verify.mjs factory/02_data/benchmark/*.mjs | Targeted lint clean, no output |
+| git -c safe.directory=<authoritative-product> diff --check | No whitespace errors |
+| git -c safe.directory=<authoritative-outer> diff --check | No whitespace errors |
+
+CONTRACT_EVIDENCE.json contains full deterministic checks and ordered exposure
+probe manifests, not scored model answers or API usage. The evidence digest is
+5600e9647438d27f6e4afb9c3d5a659172665f35bd12074faa605907898d74bf. Package negative checks: model performance claim; runtime approval claim; budget claim; missing case; hidden cause substituted for epistemic proof; missing human review; unqualified context claim.
+
+- frozen-five-case-contract: passed
+- bounded-ledger-and-schema-rejections: passed
+- fresh-host-identities-preserve-facts-without-cross-run-access: passed
+- aggregate-signal-separates-count-rate-price-and-coverage: passed
+- b05-two-private-worlds-one-observable-cutoff: passed
+- eager-and-query-universes-match-with-bounded-pagination: passed
+- foreign-future-path-url-and-unknown-tool-denials: passed
+- actual-node-read-write-child-and-credential-denials: passed
+- untrusted-text-is-inert-and-invalid-attempts-consume-budget: passed
+- frozen-discriminators-and-typed-claim-counterexamples: passed
+- common-finding-retains-wrong-answers-and-missing-citations: passed
+- lossless-allowlisted-exposure-and-conservative-context-fit: passed
+- existing-files-git-state-and-stored-results-preserved: passed
+
+Five different hidden causes, B05 underidentification, 23 exact required groups,
+15 actual private reads denied, writes/children denied, clean worker credentials,
+10 attempts including failures, matched eager/query universes, lossless compact
+serialization and 80 canary-scanned surfaces. Full single-shot/initial context
+checks use a stated conservative byte-fallback condition, not measured provider tokens.
+Model behavior, transport, paid scoring, durability and runtime approval/effects
+are NOT_RUN. Prototype injection probes prove fixed tool dispatch, not API resistance.
+
+Preservation at preparation: outer: 3499 existing files, 1044 directories, branch codex/supabase-migration, HEAD ca44f2eb180ed2d7d1fba1b606208a3294d4830d; product: 1279 existing files, 359 directories, branch codex/phase3-decision-ux, HEAD 43d42d255bd22cb227e3410dda31ffb8437f6624.
+Product A01 archive 118 files and outputs/a01 477 files are raw-byte unchanged.
+No deletion, relocation, Git index/HEAD change, database write or history rewrite.
+
+Full application build, TypeScript, migrations and effect-producing A01 tests are
+outside this Data-only change. Existing full-source lint/TS failures and historical
+test-path compatibility remain recorded for Build; no global pass is claimed.
+The Data gate is pending, Build remains unstarted and release remains unsealed.

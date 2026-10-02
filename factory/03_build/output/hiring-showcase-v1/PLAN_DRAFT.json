@@ -1,0 +1,371 @@
+{
+  "version": "b01-hiring-showcase-draft-plan-v1",
+  "status": "proposal_only",
+  "executionPermitted": false,
+  "originalAcceptedSchedule": {
+    "initialRecords": 35,
+    "changedRecords": 15,
+    "totalRecords": 50
+  },
+  "proposedSchedule": {
+    "cases": 5,
+    "methods": [
+      "rules",
+      "single-shot-model",
+      "tool-using-model"
+    ],
+    "replicatesPerMethod": 1,
+    "records": 15
+  },
+  "deferred": {
+    "initialRepeatedRecords": 20,
+    "changedExperimentRecords": 15,
+    "runtimeIntervention": "NOT_RUN"
+  },
+  "model": "gemini-3.5-flash-lite",
+  "profile": "original-accepted-b01-token-limits",
+  "configuration": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "apiVersion": "v1beta",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+    "selectionStatus": "proposed_model_pending_review",
+    "modelCallsAuthorized": false,
+    "paidSpendCapUsd": 0,
+    "freeAccountVerified": false,
+    "tokenizerVerified": false,
+    "reasoningCapDocumented": true,
+    "apiCompatibilityVerified": false,
+    "temperature": 1,
+    "thinkingLevel": "MINIMAL",
+    "maxOutputTokens": 1024,
+    "contextTokens": 8192,
+    "generatedTokens": 6144,
+    "modelTurns": 12,
+    "requestTimeoutMs": 180000,
+    "investigationTimeoutMs": 900000,
+    "concurrency": 1,
+    "automaticRetries": 0,
+    "seed": null,
+    "seedUnavailableReason": "model_specific_support_not_verified"
+  },
+  "ceilings": {
+    "maximumGenerationDispatches": 65,
+    "maximumToolAttempts": 50,
+    "maximumGeneratedTokensIncludingReasoning": 35840,
+    "maximumTokenCountRequests": 150,
+    "maximumMetadataRequests": 1,
+    "explanation": "Conservative bounds using the existing runner counting policy; 15 records are not 15 HTTP requests. This plan authorizes none."
+  },
+  "requiredBeforeExecution": [
+    "exact_amendment_accepted",
+    "fresh_source_and_account_verification",
+    "generation_compatibility_resolved",
+    "every_original_limit_and_isolation_verified",
+    "new_immutable_manifest_and_stores"
+  ],
+  "freshContexts": true,
+  "priorArtifactsCredited": 0,
+  "records": [
+    {
+      "sourceFile": "c_82238562b57a.json",
+      "sourceCaseId": "c_82238562b57a",
+      "sourceSha256": "084f660ce89fc1f53c49d8b69762c80b60520b5060c00119b314720f97291575",
+      "method": "rules",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_f5508be51b4b",
+        "caseId": "c_ccdf540028f7",
+        "runId": "r_0ad9878b776d",
+        "actorId": "a_5b5ed4421300",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "2859442a90bbb4e899746e8cd57e1241f407151139711803ad1d21cceeacec8c",
+      "initialRequestSha256": null,
+      "initialRequestBytes": null,
+      "initialWireOutputCap": null,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_82238562b57a.json",
+      "sourceCaseId": "c_82238562b57a",
+      "sourceSha256": "084f660ce89fc1f53c49d8b69762c80b60520b5060c00119b314720f97291575",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_4323e1469490",
+        "caseId": "c_0d8ef4f8b89e",
+        "runId": "r_e3e4fbedbf71",
+        "actorId": "a_2e89332b4b01",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "832b9ec7a68f3ebd9c55e8e2fc4620fedd6d8c59907f11bf2a7456be3cc1474a",
+      "initialRequestSha256": "5ba938ec41c4f34e5056558f1d6721036e201d837f499dfd5d1ba6118c9f5073",
+      "initialRequestBytes": 6842,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_82238562b57a.json",
+      "sourceCaseId": "c_82238562b57a",
+      "sourceSha256": "084f660ce89fc1f53c49d8b69762c80b60520b5060c00119b314720f97291575",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_f528e552683a",
+        "caseId": "c_22ebe077d841",
+        "runId": "r_4ccc5d1f707d",
+        "actorId": "a_c9d8dafe62aa",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "a7d2040aa3ff7e0bc8493758b573d6ef6f2acc1f544f31a013e475d717e28aca",
+      "initialRequestSha256": "1a4d6a17e2f4e0f7ea2aa91b498f061fc1b124e24894c48165377d17198aee37",
+      "initialRequestBytes": 7346,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9064d6884d46.json",
+      "sourceCaseId": "c_9064d6884d46",
+      "sourceSha256": "5fddb955442413956b77fce8a8ead0ab9192d81d1b0728765b7acf492e2472da",
+      "method": "rules",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_94b7dbe4e6ee",
+        "caseId": "c_a51ed4c24eda",
+        "runId": "r_469c27b18413",
+        "actorId": "a_44ef85d33427",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "2a8892bf1c82db4df2a87f0f644bc51919f4dcb8c4f7f14a5f5ba78998583bed",
+      "initialRequestSha256": null,
+      "initialRequestBytes": null,
+      "initialWireOutputCap": null,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9064d6884d46.json",
+      "sourceCaseId": "c_9064d6884d46",
+      "sourceSha256": "5fddb955442413956b77fce8a8ead0ab9192d81d1b0728765b7acf492e2472da",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_97ac1f6f385e",
+        "caseId": "c_eeea21a48ac2",
+        "runId": "r_a1e69bfcf8a0",
+        "actorId": "a_4f5fb1d14edc",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "5ff7a5156073f809deabd654c4dd12c276f565d44d4ce6fe0e6aac864fe5734a",
+      "initialRequestSha256": "89187f2d38c57c9360dc983df7367e433ec54157a987aba718f574939783e003",
+      "initialRequestBytes": 6552,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9064d6884d46.json",
+      "sourceCaseId": "c_9064d6884d46",
+      "sourceSha256": "5fddb955442413956b77fce8a8ead0ab9192d81d1b0728765b7acf492e2472da",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_85912c8215cd",
+        "caseId": "c_63bb093dd24f",
+        "runId": "r_cce8b164b87a",
+        "actorId": "a_19e4e9f2524e",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "8274b8ab7b42fcd2b905408fe7a158ba5f2fceca7dfa091a9f7c47d90cd8ff57",
+      "initialRequestSha256": "013dfb050e6d0566288c96fcb95468d47a9aecd0f8936bfb31f7033ef4ff3d51",
+      "initialRequestBytes": 7346,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_96d1716b81ab.json",
+      "sourceCaseId": "c_96d1716b81ab",
+      "sourceSha256": "2ca92b14087d17906b19df7bd88f6a41978e8fa5aa6248c648870b2ac0c92b02",
+      "method": "rules",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_58a97cae8d48",
+        "caseId": "c_242438dcc391",
+        "runId": "r_5ea929ebdb7c",
+        "actorId": "a_de7b669a7973",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "93fb9de832146dce9099bdad5a9f09e36ef4487e968f620b8fece5573fe8512a",
+      "initialRequestSha256": null,
+      "initialRequestBytes": null,
+      "initialWireOutputCap": null,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_96d1716b81ab.json",
+      "sourceCaseId": "c_96d1716b81ab",
+      "sourceSha256": "2ca92b14087d17906b19df7bd88f6a41978e8fa5aa6248c648870b2ac0c92b02",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_c9033a809310",
+        "caseId": "c_15c1518d5602",
+        "runId": "r_3e7ef8a4554b",
+        "actorId": "a_d27bc755e43c",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "55f1716810ca8de0ed434a5e14a705c05259a756c479a4e83275f43325be076b",
+      "initialRequestSha256": "427ed3c2570f1368cd6d06ac7d19356f9cebc4cfa7eb1622ff5a143c973a8021",
+      "initialRequestBytes": 6623,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_96d1716b81ab.json",
+      "sourceCaseId": "c_96d1716b81ab",
+      "sourceSha256": "2ca92b14087d17906b19df7bd88f6a41978e8fa5aa6248c648870b2ac0c92b02",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_d95a6e5ba516",
+        "caseId": "c_05187c7ce2b8",
+        "runId": "r_6c0eed6d3235",
+        "actorId": "a_a44944ff8ed3",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "250d4ebbd37114d90a7661a28a35f09bcf8309073a8656d10ead8d004a4c72df",
+      "initialRequestSha256": "4788b0ecf02d6032d7d3c7ba2c5187654482e08a602bf003bea7f61c7014000c",
+      "initialRequestBytes": 7346,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "sourceCaseId": "c_9a9789cf1e3e",
+      "sourceSha256": "1c452245ecfb3d917435720462e6bf2a9ef2fbca271810a975bbc346a78d22a4",
+      "method": "rules",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_f9ad4990ff40",
+        "caseId": "c_8861bc048fa4",
+        "runId": "r_6949a4b6ce23",
+        "actorId": "a_93f2a4883d96",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "377778b00cf145743534b8daeffb7d0c31f72c5c0919bc446aa3851835a4883c",
+      "initialRequestSha256": null,
+      "initialRequestBytes": null,
+      "initialWireOutputCap": null,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "sourceCaseId": "c_9a9789cf1e3e",
+      "sourceSha256": "1c452245ecfb3d917435720462e6bf2a9ef2fbca271810a975bbc346a78d22a4",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_54dbc79b3e8a",
+        "caseId": "c_2c216690a2f0",
+        "runId": "r_11da13e0ef2b",
+        "actorId": "a_c50245645a41",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "5b6c8e573f6d99aeedf31d74564128b024978edf6c8ef62a6bb34d8eaceb73ea",
+      "initialRequestSha256": "2dd95196e7ee0d0dc7e82123c4fb159b78b4310e88d58c22ac86aabdaa0fbd06",
+      "initialRequestBytes": 6759,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "sourceCaseId": "c_9a9789cf1e3e",
+      "sourceSha256": "1c452245ecfb3d917435720462e6bf2a9ef2fbca271810a975bbc346a78d22a4",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_62b7c5f2519c",
+        "caseId": "c_d9a5533b0f21",
+        "runId": "r_011db698322b",
+        "actorId": "a_769c50455bfb",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "cf43590604bb64632dbd34a78e66ea6545affb5dbc3ce10c8fa5a6da945e47bd",
+      "initialRequestSha256": "f63a923329933f3a9db95656e81fe5859cf8743481a05ab062cfaf9c3fa77282",
+      "initialRequestBytes": 7346,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_e3439f2540d4.json",
+      "sourceCaseId": "c_e3439f2540d4",
+      "sourceSha256": "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc",
+      "method": "rules",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_1cf75ebd02a9",
+        "caseId": "c_1138c2a2c9d0",
+        "runId": "r_8e02ab08cc85",
+        "actorId": "a_a94cefa7d738",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "6b2288a7e91c4cdecad0a692011475e6bea72d0d1c0cea1aa64585ff14654175",
+      "initialRequestSha256": null,
+      "initialRequestBytes": null,
+      "initialWireOutputCap": null,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_e3439f2540d4.json",
+      "sourceCaseId": "c_e3439f2540d4",
+      "sourceSha256": "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_015134d6d809",
+        "caseId": "c_d9ce979400ce",
+        "runId": "r_3d3721a4a36b",
+        "actorId": "a_76899ad4c5cd",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "ce5843402f0ad32a01a83e1d5f6b193988d7914bb8c11cae73bf5e256347e7b8",
+      "initialRequestSha256": "d1958df359dde8356d92198da49cb4516814a23cc406958fcc84bee19c858568",
+      "initialRequestBytes": 6109,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    },
+    {
+      "sourceFile": "c_e3439f2540d4.json",
+      "sourceCaseId": "c_e3439f2540d4",
+      "sourceSha256": "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "scope": {
+        "workspaceId": "w_dea97b181f23",
+        "caseId": "c_67f5cea814b5",
+        "runId": "r_431e5d7b426d",
+        "actorId": "a_a0b8fa874370",
+        "start": "2026-09-01T09:00:00.000Z",
+        "clock": "2026-09-01T10:00:00.000Z"
+      },
+      "observableSha256": "129b15a89bacfc872b2ebda11fcd11f8b31bdb855067bda2de834efa20bc907c",
+      "initialRequestSha256": "bcd95962aa99fb253fc8805a9e6b3ec32dec9bcfb73e66f9858c67b5d9cf0f63",
+      "initialRequestBytes": 7346,
+      "initialWireOutputCap": 1024,
+      "executionStatus": "NOT_RUN"
+    }
+  ]
+}

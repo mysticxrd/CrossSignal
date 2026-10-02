@@ -1,0 +1,352 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>CrossSignal: Stage 03 saved failure review</title><style>:root{font-family:system-ui,sans-serif;color:#18323b;background:#f1f6f7}body{margin:0}main{max-width:1080px;margin:auto;padding:32px 20px}h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.1;max-width:780px}p{line-height:1.6}article,section{background:white;border:1px solid #ccdade;border-radius:12px;padding:24px;margin:24px 0}.blocked{border-left:5px solid #a76020}.label{font-size:.8rem;letter-spacing:.08em;font-weight:700;color:#4d6670}.metrics{display:flex;gap:32px;padding:16px 0}table{width:100%;border-collapse:collapse;text-align:left}th,td{padding:12px;border-bottom:1px solid #d9e3e6}code{overflow-wrap:anywhere;font-size:.8rem}li code{display:block}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:.8rem}details{padding:12px 0}a{color:#126078}.scroll{overflow:auto}@media(max-width:650px){main{padding:20px 12px}article,section{padding:18px}.metrics{flex-direction:column;gap:12px}}</style></head><body><main><p class="label">CROSSSIGNAL · ENGINEERING SHOWCASE · STAGE 03 REVIEW</p><h1>A failed request still leaves an inspectable Case.</h1><p>The approved workflow is synthetic revenue drop → permitted evidence → competing explanations and citations → recommendation or abstention → saved Case. Successful Gemini investigation is still blocked.</p><section class="blocked"><h2>HTTP 400: INVALID_ARGUMENT</h2><p>1 of 15 investigations saved; 14 NOT_RUN; 0 Gemini findings. Detailed field information was unavailable in the retained diagnostic. Further model requests are blocked. No retry or fallback occurred.</p><p>One metadata request, 22 token-count requests, 1 scheduled generation dispatch. Largest measured initial input bound: 2605; reserving 1024 output fits 8192.</p></section><article><p class="label">SAVED CASE · SIMULATED</p><h2>tool-using-model: r_4ccc5d1f707d</h2><p><strong>indeterminate_usage</strong> · http_failure</p><p>No Gemini finding returned. No diagnosis, citations, recommendation or epistemic abstention is inferred.</p><div class="metrics"><span>Received revenue before<br><strong>INR 2,60,000</strong></span><span>Received revenue after<br><strong>INR 2,20,000</strong></span></div><p>Elapsed: 4628 ms. Generated usage and provider revision: unknown. The zero ledger counter is not a measured server total.</p><details><summary>Inspect the ordered durable timeline</summary><ol><li>started<code>a69d96a59120bb525dfe68f4cd8efd52ae0507e23c71b905f87466d57abcae7a</code></li><li>token_count<code>5d581bd9311d94b67129d8c415215bc8074374942d5c4854f81f8840f4a3f4c5</code></li><li>request<code>e6da7c932f9285f9639beee3b3fe8954e66208daf2df9a7aec921d56179450e5</code></li><li>terminal<code>245defa2d955b219fafa77506d35d55aac2eb10043df13d13dfbbbf6974b2ccf</code></li></ol></details><details><summary>Inspect permitted synthetic observations</summary><pre>[
+  {
+    &quot;id&quot;: &quot;e_03ac21817a8c&quot;,
+    &quot;type&quot;: &quot;service_health&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:59:00.000Z&quot;,
+    &quot;source&quot;: &quot;engineering&quot;,
+    &quot;payload&quot;: {
+      &quot;providerHealthy&quot;: true,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;service&quot;: &quot;payment-provider&quot;,
+      &quot;validationErrors&quot;: 0
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_08dac329f9ab&quot;,
+    &quot;type&quot;: &quot;observation_status&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;coverage&quot;: &quot;complete&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;expectedWindows&quot;: 4,
+      &quot;freshness&quot;: &quot;unknown&quot;,
+      &quot;receivedAt&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;receivedWindows&quot;: 4,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_0e568b7bc643&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;failed&quot;: 60,
+      &quot;providerDeclines&quot;: 18,
+      &quot;revenueMinor&quot;: 2000000,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;successes&quot;: 40,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 42,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_41bfbb28c329&quot;,
+    &quot;type&quot;: &quot;deployment&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:31:00.000Z&quot;,
+    &quot;source&quot;: &quot;engineering&quot;,
+    &quot;payload&quot;: {
+      &quot;fromVersion&quot;: &quot;v141&quot;,
+      &quot;note&quot;: &quot;Input validation update.&quot;,
+      &quot;service&quot;: &quot;checkout&quot;,
+      &quot;toVersion&quot;: &quot;v142&quot;
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_4dbb79203ac5&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;failed&quot;: 20,
+      &quot;providerDeclines&quot;: 18,
+      &quot;revenueMinor&quot;: 4000000,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;successes&quot;: 80,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 2,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_5121081e753c&quot;,
+    &quot;type&quot;: &quot;support_message&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:58:00.000Z&quot;,
+    &quot;source&quot;: &quot;support&quot;,
+    &quot;payload&quot;: {
+      &quot;message&quot;: &quot;Debit form rejects valid input before payment submission.&quot;,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;tags&quot;: [
+        &quot;checkout&quot;,
+        &quot;card&quot;
+      ]
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_5eb155b35db2&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;failed&quot;: 20,
+      &quot;providerDeclines&quot;: 18,
+      &quot;revenueMinor&quot;: 4000000,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+      &quot;successes&quot;: 80,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 2,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_7128d6647df3&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;GB/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_766f55075578&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;failed&quot;: 60,
+      &quot;providerDeclines&quot;: 18,
+      &quot;revenueMinor&quot;: 2000000,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;successes&quot;: 40,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 42,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_7bd783c63aa7&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;GB/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_98d918bca175&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;IN/credit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_a9654f12190a&quot;,
+    &quot;type&quot;: &quot;observation_status&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;coverage&quot;: &quot;complete&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;expectedWindows&quot;: 4,
+      &quot;freshness&quot;: &quot;unknown&quot;,
+      &quot;receivedAt&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;receivedWindows&quot;: 4,
+      &quot;segment&quot;: &quot;IN/credit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_b4f11f6165ce&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;IN/credit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_c8a1459bf251&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;GB/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_ce59d9d0fdc8&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;GB/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_d0000dc97808&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;IN/credit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_d11d733474bf&quot;,
+    &quot;type&quot;: &quot;deployment&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:43:00.000Z&quot;,
+    &quot;source&quot;: &quot;engineering&quot;,
+    &quot;payload&quot;: {
+      &quot;fromVersion&quot;: &quot;v8&quot;,
+      &quot;note&quot;: &quot;Email template update.&quot;,
+      &quot;service&quot;: &quot;notifications&quot;,
+      &quot;toVersion&quot;: &quot;v9&quot;
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_e3f68f3c748d&quot;,
+    &quot;type&quot;: &quot;observation_status&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;coverage&quot;: &quot;complete&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;expectedWindows&quot;: 4,
+      &quot;freshness&quot;: &quot;unknown&quot;,
+      &quot;receivedAt&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;receivedWindows&quot;: 4,
+      &quot;segment&quot;: &quot;GB/debit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_e676b70118fe&quot;,
+    &quot;type&quot;: &quot;revenue_window&quot;,
+    &quot;at&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+    &quot;source&quot;: &quot;revenue&quot;,
+    &quot;payload&quot;: {
+      &quot;attempts&quot;: 100,
+      &quot;currency&quot;: &quot;INR&quot;,
+      &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+      &quot;failed&quot;: 10,
+      &quot;providerDeclines&quot;: 9,
+      &quot;revenueMinor&quot;: 4500000,
+      &quot;segment&quot;: &quot;IN/credit&quot;,
+      &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+      &quot;successes&quot;: 90,
+      &quot;unitPriceMinor&quot;: 50000,
+      &quot;validationErrors&quot;: 1,
+      &quot;visits&quot;: 200
+    }
+  },
+  {
+    &quot;id&quot;: &quot;e_e9d355ef60e5&quot;,
+    &quot;type&quot;: &quot;service_health&quot;,
+    &quot;at&quot;: &quot;2026-09-01T09:59:00.000Z&quot;,
+    &quot;source&quot;: &quot;engineering&quot;,
+    &quot;payload&quot;: {
+      &quot;providerHealthy&quot;: true,
+      &quot;segment&quot;: &quot;IN/debit&quot;,
+      &quot;service&quot;: &quot;checkout&quot;,
+      &quot;validationErrors&quot;: 42
+    }
+  }
+]</pre></details><p>Database SHA-256: <code>ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524</code><br>Timeline SHA-256: <code>245defa2d955b219fafa77506d35d55aac2eb10043df13d13dfbbbf6974b2ccf</code></p><p>Source, manifest, scoped evidence, terminal result and append-only chain pass read-only reload. Reload never generates or repeats an effect.</p></article><section><h2>Approved 15-record schedule</h2><p>Five frozen cases × three methods × one fresh investigation. This table preserves failures and unrun work. Older evidence and offline fixture tests are separate.</p><div class="scroll"><table><thead><tr><th>Order</th><th>Case source</th><th>Method</th><th>Status</th></tr></thead><tbody><tr><td>1</td><td><code>c_82238562b57a.json</code></td><td>tool-using-model</td><td>indeterminate_usage</td></tr><tr><td>2</td><td><code>c_82238562b57a.json</code></td><td>rules</td><td>NOT_RUN</td></tr><tr><td>3</td><td><code>c_82238562b57a.json</code></td><td>single-shot-model</td><td>NOT_RUN</td></tr><tr><td>4</td><td><code>c_9064d6884d46.json</code></td><td>rules</td><td>NOT_RUN</td></tr><tr><td>5</td><td><code>c_9064d6884d46.json</code></td><td>single-shot-model</td><td>NOT_RUN</td></tr><tr><td>6</td><td><code>c_9064d6884d46.json</code></td><td>tool-using-model</td><td>NOT_RUN</td></tr><tr><td>7</td><td><code>c_96d1716b81ab.json</code></td><td>single-shot-model</td><td>NOT_RUN</td></tr><tr><td>8</td><td><code>c_96d1716b81ab.json</code></td><td>tool-using-model</td><td>NOT_RUN</td></tr><tr><td>9</td><td><code>c_96d1716b81ab.json</code></td><td>rules</td><td>NOT_RUN</td></tr><tr><td>10</td><td><code>c_9a9789cf1e3e.json</code></td><td>tool-using-model</td><td>NOT_RUN</td></tr><tr><td>11</td><td><code>c_9a9789cf1e3e.json</code></td><td>rules</td><td>NOT_RUN</td></tr><tr><td>12</td><td><code>c_9a9789cf1e3e.json</code></td><td>single-shot-model</td><td>NOT_RUN</td></tr><tr><td>13</td><td><code>c_e3439f2540d4.json</code></td><td>rules</td><td>NOT_RUN</td></tr><tr><td>14</td><td><code>c_e3439f2540d4.json</code></td><td>single-shot-model</td><td>NOT_RUN</td></tr><tr><td>15</td><td><code>c_e3439f2540d4.json</code></td><td>tool-using-model</td><td>NOT_RUN</td></tr></tbody></table></div></section><section><h2>Review evidence</h2><p><a href="README.md">Current README</a> · <a href="DEMO_WALKTHROUGH.md">Three-minute walkthrough</a> · <a href="EVALUATION_REPORT.md">Evaluation and failure report</a> · <a href="ARCHITECTURE.md">Architecture and interview code paths</a></p><p>Scope and preservation qualification accepted; Stage 03 Build pending. Larger B01 incomplete. No runtime intervention or business-recovery claim. This static viewer has no scripts, external assets, network actions or database writes.</p><p>Snapshot identity: <code>4fbc15398d2de7c94abeb99eb5e33056770387b0a5b73cd34ea4bb859d04120c</code></p></section></main></body></html>

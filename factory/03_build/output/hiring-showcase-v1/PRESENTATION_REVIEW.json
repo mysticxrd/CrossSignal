@@ -1,0 +1,13 @@
+{
+  "recordedAtUtc": "2026-10-02T10:15:00.627Z",
+  "purpose": "Correct unaccepted projection labels: both revenue intervals precede the frozen cutoff; display recorded segment and absent claims/alternatives",
+  "previousProjection": "draft-history/index.initial.html",
+  "previousRawSha256": "916f8035ec7f0d185bf27c50a7565fbc4b4152a133b3388c59e2251f13b6e7af",
+  "currentProjection": "index.html",
+  "currentRawSha256": "374ffa533e14e10cc19d1b55d3f0d1e82e58360ce3e68fafdefee31e8ba45a2b",
+  "snapshotChanged": false,
+  "planChanged": false,
+  "acceptedOrPreexistingFilesChanged": false,
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

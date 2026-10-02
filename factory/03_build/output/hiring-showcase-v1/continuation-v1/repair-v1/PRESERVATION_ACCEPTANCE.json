@@ -1,0 +1,17 @@
+{
+  "version": "b01-preservation-qualification-acceptance-v1",
+  "decision": "accepted",
+  "reviewer": "workspace owner; direct human answer",
+  "observedAtUtc": "2026-10-02T13:44:35.207Z",
+  "userMessage": "Accept the preservation qualification",
+  "proposalSha256": "0b2fdd96d3173ebd4a8a58b38dd65fc59f8112474b08d8c5728551fc591f5901",
+  "historicalRawIndexAssertion": "still_failed_preserved",
+  "currentOuterRawIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef",
+  "logicalEntryDigest": "fa45e1634e339325cceafa6ef15bbb88f4fff5db5bb3e12f13378f62920de5f6",
+  "originalBaselineReplaced": false,
+  "originalAssertionRewritten": false,
+  "gitReset": false,
+  "stage03Accepted": false,
+  "runtimeIntervention": false,
+  "modelPrerequisitesStillRequired": true
+}

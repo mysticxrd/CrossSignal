@@ -1,0 +1,55 @@
+{
+  "version": "b01-one-scheduled-diagnostic-v1",
+  "status": "proposal_only",
+  "executionPermitted": false,
+  "sourceHashes": {
+    "diagnostic-next.mjs": "254d9f3ebed6a57c4723f3e96d703d9cc2126eeed16c1879fbaf10f5f4f745f2",
+    "diagnostic-transport-next.mjs": "6fe5ffe68fbecae0c191eab3786df8143da1ff928ea4076c059440175c0dd15c",
+    "diagnostic-next-tests.mjs": "fa5876ae1b97f334562afafa33535fa831b93294b6f92398bf3a4c3a637a373a",
+    "REVIEW_TESTS.json": "884f8473306b5d8947a051b207e7f87059ed70e0c639545653338bd45904b304",
+    "http.mjs": "cf4e3ad5bde3b1a45c686ad37ae8ac62195351ecc088abfec17118ebbb347ddd",
+    "wire.mjs": "ce665e76ea86c7e7c33f02a628bd6ad7954a9c49faba8d4752a34648824079ca",
+    "OFFLINE_PROOF.json": "318d0fbd0302a00689c78734d533f738c24709d2314dba52c99dd94ef036f0a3",
+    "PLAN.json": "9686d6e9fc1d912310645cd5d9290576efe59a528bb0924707ad71776bcca9ec",
+    "SAVED_INSPECTION.json": "f8971161b7d788c1159967d195a5491f3575950ff5f13e20d9dde686638e3277",
+    "EXECUTION_CLAIM.json": "bd130af1434fd7e4ba084480b336c6c468f1a297e09ccc5ea65332707bf3973f"
+  },
+  "priorArtifactHashes": {
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/MANIFEST.json": "abc104fd13458072bc1f684bed86e65e2f388e63a311ed35e124279a139c8f79",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/PROVIDER_READINESS.json": "8ccb4753568d7997ee736ca093fdf1a3bde97d3432c46d556627a18e10a2151b",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/BLOCKER.json": "253fd3af8e0bb1368c4578190178bdaeada6353c983cd021d34c230ebd833ce2",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/SUMMARY.json": "55e9630ee9bbb51d4fa2ee5b18d63b9c9cbab5f5d9f7663b05083c82b468505e",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/case.sqlite": "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/RESULT.json": "9e2ba4d43e56d6c849fbc166b19583920d3ff38999a1a2360197884cba8f2a17",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/CASE.md": "597a8a2627adfdeaa1c3428b713c99e3205b847d2364e17d42c32a4f736e97a4"
+  },
+  "selectedRow": {
+    "ordinal": 3,
+    "sourceFile": "c_82238562b57a.json",
+    "sourceHash": "084f660ce89fc1f53c49d8b69762c80b60520b5060c00119b314720f97291575",
+    "method": "single-shot-model",
+    "replicateIndex": 1,
+    "scope": {
+      "workspaceId": "w_4323e1469490",
+      "caseId": "c_0d8ef4f8b89e",
+      "runId": "r_e3e4fbedbf71",
+      "actorId": "a_2e89332b4b01",
+      "start": "2026-09-01T09:00:00.000Z",
+      "clock": "2026-09-01T10:00:00.000Z"
+    },
+    "observableSha256": "832b9ec7a68f3ebd9c55e8e2fc4620fedd6d8c59907f11bf2a7456be3cc1474a",
+    "initialRequestSha256": "70feefbd080338aa2b110552607ae1cc698a705158bbdf5642f63122f427e0f0",
+    "originalDraftRequestSha256": "5ba938ec41c4f34e5056558f1d6721036e201d837f499dfd5d1ba6118c9f5073",
+    "initialRequestBytes": 6882,
+    "initialWireOutputCap": 1024,
+    "executionStatus": "NOT_RUN",
+    "previousPreparedRequestSha256": "0d44afe6803ee27f13cd3da19622107ebe94f3ce018c6a2a618637e7a74b0051"
+  },
+  "requestLimit": 1,
+  "maximumProviderOperations": 4,
+  "automaticRetries": 0,
+  "model": "gemini-3.5-flash-lite",
+  "allOriginalLimitsRetained": true,
+  "privateInvestigatorInputs": 0,
+  "stage03Accepted": false
+}

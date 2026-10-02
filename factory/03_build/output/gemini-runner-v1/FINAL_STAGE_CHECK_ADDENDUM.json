@@ -1,0 +1,13 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "factory/03_build/verify.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T09:05:50.399Z",
+  "finishedAtUtc": "2026-10-02T09:06:17.823Z",
+  "exitCode": 1,
+  "stdout": "",
+  "stderr": "(node:20180) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nAssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n+ actual - expected\n\n+ 'f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef'\n- '33cc89df4b1ea6588ca2e40a280c4403cffffba91f138e1a5d70186fd5e508c3'\n\n    at checkRunnerPreservation (file:///C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1/factory/03_build/runner-checks.mjs:95:12)\n    at async verifyRunner (file:///C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1/factory/03_build/runner-checks.mjs:198:22)\n",
+  "scope": "offline stage verification plus read-only source/manifest/database equality; no network",
+  "supersedesForCurrentSources": "FINAL_STAGE_CHECK.json"
+}

@@ -1,0 +1,14 @@
+{
+  "recordedAt": "2026-10-01T20:10:06.388Z",
+  "command": "node --test tests/benchmark.test.mjs tests/benchmark-subscription.test.mjs tests/benchmark-subscription-budget.test.mjs tests/benchmark-gemini-budget.test.mjs",
+  "firstAttempt": {
+    "exitCode": 1,
+    "tests": 41,
+    "passed": 40,
+    "failed": 1,
+    "failure": "finding.kind: invalid string",
+    "cause": "Frozen host validator requires maxLength for every typed string; new local turn enum omitted it."
+  },
+  "correction": "Added explicit local maxLength for kind and tool strings. Original accepted schemas/validators and historical request bodies unchanged.",
+  "fullInitialTapStored": false
+}

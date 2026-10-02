@@ -1,0 +1,648 @@
+{
+  "version": "b01-hiring-showcase-repair-review-v1",
+  "truthMode": "SIMULATED",
+  "evaluationStatus": "BLOCKED_PROVIDER_REJECTION",
+  "scopeAmendment": "accepted",
+  "preservationQualification": "accepted",
+  "model": "gemini-3.5-flash-lite",
+  "session": "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5",
+  "manifestSha256": "fb40611d1b890a995a2a6e015ca582c252b8d9eb9cfe6057f11a1c98fa11fed8",
+  "sourcesVerified": 71,
+  "scheduledRecords": 15,
+  "savedRecords": 1,
+  "notRunRecords": 14,
+  "validModelFindings": 0,
+  "largestInitialInputBound": 2605,
+  "limits": {
+    "provider": "gemini",
+    "model": "gemini-3.5-flash-lite",
+    "apiVersion": "v1beta",
+    "endpoint": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent",
+    "selectionStatus": "proposed_model_pending_review",
+    "modelCallsAuthorized": false,
+    "paidSpendCapUsd": 0,
+    "freeAccountVerified": false,
+    "tokenizerVerified": false,
+    "reasoningCapDocumented": true,
+    "apiCompatibilityVerified": false,
+    "temperature": 1,
+    "thinkingLevel": "MINIMAL",
+    "maxOutputTokens": 1024,
+    "contextTokens": 8192,
+    "generatedTokens": 6144,
+    "modelTurns": 12,
+    "requestTimeoutMs": 180000,
+    "investigationTimeoutMs": 900000,
+    "concurrency": 1,
+    "automaticRetries": 0,
+    "seed": null,
+    "seedUnavailableReason": "model_specific_support_not_verified"
+  },
+  "transport": {
+    "generationCalls": 1,
+    "generationAttempts": 1,
+    "countCalls": 22,
+    "metadataCalls": 1,
+    "automaticRetries": 0,
+    "mode": "FREE_TIER_BENCHMARK",
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400,
+      "diagnostic": {
+        "version": "bounded-provider-diagnostic-v1",
+        "httpStatus": 400,
+        "providerCode": 400,
+        "providerStatus": "INVALID_ARGUMENT",
+        "fields": [],
+        "bodyUnavailableReason": null,
+        "providerProseRetained": false,
+        "rawBodyRetained": false
+      }
+    }
+  },
+  "blocker": {
+    "reason": "http_failure",
+    "completedRecords": 1,
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400,
+      "diagnostic": {
+        "version": "bounded-provider-diagnostic-v1",
+        "httpStatus": 400,
+        "providerCode": 400,
+        "providerStatus": "INVALID_ARGUMENT",
+        "fields": [],
+        "bodyUnavailableReason": null,
+        "providerProseRetained": false,
+        "rawBodyRetained": false
+      }
+    },
+    "atUtc": "2026-10-02T14:12:52.187Z"
+  },
+  "providerRevision": null,
+  "generationUsage": null,
+  "chargeUsd": null,
+  "unavailableReason": "Rejected generation did not report revision, generation usage or charge",
+  "independentAdjudication": "NOT_RUN",
+  "furtherModelRequests": "BLOCKED",
+  "runtimeIntervention": "NOT_RUN",
+  "runtimeEffects": 0,
+  "stage03Accepted": false,
+  "largerB01Complete": false,
+  "statuses": [
+    {
+      "ordinal": 1,
+      "sourceFile": "c_82238562b57a.json",
+      "runId": "r_4ccc5d1f707d",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "status": "indeterminate_usage"
+    },
+    {
+      "ordinal": 2,
+      "sourceFile": "c_82238562b57a.json",
+      "runId": "r_0ad9878b776d",
+      "method": "rules",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 3,
+      "sourceFile": "c_82238562b57a.json",
+      "runId": "r_e3e4fbedbf71",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 4,
+      "sourceFile": "c_9064d6884d46.json",
+      "runId": "r_469c27b18413",
+      "method": "rules",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 5,
+      "sourceFile": "c_9064d6884d46.json",
+      "runId": "r_a1e69bfcf8a0",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 6,
+      "sourceFile": "c_9064d6884d46.json",
+      "runId": "r_cce8b164b87a",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 7,
+      "sourceFile": "c_96d1716b81ab.json",
+      "runId": "r_3e7ef8a4554b",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 8,
+      "sourceFile": "c_96d1716b81ab.json",
+      "runId": "r_6c0eed6d3235",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 9,
+      "sourceFile": "c_96d1716b81ab.json",
+      "runId": "r_5ea929ebdb7c",
+      "method": "rules",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 10,
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "runId": "r_011db698322b",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 11,
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "runId": "r_6949a4b6ce23",
+      "method": "rules",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 12,
+      "sourceFile": "c_9a9789cf1e3e.json",
+      "runId": "r_11da13e0ef2b",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 13,
+      "sourceFile": "c_e3439f2540d4.json",
+      "runId": "r_8e02ab08cc85",
+      "method": "rules",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 14,
+      "sourceFile": "c_e3439f2540d4.json",
+      "runId": "r_3d3721a4a36b",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    },
+    {
+      "ordinal": 15,
+      "sourceFile": "c_e3439f2540d4.json",
+      "runId": "r_431e5d7b426d",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "status": "NOT_RUN"
+    }
+  ],
+  "records": [
+    {
+      "runId": "r_4ccc5d1f707d",
+      "sourceCaseId": "c_82238562b57a",
+      "method": "tool-using-model",
+      "replicateIndex": 1,
+      "truthMode": "SIMULATED",
+      "provenance": "accepted_hiring_showcase_15_record_schedule",
+      "terminalStatus": "indeterminate_usage",
+      "failureReason": "http_failure",
+      "finding": null,
+      "signal": {
+        "kind": "observed_aggregate_revenue_change",
+        "currency": "INR",
+        "pre": {
+          "revenueMinor": 26000000,
+          "attempts": 600,
+          "successes": 520,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "post": {
+          "revenueMinor": 22000000,
+          "attempts": 600,
+          "successes": 440,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "complete": true,
+        "interpretation": "Received rows only; a decline with incomplete coverage does not establish a business decline."
+      },
+      "allowedEvidence": [
+        {
+          "id": "e_03ac21817a8c",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "payment-provider",
+            "validationErrors": 0
+          }
+        },
+        {
+          "id": "e_08dac329f9ab",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_0e568b7bc643",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_41bfbb28c329",
+          "type": "deployment",
+          "at": "2026-09-01T09:31:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v141",
+            "note": "Input validation update.",
+            "service": "checkout",
+            "toVersion": "v142"
+          }
+        },
+        {
+          "id": "e_4dbb79203ac5",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_5121081e753c",
+          "type": "support_message",
+          "at": "2026-09-01T09:58:00.000Z",
+          "source": "support",
+          "payload": {
+            "message": "Debit form rejects valid input before payment submission.",
+            "segment": "IN/debit",
+            "tags": [
+              "checkout",
+              "card"
+            ]
+          }
+        },
+        {
+          "id": "e_5eb155b35db2",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7128d6647df3",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_766f55075578",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7bd783c63aa7",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_98d918bca175",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_a9654f12190a",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_b4f11f6165ce",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_c8a1459bf251",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_ce59d9d0fdc8",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d0000dc97808",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d11d733474bf",
+          "type": "deployment",
+          "at": "2026-09-01T09:43:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v8",
+            "note": "Email template update.",
+            "service": "notifications",
+            "toVersion": "v9"
+          }
+        },
+        {
+          "id": "e_e3f68f3c748d",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_e676b70118fe",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_e9d355ef60e5",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "checkout",
+            "validationErrors": 42
+          }
+        }
+      ],
+      "citations": {
+        "referencedIds": [],
+        "unknownIds": [],
+        "semanticSupport": "NOT_ADJUDICATED"
+      },
+      "elapsedMs": 4627.581399999999,
+      "elapsedUnavailableReason": null,
+      "usage": {
+        "knownGeneratedTokens": 0,
+        "totalGeneratedTokens": null,
+        "unavailableReason": "post_dispatch_usage_unavailable"
+      },
+      "history": [
+        {
+          "sequence": 1,
+          "kind": "started",
+          "hash": "a69d96a59120bb525dfe68f4cd8efd52ae0507e23c71b905f87466d57abcae7a"
+        },
+        {
+          "sequence": 2,
+          "kind": "token_count",
+          "hash": "5d581bd9311d94b67129d8c415215bc8074374942d5c4854f81f8840f4a3f4c5"
+        },
+        {
+          "sequence": 3,
+          "kind": "request",
+          "hash": "e6da7c932f9285f9639beee3b3fe8954e66208daf2df9a7aec921d56179450e5"
+        },
+        {
+          "sequence": 4,
+          "kind": "terminal",
+          "hash": "245defa2d955b219fafa77506d35d55aac2eb10043df13d13dfbbbf6974b2ccf"
+        }
+      ],
+      "databaseRelativePath": "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/case.sqlite",
+      "databaseSha256": "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524",
+      "timelineSha256": "245defa2d955b219fafa77506d35d55aac2eb10043df13d13dfbbbf6974b2ccf",
+      "modelVersion": null,
+      "readOnlyValidated": true,
+      "runtimeEffects": 0
+    }
+  ],
+  "artifactHashes": {
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/MANIFEST.json": "abc104fd13458072bc1f684bed86e65e2f388e63a311ed35e124279a139c8f79",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/PROVIDER_READINESS.json": "8ccb4753568d7997ee736ca093fdf1a3bde97d3432c46d556627a18e10a2151b",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/BLOCKER.json": "253fd3af8e0bb1368c4578190178bdaeada6353c983cd021d34c230ebd833ce2",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/SUMMARY.json": "55e9630ee9bbb51d4fa2ee5b18d63b9c9cbab5f5d9f7663b05083c82b468505e",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/case.sqlite": "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/RESULT.json": "9e2ba4d43e56d6c849fbc166b19583920d3ff38999a1a2360197884cba8f2a17",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/CASE.md": "597a8a2627adfdeaa1c3428b713c99e3205b847d2364e17d42c32a4f736e97a4"
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "version": "gemini-runner-offline-verification-v1",
+  "status": "passed",
+  "stage": "03_build",
+  "completeBuildStatus": "blocked",
+  "modelRequests": 0,
+  "runtimeEffects": 0,
+  "coverage": {
+    "everyAcceptedLimit": true,
+    "realRestrictedWorker": true,
+    "durableRecovery": true,
+    "abortableTransport": true
+  },
+  "sourceHashes": {
+    "db/benchmark/gemini-http.mjs": "5fe7acd971c3b2f9b4142cd37bda6bf7a389d125f3393461372d0f6df7d320b2",
+    "db/benchmark/gemini-inspect.mjs": "3bfcb2773bb1067ae2d624a39a5c27347e7916d7175095794553cf610cd685c9",
+    "db/benchmark/gemini-worker.mjs": "ae20141235d4f20c5b59e53f6c42d49120d7bdf90a166ebd8d453eed3641bae9",
+    "db/benchmark/gemini-isolation.mjs": "c586ff3a1c0c23d0dfc70c3f17bbb4f8bed3c95cc6e55d3db99c156e40a9b1a4",
+    "db/benchmark/gemini-store.mjs": "5ae2de21cfaf29c50c40434a78b002adbcdf6a27214befc7e92f2dd9660cd6ba",
+    "db/benchmark/gemini-runner.mjs": "51a29c9339b1e3483450beb222c3cb532e8acb325124d5f9f7b6772b4b7cee27",
+    "db/benchmark/gemini-execution.mjs": "adf925f52e102ff61ee60fe2265a75957513ab724fc7fb63f3b488a17c907267",
+    "db/benchmark/rules.mjs": "564d51a5adec8cb029f4917cf0ee7b8d6b8866f8218e42c927c2a1b0f3cf7d12",
+    "scripts/run-benchmark.mjs": "e52978d96a84052a12af8181dacc41d1810fc4a0955e170b3b7fc70a0f96637e",
+    "tests/benchmark-gemini-runner.test.mjs": "f1307aea89b0de673f3e960f877ea5e8110928cfbda8079673d8d793a41ac8c8",
+    "tests/a01-path-compat.mjs": "77201e5e927727863ac78d9bedeea7ad46a543705ed8f7a342f57abf4d03043b",
+    "factory/03_build/runner-checks.mjs": "38b5f31a625622f5584f9d7754c4ab4c9adacf434571fc21feac95735e911abb",
+    "db/benchmark/gemini-budget.mjs": "3fe99f4ac19f76264475e62d95899c0092e5a22754178ac10962f1ec98d7e7b8",
+    "db/benchmark/gemini-config.mjs": "bff1118aaaa7adab14405b83e759f43c609dcd43ea5da99213c8556251e14b85",
+    "db/benchmark/gemini-context.mjs": "7906e14b9cebd4858c90fbf1782fb07115a0053c53c043f874072e344922d540",
+    "db/benchmark/gemini.mjs": "85335a0c0e9f228aa00c0accc24cd54b43e75dc06f120cd896086f9856f8ef91",
+    "db/benchmark/contracts.mjs": "d4019eaf0291a60cf89ed655b15e1d922fc13c9d7e4c1dbac373dc53b2075bd3",
+    "db/benchmark/schemas.mjs": "68de595e38e843e58b973c758007a80eb1c591589482540eec7c92ffbab08797",
+    "db/benchmark/exposure.mjs": "e0ae9e18e5100b5f8050ca33241546524895c553608d86321ee607aca00fd728",
+    "db/benchmark/tools.mjs": "c2811e9a25336402e52327c7a533e216f0d53bceca5696f7fd73e8f7155e4281",
+    "db/benchmark/task.md": "f65682dbdc3bed307453a33a9efa938fdfdd4e99ada4f002b1b2e3e8b3415a6e",
+    "factory/01_spec/output/SPEC.md": "e6e2f7fa20903ed4b1dc96b156908a51bf872cee254084313a449914950dbf4e",
+    "factory/01_spec/output/HUMAN_GATE.md": "be8c05213e931e1aaae37ad5c21d68b34194a837ea9b8d94e3e4571d125dc423",
+    "factory/02_data/output/DATA_PACKAGE.md": "ffa20862857b2083cc83d7c027e16938e5fc98266729852ef2f8df3610dc5d6f",
+    "factory/02_data/output/HUMAN_GATE.md": "06bd60ec2e816cddcb4ecfe3db0ca0a9e0e0361edb1a7a326287e4302167a722",
+    "factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json": "81cd264704f81f236e50c9c7a8347a593c2ce10c660aff1f92515f8a52c8eeff",
+    "factory/03_build/output/gemini-runner-v1/PROVIDER_CONTRACT.md": "1e2956a8937f783bab9c09ad77883b505f3935a2b461280f7013eebdf9f81a2e",
+    "factory/02_data/benchmark/observable/c_82238562b57a.json": "370f571d39d324f66effc167fc7f599e1bb30353701c3d60c9f6ecf4911a2a8b",
+    "factory/02_data/benchmark/observable/c_9064d6884d46.json": "d34175971febcb872145692ad9fe31b6a705e261efae80d4b75036e5f82d24d5",
+    "factory/02_data/benchmark/observable/c_96d1716b81ab.json": "355d9a89539127454cdb45f3e77e0b6053a9353f64cd3213c3b72653c06efa20",
+    "factory/02_data/benchmark/observable/c_9a9789cf1e3e.json": "659a227ed9a7b5813fd012e85544c8a6282b489cc5fd0bc9cd27d1ded4cea0fc",
+    "factory/02_data/benchmark/observable/c_e3439f2540d4.json": "7bc5a4e542ae7aa09bf9b6feb1d472c1f591c939e23ffa5fb9d0e02129836241"
+  },
+  "data": {
+    "stage": "02_data",
+    "status": "passed",
+    "upstreamGate": "accepted",
+    "gate": "accepted",
+    "contractChecks": 13,
+    "packageNegativeChecks": 7,
+    "bindings": 22,
+    "cases": 5,
+    "protectedHistoricalFiles": 934,
+    "historicalDrift": [],
+    "preservation": "accepted_preparation_record_plus_current_immutable_history",
+    "modelCalls": 0,
+    "runtimeEffects": 0,
+    "modelEvaluation": "NOT_RUN",
+    "humanRuntimeApproval": "NOT_RUN"
+  },
+  "commands": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "tests/benchmark.test.mjs",
+        "tests/benchmark-subscription.test.mjs",
+        "tests/benchmark-subscription-budget.test.mjs",
+        "tests/benchmark-gemini-budget.test.mjs",
+        "tests/benchmark-gemini-runner.test.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+      "startedAtUtc": "2026-10-02T08:17:38.885Z",
+      "finishedAtUtc": "2026-10-02T08:17:51.274Z",
+      "exitCode": 0,
+      "stdout": "TAP version 13\n# Subtest: Gemini is selected without removing the exact historical subscription configuration\nok 1 - Gemini is selected without removing the exact historical subscription configuration\n  ---\n  duration_ms: 6.4957\n  type: 'test'\n  ...\n# Subtest: all five eager bodies retain the original task/schema; token counting covers the complete request\nok 2 - all five eager bodies retain the original task/schema; token counting covers the complete request\n  ---\n  duration_ms: 31.4522\n  type: 'test'\n  ...\n# Subtest: accumulated query context is scoped and lossless; old answers, supplied results and private fields are denied\nok 3 - accumulated query context is scoped and lossless; old answers, supplied results and private fields are denied\n  ---\n  duration_ms: 34.7137\n  type: 'test'\n  ...\n# Subtest: Gemini JSON query intents cannot broaden tools, windows, rows, query size or effect authority\nok 4 - Gemini JSON query intents cannot broaden tools, windows, rows, query size or effect authority\n  ---\n  duration_ms: 0.8847\n  type: 'test'\n  ...\n# Subtest: complete input tokens plus the next output reservation must fit before admission\nok 5 - complete input tokens plus the next output reservation must fit before admission\n  ---\n  duration_ms: 4.8319\n  type: 'test'\n  ...\n# Subtest: remaining cumulative generation constrains the next wire cap and includes reasoning once\nok 6 - remaining cumulative generation constrains the next wire cap and includes reasoning once\n  ---\n  duration_ms: 24.933\n  type: 'test'\n  ...\n# Subtest: reported overrun, count mismatch, native tool usage and unknown usage stop further requests\nok 7 - reported overrun, count mismatch, native tool usage and unknown usage stop further requests\n  ---\n  duration_ms: 14.3962\n  type: 'test'\n  ...\n# Subtest: request and investigation deadlines use monotonic elapsed time; indeterminate attempts are not retried\nok 8 - request and investigation deadlines use monotonic elapsed time; indeterminate attempts are not retried\n  ---\n  duration_ms: 5.3544\n  type: 'test'\n  ...\n# Subtest: single-shot, 12 turns, 10 invalid tool attempts, concurrency and replay remain hard host boundaries\nok 9 - single-shot, 12 turns, 10 invalid tool attempts, concurrency and replay remain hard host boundaries\n  ---\n  duration_ms: 7.7599\n  type: 'test'\n  ...\n# Subtest: conditional free-call permission and fixture token receipts cannot enable credentials or network\nok 10 - conditional free-call permission and fixture token receipts cannot enable credentials or network\n  ---\n  duration_ms: 0.9826\n  type: 'test'\n  ...\n# (node:19468) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: real restricted worker denies private/evaluator/history/credential/write/process surfaces\nok 11 - real restricted worker denies private/evaluator/history/credential/write/process surfaces\n  ---\n  duration_ms: 136.4152\n  type: 'test'\n  ...\n# Subtest: restricted preparation matches every public eager body and rejects leaked caller contexts\nok 12 - restricted preparation matches every public eager body and rejects leaked caller contexts\n  ---\n  duration_ms: 748.4921\n  type: 'test'\n  ...\n# Subtest: fresh run rebinding retains all public facts while worker cannot select foreign scope\nok 13 - fresh run rebinding retains all public facts while worker cannot select foreign scope\n  ---\n  duration_ms: 156.7477\n  type: 'test'\n  ...\n# Subtest: SQLite records are scoped, hash chained, append-only, reopen validated and never overwritten\nok 14 - SQLite records are scoped, hash chained, append-only, reopen validated and never overwritten\n  ---\n  duration_ms: 158.8506\n  type: 'test'\n  ...\n# Subtest: durable dispatch precedes HTTP; only sanitized visible response and counted usage survive\nok 15 - durable dispatch precedes HTTP; only sanitized visible response and counted usage survive\n  ---\n  duration_ms: 545.2406\n  type: 'test'\n  ...\n# Subtest: HTTP and body streaming deadline abort even an uncooperative transport, without retries\nok 16 - HTTP and body streaming deadline abort even an uncooperative transport, without retries\n  ---\n  duration_ms: 76.3403\n  type: 'test'\n  ...\n# Subtest: complete serialized schema/context token count blocks overflow before any generation\nok 17 - complete serialized schema/context token count blocks overflow before any generation\n  ---\n  duration_ms: 188.3341\n  type: 'test'\n  ...\n# Subtest: unavailable reasoning, oversized output, inconsistent/native usage terminate visibly\nok 18 - unavailable reasoning, oversized output, inconsistent/native usage terminate visibly\n  ---\n  duration_ms: 1119.5761\n  type: 'test'\n  ...\n# Subtest: tool runner counts invalid intents, preserves denials and cannot invoke effect/file/URL tools\nok 19 - tool runner counts invalid intents, preserves denials and cannot invoke effect/file/URL tools\n  ---\n  duration_ms: 365.2926\n  type: 'test'\n  ...\n# Subtest: cumulative generation cap shrinks the next wire request and a provider overrun remains a failure\nok 20 - cumulative generation cap shrinks the next wire request and a provider overrun remains a failure\n  ---\n  duration_ms: 2919.0305\n  type: 'test'\n  ...\n# Subtest: real query loop stops at ten admitted tools and preserves a budget-denied eleventh intent\nok 21 - real query loop stops at ten admitted tools and preserves a budget-denied eleventh intent\n  ---\n  duration_ms: 4164.2208\n  type: 'test'\n  ...\n# Subtest: actual worker rejects oversized rows/query text, foreign time, unsafe cursor and native tool results\nok 22 - actual worker rejects oversized rows/query text, foreign time, unsafe cursor and native tool results\n  ---\n  duration_ms: 488.6206\n  type: 'test'\n  ...\n# Subtest: the online factory requires fresh verification evidence; caller booleans never authorize requests\nok 23 - the online factory requires fresh verification evidence; caller booleans never authorize requests\n  ---\n  duration_ms: 1.1821\n  type: 'test'\n  ...\n# Subtest: transport refuses rehashed native capabilities, extra fields, larger generation or hidden-thought requests\nok 24 - transport refuses rehashed native capabilities, extra fields, larger generation or hidden-thought requests\n  ---\n  duration_ms: 32.7594\n  type: 'test'\n  ...\n# Subtest: concurrency one rejects simultaneous counts and fixed endpoint binding prevents paid/native routing\nok 25 - concurrency one rejects simultaneous counts and fixed endpoint binding prevents paid/native routing\n  ---\n  duration_ms: 1016.7888\n  type: 'test'\n  ...\n# Subtest: byte admission includes serialized JSON; oversized input fails before a model attempt\nok 26 - byte admission includes serialized JSON; oversized input fails before a model attempt\n  ---\n  duration_ms: 2.2576\n  type: 'test'\n  ...\n# Subtest: token thresholds include reasoning once, retain overshoot and stop further dispatch\nok 27 - token thresholds include reasoning once, retain overshoot and stop further dispatch\n  ---\n  duration_ms: 0.4384\n  type: 'test'\n  ...\n# Subtest: cumulative threshold stops before a new attempt; native input usage is measured without a combined-token cap\nok 28 - cumulative threshold stops before a new attempt; native input usage is measured without a combined-token cap\n  ---\n  duration_ms: 0.469\n  type: 'test'\n  ...\n# Subtest: an attempt may overshoot the remaining cumulative threshold and is retained as failed\nok 29 - an attempt may overshoot the remaining cumulative threshold and is retained as failed\n  ---\n  duration_ms: 0.2647\n  type: 'test'\n  ...\n# Subtest: 12 model turns, one single-shot attempt and 10 invalid tool attempts are hard host bounds\nok 30 - 12 model turns, one single-shot attempt and 10 invalid tool attempts are hard host bounds\n  ---\n  duration_ms: 1.2988\n  type: 'test'\n  ...\n# Subtest: only one request can be in flight; lease replay and fabricated request hashes fail\nok 31 - only one request can be in flight; lease replay and fabricated request hashes fail\n  ---\n  duration_ms: 0.2235\n  type: 'test'\n  ...\n# Subtest: monotonic request/run deadlines stop waiting without claiming remote compute cancellation\nok 32 - monotonic request/run deadlines stop waiting without claiming remote compute cancellation\n  ---\n  duration_ms: 0.1367\n  type: 'test'\n  ...\n# Subtest: missing/inconsistent usage, post-dispatch interruption and clock reversal never trigger retries\nok 33 - missing/inconsistent usage, post-dispatch interruption and clock reversal never trigger retries\n  ---\n  duration_ms: 0.2215\n  type: 'test'\n  ...\n# Subtest: preserved subscription proposal retains its original profile and public Data\nok 34 - preserved subscription proposal retains its original profile and public Data\n  ---\n  duration_ms: 15.6647\n  type: 'test'\n  ...\n# Subtest: all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\nok 35 - all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\n  ---\n  duration_ms: 20.1691\n  type: 'test'\n  ...\n# Subtest: prior answers, development messages, supplied results and foreign rows cannot become investigation context\nok 36 - prior answers, development messages, supplied results and foreign rows cannot become investigation context\n  ---\n  duration_ms: 2.7263\n  type: 'test'\n  ...\n# Subtest: bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\nok 37 - bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\n  ---\n  duration_ms: 36.3522\n  type: 'test'\n  ...\n# Subtest: fragmented SSE requires a completed terminal event and retains Unicode visible output\nok 38 - fragmented SSE requires a completed terminal event and retains Unicode visible output\n  ---\n  duration_ms: 4.7475\n  type: 'test'\n  ...\n# Subtest: deltas followed by quota failure, incomplete output or an interrupted stream never count as success\nok 39 - deltas followed by quota failure, incomplete output or an interrupted stream never count as success\n  ---\n  duration_ms: 0.8677\n  type: 'test'\n  ...\n# Subtest: reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\nok 40 - reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\n  ---\n  duration_ms: 5.1719\n  type: 'test'\n  ...\n# Subtest: host-only string limits and tool/finding union validation remain strict\nok 41 - host-only string limits and tool/finding union validation remain strict\n  ---\n  duration_ms: 2.4616\n  type: 'test'\n  ...\n# Subtest: unsupported generation limits block before credential inspection; flags never enable fallback\nok 42 - unsupported generation limits block before credential inspection; flags never enable fallback\n  ---\n  duration_ms: 0.4793\n  type: 'test'\n  ...\n# Subtest: OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\nok 43 - OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\n  ---\n  duration_ms: 13.179\n  type: 'test'\n  ...\n# Subtest: OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\nok 44 - OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\n  ---\n  duration_ms: 1.5881\n  type: 'test'\n  ...\n# Subtest: ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\nok 45 - ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\n  ---\n  duration_ms: 395.7299\n  type: 'test'\n  ...\n# Subtest: account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\nok 46 - account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\n  ---\n  duration_ms: 0.387\n  type: 'test'\n  ...\n# Subtest: public contracts are byte-identical durable copies of accepted Data\nok 47 - public contracts are byte-identical durable copies of accepted Data\n  ---\n  duration_ms: 14.8493\n  type: 'test'\n  ...\n# Subtest: all five single-shot requests expose only validated synthetic observations and fixed capabilities\nok 48 - all five single-shot requests expose only validated synthetic observations and fixed capabilities\n  ---\n  duration_ms: 26.9216\n  type: 'test'\n  ...\n# Subtest: foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\nok 49 - foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\n  ---\n  duration_ms: 0.7781\n  type: 'test'\n  ...\n# Subtest: unsupported wire keywords are explicit; frozen host constraints remain strict\nok 50 - unsupported wire keywords are explicit; frozen host constraints remain strict\n  ---\n  duration_ms: 1.0137\n  type: 'test'\n  ...\n# Subtest: valid visible findings retain wrong citations and unsafe recommendations for independent grading\nok 51 - valid visible findings retain wrong citations and unsafe recommendations for independent grading\n  ---\n  duration_ms: 0.4357\n  type: 'test'\n  ...\n# Subtest: malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\nok 52 - malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\n  ---\n  duration_ms: 0.2444\n  type: 'test'\n  ...\n# Subtest: hidden thoughts, signatures, auth-like metadata and provider errors are never returned\nok 53 - hidden thoughts, signatures, auth-like metadata and provider errors are never returned\n  ---\n  duration_ms: 1.0837\n  type: 'test'\n  ...\n# Subtest: provider-native functions, remote files, images and extra candidates fail closed\nok 54 - provider-native functions, remote files, images and extra candidates fail closed\n  ---\n  duration_ms: 0.2793\n  type: 'test'\n  ...\n# Subtest: missing usage is unknown rather than zero; inconsistent and excessive counts terminate\nok 55 - missing usage is unknown rather than zero; inconsistent and excessive counts terminate\n  ---\n  duration_ms: 3.0985\n  type: 'test'\n  ...\n# Subtest: no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\nok 56 - no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\n  ---\n  duration_ms: 1.2534\n  type: 'test'\n  ...\n1..56\n# tests 56\n# suites 0\n# pass 56\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 12303.2149\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "db/benchmark",
+        "scripts/run-benchmark.mjs",
+        "tests/benchmark-gemini-runner.test.mjs",
+        "tests/a01-path-compat.mjs",
+        "factory/03_build/runner-checks.mjs",
+        "factory/03_build/verify.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+      "startedAtUtc": "2026-10-02T08:17:51.274Z",
+      "finishedAtUtc": "2026-10-02T08:17:56.301Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1/",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+      "startedAtUtc": "2026-10-02T08:17:56.301Z",
+      "finishedAtUtc": "2026-10-02T08:17:56.552Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'factory/03_build/verify.mjs', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAtUtc": "2026-10-02T08:17:56.552Z",
+      "finishedAtUtc": "2026-10-02T08:17:56.636Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+    }
+  ],
+  "preservation": {
+    "documentationReconciliationEntries": 7,
+    "originalManifestUnchanged": true,
+    "repositories": [
+      {
+        "repository": "outer",
+        "oldFilesPreserved": 3500,
+        "changedOldFiles": [],
+        "addedFiles": 0,
+        "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+        "indexUnchanged": true,
+        "preservedDirectories": 1044,
+        "a01PreservedFiles": 0
+      },
+      {
+        "repository": "product",
+        "oldFilesPreserved": 1392,
+        "changedOldFiles": [
+          "db/benchmark/gemini-budget.mjs",
+          "factory/03_build/verify.mjs"
+        ],
+        "addedFiles": 258,
+        "head": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+        "indexUnchanged": true,
+        "preservedDirectories": 390,
+        "a01PreservedFiles": 595
+      }
+    ]
+  },
+  "inputBindings": 0,
+  "environment": {
+    "node": "v22.15.0",
+    "platform": "win32"
+  },
+  "verifiedAtUtc": "2026-10-02T08:18:06.540Z"
+}

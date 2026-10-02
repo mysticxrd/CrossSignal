@@ -1,0 +1,14 @@
+{
+  "recordedAtUtc": "2026-10-02T13:40:14.627Z",
+  "source": "direct workspace-owner user message",
+  "scopeDecision": "accepted",
+  "proposalSha256": "a717d9aed1bdaeda5941b63aceffbf3e4f85f2cc3163ad3e1f4010f3f445cac2",
+  "request": "Continue by resolving the Gemini HTTP 400 offline and the preservation-check issue without resetting Git or rewriting accepted evidence. Once all request prerequisites pass, prioritize one successful, saved Gemini investigation within the approved schedule, then complete the small evaluation and showcase.",
+  "existingLimits": true,
+  "freeTierOnly": true,
+  "stage03Accepted": false,
+  "runtimeIntervention": false,
+  "paidFallback": false,
+  "uncommitted": true,
+  "unsealed": true
+}

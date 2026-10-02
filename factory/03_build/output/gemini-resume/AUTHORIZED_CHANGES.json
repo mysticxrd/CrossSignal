@@ -1,0 +1,11 @@
+[
+  "factory/03_build/CONTEXT.md",
+  "factory/03_build/verify.mjs",
+  "factory/03_build/output/BUILD_EVIDENCE.md",
+  "factory/03_build/output/VERIFY.md",
+  "factory/03_build/output/HUMAN_GATE.md",
+  "db/benchmark/provider-config.mjs",
+  "db/benchmark/subscription.mjs",
+  "db/benchmark/subscription-budget.mjs",
+  "tests/benchmark-subscription.test.mjs"
+]

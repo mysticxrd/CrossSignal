@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--test",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/tests.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T13:52:41.756Z",
+  "finishedAtUtc": "2026-10-02T13:52:54.408Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "TAP version 13\n# (node:21316) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: accepted pool rotates tool-first without changing cases, identities, counts or limits\nok 1 - accepted pool rotates tool-first without changing cases, identities, counts or limits\n  ---\n  duration_ms: 115.5905\n  type: 'test'\n  ...\n# Subtest: all ten fresh restricted preparations use the Developer API wire contract without changing host answers\nok 2 - all ten fresh restricted preparations use the Developer API wire contract without changing host answers\n  ---\n  duration_ms: 1146.7727\n  type: 'test'\n  ...\n# Subtest: unknown schema keywords, MIME values, native tools and raised wire caps fail before dispatch\nok 3 - unknown schema keywords, MIME values, native tools and raised wire caps fail before dispatch\n  ---\n  duration_ms: 97.4451\n  type: 'test'\n  ...\n# Subtest: same accounting rejects accumulated context overflow and reserves thinking within the original caps\nok 4 - same accounting rejects accumulated context overflow and reserves thinking within the original caps\n  ---\n  duration_ms: 82.8162\n  type: 'test'\n  ...\n# Subtest: fixture orchestration durably saves 15 records, tool transcripts and read-only reload without grading\nok 5 - fixture orchestration durably saves 15 records, tool transcripts and read-only reload without grading\n  ---\n  duration_ms: 8017.6019\n  type: 'test'\n  ...\n# Subtest: fixture HTTP400 retains a terminal record and bounded fields then leaves 14 NOT_RUN without retry\nok 6 - fixture HTTP400 retains a terminal record and bounded fields then leaves 14 NOT_RUN without retry\n  ---\n  duration_ms: 2462.4197\n  type: 'test'\n  ...\n# Subtest: accepted preservation qualification passes without changing the old failed assertion or baseline\nok 7 - accepted preservation qualification passes without changing the old failed assertion or baseline\n  ---\n  duration_ms: 386.7172\n  type: 'test'\n  ...\n# Subtest: online entrypoint rejects caller approval flags before key or network access\nok 8 - online entrypoint rejects caller approval flags before key or network access\n  ---\n  duration_ms: 40.0424\n  type: 'test'\n  ...\n1..8\n# tests 8\n# suites 0\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 12513.1599\n",
+  "stderr": "",
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

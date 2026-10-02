@@ -1,0 +1,49 @@
+{
+  "atUtc": "2026-10-02T09:15:25.643Z",
+  "currentInputBindings": 51,
+  "gate": "blocked/pending",
+  "preservation": [
+    {
+      "repository": "outer",
+      "oldFiles": 3500,
+      "authorizedDifferences": [],
+      "allOtherOldContentUnchanged": true,
+      "oldDirectoriesAndLinksPreserved": true,
+      "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "branch": "codex/supabase-migration",
+      "indexBytesUnchanged": false,
+      "currentIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef"
+    },
+    {
+      "repository": "product",
+      "oldFiles": 1394,
+      "authorizedDifferences": [
+        "db/benchmark/gemini-budget.mjs",
+        "factory/03_build/CONTEXT.md",
+        "factory/03_build/output/BUILD_EVIDENCE.md",
+        "factory/03_build/output/HUMAN_GATE.md",
+        "factory/03_build/output/VERIFY.md",
+        "factory/03_build/verify.mjs"
+      ],
+      "allOtherOldContentUnchanged": true,
+      "oldDirectoriesAndLinksPreserved": true,
+      "head": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "branch": "codex/phase3-decision-ux",
+      "indexBytesUnchanged": true,
+      "currentIndexSha256": "5c1bd901e7f82582ad13281484112d19c11dcae24fc5d0188b3f508143a66ff3"
+    }
+  ],
+  "strictPreservation": "blocked_outer_index_byte_drift",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "factory/status.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T09:15:25.461Z",
+  "exitCode": 0,
+  "stdout": "STAGE      STATUS       GATE        DEPS     HEAD            NOTE                      \n---------  -----------  ----------  -------  --------------  --------------------------\n01_spec    complete     accepted    fresh    not-applicable  -                         \n02_data    complete     accepted    fresh    not-applicable  -                         \n03_build   in-progress  incomplete  fresh    not-applicable  VERIFY.md is not passed   \n04_verify  never-run    missing     unknown  not-applicable  output directory is absent\n05_ship    never-run    missing     unknown  unknown         output directory is absent\n\nActive stage: 03_build\nRelease seal: unsealed (one or more factory stages are not complete; final release does not bind the current product head; Git worktree or index is not clean)\n",
+  "stderr": "",
+  "modelRequests": 0,
+  "runtimeEffects": 0,
+  "uncommitted": true,
+  "unsealed": true
+}

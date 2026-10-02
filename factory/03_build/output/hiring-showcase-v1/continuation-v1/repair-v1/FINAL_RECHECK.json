@@ -1,0 +1,195 @@
+{
+  "verifiedAtUtc": "2026-10-02T14:39:29.393Z",
+  "status": "offline_checks_passed_generation_blocked",
+  "preservedFiles": [
+    {
+      "repository": "outer",
+      "unchangedFiles": 3500,
+      "addedFiles": 0,
+      "unchangedHead": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "unchangedIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef"
+    },
+    {
+      "repository": "product",
+      "unchangedFiles": 2017,
+      "addedFiles": 125,
+      "unchangedHead": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "unchangedIndexSha256": "5c1bd901e7f82582ad13281484112d19c11dcae24fc5d0188b3f508143a66ff3"
+    }
+  ],
+  "acceptedArtifacts": 7,
+  "stage03InputBindings": 51,
+  "sourceCopiesVerified": 71,
+  "databaseReload": {
+    "old": [
+      "95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8",
+      "462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43"
+    ],
+    "fresh": [
+      "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524"
+    ],
+    "readOnly": true
+  },
+  "documentationLinks": [
+    {
+      "source": "README.md",
+      "target": "index.html",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "DEMO_WALKTHROUGH.md",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "EVALUATION_REPORT.md",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "ARCHITECTURE.md",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "SAVED_INSPECTION.json",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "PROVIDER_CONTRACT.md",
+      "status": "exists"
+    },
+    {
+      "source": "README.md",
+      "target": "PROVIDER_DIAGNOSTIC_PROPOSAL.md",
+      "status": "exists"
+    },
+    {
+      "source": "EVALUATION_REPORT.md",
+      "target": "index.html",
+      "status": "exists"
+    },
+    {
+      "source": "EVALUATION_REPORT.md",
+      "target": "SAVED_INSPECTION.json",
+      "status": "exists"
+    },
+    {
+      "source": "EVALUATION_REPORT.md",
+      "target": "PROVIDER_DIAGNOSTIC_PROPOSAL.md",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "run.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "wire.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "http.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "transport.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../../../../../db/benchmark/gemini-context.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../../../../../db/benchmark/gemini-isolation.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../../../../../db/benchmark/gemini-budget.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../../../../../db/benchmark/gemini-runner.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../../../../../db/benchmark/gemini-store.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "review.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "preservation.mjs",
+      "status": "exists"
+    },
+    {
+      "source": "ARCHITECTURE.md",
+      "target": "../../INTERVIEW_GUIDE.md",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "VERIFY.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "REPAIR_TESTS.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "REVIEW_TESTS.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "REVIEW_LINT.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "PRESERVATION_ACCEPTANCE.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "../../../gemini-runner-v1/RECONCILIATION.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "EXECUTION_OBSERVATION.json",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "PROVIDER_DIAGNOSTIC_PROPOSAL.md",
+      "status": "exists"
+    },
+    {
+      "source": "VERIFY.md",
+      "target": "../../../../CONTEXT.md",
+      "status": "exists"
+    }
+  ],
+  "proposalRawSha256": "ee3aa22297de583da1dfc84d7dc43d555eaec45d6d486b123fb4e2fff37fe2c9",
+  "readOnlyCheckModelRequests": 0,
+  "stage03Accepted": false,
+  "committed": false,
+  "sealed": false
+}

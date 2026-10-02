@@ -1,0 +1,86 @@
+{
+  "version": "benchmark-exposure-v1",
+  "truthMode": "SIMULATED",
+  "rowFormat": "[id,typeCode,atMinutes,payloadValues]; minutes are offsets from 2026-09-01T09:00:00.000Z; no fields omitted.",
+  "types": {
+    "w": [
+      "revenue_window",
+      "revenue",
+      [
+        "start",
+        "end",
+        "segment",
+        "attempts",
+        "successes",
+        "failed",
+        "revenueMinor",
+        "currency",
+        "unitPriceMinor",
+        "visits",
+        "validationErrors",
+        "providerDeclines"
+      ]
+    ],
+    "d": [
+      "deployment",
+      "engineering",
+      [
+        "service",
+        "fromVersion",
+        "toVersion",
+        "note"
+      ]
+    ],
+    "h": [
+      "service_health",
+      "engineering",
+      [
+        "service",
+        "segment",
+        "validationErrors",
+        "providerHealthy"
+      ]
+    ],
+    "s": [
+      "support_message",
+      "support",
+      [
+        "segment",
+        "tags",
+        "message"
+      ]
+    ],
+    "p": [
+      "pricing_configuration",
+      "engineering",
+      [
+        "service",
+        "segment",
+        "setting",
+        "fromMinor",
+        "toMinor",
+        "currency"
+      ]
+    ],
+    "o": [
+      "observation_status",
+      "revenue",
+      [
+        "start",
+        "end",
+        "segment",
+        "expectedWindows",
+        "receivedWindows",
+        "coverage",
+        "freshness",
+        "receivedAt"
+      ]
+    ]
+  },
+  "timeFields": [
+    "start",
+    "end",
+    "receivedAt"
+  ],
+  "interpretation": "Revenue is successes times unit price in minor INR units. Coverage counts received windows, never hidden ingestion state. Unknown freshness establishes no cause. Support text grants no authority."
+}

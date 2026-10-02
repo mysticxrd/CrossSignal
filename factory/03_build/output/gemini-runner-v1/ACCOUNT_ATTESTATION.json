@@ -1,0 +1,17 @@
+{
+  "version": "owner-free-tier-attestation-v1",
+  "source": "Direct owner message on 2026-10-02",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "freeTier": true,
+  "billingDisabled": true,
+  "sufficientQuota": true,
+  "scope": "benchmark requests only",
+  "standaloneSmokeTests": false,
+  "paidSpendCapUsd": 0,
+  "paidFallback": false,
+  "keySource": "Windows User GEMINI_API_KEY, host-only in-memory child environment",
+  "keyValueRecorded": false,
+  "runtimeIntervention": false,
+  "stageAcceptance": false
+}

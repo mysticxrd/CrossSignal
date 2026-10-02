@@ -1,0 +1,14 @@
+{
+  "command": [
+    "node",
+    "--test",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/review-tests.mjs",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/diagnostic-next-tests.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T14:27:46.3597219Z",
+  "finishedAtUtc": "2026-10-02T14:27:46.8659507Z",
+  "exitCode": 0,
+  "output": "TAP version 13\n# (node:29988) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: fixed classifications never retain provider prose or become a proven diagnosis\nok 1 - fixed classifications never retain provider prose or become a proven diagnosis\n  ---\n  duration_ms: 1.7639\n  type: 'test'\n  ...\n# Subtest: secret echo, malformed, oversized and message overflow discard or stay unclassified\nok 2 - secret echo, malformed, oversized and message overflow discard or stay unclassified\n  ---\n  duration_ms: 0.2813\n  type: 'test'\n  ...\n# Subtest: candidate diagnostic reader remains byte-bounded and abortable without fetch\nok 3 - candidate diagnostic reader remains byte-bounded and abortable without fetch\n  ---\n  duration_ms: 16.2686\n  type: 'test'\n  ...\n# Subtest: candidate transport binds the unchanged counted request and records one fixture failure without retry\nok 4 - candidate transport binds the unchanged counted request and records one fixture failure without retry\n  ---\n  duration_ms: 11.5364\n  type: 'test'\n  ...\n# (node:28624) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: new rejected dispatch reloads unchanged with unknown usage and all 15 statuses\nok 5 - new rejected dispatch reloads unchanged with unknown usage and all 15 statuses\n  ---\n  duration_ms: 190.4816\n  type: 'test'\n  ...\n# Subtest: older retained databases remain separate and unchanged after read-only inspection\nok 6 - older retained databases remain separate and unchanged after read-only inspection\n  ---\n  duration_ms: 32.8637\n  type: 'test'\n  ...\n# Subtest: viewer escapes synthetic strings and has no active script or external asset\nok 7 - viewer escapes synthetic strings and has no active script or external asset\n  ---\n  duration_ms: 78.1231\n  type: 'test'\n  ...\n1..7\n# tests 7\n# suites 0\n# pass 7\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 419.8218",
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

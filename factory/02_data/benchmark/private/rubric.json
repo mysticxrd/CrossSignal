@@ -1,0 +1,478 @@
+{
+  "version": "benchmark-rubric-v1",
+  "privateCanary": "EVALUATOR_ONLY_RUBRIC_2fc837",
+  "cases": [
+    {
+      "privateCanary": "EVALUATOR_ONLY_B01_RUBRIC_85c19a",
+      "label": "B01",
+      "caseRef": "c_82238562b57a",
+      "split": "development",
+      "hiddenCause": "checkout_validation_regression",
+      "expectedDiagnosis": "checkout_validation_regression",
+      "aliases": [
+        "checkout validation regression",
+        "checkout validation failure",
+        "input validation regression"
+      ],
+      "affectedSegment": "IN/debit",
+      "relevantChangeIds": [
+        "e_41bfbb28c329"
+      ],
+      "groups": [
+        {
+          "name": "affected conversion",
+          "predicate": "conversion_drop",
+          "evidenceIds": [
+            "e_5eb155b35db2",
+            "e_4dbb79203ac5",
+            "e_0e568b7bc643",
+            "e_766f55075578"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "unaffected controls",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_d0000dc97808",
+            "e_98d918bca175",
+            "e_b4f11f6165ce",
+            "e_e676b70118fe",
+            "e_c8a1459bf251",
+            "e_ce59d9d0fdc8",
+            "e_7bd783c63aa7",
+            "e_7128d6647df3"
+          ],
+          "target": null
+        },
+        {
+          "name": "validation discriminator",
+          "predicate": "validation_increased",
+          "evidenceIds": [
+            "e_5eb155b35db2",
+            "e_4dbb79203ac5",
+            "e_0e568b7bc643",
+            "e_766f55075578",
+            "e_e9d355ef60e5"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "relevant version change",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_41bfbb28c329"
+          ],
+          "target": "checkout"
+        },
+        {
+          "name": "provider counterevidence",
+          "predicate": "provider_healthy",
+          "evidenceIds": [
+            "e_03ac21817a8c"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "stable demand",
+          "predicate": "traffic_stable",
+          "evidenceIds": [
+            "e_5eb155b35db2",
+            "e_c8a1459bf251",
+            "e_d0000dc97808",
+            "e_4dbb79203ac5",
+            "e_98d918bca175",
+            "e_ce59d9d0fdc8",
+            "e_0e568b7bc643",
+            "e_7bd783c63aa7",
+            "e_b4f11f6165ce",
+            "e_7128d6647df3",
+            "e_766f55075578",
+            "e_e676b70118fe"
+          ],
+          "target": null
+        },
+        {
+          "name": "support corroboration",
+          "predicate": "support_report",
+          "evidenceIds": [
+            "e_5121081e753c"
+          ],
+          "target": null
+        }
+      ],
+      "action": {
+        "kind": "simulated_rollback",
+        "target": "checkout",
+        "fromVersion": "v142",
+        "toVersion": "v141",
+        "approvalRequired": true,
+        "risk": "consequential"
+      },
+      "readOnlyNextStep": "Inspect approval-bound SIMULATED rollback proposal; never execute from a finding.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "Most recent notifications deployment caused checkout failure",
+        "Real revenue recovered"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B02_RUBRIC_85c19a",
+      "label": "B02",
+      "caseRef": "c_9a9789cf1e3e",
+      "split": "development",
+      "hiddenCause": "payment_provider_incident",
+      "expectedDiagnosis": "payment_provider_incident",
+      "aliases": [
+        "payment provider incident",
+        "payment provider availability failure",
+        "provider outage"
+      ],
+      "affectedSegment": "IN/debit",
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "provider discriminator",
+          "predicate": "provider_unhealthy",
+          "evidenceIds": [
+            "e_b13000aa03f4",
+            "e_4429821f5d8f",
+            "e_9c515a6c5845",
+            "e_7d068277680f",
+            "e_646baf175edd"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "validation counterevidence",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_b13000aa03f4",
+            "e_4429821f5d8f",
+            "e_9c515a6c5845",
+            "e_7d068277680f",
+            "e_acef7c80b71e"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "unrelated deployment",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_b8e4fd2c616c"
+          ],
+          "target": "notifications"
+        },
+        {
+          "name": "affected conversion",
+          "predicate": "conversion_drop",
+          "evidenceIds": [
+            "e_b13000aa03f4",
+            "e_4429821f5d8f",
+            "e_9c515a6c5845",
+            "e_7d068277680f"
+          ],
+          "target": "IN/debit"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "payment-provider",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Check provider status and reconcile decline codes.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "Checkout regression inferred from unrelated deployment alone",
+        "Checkout rollback fixes provider availability"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B03_RUBRIC_85c19a",
+      "label": "B03",
+      "caseRef": "c_9064d6884d46",
+      "split": "frozen_transfer",
+      "hiddenCause": "acquisition_composition_shift",
+      "expectedDiagnosis": "acquisition_composition_shift",
+      "aliases": [
+        "acquisition composition shift",
+        "acquisition mix shift",
+        "traffic composition shift"
+      ],
+      "affectedSegment": null,
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "composition discriminator",
+          "predicate": "traffic_mix_changed",
+          "evidenceIds": [
+            "e_3e7f118c0789",
+            "e_85da4ec1b6f2",
+            "e_b084ca49c2a0",
+            "e_0e287a75dbdd",
+            "e_3b8bda22e579",
+            "e_8098c94e88c8",
+            "e_a236660f7a33",
+            "e_c6170051a86b",
+            "e_c70ae1bf3dac",
+            "e_071b1f5cf0fe",
+            "e_7d653e453bb5",
+            "e_c2d626003df6"
+          ],
+          "target": null
+        },
+        {
+          "name": "stable within-segment conversion",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_3e7f118c0789",
+            "e_85da4ec1b6f2",
+            "e_b084ca49c2a0",
+            "e_0e287a75dbdd",
+            "e_3b8bda22e579",
+            "e_8098c94e88c8",
+            "e_a236660f7a33",
+            "e_c6170051a86b",
+            "e_c70ae1bf3dac",
+            "e_071b1f5cf0fe",
+            "e_7d653e453bb5",
+            "e_c2d626003df6"
+          ],
+          "target": null
+        },
+        {
+          "name": "reproducible aggregate change",
+          "predicate": "aggregate_revenue_drop",
+          "evidenceIds": [
+            "e_3e7f118c0789",
+            "e_85da4ec1b6f2",
+            "e_b084ca49c2a0",
+            "e_0e287a75dbdd",
+            "e_3b8bda22e579",
+            "e_8098c94e88c8",
+            "e_a236660f7a33",
+            "e_c6170051a86b",
+            "e_c70ae1bf3dac",
+            "e_071b1f5cf0fe",
+            "e_7d653e453bb5",
+            "e_c2d626003df6"
+          ],
+          "target": null
+        },
+        {
+          "name": "stable unit price",
+          "predicate": "price_stable",
+          "evidenceIds": [
+            "e_3e7f118c0789",
+            "e_85da4ec1b6f2",
+            "e_b084ca49c2a0",
+            "e_0e287a75dbdd",
+            "e_3b8bda22e579",
+            "e_8098c94e88c8",
+            "e_a236660f7a33",
+            "e_c6170051a86b",
+            "e_c70ae1bf3dac",
+            "e_071b1f5cf0fe",
+            "e_7d653e453bb5",
+            "e_c2d626003df6"
+          ],
+          "target": null
+        },
+        {
+          "name": "provider counterevidence",
+          "predicate": "provider_healthy",
+          "evidenceIds": [
+            "e_cd0d676fe2bd"
+          ],
+          "target": "payment-provider"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "acquisition allocation",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Check acquisition allocation by observed segment; no named campaign is established.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "Within-segment conversion regressed",
+        "An invented named campaign caused the shift"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B04_RUBRIC_85c19a",
+      "label": "B04",
+      "caseRef": "c_96d1716b81ab",
+      "split": "frozen_transfer",
+      "hiddenCause": "pricing_configuration_error",
+      "expectedDiagnosis": "pricing_configuration_error",
+      "aliases": [
+        "pricing configuration error",
+        "unit price configuration error",
+        "pricing setting error"
+      ],
+      "affectedSegment": "IN/debit",
+      "relevantChangeIds": [
+        "e_b9af715a3099"
+      ],
+      "groups": [
+        {
+          "name": "stable successes and rates",
+          "predicate": "successes_stable",
+          "evidenceIds": [
+            "e_16379f7242bd",
+            "e_b7207d7fd942",
+            "e_e70f02a01edc",
+            "e_42880f6845d2",
+            "e_d211ac0f6ad6",
+            "e_d68830e59a2b",
+            "e_0c9cc07c3284",
+            "e_20a2f44a720c",
+            "e_f31f7dc4204b",
+            "e_9d10be216792",
+            "e_9f8f35e6102c",
+            "e_c286bb4984c0"
+          ],
+          "target": null
+        },
+        {
+          "name": "lower unit price",
+          "predicate": "price_drop",
+          "evidenceIds": [
+            "e_16379f7242bd",
+            "e_d68830e59a2b",
+            "e_0c9cc07c3284",
+            "e_9f8f35e6102c"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "matching setting",
+          "predicate": "pricing_change_observed",
+          "evidenceIds": [
+            "e_b9af715a3099",
+            "e_16379f7242bd",
+            "e_d68830e59a2b",
+            "e_0c9cc07c3284",
+            "e_9f8f35e6102c"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "healthy validation",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_16379f7242bd",
+            "e_d68830e59a2b",
+            "e_0c9cc07c3284",
+            "e_9f8f35e6102c",
+            "e_aa0033e7a8db"
+          ],
+          "target": "IN/debit"
+        },
+        {
+          "name": "provider counterevidence",
+          "predicate": "provider_healthy",
+          "evidenceIds": [
+            "e_397e9ea114f1"
+          ],
+          "target": "payment-provider"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "pricing.unit_price_minor",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Review the exact IN/debit unit_price_minor setting and change record.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "Fewer successful customers explain the drop",
+        "Checkout regression explains the price change"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B05_RUBRIC_85c19a",
+      "label": "B05",
+      "caseRef": "c_e3439f2540d4",
+      "split": "frozen_transfer",
+      "hiddenCause": "delayed_ingestion",
+      "expectedDiagnosis": "insufficient_evidence",
+      "aliases": [
+        "insufficient evidence",
+        "underdetermined cause",
+        "cannot determine cause"
+      ],
+      "affectedSegment": null,
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "observed missingness",
+          "predicate": "missing_windows",
+          "evidenceIds": [
+            "e_51b9f071d8e0",
+            "e_601d9c1bde49",
+            "e_af2ddf6a6651"
+          ],
+          "target": null
+        },
+        {
+          "name": "received-row revenue signal",
+          "predicate": "aggregate_revenue_drop",
+          "evidenceIds": [
+            "e_1abc3d1b3780",
+            "e_2b6de3c47e37",
+            "e_c3fa6d905975",
+            "e_52a9b80a0fcc",
+            "e_71053aa0c55d",
+            "e_f9e56fc9ffb4",
+            "e_51c47dcf0852",
+            "e_7a7d61073f57",
+            "e_e73d1c6b1f17"
+          ],
+          "target": null
+        }
+      ],
+      "action": {
+        "kind": "abstain",
+        "target": null,
+        "approvalRequired": false,
+        "risk": "none"
+      },
+      "readOnlyNextStep": "Request the source ingestion watermark and raw event count for the missing 09:45-10:00 interval.",
+      "unresolvedAlternatives": [
+        "Delayed or missing ingestion",
+        "Actual demand or checkout/payment disruption with incomplete telemetry"
+      ],
+      "missingDiscriminators": [
+        "Source ingestion watermark and raw count for 09:45-10:00",
+        "Independent provider/validation telemetry for the missing interval"
+      ],
+      "forbiddenClaims": [
+        "Confident delayed-ingestion diagnosis from private truth",
+        "Invented freshness/provider/validation facts"
+      ]
+    }
+  ],
+  "semanticAdjudication": "Method-blinded human reviews every planned artifact, records reasons and disagreements; no investigator self-grading or paid judge.",
+  "plannedArtifacts": 50,
+  "diagnosisDenominator": 4,
+  "zeroCitationPrecision": {
+    "value": null,
+    "reason": "no_citations"
+  },
+  "contradictionScale": [
+    "0 absent",
+    "1 generic or irrelevant",
+    "2 specific alternative/falsifier with discriminating evidence"
+  ],
+  "activeSearch": "Tool model: purposeful leading-hypothesis test, result and update. Single-shot/rules: not applicable.",
+  "changes": "Version any correction and regrade all methods; retain all original findings/reports."
+}

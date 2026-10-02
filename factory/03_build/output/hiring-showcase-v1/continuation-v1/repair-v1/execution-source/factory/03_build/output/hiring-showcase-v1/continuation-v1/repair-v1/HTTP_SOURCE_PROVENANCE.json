@@ -1,0 +1,33 @@
+{
+  "originalPath": "db/benchmark/gemini-http.mjs",
+  "sourceRawSha256": "52ecb79a2fe4d46e2666f9c98828ad7433413db128518875cf73774e355f0f98",
+  "changes": [
+    {
+      "before": "from './contracts.mjs'",
+      "after": "from '../../../../../../db/benchmark/contracts.mjs'"
+    },
+    {
+      "before": "from './gemini-context.mjs'",
+      "after": "from '../../../../../../db/benchmark/gemini-context.mjs'"
+    },
+    {
+      "before": "from './gemini-config.mjs'",
+      "after": "from '../../../../../../db/benchmark/gemini-config.mjs'"
+    },
+    {
+      "before": "'thinkingConfig','responseFormat'",
+      "after": "'thinkingConfig','responseMimeType','responseJsonSchema'"
+    },
+    {
+      "before": "config.responseFormat?.text?.mimeType==='APPLICATION_JSON'",
+      "after": "config.responseMimeType==='application/json' && config.responseJsonSchema?.type==='object'"
+    },
+    {
+      "before": "    exact(config.responseFormat,['text'],'response format');\n    exact(config.responseFormat.text,['mimeType','schema'],'text format');",
+      "after": "    validateWireSchema(config.responseJsonSchema);"
+    }
+  ],
+  "originalSourceUnchanged": true,
+  "limitsChanged": false,
+  "modelRequests": 0
+}

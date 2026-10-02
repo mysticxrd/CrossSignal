@@ -1,0 +1,27 @@
+{
+  "repositories": [
+    {
+      "repository": "outer",
+      "unchangedFiles": 3500,
+      "addedFiles": 0,
+      "unchangedHead": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "unchangedIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef"
+    },
+    {
+      "repository": "product",
+      "unchangedFiles": 2017,
+      "addedFiles": 16,
+      "unchangedHead": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "unchangedIndexSha256": "5c1bd901e7f82582ad13281484112d19c11dcae24fc5d0188b3f508143a66ff3"
+    }
+  ],
+  "qualification": {
+    "decision": "accepted",
+    "indexedEntries": 428,
+    "indexMatchesHead": true,
+    "currentRawIndexUnchanged": true,
+    "historicalStrictAssertion": "failed_preserved_qualified_for_future_checks"
+  },
+  "acceptedEvidenceRewritten": false,
+  "gitReset": false
+}

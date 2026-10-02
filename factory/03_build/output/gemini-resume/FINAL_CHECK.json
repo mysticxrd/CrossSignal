@@ -1,0 +1,167 @@
+{
+  "startedAt": "2026-10-01T20:18:56.692Z",
+  "finishedAt": "2026-10-01T20:19:26.615Z",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "factory/03_build/verify.mjs"
+  ],
+  "exitCode": 2,
+  "error": null,
+  "result": {
+    "stage": "03_build",
+    "scope": "gemini-offline-preparation-only",
+    "status": "passed",
+    "completeBuildStatus": "blocked",
+    "provider": "gemini",
+    "candidateModel": "gemini-3.5-flash-lite",
+    "executionProfile": "original-accepted-b01-token-limits",
+    "conditionalRequestAuthorization": "recorded",
+    "upstreamData": {
+      "stage": "02_data",
+      "status": "passed",
+      "upstreamGate": "accepted",
+      "gate": "accepted",
+      "contractChecks": 13,
+      "packageNegativeChecks": 7,
+      "bindings": 22,
+      "cases": 5,
+      "protectedHistoricalFiles": 934,
+      "historicalDrift": [],
+      "preservation": "accepted_preparation_record_plus_current_immutable_history",
+      "modelCalls": 0,
+      "runtimeEffects": 0,
+      "modelEvaluation": "NOT_RUN",
+      "humanRuntimeApproval": "NOT_RUN"
+    },
+    "commands": [
+      {
+        "command": [
+          "C:\\Program Files\\nodejs\\node.exe",
+          "--test",
+          "tests/benchmark.test.mjs",
+          "tests/benchmark-subscription.test.mjs",
+          "tests/benchmark-subscription-budget.test.mjs",
+          "tests/benchmark-gemini-budget.test.mjs"
+        ],
+        "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+        "startedAt": "2026-10-01T20:19:00.305Z",
+        "finishedAt": "2026-10-01T20:19:01.954Z",
+        "exitCode": 0,
+        "stdout": "TAP version 13\n# Subtest: Gemini is selected without removing the exact historical subscription configuration\nok 1 - Gemini is selected without removing the exact historical subscription configuration\n  ---\n  duration_ms: 8.3634\n  type: 'test'\n  ...\n# Subtest: all five eager bodies retain the original task/schema; token counting covers the complete request\nok 2 - all five eager bodies retain the original task/schema; token counting covers the complete request\n  ---\n  duration_ms: 72.4716\n  type: 'test'\n  ...\n# Subtest: accumulated query context is scoped and lossless; old answers, supplied results and private fields are denied\nok 3 - accumulated query context is scoped and lossless; old answers, supplied results and private fields are denied\n  ---\n  duration_ms: 93.7312\n  type: 'test'\n  ...\n# Subtest: Gemini JSON query intents cannot broaden tools, windows, rows, query size or effect authority\nok 4 - Gemini JSON query intents cannot broaden tools, windows, rows, query size or effect authority\n  ---\n  duration_ms: 3.2059\n  type: 'test'\n  ...\n# Subtest: complete input tokens plus the next output reservation must fit before admission\nok 5 - complete input tokens plus the next output reservation must fit before admission\n  ---\n  duration_ms: 9.1941\n  type: 'test'\n  ...\n# Subtest: remaining cumulative generation constrains the next wire cap and includes reasoning once\nok 6 - remaining cumulative generation constrains the next wire cap and includes reasoning once\n  ---\n  duration_ms: 49.6274\n  type: 'test'\n  ...\n# Subtest: reported overrun, count mismatch, native tool usage and unknown usage stop further requests\nok 7 - reported overrun, count mismatch, native tool usage and unknown usage stop further requests\n  ---\n  duration_ms: 17.2017\n  type: 'test'\n  ...\n# Subtest: request and investigation deadlines use monotonic elapsed time; indeterminate attempts are not retried\nok 8 - request and investigation deadlines use monotonic elapsed time; indeterminate attempts are not retried\n  ---\n  duration_ms: 5.958\n  type: 'test'\n  ...\n# Subtest: single-shot, 12 turns, 10 invalid tool attempts, concurrency and replay remain hard host boundaries\nok 9 - single-shot, 12 turns, 10 invalid tool attempts, concurrency and replay remain hard host boundaries\n  ---\n  duration_ms: 8.2787\n  type: 'test'\n  ...\n# Subtest: conditional free-call permission and fixture token receipts cannot enable credentials or network\nok 10 - conditional free-call permission and fixture token receipts cannot enable credentials or network\n  ---\n  duration_ms: 1.1783\n  type: 'test'\n  ...\n# Subtest: byte admission includes serialized JSON; oversized input fails before a model attempt\nok 11 - byte admission includes serialized JSON; oversized input fails before a model attempt\n  ---\n  duration_ms: 4.2251\n  type: 'test'\n  ...\n# Subtest: token thresholds include reasoning once, retain overshoot and stop further dispatch\nok 12 - token thresholds include reasoning once, retain overshoot and stop further dispatch\n  ---\n  duration_ms: 1.0916\n  type: 'test'\n  ...\n# Subtest: cumulative threshold stops before a new attempt; native input usage is measured without a combined-token cap\nok 13 - cumulative threshold stops before a new attempt; native input usage is measured without a combined-token cap\n  ---\n  duration_ms: 1.9131\n  type: 'test'\n  ...\n# Subtest: an attempt may overshoot the remaining cumulative threshold and is retained as failed\nok 14 - an attempt may overshoot the remaining cumulative threshold and is retained as failed\n  ---\n  duration_ms: 1.0305\n  type: 'test'\n  ...\n# Subtest: 12 model turns, one single-shot attempt and 10 invalid tool attempts are hard host bounds\nok 15 - 12 model turns, one single-shot attempt and 10 invalid tool attempts are hard host bounds\n  ---\n  duration_ms: 4.1299\n  type: 'test'\n  ...\n# Subtest: only one request can be in flight; lease replay and fabricated request hashes fail\nok 16 - only one request can be in flight; lease replay and fabricated request hashes fail\n  ---\n  duration_ms: 1.4497\n  type: 'test'\n  ...\n# Subtest: monotonic request/run deadlines stop waiting without claiming remote compute cancellation\nok 17 - monotonic request/run deadlines stop waiting without claiming remote compute cancellation\n  ---\n  duration_ms: 0.5169\n  type: 'test'\n  ...\n# Subtest: missing/inconsistent usage, post-dispatch interruption and clock reversal never trigger retries\nok 18 - missing/inconsistent usage, post-dispatch interruption and clock reversal never trigger retries\n  ---\n  duration_ms: 0.7367\n  type: 'test'\n  ...\n# Subtest: preserved subscription proposal retains its original profile and public Data\nok 19 - preserved subscription proposal retains its original profile and public Data\n  ---\n  duration_ms: 15.9292\n  type: 'test'\n  ...\n# Subtest: all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\nok 20 - all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\n  ---\n  duration_ms: 40.1124\n  type: 'test'\n  ...\n# Subtest: prior answers, development messages, supplied results and foreign rows cannot become investigation context\nok 21 - prior answers, development messages, supplied results and foreign rows cannot become investigation context\n  ---\n  duration_ms: 5.4335\n  type: 'test'\n  ...\n# Subtest: bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\nok 22 - bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\n  ---\n  duration_ms: 75.9265\n  type: 'test'\n  ...\n# Subtest: fragmented SSE requires a completed terminal event and retains Unicode visible output\nok 23 - fragmented SSE requires a completed terminal event and retains Unicode visible output\n  ---\n  duration_ms: 10.4812\n  type: 'test'\n  ...\n# Subtest: deltas followed by quota failure, incomplete output or an interrupted stream never count as success\nok 24 - deltas followed by quota failure, incomplete output or an interrupted stream never count as success\n  ---\n  duration_ms: 3.0102\n  type: 'test'\n  ...\n# Subtest: reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\nok 25 - reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\n  ---\n  duration_ms: 24.061\n  type: 'test'\n  ...\n# Subtest: host-only string limits and tool/finding union validation remain strict\nok 26 - host-only string limits and tool/finding union validation remain strict\n  ---\n  duration_ms: 10.6712\n  type: 'test'\n  ...\n# Subtest: unsupported generation limits block before credential inspection; flags never enable fallback\nok 27 - unsupported generation limits block before credential inspection; flags never enable fallback\n  ---\n  duration_ms: 2.778\n  type: 'test'\n  ...\n# Subtest: OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\nok 28 - OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\n  ---\n  duration_ms: 5.713\n  type: 'test'\n  ...\n# Subtest: OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\nok 29 - OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\n  ---\n  duration_ms: 2.13\n  type: 'test'\n  ...\n# Subtest: ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\nok 30 - ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\n  ---\n  duration_ms: 1031.0945\n  type: 'test'\n  ...\n# Subtest: account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\nok 31 - account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\n  ---\n  duration_ms: 1.2611\n  type: 'test'\n  ...\n# Subtest: public contracts are byte-identical durable copies of accepted Data\nok 32 - public contracts are byte-identical durable copies of accepted Data\n  ---\n  duration_ms: 14.5944\n  type: 'test'\n  ...\n# Subtest: all five single-shot requests expose only validated synthetic observations and fixed capabilities\nok 33 - all five single-shot requests expose only validated synthetic observations and fixed capabilities\n  ---\n  duration_ms: 39.6449\n  type: 'test'\n  ...\n# Subtest: foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\nok 34 - foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\n  ---\n  duration_ms: 1.7783\n  type: 'test'\n  ...\n# Subtest: unsupported wire keywords are explicit; frozen host constraints remain strict\nok 35 - unsupported wire keywords are explicit; frozen host constraints remain strict\n  ---\n  duration_ms: 2.3874\n  type: 'test'\n  ...\n# Subtest: valid visible findings retain wrong citations and unsafe recommendations for independent grading\nok 36 - valid visible findings retain wrong citations and unsafe recommendations for independent grading\n  ---\n  duration_ms: 1.2353\n  type: 'test'\n  ...\n# Subtest: malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\nok 37 - malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\n  ---\n  duration_ms: 0.8792\n  type: 'test'\n  ...\n# Subtest: hidden thoughts, signatures, auth-like metadata and provider errors are never returned\nok 38 - hidden thoughts, signatures, auth-like metadata and provider errors are never returned\n  ---\n  duration_ms: 1.1144\n  type: 'test'\n  ...\n# Subtest: provider-native functions, remote files, images and extra candidates fail closed\nok 39 - provider-native functions, remote files, images and extra candidates fail closed\n  ---\n  duration_ms: 0.7841\n  type: 'test'\n  ...\n# Subtest: missing usage is unknown rather than zero; inconsistent and excessive counts terminate\nok 40 - missing usage is unknown rather than zero; inconsistent and excessive counts terminate\n  ---\n  duration_ms: 1.5728\n  type: 'test'\n  ...\n# Subtest: no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\nok 41 - no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\n  ---\n  duration_ms: 1.5649\n  type: 'test'\n  ...\n1..41\n# tests 41\n# suites 0\n# pass 41\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1515.4817\n",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "C:\\Program Files\\nodejs\\node.exe",
+          "node_modules/eslint/bin/eslint.js",
+          "db/benchmark",
+          "tests/benchmark.test.mjs",
+          "tests/benchmark-subscription.test.mjs",
+          "tests/benchmark-subscription-budget.test.mjs",
+          "tests/benchmark-gemini-budget.test.mjs",
+          "factory/03_build/gemini-preflight.mjs",
+          "factory/03_build/verify.mjs"
+        ],
+        "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+        "startedAt": "2026-10-01T20:19:01.954Z",
+        "finishedAt": "2026-10-01T20:19:13.253Z",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "command": [
+          "git",
+          "-c",
+          "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+          "diff",
+          "--check"
+        ],
+        "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+        "startedAt": "2026-10-01T20:19:13.253Z",
+        "finishedAt": "2026-10-01T20:19:13.472Z",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "warning: in the working copy of 'factory/03_build/verify.mjs', CRLF will be replaced by LF the next time Git touches it\n"
+      },
+      {
+        "command": [
+          "git",
+          "-c",
+          "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+          "diff",
+          "--check"
+        ],
+        "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+        "startedAt": "2026-10-01T20:19:13.472Z",
+        "finishedAt": "2026-10-01T20:19:13.590Z",
+        "exitCode": 0,
+        "stdout": "",
+        "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+      }
+    ],
+    "preservation": [
+      {
+        "repository": "outer",
+        "unchangedFiles": 3499,
+        "changedOldFiles": [],
+        "newFiles": 0,
+        "preservedDirectories": 1044,
+        "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+        "branch": "codex/supabase-migration",
+        "indexUnchanged": true,
+        "a01FactoryFiles": 0,
+        "a01StoredFiles": 0
+      },
+      {
+        "repository": "product",
+        "unchangedFiles": 1361,
+        "changedOldFiles": [
+          "db/benchmark/provider-config.mjs",
+          "db/benchmark/subscription-budget.mjs",
+          "db/benchmark/subscription.mjs",
+          "factory/03_build/CONTEXT.md",
+          "factory/03_build/output/BUILD_EVIDENCE.md",
+          "factory/03_build/output/HUMAN_GATE.md",
+          "factory/03_build/output/VERIFY.md",
+          "factory/03_build/verify.mjs",
+          "tests/benchmark-subscription.test.mjs"
+        ],
+        "newFiles": 23,
+        "preservedDirectories": 382,
+        "head": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+        "branch": "codex/phase3-decision-ux",
+        "indexUnchanged": true,
+        "a01FactoryFiles": 118,
+        "a01StoredFiles": 477
+      }
+    ],
+    "inputBindings": 39,
+    "environment": {
+      "node": "v22.15.0",
+      "platform": "win32",
+      "architecture": "x64"
+    },
+    "modelCalls": 0,
+    "runtimeEffects": 0,
+    "modelEvaluation": "NOT_RUN",
+    "humanRuntimeApproval": "NOT_RUN",
+    "unfinished": [
+      "verified_free_tier_project_with_billing_disabled_required",
+      "scoped_gemini_api_key_unavailable",
+      "account_model_quota_and_actual_route_compatibility_unverified",
+      "complete_provider_request_token_count_not_measured",
+      "real_isolated_transport_and_durable_runner_unfinished",
+      "Frozen schedule, all 50 retained artifacts, method-blinded adjudication and one measured development change",
+      "Separate exact human-approved SIMULATED intervention and observed outcome; currently prohibited",
+      "Complete Build lint/build/A01 and affected regression checks before opening the human gate"
+    ]
+  },
+  "stdout": null,
+  "stderr": "",
+  "factoryStatus": {
+    "exitCode": 0,
+    "stdout": "STAGE      STATUS       GATE        DEPS     HEAD            NOTE                      \n---------  -----------  ----------  -------  --------------  --------------------------\n01_spec    complete     accepted    fresh    not-applicable  -                         \n02_data    complete     accepted    fresh    not-applicable  -                         \n03_build   in-progress  incomplete  fresh    not-applicable  VERIFY.md is not passed   \n04_verify  never-run    missing     unknown  not-applicable  output directory is absent\n05_ship    never-run    missing     unknown  unknown         output directory is absent\n\nActive stage: 03_build\nRelease seal: unsealed (one or more factory stages are not complete; final release does not bind the current product head; Git worktree or index is not clean)\n",
+    "stderr": ""
+  }
+}

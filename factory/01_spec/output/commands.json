@@ -1,0 +1,56 @@
+{
+  "recordedAt": "2026-10-01T07:07:37.851Z",
+  "environment": {
+    "os": "Windows 11",
+    "platform": "win32",
+    "node": "v22.15.0",
+    "workingDirectory": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1"
+  },
+  "commands": [
+    {
+      "command": "node factory/01_spec/verify.mjs --before-gate",
+      "exitCode": 0,
+      "recordedAt": "2026-10-01T07:07:37.851Z",
+      "output": {
+        "stage": "01_spec",
+        "unit": "b01-api-behavioral-benchmark",
+        "status": "passed",
+        "inputBindings": 30,
+        "causalCases": 5,
+        "acceptanceCriteria": 16,
+        "negativeScopeChecks": [
+          "unequal evidence",
+          "hidden answer over abstention",
+          "unbounded tools",
+          "claimed model proof",
+          "unapproved paid calls",
+          "missing isolation"
+        ],
+        "archivedFactoryFiles": 118,
+        "historicalDrift": [],
+        "gate": "not-checked-before-gate",
+        "modelEvaluation": "NOT_RUN",
+        "humanRuntimeApproval": "NOT_RUN",
+        "productImplementationChanged": false
+      }
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0,
+      "recordedAt": "2026-10-01T07:07:37.851Z",
+      "stdout": ""
+    },
+    {
+      "command": "node --check factory/01_spec/verify.mjs",
+      "exitCode": 0,
+      "checkedDate": "2026-10-01",
+      "stdout": ""
+    },
+    {
+      "command": "node ../../node_modules/eslint/bin/eslint.js factory/01_spec/verify.mjs",
+      "exitCode": 0,
+      "checkedDate": "2026-10-01",
+      "stdout": ""
+    }
+  ]
+}

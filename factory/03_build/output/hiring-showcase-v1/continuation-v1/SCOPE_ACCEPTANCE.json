@@ -1,0 +1,27 @@
+{
+  "version": "b01-hiring-showcase-scope-acceptance-v1",
+  "amendment": "b01-hiring-showcase-v1",
+  "decision": "accepted",
+  "reviewer": "workspace owner; direct human user message",
+  "observedAtUtc": "2026-10-02T10:41:58.485Z",
+  "userMessage": "accepted",
+  "authorizationContext": "Response to exact hiring-showcase-v1 scope decision and proposal SHA-256 in preceding final reply",
+  "reviewedBindings": {
+    "proposal": "a717d9aed1bdaeda5941b63aceffbf3e4f85f2cc3163ad3e1f4010f3f445cac2",
+    "dataCompatibility": "37fc76e140bfcb5b9139b19bc40883d2be87d290a1e77552382994f5194f7d3f",
+    "draftPlan": "5a1847f4334263f534f496f2752c9f19160b9b30cf80b33014dc4755c9771213",
+    "verification": "6e635a6ac1d8eb97789ddf56594503dc7cecc4be0d0ad64a60bec5394bd6e5b8",
+    "inputBindings": "b647730613e03dd5d9fb5f318af8a4a8cfe43b81ab5a51d7436db01406eee7ad"
+  },
+  "scope": "Five frozen cases x three existing methods x one fresh investigation: 15 records; defer 20 repeats, 15 changed-experiment records and runtime intervention from the initial showcase",
+  "preservedPendingRecord": "../HUMAN_GATE.md",
+  "originalStage03GateAccepted": false,
+  "originalSpecDataRewritten": false,
+  "originalIndexAssertionWaived": false,
+  "paidSpendAuthorized": false,
+  "runtimeInterventionAuthorized": false,
+  "modelRequestPrerequisitesStillRequired": true,
+  "laterStagesAdvanced": false,
+  "committed": false,
+  "sealed": false
+}

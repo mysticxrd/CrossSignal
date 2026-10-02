@@ -1,0 +1,34 @@
+{
+  "observedAtUtc": "2026-10-02T14:09:59.865Z",
+  "executionContext": "host read-only Git diagnosis",
+  "commands": [
+    {
+      "args": [
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all"
+      ],
+      "exitCode": 128,
+      "errorCode": null,
+      "stdoutBytes": 0,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "fatal: detected dubious ownership in repository at 'C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1'\n'C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1' is owned by:\n\tLenovo_Yoga/CodexSandboxOffline (S-1-5-21-667114712-1231825732-2174771315-1007)\nbut the current user is:\n\tLENOVO_YOGA/hisha (S-1-5-21-667114712-1231825732-2174771315-1001)\nTo add an exception for this directory, call:\n\n\tgit config --global --add safe.directory C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1\n"
+    },
+    {
+      "args": [
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "status",
+        "--porcelain=v1",
+        "--untracked-files=all"
+      ],
+      "exitCode": 0,
+      "errorCode": null,
+      "stdoutBytes": 45387,
+      "stdoutSha256": "83c97f3d2432c7af1eff017f810a001546f12840d0908bbade2b10e040cc5ab0",
+      "stderr": ""
+    }
+  ],
+  "modelRequests": 0,
+  "indexWritten": false
+}

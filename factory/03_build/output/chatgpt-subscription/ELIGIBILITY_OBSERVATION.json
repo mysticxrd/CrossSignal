@@ -1,0 +1,16 @@
+{
+  "version": "siwc-eligibility-observation-v1",
+  "observedAt": "2026-10-01 16:40:54 UTC",
+  "source": "Codex desktop get_usage_limits; account metadata only",
+  "desktopPlanType": "plus",
+  "desktopHasCredits": false,
+  "crosssignalClientRegistrationVerified": false,
+  "crosssignalPlanScopeVerified": false,
+  "crosssignalAccountCatalogVerified": false,
+  "crosssignalAllowanceOnlyVerified": false,
+  "actualOAuthFlow": "NOT_RUN",
+  "modelRequests": 0,
+  "credentialsRead": false,
+  "accountIdentifiersRetained": false,
+  "meaning": "Desktop account observation does not establish a CrossSignal client grant, selected-account model catalog, app zero-credit policy or reserved subscription allowance."
+}

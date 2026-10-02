@@ -1,81 +1,41 @@
 ---
 type: pipeline-contract
 form: pipeline
-unit: a01-synthetic-revenue-investigation
+unit: b01-api-behavioral-benchmark
+status: instantiated
 ---
 
-# Company Flight Recorder - build factory
+# Revenue Leak Investigator behavioral benchmark factory
 
-The flow in one line: specify the slice -> make its data executable -> build it
--> verify the whole promise -> ship reviewer-ready proof.
+One run: spec → data → build → verify → ship. Direction is
+`_shared/BENCHMARK_DIRECTION.md`; the other shared reference is unchanged
+`_shared/QUALITY_GATES.md`. The user confirmed transition and Stage 01 entry on
+2026-10-01. `TRANSITION.md` binds the sealed A01 baseline and full byte-preserved
+factory. Use derived status for the active stage; A01 acceptance never transfers
+here. Stage 01 prepares Spec/VERIFY and then stops for its separate human gate.
 
-This is the same MWP lifecycle used for Whipoff: every meaningful vertical
-slice makes one sequential pass through `spec -> data -> build -> verify ->
-ship`. The current run is one synthetic A01 revenue-leak investigation through
-an exactly approved simulated intervention and observed outcome. Its source is
-`_shared/A01_DIRECTION.md`; the existing quality gates remain in force.
+| Stage | One transformation | Primary output |
+| --- | --- | --- |
+| 01_spec | Make the API behavioral milestone reviewable | output/SPEC.md |
+| 02_data | Make five cases, judgments and isolation executable | output/DATA_PACKAGE.md |
+| 03_build | Implement the bounded API investigator and experiments | output/BUILD_EVIDENCE.md |
+| 04_verify | Independently resolve every criterion and failure | output/VERIFICATION_REPORT.md |
+| 05_ship | Package evaluator-ready comparisons and honest limits | output/RELEASE_MANIFEST.md |
 
-The user confirmed the run transition and Stage 01 entry on 2026-09-26.
-`TRANSITION.md` binds the sealed baseline and complete preserved L14 run.
-Historical acceptance does not accept A01. Use `node factory/status.mjs` to
-derive the active stage; later stage outputs remain absent until authorized.
+After activation run `node factory/status.mjs`; status is derived, never an
+editable program table. Complete requires passed VERIFY, accepted hash-bound
+HUMAN_GATE and fresh dependencies. The first incomplete stage is active.
+Read only that stage's contract, declared inputs and its two shared references.
+Do not load later stages, the archive, dependencies or the whole source vault.
 
-| Stage | One job | Primary output | Human check |
-|---|---|---|---|
-| `01_spec` | Turn product uncertainty into one accepted specification | `output/SPEC.md` | Accept what, why, scope, and observable done |
-| `02_data` | Turn the accepted specification into executable data contracts | `output/DATA_PACKAGE.md` | Accept ownership, provenance, state, authority, and fixtures |
-| `03_build` | Turn the accepted data package into one durable vertical slice | `output/BUILD_EVIDENCE.md` | Run the complete golden path in preview |
-| `04_verify` | Turn the working slice into release-grade evidence | `output/VERIFICATION_REPORT.md` | Resolve every acceptance criterion and inspect failures |
-| `05_ship` | Turn verified evidence into an evaluator-ready release | `output/RELEASE_MANIFEST.md` | Run the release cold without hidden repair |
+Freshness dependencies are upstream outputs/gates, current contract and shared
+references. Product surfaces remain historical bindings until Ship binds the
+whole release head. A stage writes its outputs and stops for a person's gate.
+Never bypass an unaccepted stage or regenerate accepted artifacts to hide drift.
 
-Stable factory references live in `_shared/`. New run artifacts live only in
-each stage's `output/`. Accepted application code remains in the repository's
-durable product directories.
-
-## Derive status from files
-
-Run `node factory/status.mjs`, or scan the numbered stage folders in order.
-The command is a read-only generated view; it never writes a status file.
-
-- `never-run`: `output/` is absent.
-- `in-progress`: an output exists but required artifacts, `VERIFY.md`, or
-  `HUMAN_GATE.md` are missing or not accepted.
-- `stale`: a gate-bound artifact, upstream working dependency, shared reference,
-  or the final Ship head binding no longer matches.
-- `complete`: every declared output exists, `VERIFY.md` says `status: passed`,
-  `HUMAN_GATE.md` says `decision: accepted`, its artifact hashes agree, and its
-  freshness dependencies remain current.
-
-Declared hashes have three roles. Upstream outputs, the current stage contract,
-and `_shared/` references are **freshness dependencies**. Product trees read or
-written by Stages 01-04 are **historical bindings**: later stages may supersede
-them without reopening an earlier accepted gate. Stage 05 owns **release-head
-coverage**, so every binding in `RELEASE_MANIFEST.md` must still match. This
-prevents normal downstream work from falsely reactivating Stage 01 while still
-detecting drift in the shipped product.
-
-The active stage is the first stage that is not complete. There is no editable
-program status table. Never start a later stage to work around a failed or
-unreviewed earlier gate.
-
-## Seal and start the next run
-
-After the final human gate, commit the complete release and run
-`node factory/seal.mjs`. Sealing is read-only and succeeds only when all stages
-are complete, the Ship manifest covers the current product head, and Git has no
-staged, unstaged, or untracked changes.
-
-A new run may begin only from a sealed commit. Preserve the completed run as a
-durable record bound to that commit; if files are copied to `_archive/`, copy
-the complete run-specific stage folders (contracts, verifiers, fixtures, and
-outputs), never `output/` alone. Then instantiate fresh stage contracts from
-`_templates/`, update the root `unit`, and stop for human confirmation before
-Stage 01. Archiving and instantiation remain a human-owned transition rather
-than an automatic destructive command.
-
-## Loading discipline
-
-Read only the active stage contract, its exact inputs, and the named shared
-references. Do not load later stage contracts, `_archive/`, dependency folders,
-generated build output, or the source vault. Stage contracts must remain short;
-constraints belong in `_shared/` and evidence belongs in `output/`.
+After final acceptance, commit the complete release and run the read-only
+`node factory/seal.mjs`; it requires all stages complete, Ship head fresh and
+Git clean. A new run starts only from a sealed commit. Preserve the complete
+run-specific factory (contracts, verifiers, fixtures and outputs), instantiate
+fresh contracts and update the root unit, then stop for human confirmation
+before Stage 01. Archiving and instantiation remain human-owned transitions.

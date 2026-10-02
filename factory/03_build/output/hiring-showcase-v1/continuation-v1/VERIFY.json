@@ -1,0 +1,192 @@
+{
+  "version": "hiring-showcase-continuation-offline-verification-v1",
+  "verifiedAtUtc": "2026-10-02T12:35:05.646Z",
+  "status": "passed_for_additive_offline_preparation_only",
+  "scope": "accepted",
+  "model": "gemini-3.5-flash-lite",
+  "repositories": [
+    {
+      "repository": "outer",
+      "unchangedFiles": 3500,
+      "unchangedHead": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "unchangedBranch": "codex/supabase-migration",
+      "unchangedIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef",
+      "newFiles": [],
+      "preservedDirectories": 1044,
+      "preservedLinks": 1
+    },
+    {
+      "repository": "product",
+      "unchangedFiles": 1988,
+      "unchangedHead": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "unchangedBranch": "codex/phase3-decision-ux",
+      "unchangedIndexSha256": "5c1bd901e7f82582ad13281484112d19c11dcae24fc5d0188b3f508143a66ff3",
+      "newFiles": [
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/BENCHMARK_REGRESSIONS.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/COMPATIBILITY_REVIEW.md",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/HUMAN_GATE.md",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/INDEX_RECHECK.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/INPUT_BINDINGS.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/KEY_AVAILABILITY.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/KEY_HOST_AVAILABILITY.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/LINT.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/LINT_FINAL.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/LINT_PACKET_FINAL.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/NORMALIZED_REQUESTS.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/OFFLINE_TESTS.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/OFFLINE_TESTS_FINAL.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/PREPARATION_COMMAND.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/PRESERVATION_BEFORE.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/PRESERVATION_QUALIFICATION_PROPOSAL.md",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/README.md",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/SCHEDULE_PREPARED.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/SCOPE_ACCEPTANCE.json",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/diagnostics.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/run.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/schedule.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/tests.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/transport.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/verify.mjs",
+        "factory/03_build/output/hiring-showcase-v1/continuation-v1/wire.mjs"
+      ],
+      "preservedDirectories": 518,
+      "preservedLinks": 3
+    }
+  ],
+  "reviewedPacketFiles": 36,
+  "preservedParentInputBindings": 70,
+  "acceptedArtifactHashesUnchanged": 7,
+  "preservedStage03InputBindings": 51,
+  "documentationReconciliations": 7,
+  "savedResultReload": {
+    "mode": "READ_ONLY_RELOAD",
+    "retainedRecords": 2,
+    "snapshotSha256": "d0b79469c8fb61ac705da46f103a06d419a350034ae6bef92d9d4a8e85db148c",
+    "databaseHashes": [
+      "95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8",
+      "462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43"
+    ],
+    "modelRequests": 0,
+    "runtimeEffects": 0
+  },
+  "continuationTests": 8,
+  "existingBenchmarkTests": 57,
+  "affectedSourceLint": "passed",
+  "frozenContinuationFiles": null,
+  "commands": [
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:/Users/hisha/ChatGPT/CrossSignal",
+      "startedAtUtc": "2026-10-02T12:34:48.428Z",
+      "finishedAtUtc": "2026-10-02T12:34:48.536Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAtUtc": "2026-10-02T12:34:53.876Z",
+      "finishedAtUtc": "2026-10-02T12:34:54.137Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'factory/03_build/verify.mjs', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "ls-files",
+        "--stage"
+      ],
+      "cwd": "C:/Users/hisha/ChatGPT/CrossSignal",
+      "startedAtUtc": "2026-10-02T12:35:04.884Z",
+      "finishedAtUtc": "2026-10-02T12:35:04.963Z",
+      "exitCode": 0,
+      "stderr": "",
+      "stdoutSha256": "f162f033b96b620edfa929365ac1bfd957a553062567fec4d9f25b0f6a477a8e"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "ls-tree",
+        "-r",
+        "HEAD"
+      ],
+      "cwd": "C:/Users/hisha/ChatGPT/CrossSignal",
+      "startedAtUtc": "2026-10-02T12:35:04.963Z",
+      "finishedAtUtc": "2026-10-02T12:35:05.099Z",
+      "exitCode": 0,
+      "stderr": "",
+      "stdoutSha256": "b7790b8fed0f4bd5c20ff80b89553bdf899a9c62e68a14534762ecd269a27907"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--cached",
+        "--raw"
+      ],
+      "cwd": "C:/Users/hisha/ChatGPT/CrossSignal",
+      "startedAtUtc": "2026-10-02T12:35:05.099Z",
+      "finishedAtUtc": "2026-10-02T12:35:05.174Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\n"
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "factory/status.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+      "startedAtUtc": "2026-10-02T12:35:05.180Z",
+      "finishedAtUtc": "2026-10-02T12:35:05.645Z",
+      "exitCode": 0,
+      "stdout": "STAGE      STATUS       GATE        DEPS     HEAD            NOTE                      \n---------  -----------  ----------  -------  --------------  --------------------------\n01_spec    complete     accepted    fresh    not-applicable  -                         \n02_data    complete     accepted    fresh    not-applicable  -                         \n03_build   in-progress  incomplete  fresh    not-applicable  VERIFY.md is not passed   \n04_verify  never-run    missing     unknown  not-applicable  output directory is absent\n05_ship    never-run    missing     unknown  unknown         output directory is absent\n\nActive stage: 03_build\nRelease seal: unsealed (one or more factory stages are not complete; final release does not bind the current product head; Git worktree or index is not clean)\n",
+      "stderr": ""
+    }
+  ],
+  "windowsUserKeyReadableByHost": true,
+  "inheritedProcessKeyPresent": false,
+  "credentialValuePrinted": false,
+  "credentialValueRecorded": false,
+  "modelRequests": 0,
+  "providerRequests": 0,
+  "runtimeEffects": 0,
+  "showcaseEvaluation": "NOT_RUN",
+  "originalStrictIndexCheck": "failed_historical_raw_equality_not_waived",
+  "originalStage03Gate": "blocked_pending",
+  "completeB01": false,
+  "committed": false,
+  "sealed": false,
+  "blockers": [
+    "generation_compatibility_unresolved",
+    "prior_strict_index_qualification_pending"
+  ],
+  "priorVerifierHistoricalScopeField": "pending",
+  "boundContinuationInputsVerified": 18,
+  "finalPacketLintReceipt": "LINT_PACKET_FINAL.json",
+  "command": [
+    "node",
+    "--input-type=module",
+    "(inline read-only input-bindings/lint check and verifyContinuation; exclusive VERIFY.json receipt)"
+  ]
+}

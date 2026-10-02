@@ -1,0 +1,21 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--test",
+    "factory/03_build/output/hiring-showcase-v1/tests.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T10:15:44.416Z",
+  "finishedAtUtc": "2026-10-02T10:15:44.936Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "TAP version 13\n# (node:8172) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: draft preparation has 15 fresh records, preserves accepted facts and dispatches nothing\nok 1 - draft preparation has 15 fresh records, preserves accepted facts and dispatches nothing\n  ---\n  duration_ms: 95.2593\n  type: 'test'\n  ...\n# Subtest: cold read-only inspection verifies actual retained records and keeps unknown usage distinct\nok 2 - cold read-only inspection verifies actual retained records and keeps unknown usage distinct\n  ---\n  duration_ms: 45.8844\n  type: 'test'\n  ...\n# Subtest: inspector rejects manifest identity and frozen source hash substitutions\nok 3 - inspector rejects manifest identity and frozen source hash substitutions\n  ---\n  duration_ms: 18.0302\n  type: 'test'\n  ...\n# Subtest: read-only reader rejects a corrupted history in a new disposable database copy\nok 4 - read-only reader rejects a corrupted history in a new disposable database copy\n  ---\n  duration_ms: 62.2296\n  type: 'test'\n  ...\n# Subtest: readable Case projection escapes evidence/answer strings and exposes limitations\nok 5 - readable Case projection escapes evidence/answer strings and exposes limitations\n  ---\n  duration_ms: 64.7721\n  type: 'test'\n  ...\n# Subtest: transport failure has no fabricated explanation, recommendation or epistemic abstention\nok 6 - transport failure has no fabricated explanation, recommendation or epistemic abstention\n  ---\n  duration_ms: 24.1127\n  type: 'test'\n  ...\n# Subtest: offline CLI rejects execute option before any preparation or credential/network route\nok 7 - offline CLI rejects execute option before any preparation or credential/network route\n  ---\n  duration_ms: 61.1434\n  type: 'test'\n  ...\n# Subtest: saved static export matches the read-only projection and labels the frozen intervals accurately\nok 8 - saved static export matches the read-only projection and labels the frozen intervals accurately\n  ---\n  duration_ms: 4.2475\n  type: 'test'\n  ...\n1..8\n# tests 8\n# suites 0\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 459.2931\n",
+  "stderr": "",
+  "sourceHashes": {
+    "inspection.mjs": "2f1b9fbdfa6d557327d0b2db72bc90a40daedb0436b0327d2fd8864144ee2923",
+    "prepare.mjs": "5de9f3948fcf789f714a045487dfd1fe04338dcb6ab18496ab125054979155e0",
+    "tests.mjs": "31c4e780b803f797768ace4e0f9b2bb0aa918118fa466dcbe0b5326a2c38eb0c",
+    "verify-preparation.mjs": "bbd6ee3937e83e85223a049be635814b550c9507cfc55d1fc7753bbd119189da"
+  },
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

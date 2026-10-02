@@ -1,0 +1,144 @@
+{
+  "stage": "03_build",
+  "scope": "subscription-offline-preflight-only",
+  "status": "passed",
+  "completeBuildStatus": "blocked",
+  "upstreamData": {
+    "stage": "02_data",
+    "status": "passed",
+    "upstreamGate": "accepted",
+    "gate": "accepted",
+    "contractChecks": 13,
+    "packageNegativeChecks": 7,
+    "bindings": 22,
+    "cases": 5,
+    "protectedHistoricalFiles": 934,
+    "historicalDrift": [],
+    "preservation": "accepted_preparation_record_plus_current_immutable_history",
+    "modelCalls": 0,
+    "runtimeEffects": 0,
+    "modelEvaluation": "NOT_RUN",
+    "humanRuntimeApproval": "NOT_RUN"
+  },
+  "commands": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "tests/benchmark.test.mjs",
+        "tests/benchmark-subscription.test.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:41:28.609Z",
+      "finishedAt": "2026-10-01T16:41:29.131Z",
+      "exitCode": 0,
+      "stdout": "TAP version 13\n# Subtest: active provider selects subscription OAuth; old Gemini and public Data are preserved\nok 1 - active provider selects subscription OAuth; old Gemini and public Data are preserved\n  ---\n  duration_ms: 3.8078\n  type: 'test'\n  ...\n# Subtest: all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\nok 2 - all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities\n  ---\n  duration_ms: 16.779\n  type: 'test'\n  ...\n# Subtest: prior answers, development messages, supplied results and foreign rows cannot become investigation context\nok 3 - prior answers, development messages, supplied results and foreign rows cannot become investigation context\n  ---\n  duration_ms: 6.8666\n  type: 'test'\n  ...\n# Subtest: bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\nok 4 - bounded query results are recomputed; invalid attempts count and do not leak untrusted arguments\n  ---\n  duration_ms: 28.7252\n  type: 'test'\n  ...\n# Subtest: fragmented SSE requires a completed terminal event and retains Unicode visible output\nok 5 - fragmented SSE requires a completed terminal event and retains Unicode visible output\n  ---\n  duration_ms: 3.115\n  type: 'test'\n  ...\n# Subtest: deltas followed by quota failure, incomplete output or an interrupted stream never count as success\nok 6 - deltas followed by quota failure, incomplete output or an interrupted stream never count as success\n  ---\n  duration_ms: 0.5702\n  type: 'test'\n  ...\n# Subtest: reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\nok 7 - reasoning text and signatures are excluded, native tools/refusals and inconsistent usage fail\n  ---\n  duration_ms: 5.6184\n  type: 'test'\n  ...\n# Subtest: host-only string limits and tool/finding union validation remain strict\nok 8 - host-only string limits and tool/finding union validation remain strict\n  ---\n  duration_ms: 3.8135\n  type: 'test'\n  ...\n# Subtest: unsupported generation limits block before credential inspection; flags never enable fallback\nok 9 - unsupported generation limits block before credential inspection; flags never enable fallback\n  ---\n  duration_ms: 0.7494\n  type: 'test'\n  ...\n# Subtest: OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\nok 10 - OAuth registration uses fresh PKCE/state/nonce, exact loopback and issued client ID\n  ---\n  duration_ms: 3.6255\n  type: 'test'\n  ...\n# Subtest: OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\nok 11 - OAuth state mutation, missing client, returning-account mutation and denial fail before exchange\n  ---\n  duration_ms: 0.835\n  type: 'test'\n  ...\n# Subtest: ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\nok 12 - ID-token fixture validates signature/issuer/audience/time/nonce and rejects forged identity\n  ---\n  duration_ms: 283.073\n  type: 'test'\n  ...\n# Subtest: account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\nok 13 - account-specific models preserve visibility/order; generic API catalog or cached Codex catalog is insufficient\n  ---\n  duration_ms: 0.4322\n  type: 'test'\n  ...\n# Subtest: public contracts are byte-identical durable copies of accepted Data\nok 14 - public contracts are byte-identical durable copies of accepted Data\n  ---\n  duration_ms: 3.3218\n  type: 'test'\n  ...\n# Subtest: all five single-shot requests expose only validated synthetic observations and fixed capabilities\nok 15 - all five single-shot requests expose only validated synthetic observations and fixed capabilities\n  ---\n  duration_ms: 25.019\n  type: 'test'\n  ...\n# Subtest: foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\nok 16 - foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\n  ---\n  duration_ms: 1.3611\n  type: 'test'\n  ...\n# Subtest: unsupported wire keywords are explicit; frozen host constraints remain strict\nok 17 - unsupported wire keywords are explicit; frozen host constraints remain strict\n  ---\n  duration_ms: 1.0265\n  type: 'test'\n  ...\n# Subtest: valid visible findings retain wrong citations and unsafe recommendations for independent grading\nok 18 - valid visible findings retain wrong citations and unsafe recommendations for independent grading\n  ---\n  duration_ms: 0.673\n  type: 'test'\n  ...\n# Subtest: malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\nok 19 - malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\n  ---\n  duration_ms: 0.381\n  type: 'test'\n  ...\n# Subtest: hidden thoughts, signatures, auth-like metadata and provider errors are never returned\nok 20 - hidden thoughts, signatures, auth-like metadata and provider errors are never returned\n  ---\n  duration_ms: 0.3388\n  type: 'test'\n  ...\n# Subtest: provider-native functions, remote files, images and extra candidates fail closed\nok 21 - provider-native functions, remote files, images and extra candidates fail closed\n  ---\n  duration_ms: 0.2352\n  type: 'test'\n  ...\n# Subtest: missing usage is unknown rather than zero; inconsistent and excessive counts terminate\nok 22 - missing usage is unknown rather than zero; inconsistent and excessive counts terminate\n  ---\n  duration_ms: 0.4759\n  type: 'test'\n  ...\n# Subtest: no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\nok 23 - no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\n  ---\n  duration_ms: 0.5516\n  type: 'test'\n  ...\n1..23\n# tests 23\n# suites 0\n# pass 23\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 468.6076\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "db/benchmark",
+        "tests/benchmark.test.mjs",
+        "tests/benchmark-subscription.test.mjs",
+        "factory/03_build/verify.mjs",
+        "factory/03_build/subscription-preflight.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:41:29.131Z",
+      "finishedAt": "2026-10-01T16:41:35.349Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:41:35.349Z",
+      "finishedAt": "2026-10-01T16:41:35.581Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'factory/03_build/verify.mjs', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAt": "2026-10-01T16:41:35.581Z",
+      "finishedAt": "2026-10-01T16:41:35.700Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+    }
+  ],
+  "preservation": [
+    {
+      "repository": "outer",
+      "unchangedFiles": 3499,
+      "authorizedChangedOldFiles": [],
+      "preservedDirectories": 1044,
+      "newFiles": 0,
+      "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "branch": "codex/supabase-migration",
+      "indexUnchanged": true,
+      "preservedA01FactoryFiles": 0,
+      "preservedA01StoredFiles": 0,
+      "preservedDataFiles": 9
+    },
+    {
+      "repository": "product",
+      "unchangedFiles": 1324,
+      "authorizedChangedOldFiles": [
+        "factory/03_build/CONTEXT.md",
+        "factory/03_build/verify.mjs"
+      ],
+      "preservedDirectories": 366,
+      "newFiles": 18,
+      "head": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "branch": "codex/phase3-decision-ux",
+      "indexUnchanged": true,
+      "preservedA01FactoryFiles": 118,
+      "preservedA01StoredFiles": 477,
+      "preservedDataFiles": 35
+    }
+  ],
+  "inputBindings": 0,
+  "environment": {
+    "node": "v22.15.0",
+    "platform": "win32",
+    "architecture": "x64"
+  },
+  "provider": "openai-chatgpt-subscription",
+  "candidateModel": "gpt-6.1-sol",
+  "modelCalls": 0,
+  "runtimeEffects": 0,
+  "modelEvaluation": "NOT_RUN",
+  "humanRuntimeApproval": "NOT_RUN",
+  "unfinished": [
+    "accepted_1024_generation_cap_unsupported",
+    "accepted_6144_total_generation_and_8192_combined_context_bounds_unenforceable",
+    "contract_amendment_pending_human_review",
+    "crosssignal_oauth_grant_and_client_eligibility_unverified",
+    "selected_account_model_catalog_unverified",
+    "subscription_allowance_only_and_zero_credit_settings_unverified",
+    "pinned_tokenizer_and_route_compatibility_unverified",
+    "Real OAuth listener/trusted discovery/protected credential storage and refresh lifecycle",
+    "Durable bounded automated investigator, monotonic deadlines, ledger and isolation probes",
+    "Frozen experiment/schedule, three baselines, all 50 retained artifacts and blinded adjudication",
+    "One pre-registered development change with preserved initial and second-round results",
+    "Separate exact human-approved SIMULATED intervention and observed outcome",
+    "Required complete Build lint/build/A01 and affected regression checks before opening its gate"
+  ]
+}

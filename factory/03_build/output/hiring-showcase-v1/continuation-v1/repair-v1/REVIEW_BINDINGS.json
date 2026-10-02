@@ -1,0 +1,28 @@
+{
+  "recordedAtUtc": "2026-10-02T14:39:23.209Z",
+  "purpose": "Exact additive review packet; not Build acceptance, release seal, or request authority",
+  "rawSourceHashes": {
+    "README.md": "1cd81827eb47db8a2d80441985c0524af88c4327f456472c2cc596738f747296",
+    "EVALUATION_REPORT.md": "d32a1c5aaf8a4de2afe9f4fe1ca06aceb46581c50efd503f52257ccbef13b9b5",
+    "DEMO_WALKTHROUGH.md": "3e5604c73fe72293a088fcd8c789e33184a6b7afa87d75fc5a3e1a46459c9a6f",
+    "ARCHITECTURE.md": "6e9c16bc2e6ea686597fb435267826414f61d945b307ad46ec359331366404ef",
+    "VERIFY.md": "6fe1ef8138a686b15ab35b5dc0f9359c88879d2855b9d7e2fe1c15c09437e922",
+    "VERIFY.json": "ac81f7384838d503f9326f79c59d99faa615bc7da8bd630a15a25cf116a0a277",
+    "PROVIDER_DIAGNOSTIC_PROPOSAL.md": "ee3aa22297de583da1dfc84d7dc43d555eaec45d6d486b123fb4e2fff37fe2c9",
+    "DIAGNOSTIC_REVIEW_BINDINGS.json": "8e7dda9de086350d1efe9580bbf1740c685e1750a0a58a24607dbd2e6acea528",
+    "PRESERVATION_ACCEPTANCE.json": "c4348afefadc3344ee4d85001ca09e38860e61f843e5a91777d466b0f6bf863d",
+    "SAVED_INSPECTION.json": "f8971161b7d788c1159967d195a5491f3575950ff5f13e20d9dde686638e3277",
+    "EXECUTION_OBSERVATION.json": "0639284014ae0b624dbc6cc6769bbe1333203291468cf961c28f799e76611fb0",
+    "REVIEW_LINT.json": "6ed81c5c5a3d8ca353cd00801ee75a00d274fdf76f93f2740a7505e6e4591550",
+    "REVIEW_TESTS.json": "884f8473306b5d8947a051b207e7f87059ed70e0c639545653338bd45904b304",
+    "verify-review.mjs": "637a16c10ec82d7ec2cd6fe5f1e691b96df826301550aecdb003af94d7b326f1",
+    "review.mjs": "48e429804e61f98909bdb5bc05e05e025a4e5485c8976d782252bb20c6cd52bd",
+    "review-tests.mjs": "c6a5d636c98258fcb2a510b3a15ada8644b0668085f6461a5cca4421a3c21adf"
+  },
+  "scope": "accepted",
+  "preservationQualification": "accepted",
+  "stage03Build": "pending_incomplete",
+  "diagnosticQualification": "pending",
+  "modelRequestsBlocked": true,
+  "fullB01Complete": false
+}

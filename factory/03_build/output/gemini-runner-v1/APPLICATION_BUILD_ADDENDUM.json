@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\node_modules\\vinext\\dist\\cli.js",
+    "build"
+  ],
+  "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\outputs\\build-checks\\2026-10-02-gemini-runner-complete",
+  "startedAtUtc": "2026-10-02T08:23:13.326Z",
+  "finishedAtUtc": "2026-10-02T08:23:26.029Z",
+  "exitCode": 0,
+  "stdout": "\n  vinext build  (Vite 8.0.13)\n\n[1/5] analyze client references...\n\u001b[2K\rtransforming...✓ 361 modules transformed.\nrendering chunks...\n✓ built in 1.20s\n[2/5] analyze server references...\n\u001b[2K\rtransforming...✓ 116 modules transformed.\nrendering chunks...\n✓ built in 764ms\n[3/5] build rsc environment...\n\u001b[2K\rtransforming...✓ 371 modules transformed.\nrendering chunks...\ncomputing gzip size...\n✓ built in 3.69s\n[4/5] build client environment...\n\u001b[2K\rtransforming...✓ 128 modules transformed.\nrendering chunks...\ncomputing gzip size...\n✓ built in 2.94s\n[5/5] build ssr environment...\n\u001b[2K\rtransforming...✓ 122 modules transformed.\nrendering chunks...\ncomputing gzip size...\n✓ built in 1.66s\n\u001b[0m\n  Route (app)\n  ┌ ƒ /                                           \n  └ λ /api/workspaces/:workspaceId/traces/:traceId\n\n  λ API  ƒ Dynamic\n\n  Build complete. Run `vinext start` to start the production server.\n\n",
+  "stderr": "(node:29536) ExperimentalWarning: glob is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n\u001b[33m[PLUGIN_TIMINGS] \u001b[0mYour build spent significant time in plugins. Here is a breakdown:\n  - vinext:css-data-url (21%)\n  - rsc:virtual-client-package (12%)\n  - vinext:middleware-server-only (10%)\n  - vinext:og-inline-fetch-assets (10%)\n  - alias (8%)\nSee https://rolldown.rs/options/checks#plugintimings for more details.\n\n",
+  "existingDependenciesOnly": true
+}

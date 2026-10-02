@@ -1,0 +1,23 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/run.mjs",
+    "--prepare"
+  ],
+  "startedAtUtc": "2026-10-02T11:01:08.976Z",
+  "finishedAtUtc": "2026-10-02T11:01:09.149Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "{\n  \"scope\": \"accepted\",\n  \"stage\": \"03_build\",\n  \"records\": 15,\n  \"model\": \"gemini-3.5-flash-lite\",\n  \"modelRequests\": 0,\n  \"actualEvaluation\": \"NOT_RUN\",\n  \"requestsBlocked\": [\n    \"generation_compatibility_unresolved\",\n    \"prior_strict_index_qualification_pending\"\n  ]\n}\n",
+  "stderr": "(node:396) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+  "sourceHashes": {
+    "wire.mjs": "2f264b7c6dd8ea08674e020bb289140ca4a370198d82c4dcc4323b3d46ad68ac",
+    "diagnostics.mjs": "0be975524e59595c41e009804bffac2636fef6fa9b58e22865d663d8ae412db2",
+    "transport.mjs": "8a35db414099db995891071346cfe8beb7299bbd062606a06a7c588ed70d6935",
+    "schedule.mjs": "91a66570b466a46034592f1dcee38cb529d6aa8a3df1070316fc7a51770fccf9",
+    "run.mjs": "2fc7da00707e8ba438a1fbcb0a58dfc7ef616a316eb285457c3ed73854058508",
+    "tests.mjs": "968cd16086778bbfee394424a51df7793f3631296f268a6b89a2333cc69fbe70"
+  },
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

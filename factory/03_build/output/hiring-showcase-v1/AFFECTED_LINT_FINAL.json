@@ -1,0 +1,24 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "C:/Users/hisha/ChatGPT/CrossSignal/node_modules/eslint/bin/eslint.js",
+    "factory/03_build/output/hiring-showcase-v1/inspection.mjs",
+    "factory/03_build/output/hiring-showcase-v1/prepare.mjs",
+    "factory/03_build/output/hiring-showcase-v1/tests.mjs",
+    "factory/03_build/output/hiring-showcase-v1/verify-preparation.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T10:15:44.581Z",
+  "finishedAtUtc": "2026-10-02T10:15:48.420Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "",
+  "stderr": "",
+  "sourceHashes": {
+    "inspection.mjs": "2f1b9fbdfa6d557327d0b2db72bc90a40daedb0436b0327d2fd8864144ee2923",
+    "prepare.mjs": "5de9f3948fcf789f714a045487dfd1fe04338dcb6ab18496ab125054979155e0",
+    "tests.mjs": "31c4e780b803f797768ace4e0f9b2bb0aa918118fa466dcbe0b5326a2c38eb0c",
+    "verify-preparation.mjs": "bbd6ee3937e83e85223a049be635814b550c9507cfc55d1fc7753bbd119189da"
+  },
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

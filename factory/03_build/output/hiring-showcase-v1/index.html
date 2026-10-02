@@ -1,0 +1,185 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"><title>CrossSignal — saved Case inspection</title><style>
+    :root{font-family:system-ui,sans-serif;color:#17252f;background:#f7f8fa;line-height:1.55}*{box-sizing:border-box}body{margin:0}main{max-width:1140px;margin:0 auto;padding:40px 24px}h1{font-size:28px;line-height:1.2;letter-spacing:-.6px}h2{font-size:22px}h3{font-size:18px}h4{font-size:15px}p{max-width:78ch}.eyebrow{font-size:11px;letter-spacing:1.1px;text-transform:uppercase;color:#536574}.intro{padding-bottom:28px;border-bottom:1px solid #d9e1e7}.intro p{color:#415564}.badge{display:inline-block;font-size:11px;font-weight:700;background:#e9eff5;padding:3px 8px;border-radius:3px}.status{margin:22px 0;padding:16px 20px;background:#edf2f7;border-left:3px solid #35566e}.flow{font-size:15px;padding:16px 0;color:#415564}.case{padding:28px 0;border-top:1px solid #d9e1e7}.case-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(260px,1fr);gap:36px;margin-top:20px}.metrics{display:flex;gap:28px;padding:16px 0}.metrics span{display:block;font-size:12px;color:#536574}.metrics strong{font-size:20px}.claim{padding:20px 0;border-top:1px solid #e0e6eb}aside{background:#fff;padding:20px;height:fit-content}code{display:block;font-size:11px;overflow-wrap:anywhere;padding:6px 0;color:#3d5263}details{padding:12px 0}summary{cursor:pointer;font-size:14px;color:#244e6a}pre{font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}.observation{padding:12px 0;border-bottom:1px solid #e2e8ed}.observation strong{font-size:13px}.missing{color:#685626}.limits{padding:20px 0}footer{margin-top:28px;border-top:1px solid #d9e1e7;padding-top:16px;color:#536574;font-size:12px}a{color:#244e6a}@media(max-width:760px){main{padding:24px 16px}.case-layout{grid-template-columns:1fr}.metrics{flex-wrap:wrap}}
+    </style></head><body><main><header class="intro"><span class="eyebrow">CROSSSIGNAL / ENGINEERING SHOWCASE PREPARATION</span><h1>From a revenue signal to an inspectable Case.</h1><p>Bounded investigation, evidence citations and durable failure handling. This offline viewer reads preserved synthetic results; it makes no model request.</p></header><section class="status"><strong>Gemini happy path blocked by HTTP 400</strong><p>2 retained records from the original 35-record schedule. Valid Gemini findings: 0. The proposed 15-record showcase study is NOT_RUN and awaits exact amendment acceptance.</p></section><p class="flow">Synthetic revenue signal → permitted evidence → explanations and counterevidence → recommendation or abstention → readable saved Case</p><article class="case" id="r_d564012e62fd"><header><span class="eyebrow">SAVED CASE / rules</span><h2>c_82238562b57a</h2><p>SIMULATED received-window aggregate revenue decreased; this finding is a deterministic rule baseline.</p><span class="badge">SIMULATED</span> <strong>completed</strong></header>
+      <div class="case-layout"><div><section class="metrics" aria-label="Received revenue"><div><span>09:00–09:30 received revenue</span><strong>INR 2,60,000</strong></div><div><span>09:30–10:00 received revenue</span><strong>INR 2,20,000</strong></div></section><p>Affected segment: IN/debit · Atomic claims recorded: 0</p><p>Unresolved alternatives: none recorded; no alternatives are inferred</p>
+      <section class="claim"><span class="eyebrow">EXPLANATION 1</span><h3>checkout_deployment_regression</h3><p>Typed observation rule fired; causal confidence and relevance require independent adjudication.</p><h4>Supporting evidence</h4><details><summary>Inspect 16 cited observations</summary><div class="observation"><strong>revenue_window · 2026-09-01T09:15:00.000Z</strong><code>e_5eb155b35db2</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;failed&quot;: 20,
+  &quot;providerDeclines&quot;: 18,
+  &quot;revenueMinor&quot;: 4000000,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+  &quot;successes&quot;: 80,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 2,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:15:00.000Z</strong><code>e_c8a1459bf251</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;GB/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:15:00.000Z</strong><code>e_d0000dc97808</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;IN/credit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:00:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:30:00.000Z</strong><code>e_4dbb79203ac5</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;failed&quot;: 20,
+  &quot;providerDeclines&quot;: 18,
+  &quot;revenueMinor&quot;: 4000000,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;successes&quot;: 80,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 2,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:30:00.000Z</strong><code>e_98d918bca175</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;IN/credit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:30:00.000Z</strong><code>e_ce59d9d0fdc8</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;GB/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:15:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:45:00.000Z</strong><code>e_0e568b7bc643</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;failed&quot;: 60,
+  &quot;providerDeclines&quot;: 18,
+  &quot;revenueMinor&quot;: 2000000,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;successes&quot;: 40,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 42,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:45:00.000Z</strong><code>e_7bd783c63aa7</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;GB/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T09:45:00.000Z</strong><code>e_b4f11f6165ce</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;IN/credit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:30:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T10:00:00.000Z</strong><code>e_7128d6647df3</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;GB/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T10:00:00.000Z</strong><code>e_766f55075578</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+  &quot;failed&quot;: 60,
+  &quot;providerDeclines&quot;: 18,
+  &quot;revenueMinor&quot;: 2000000,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;successes&quot;: 40,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 42,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>revenue_window · 2026-09-01T10:00:00.000Z</strong><code>e_e676b70118fe</code><pre>{
+  &quot;attempts&quot;: 100,
+  &quot;currency&quot;: &quot;INR&quot;,
+  &quot;end&quot;: &quot;2026-09-01T10:00:00.000Z&quot;,
+  &quot;failed&quot;: 10,
+  &quot;providerDeclines&quot;: 9,
+  &quot;revenueMinor&quot;: 4500000,
+  &quot;segment&quot;: &quot;IN/credit&quot;,
+  &quot;start&quot;: &quot;2026-09-01T09:45:00.000Z&quot;,
+  &quot;successes&quot;: 90,
+  &quot;unitPriceMinor&quot;: 50000,
+  &quot;validationErrors&quot;: 1,
+  &quot;visits&quot;: 200
+}</pre></div><div class="observation"><strong>deployment · 2026-09-01T09:31:00.000Z</strong><code>e_41bfbb28c329</code><pre>{
+  &quot;fromVersion&quot;: &quot;v141&quot;,
+  &quot;note&quot;: &quot;Input validation update.&quot;,
+  &quot;service&quot;: &quot;checkout&quot;,
+  &quot;toVersion&quot;: &quot;v142&quot;
+}</pre></div><div class="observation"><strong>deployment · 2026-09-01T09:43:00.000Z</strong><code>e_d11d733474bf</code><pre>{
+  &quot;fromVersion&quot;: &quot;v8&quot;,
+  &quot;note&quot;: &quot;Email template update.&quot;,
+  &quot;service&quot;: &quot;notifications&quot;,
+  &quot;toVersion&quot;: &quot;v9&quot;
+}</pre></div><div class="observation"><strong>service_health · 2026-09-01T09:59:00.000Z</strong><code>e_03ac21817a8c</code><pre>{
+  &quot;providerHealthy&quot;: true,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;service&quot;: &quot;payment-provider&quot;,
+  &quot;validationErrors&quot;: 0
+}</pre></div><div class="observation"><strong>service_health · 2026-09-01T09:59:00.000Z</strong><code>e_e9d355ef60e5</code><pre>{
+  &quot;providerHealthy&quot;: true,
+  &quot;segment&quot;: &quot;IN/debit&quot;,
+  &quot;service&quot;: &quot;checkout&quot;,
+  &quot;validationErrors&quot;: 42
+}</pre></div></details><h4>Contradictory evidence</h4><p class="missing">None recorded. This limitation stays visible.</p></section>
+      </div><aside><h3>Next step</h3><p>Operator review of cited observations; recommendation alone authorizes no effect.</p><p>simulated_rollback</p><p>Recommendation only. Runtime effects: 0.</p><h3>Record</h3><code>r_d564012e62fd</code><p>Actual latency: not recorded</p><p>Generated tokens: 0</p><details><summary>Inspect append-only history</summary><ol><li>started<code>87bd3fd741ed6e0d0e3455cd7191bc90c911f41244ca0dd39c1f42b87496b24d</code></li><li>terminal<code>e85548ed3113c2b6b0e41da18d813fc789ce2a41e35ec85c0c98e73ee905a7bd</code></li></ol><p>Database SHA-256</p><code>95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8</code></details><p>Read-only reload verified against frozen source and manifest.</p><p>Semantic judgment: NOT_ADJUDICATED</p></aside></div></article><article class="case" id="r_05af95690c5e"><header><span class="eyebrow">SAVED CASE / single-shot-model</span><h2>c_82238562b57a</h2><p>Gemini request rejected. No model finding returned.</p><span class="badge">SIMULATED</span> <strong>indeterminate_usage</strong></header>
+      <div class="case-layout"><div><section class="metrics" aria-label="Received revenue"><div><span>09:00–09:30 received revenue</span><strong>INR 2,60,000</strong></div><div><span>09:30–10:00 received revenue</span><strong>INR 2,20,000</strong></div></section><p>Affected segment: Unavailable · Atomic claims recorded: Unavailable</p><p>Unresolved alternatives: none recorded; no alternatives are inferred</p>
+      <section><h3>Provider failure</h3><p>HTTP 400 · generateContent. Detailed error body was not retained; the parameter cause is unknown. One attempt, no automatic retry or paid fallback.</p><p>Unknown generation usage remains unknown. This transport failure is distinct from an evidence-based abstention.</p></section>
+      </div><aside><h3>Next step</h3><p>Resolve generation compatibility before any further scored request.</p><p>request_blocked</p><p>Recommendation only. Runtime effects: 0.</p><h3>Record</h3><code>r_05af95690c5e</code><p>Actual latency: 4527 ms</p><p>Generated tokens: unknown</p><details><summary>Inspect append-only history</summary><ol><li>started<code>3b0c5b845f57735ade3a08f9a93d938231732e34c874c05fdc0e877532a71e15</code></li><li>token_count<code>05cf3813d626299a1beb640f572062a7848f4614c5d7ceb49ee1ba9522d5481e</code></li><li>request<code>6093619cd6857919f02df44aadd3999d89fddcd598ba0662ffe2d61aad2f27e3</code></li><li>terminal<code>8bcd6648524d5c988ec9d2ac56cae63c973e5ff7067a58ed735c89276812c59a</code></li></ol><p>Database SHA-256</p><code>462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43</code></details><p>Read-only reload verified against frozen source and manifest.</p><p>Semantic judgment: NOT_ADJUDICATED</p></aside></div></article><section class="limits"><h2>Small study proposed for review</h2><p>Five frozen synthetic cases × rules, single-shot Gemini and tool-using Gemini × one fresh investigation = 15 records. Repeated runs, the improvement experiment and intervention demo are deferred from the initial hiring showcase. The larger B01 milestone stays incomplete.</p><p>Original limits retained: 8192 context; 1024 response including reasoning; 6144 total generation; 12 turns; 10 tool attempts; 50 rows; 160 query characters; 180s request / 900s investigation; concurrency 1; retries 0.</p><p><a href="README.md">Showcase README</a> · <a href="DEMO_WALKTHROUGH.md">Three-minute walkthrough</a> · <a href="EVALUATION_REPORT.md">Evaluation report</a> · <a href="CONTRACT_CHANGE_PROPOSAL.md">Scope proposal</a></p></section><footer>SIMULATED. Independent adjudication pending. No broad accuracy or business-recovery claim. Existing approval/execution components remain preserved and uninvoked. Export identity: d0b79469c8fb61ac705da46f103a06d419a350034ae6bef92d9d4a8e85db148c</footer></main></body></html>

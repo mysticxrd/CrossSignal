@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "factory/03_build/output/hiring-showcase-v1/prepare.mjs",
+    "--replay"
+  ],
+  "startedAtUtc": "2026-10-02T10:07:19.937Z",
+  "finishedAtUtc": "2026-10-02T10:07:20.109Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "{\n  \"mode\": \"READ_ONLY_RELOAD\",\n  \"retainedRecords\": 2,\n  \"snapshotSha256\": \"d0b79469c8fb61ac705da46f103a06d419a350034ae6bef92d9d4a8e85db148c\",\n  \"databaseHashes\": [\n    \"95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8\",\n    \"462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43\"\n  ],\n  \"modelRequests\": 0,\n  \"runtimeEffects\": 0\n}\n",
+  "stderr": "(node:18976) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n",
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

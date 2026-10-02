@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-10-01T20:04:05.118Z",
+  "scope": "bounded_read_only_metadata",
+  "sources": [
+    {
+      "name": "GEMINI_API_KEY",
+      "present": false
+    },
+    {
+      "name": "GOOGLE_API_KEY",
+      "present": false
+    }
+  ],
+  "googleAiStudio": {
+    "sessionAccessible": true,
+    "projectsPage": "https://aistudio.google.com/projects",
+    "importedProjectRowsVisible": 0,
+    "initialKeysPageNetworkError": true,
+    "accountApiBillingTier": "unverified",
+    "sufficientQuota": "unverified",
+    "noKeysRevealedOrCreated": true,
+    "noProjectsCreatedOrImported": true
+  },
+  "accountIdentityStored": false,
+  "modelRequests": 0,
+  "paidCharges": 0,
+  "conclusion": "No usable scoped key or verified Free-tier project has been established; signed-in account or Pro badge does not establish API tier."
+}

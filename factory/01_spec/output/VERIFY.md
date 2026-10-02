@@ -1,72 +1,89 @@
 ---
-unit: a01-synthetic-revenue-investigation
+type: stage-verification
 stage: 01_spec
+unit: b01-api-behavioral-benchmark
 status: passed
-verified_at: 2026-09-26T08:19:32.327Z
-verification_scope: specification-and-transition-only
+verified_at: 2026-10-01T07:07:37.851Z
+baseline_commit: 43d42d255bd22cb227e3410dda31ffb8437f6624
+spec_sha256: e6e2f7fa20903ed4b1dc96b156908a51bf872cee254084313a449914950dbf4e
+context_sha256: 51ce7b46b33b773c6d1b14688bfdaa9833cfb2489a698e0810027d68e79a3d7e
+verifier_sha256: 7aeadc553dacdbdd95d36f29578f87e730a03f54b1e1a8cb585b5f426d3cf36b
+commands_sha256: 332fcadb7a606a91969efbcda00a210d90bcfb9a35d53ad4545514536271ace1
+model_evaluation: NOT_RUN
+human_runtime_approval: NOT_RUN
 ---
 
-# Stage 01 verification — A01 specification
+# Stage 01 verification — ready for human review
 
-Environment: Windows PowerShell, Node.js v22.15.0, existing nested checkout
-on branch codex/phase3-decision-ux. Sealed baseline:
-`58b2aa09b7208bb9a7b9b3cee5a12adeb54c8a11`.
+The confirmed transition and specification preparation passed. This checks
+scope, input provenance, full A01 preservation and gate binding; it is not a
+behavioral evaluation, runtime approval, or acceptance of new stage outputs.
 
-## Results
+## Environment and executed commands
 
-| Check | Command or procedure | Result |
+Windows 11 / win32, Node v22.15.0; authoritative cwd:
+C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1.
+Exact outputs and recording dates are in [commands.json](commands.json).
+
+| Command | Exit | Result |
 | --- | --- | --- |
-| Baseline seal | `node factory/seal.mjs` before transition | Exit 0; printed sealed baseline above |
-| Spec completeness and source binding | `node factory/01_spec/verify.mjs --check-spec` | Exit 0; 12 acceptance criteria, 9 failure experiments, 16 declared input hashes |
-| Full review package | `node factory/01_spec/verify.mjs` | Requires matching Spec/verifier/context/verification hashes and valid pending gate; no human acceptance granted |
-| Existing status/hash tools | `node --test factory/_lib/factory-tools.test.mjs` | Exit 0; 3/3 passed |
-| Historical preservation | Read-only SHA-256 comparison against pre-move manifest | 42/42 original factory files match; all 5 copied fixture/SQL/generator dependencies match |
-| Stage boundary | Check later output directories | Stages 02–05 output directories absent |
-| Cache preservation | SHA-256 comparison | Original 8-byte cli-latest unchanged, ignored by exact path only |
-| Product preservation | `git diff --name-only -- app db scripts tests supabase` | Empty; no product/runtime/test/data changes in this transition |
-| Whitespace | `git diff --check` | Exit 0 |
+| node factory/01_spec/verify.mjs --before-gate | 0 | 30 input hashes match; five cases; 16 future criteria; six negative scope mutations rejected; 118 archived files unchanged |
+| node --check factory/01_spec/verify.mjs | 0 | Verifier syntax passed |
+| node ../../node_modules/eslint/bin/eslint.js factory/01_spec/verify.mjs | 0 | New verifier lint passed |
+| git diff --check | 0 | Current tracked diff has no whitespace errors |
 
-The full review-package command is run after assembling this record and the
-pending gate. A passing check validates their exact hashes; it does not accept
-the gate. Re-run it before recording a human decision.
+The exact default command, node factory/01_spec/verify.mjs, is the final
+read-only check after this report and the pending human gate are written. Its
+output is recorded separately in final-check.json to avoid circular report hashes.
 
-## Deliberate specification failures
+## Checked provenance and preservation
 
-The stage verifier requires rejection when an exact approval acceptance row
-is removed, the missing/mismatched/manual-check approval failure row is removed,
-the filesystem-access restriction is removed, or a declared source digest
-is altered. Full package validation also rejects a gate with the wrong Spec
-hash. These are checks of specification integrity, not runtime fault tests.
+- Clean sealed A01 branch/HEAD was rechecked before activation: codex/phase3-decision-ux,
+  43d42d255bd22cb227e3410dda31ffb8437f6624; status/Ship/seal all exited 0.
+- User confirmation is recorded in factory/TRANSITION.md and the outer preparation
+  REVIEW_GATE. Confirmation covers transition and Stage 01 entry only.
+- All 118 files of the complete archived A01 factory match their original raw-byte
+  hashes; its inventory and preservation-manifest digest match exactly.
+- Shared original quality/architecture/A01 references, generic factory tooling,
+  template, legacy fixture/postgres folders and SQL-generation helper are unchanged.
+- Observed runtime/scripts/test/package sources match sealed baseline content.
+  Only factory contracts/tooling/evidence, new planning sources and current routing
+  changed. The product HEAD/branch and prior data/runtime stores remain untouched.
+- The two pre-existing outer files retain their original raw-byte hashes; no reset,
+  clean, commit, remote/OneDrive operation, installation, provider call or effect.
+- Stages 02–05 have no output directories. Stage 01 gate remains pending.
 
-## Scope and limitations
+## Scope verification and negative checks
 
-This stage prepares a complete reviewable specification. It does not implement
-A01 tools, rollback, persistence, simulator, grader, or a model investigation.
-The source handoff's 29/29 product regression result remains the latest product
-baseline evidence. Runtime files are unchanged; those tests were not repeated
-solely for documentation changes.
+The document verifier checks five case judgments, four diagnosable cases plus
+B05 uncertainty, same allowed evidence/model configuration, bounded API/tool use,
+private-input exclusions, requested metrics, one development-driven measured
+change, exact runtime authority, compatibility ownership and 16 future criteria.
 
-Application build/lint, database migration, and preview checks are not applicable
-to this specification-only stage; later product stages must run them for changed
-surfaces under the existing quality gates. No paid model, payment provider,
-TEST database, deployment, LIVE action, or real device check ran.
+Six altered specifications were rejected: unequal evidence, hidden-cause certainty
+on B05, enlarged tool budget, fabricated model proof, unapproved paid authority
+and deleted isolation requirements. These are specification-validator checks;
+production prompt-injection, tenant, authority and model behavior remain future
+Build/Verify evidence, not passing runtime tests here.
 
-The historical all-stage npm verification commands refer to the old release
-layout; they are not A01 acceptance commands. Use the sealed baseline for that
-release and stage-specific commands for this run. In particular, no claim is
-made that the repository-wide legacy npm test target passed in this transition.
+No behavior score or general-competence claim was generated. Provider/model and
+paid budget remain unresolved; the original no-paid-call condition persists.
+All real payment/device/business recovery claims remain unproven.
 
-A suitable local model has not been established; model evaluation remains a
-separate dependency. All future A01 outcomes are SIMULATED. Existing trial
-exclusion, Mobile Safari fixture, tenant isolation, and exact authority rules
-remain in force. The archived original gate files remain unchanged.
+## Applicability and limits
 
-## Declared input hashes
+No application/runtime implementation or migration changed. Application build,
+product regression suites, model calls and human intervention are not applicable
+to this specification-only stage and were not run. Accepted pre-transition A01
+release verification passed. The active B01 worktree is intentionally unsealed.
 
-Normalized-text SHA-256 using the unchanged shared verification kit.
+Factory-sensitive A01 release, historical workspace/Ship assertions and later
+package aliases need scoped reference updates during Build. Legacy fixture imports
+were preserved; no tests/assertions were removed. A full post-transition npm test
+pass is not claimed while future stage outputs do not exist.
 
-| Input | SHA-256 |
-| --- | --- |
-| `factory/01_spec/CONTEXT.md` | `5901ea3176710a93bcf05f90c20be8552c7d4d19ad98ae57e200098d8eb102b8` |
-| `factory/01_spec/verify.mjs` | `6c0d6df893516843e854831f05ad82521c468c5e08dd1c58360520b95acbcfd0` |
-| `factory/01_spec/output/SPEC.md` | `0f37074fcb86ec12e38bf51d4b4a1be8231206f7d463f60d67a51282ac510da5` |
+Spec and VERIFY hashes in HUMAN_GATE.md use the existing normalized factory hash
+helper. Verification opens the gate; it does not accept it. Review SPEC.md and
+record accepted, changes-requested or rejected against exact fresh artifacts.
+Data remains never-run until accepted. No generic stage gate grants runtime
+rollback or paid-call authority.

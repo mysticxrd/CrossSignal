@@ -1,0 +1,211 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version",
+    "terminalStatus",
+    "signalSummary",
+    "hypotheses",
+    "affectedSegment",
+    "relatedChangeId",
+    "unresolvedAlternatives",
+    "recommendation",
+    "claims"
+  ],
+  "properties": {
+    "version": {
+      "const": "benchmark-finding-v1"
+    },
+    "terminalStatus": {
+      "enum": [
+        "completed",
+        "epistemic_abstention",
+        "budget_exhausted",
+        "invalid_output",
+        "transport_failure",
+        "timeout",
+        "context_overflow"
+      ]
+    },
+    "signalSummary": {
+      "type": "string",
+      "maxLength": 400
+    },
+    "hypotheses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "diagnosis",
+          "supportIds",
+          "contradictionIds",
+          "summary"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "diagnosis": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "supportIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "maxItems": 50
+          },
+          "contradictionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "maxItems": 50
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 240
+          }
+        }
+      },
+      "maxItems": 3
+    },
+    "affectedSegment": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 80
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "relatedChangeId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "maxLength": 128
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unresolvedAlternatives": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 200
+      },
+      "maxItems": 3
+    },
+    "recommendation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "target",
+        "summary",
+        "boundary",
+        "risk",
+        "approvalRequired"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "simulated_rollback",
+            "read_only_check",
+            "abstain",
+            "none"
+          ]
+        },
+        "target": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 160
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "boundary": {
+          "const": "recommendation_only"
+        },
+        "risk": {
+          "enum": [
+            "consequential",
+            "read_only",
+            "none"
+          ]
+        },
+        "approvalRequired": {
+          "type": "boolean"
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "predicate",
+          "target",
+          "evidenceIds"
+        ],
+        "properties": {
+          "text": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "predicate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 128
+            },
+            "maxItems": 50
+          }
+        }
+      },
+      "maxItems": 16
+    }
+  }
+}

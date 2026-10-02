@@ -1,0 +1,12 @@
+{
+  "version": "siwc-profile-acceptance-v1",
+  "recordedAt": "2026-10-01T19:31:41.701Z",
+  "reviewer": "repository-owner-in-chat",
+  "decision": "accepted",
+  "exactAnswer": "Accept the measured profile",
+  "proposalSha256": "fb0726293476d13ce909ff042f9712e970c5ba2537c79395a66b9f3f8398651f",
+  "originalSpecSha256": "e6e2f7fa20903ed4b1dc96b156908a51bf872cee254084313a449914950dbf4e",
+  "originalDataSha256": "ffa20862857b2083cc83d7c027e16938e5fc98266729852ef2f8df3610dc5d6f",
+  "originalDataDirectorySha256": "be6d15ef711e30cf2820855eedc99508458f2de9cce513fc3d8597af2dc002da",
+  "scope": "contract amendment only; no full Build acceptance or runtime authority"
+}

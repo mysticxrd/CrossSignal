@@ -1,0 +1,925 @@
+{
+  "version": "hiring-showcase-inspection-v1",
+  "truthMode": "SIMULATED",
+  "evaluationStatus": "BLOCKED_PARTIAL_ORIGINAL_RUN",
+  "proposed15RecordStudy": "NOT_RUN",
+  "model": "gemini-3.5-flash-lite",
+  "session": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c",
+  "manifestSha256": "96c75fe5ae30546ac10796ea55935597a47e07f55401e8a5ec8103234a9c8a7c",
+  "originalPlannedInitialRecords": 35,
+  "retainedRecords": 2,
+  "validModelFindings": 0,
+  "transport": {
+    "generationCalls": 1,
+    "generationAttempts": 1,
+    "countCalls": 22,
+    "metadataCalls": 1,
+    "automaticRetries": 0,
+    "mode": "FREE_TIER_BENCHMARK",
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400
+    }
+  },
+  "largestMeasuredInitialInputBound": 2593,
+  "blindedAdjudication": "NOT_RUN",
+  "scopeAmendment": "PENDING_HUMAN_REVIEW",
+  "runtimeIntervention": "NOT_RUN",
+  "records": [
+    {
+      "runId": "r_d564012e62fd",
+      "sourceCaseId": "c_82238562b57a",
+      "method": "rules",
+      "replicateIndex": 1,
+      "truthMode": "SIMULATED",
+      "provenance": "retained_original_35_record_schedule",
+      "terminalStatus": "completed",
+      "failureReason": null,
+      "finding": {
+        "affectedSegment": "IN/debit",
+        "claims": [],
+        "hypotheses": [
+          {
+            "contradictionIds": [],
+            "diagnosis": "checkout_deployment_regression",
+            "rank": 1,
+            "summary": "Typed observation rule fired; causal confidence and relevance require independent adjudication.",
+            "supportIds": [
+              "e_5eb155b35db2",
+              "e_c8a1459bf251",
+              "e_d0000dc97808",
+              "e_4dbb79203ac5",
+              "e_98d918bca175",
+              "e_ce59d9d0fdc8",
+              "e_0e568b7bc643",
+              "e_7bd783c63aa7",
+              "e_b4f11f6165ce",
+              "e_7128d6647df3",
+              "e_766f55075578",
+              "e_e676b70118fe",
+              "e_41bfbb28c329",
+              "e_d11d733474bf",
+              "e_03ac21817a8c",
+              "e_e9d355ef60e5"
+            ]
+          }
+        ],
+        "recommendation": {
+          "approvalRequired": true,
+          "boundary": "recommendation_only",
+          "kind": "simulated_rollback",
+          "risk": "consequential",
+          "summary": "Operator review of cited observations; recommendation alone authorizes no effect.",
+          "target": "checkout"
+        },
+        "relatedChangeId": "e_41bfbb28c329",
+        "signalSummary": "SIMULATED received-window aggregate revenue decreased; this finding is a deterministic rule baseline.",
+        "terminalStatus": "completed",
+        "unresolvedAlternatives": [],
+        "version": "benchmark-finding-v1"
+      },
+      "signal": {
+        "kind": "observed_aggregate_revenue_change",
+        "currency": "INR",
+        "pre": {
+          "revenueMinor": 26000000,
+          "attempts": 600,
+          "successes": 520,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "post": {
+          "revenueMinor": 22000000,
+          "attempts": 600,
+          "successes": 440,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "complete": true,
+        "interpretation": "Received rows only; a decline with incomplete coverage does not establish a business decline."
+      },
+      "allowedEvidence": [
+        {
+          "id": "e_03ac21817a8c",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "payment-provider",
+            "validationErrors": 0
+          }
+        },
+        {
+          "id": "e_08dac329f9ab",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_0e568b7bc643",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_41bfbb28c329",
+          "type": "deployment",
+          "at": "2026-09-01T09:31:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v141",
+            "note": "Input validation update.",
+            "service": "checkout",
+            "toVersion": "v142"
+          }
+        },
+        {
+          "id": "e_4dbb79203ac5",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_5121081e753c",
+          "type": "support_message",
+          "at": "2026-09-01T09:58:00.000Z",
+          "source": "support",
+          "payload": {
+            "message": "Debit form rejects valid input before payment submission.",
+            "segment": "IN/debit",
+            "tags": [
+              "checkout",
+              "card"
+            ]
+          }
+        },
+        {
+          "id": "e_5eb155b35db2",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7128d6647df3",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_766f55075578",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7bd783c63aa7",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_98d918bca175",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_a9654f12190a",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_b4f11f6165ce",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_c8a1459bf251",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_ce59d9d0fdc8",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d0000dc97808",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d11d733474bf",
+          "type": "deployment",
+          "at": "2026-09-01T09:43:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v8",
+            "note": "Email template update.",
+            "service": "notifications",
+            "toVersion": "v9"
+          }
+        },
+        {
+          "id": "e_e3f68f3c748d",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_e676b70118fe",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_e9d355ef60e5",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "checkout",
+            "validationErrors": 42
+          }
+        }
+      ],
+      "citations": {
+        "referencedIds": [
+          "e_5eb155b35db2",
+          "e_c8a1459bf251",
+          "e_d0000dc97808",
+          "e_4dbb79203ac5",
+          "e_98d918bca175",
+          "e_ce59d9d0fdc8",
+          "e_0e568b7bc643",
+          "e_7bd783c63aa7",
+          "e_b4f11f6165ce",
+          "e_7128d6647df3",
+          "e_766f55075578",
+          "e_e676b70118fe",
+          "e_41bfbb28c329",
+          "e_d11d733474bf",
+          "e_03ac21817a8c",
+          "e_e9d355ef60e5"
+        ],
+        "unknownIds": [],
+        "semanticSupport": "NOT_ADJUDICATED"
+      },
+      "elapsedMs": null,
+      "elapsedUnavailableReason": "not_recorded_for_rules",
+      "usage": {
+        "knownGeneratedTokens": 0,
+        "totalGeneratedTokens": 0,
+        "unavailableReason": null
+      },
+      "history": [
+        {
+          "sequence": 1,
+          "kind": "started",
+          "hash": "87bd3fd741ed6e0d0e3455cd7191bc90c911f41244ca0dd39c1f42b87496b24d"
+        },
+        {
+          "sequence": 2,
+          "kind": "terminal",
+          "hash": "e85548ed3113c2b6b0e41da18d813fc789ce2a41e35ec85c0c98e73ee905a7bd"
+        }
+      ],
+      "databaseRelativePath": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_d564012e62fd/case.sqlite",
+      "databaseSha256": "95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8",
+      "timelineSha256": "e85548ed3113c2b6b0e41da18d813fc789ce2a41e35ec85c0c98e73ee905a7bd",
+      "modelVersion": null,
+      "readOnlyValidated": true,
+      "runtimeEffects": 0
+    },
+    {
+      "runId": "r_05af95690c5e",
+      "sourceCaseId": "c_82238562b57a",
+      "method": "single-shot-model",
+      "replicateIndex": 1,
+      "truthMode": "SIMULATED",
+      "provenance": "retained_original_35_record_schedule",
+      "terminalStatus": "indeterminate_usage",
+      "failureReason": "http_failure",
+      "finding": null,
+      "signal": {
+        "kind": "observed_aggregate_revenue_change",
+        "currency": "INR",
+        "pre": {
+          "revenueMinor": 26000000,
+          "attempts": 600,
+          "successes": 520,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "post": {
+          "revenueMinor": 22000000,
+          "attempts": 600,
+          "successes": 440,
+          "visits": 1200,
+          "receivedWindows": 6
+        },
+        "complete": true,
+        "interpretation": "Received rows only; a decline with incomplete coverage does not establish a business decline."
+      },
+      "allowedEvidence": [
+        {
+          "id": "e_03ac21817a8c",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "payment-provider",
+            "validationErrors": 0
+          }
+        },
+        {
+          "id": "e_08dac329f9ab",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_0e568b7bc643",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_41bfbb28c329",
+          "type": "deployment",
+          "at": "2026-09-01T09:31:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v141",
+            "note": "Input validation update.",
+            "service": "checkout",
+            "toVersion": "v142"
+          }
+        },
+        {
+          "id": "e_4dbb79203ac5",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_5121081e753c",
+          "type": "support_message",
+          "at": "2026-09-01T09:58:00.000Z",
+          "source": "support",
+          "payload": {
+            "message": "Debit form rejects valid input before payment submission.",
+            "segment": "IN/debit",
+            "tags": [
+              "checkout",
+              "card"
+            ]
+          }
+        },
+        {
+          "id": "e_5eb155b35db2",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 20,
+            "providerDeclines": 18,
+            "revenueMinor": 4000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 80,
+            "unitPriceMinor": 50000,
+            "validationErrors": 2,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7128d6647df3",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_766f55075578",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 60,
+            "providerDeclines": 18,
+            "revenueMinor": 2000000,
+            "segment": "IN/debit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 40,
+            "unitPriceMinor": 50000,
+            "validationErrors": 42,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_7bd783c63aa7",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_98d918bca175",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_a9654f12190a",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_b4f11f6165ce",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:45:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:45:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:30:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_c8a1459bf251",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_ce59d9d0fdc8",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:30:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:30:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:15:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d0000dc97808",
+          "type": "revenue_window",
+          "at": "2026-09-01T09:15:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T09:15:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:00:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_d11d733474bf",
+          "type": "deployment",
+          "at": "2026-09-01T09:43:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "fromVersion": "v8",
+            "note": "Email template update.",
+            "service": "notifications",
+            "toVersion": "v9"
+          }
+        },
+        {
+          "id": "e_e3f68f3c748d",
+          "type": "observation_status",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "coverage": "complete",
+            "end": "2026-09-01T10:00:00.000Z",
+            "expectedWindows": 4,
+            "freshness": "unknown",
+            "receivedAt": "2026-09-01T10:00:00.000Z",
+            "receivedWindows": 4,
+            "segment": "GB/debit",
+            "start": "2026-09-01T09:00:00.000Z"
+          }
+        },
+        {
+          "id": "e_e676b70118fe",
+          "type": "revenue_window",
+          "at": "2026-09-01T10:00:00.000Z",
+          "source": "revenue",
+          "payload": {
+            "attempts": 100,
+            "currency": "INR",
+            "end": "2026-09-01T10:00:00.000Z",
+            "failed": 10,
+            "providerDeclines": 9,
+            "revenueMinor": 4500000,
+            "segment": "IN/credit",
+            "start": "2026-09-01T09:45:00.000Z",
+            "successes": 90,
+            "unitPriceMinor": 50000,
+            "validationErrors": 1,
+            "visits": 200
+          }
+        },
+        {
+          "id": "e_e9d355ef60e5",
+          "type": "service_health",
+          "at": "2026-09-01T09:59:00.000Z",
+          "source": "engineering",
+          "payload": {
+            "providerHealthy": true,
+            "segment": "IN/debit",
+            "service": "checkout",
+            "validationErrors": 42
+          }
+        }
+      ],
+      "citations": {
+        "referencedIds": [],
+        "unknownIds": [],
+        "semanticSupport": "NOT_ADJUDICATED"
+      },
+      "elapsedMs": 4526.6626,
+      "elapsedUnavailableReason": null,
+      "usage": {
+        "knownGeneratedTokens": 0,
+        "totalGeneratedTokens": null,
+        "unavailableReason": "post_dispatch_usage_unavailable"
+      },
+      "history": [
+        {
+          "sequence": 1,
+          "kind": "started",
+          "hash": "3b0c5b845f57735ade3a08f9a93d938231732e34c874c05fdc0e877532a71e15"
+        },
+        {
+          "sequence": 2,
+          "kind": "token_count",
+          "hash": "05cf3813d626299a1beb640f572062a7848f4614c5d7ceb49ee1ba9522d5481e"
+        },
+        {
+          "sequence": 3,
+          "kind": "request",
+          "hash": "6093619cd6857919f02df44aadd3999d89fddcd598ba0662ffe2d61aad2f27e3"
+        },
+        {
+          "sequence": 4,
+          "kind": "terminal",
+          "hash": "8bcd6648524d5c988ec9d2ac56cae63c973e5ff7067a58ed735c89276812c59a"
+        }
+      ],
+      "databaseRelativePath": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_05af95690c5e/case.sqlite",
+      "databaseSha256": "462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43",
+      "timelineSha256": "8bcd6648524d5c988ec9d2ac56cae63c973e5ff7067a58ed735c89276812c59a",
+      "modelVersion": null,
+      "readOnlyValidated": true,
+      "runtimeEffects": 0
+    }
+  ]
+}

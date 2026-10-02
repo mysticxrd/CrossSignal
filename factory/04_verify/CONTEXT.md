@@ -1,47 +1,31 @@
 ---
 type: stage-contract
-unit: a01-synthetic-revenue-investigation
+unit: b01-api-behavioral-benchmark
 stage: 04_verify
+status: waiting
 ---
 
-# 04_verify — verify the entire A01 promise and deliberate failure cases
+# 04_verify — resolve the benchmark promise independently
 
-One job: verify the entire A01 promise and deliberate failure cases.
+One job: audit evidence, deterministic boundaries and behavioral comparisons.
 
 ## Inputs
 
-- Freshness dependency: `../03_build/output/BUILD_EVIDENCE.md`.
-- Freshness dependency: `../03_build/output/HUMAN_GATE.md`.
-- Freshness dependency: `../_shared/A01_DIRECTION.md`.
-- Freshness dependency: `../_shared/QUALITY_GATES.md`.
-- Verification dependencies: ../03_build/output/VERIFY.md, ../03_build/verify.mjs,
-  ../01_spec/output/SPEC.md and this stage contract.
-- Shared tooling: ../_lib/verify-kit.mjs and ../_lib/factory-state.mjs.
-- Read accepted implementation: ../../db/a01/, ../../scripts/a01-world.mjs,
-  a01-case.mjs, run-a01.mjs; ../../tests/a01.test.mjs,
-  ../../tests/evaluator/a01/; existing authority in ../../db/flight-recorder-contracts.ts.
-- Verification baselines: ../03_build/output/replay/ and preview/;
-  ../../tests/golden-case-replay.test.mjs, case-scenario-matrix.test.mjs,
-  case-investigator.test.mjs, case-response.test.mjs, case-outcome.test.mjs,
-  case-checkout.test.mjs, case-simulation-outcome.test.mjs.
-- Stage-owned: verify.mjs, output/, ../../tests/a01-release.test.mjs,
-  ../../docs/a01-verification-status.md; current root CONTEXT.md and README.md.
-- Correct a demonstrated evaluator defect only in ../../tests/evaluator/a01/;
-  preserve reviewed Build artifacts and record the exact delta and old/new hashes.
-  No app, hosted schema, runtime effect scope or accepted specification change.
-- Read ../../package.json and existing parent installed tooling only for lint/build.
-  Local runtime evidence stays under ignored outputs/a01/.
+- Freshness dependency: `../03_build/output/BUILD_EVIDENCE.md`
+- Freshness dependency: `../03_build/output/HUMAN_GATE.md`
+- Freshness dependency: `../_shared/BENCHMARK_DIRECTION.md`
+- Freshness dependency: `../_shared/QUALITY_GATES.md`
+- Working inputs: exact code, frozen data/rubric, transcripts, grader reports and commands hash-bound in BUILD_EVIDENCE. Private evaluator material remains out of model/tool contexts.
+- Stage-owned surface: this verifier/output only. Product fixes return to Build under the repository's correction rules.
 
-Do not load: `_archive/`, later stages, the source vault, or unrelated files.
-Legacy fixture/helper files retained in stage folders are regression
-dependencies and do not establish that this A01 stage has run.
+Do not load: Ship, unrelated repository, source vault or old archive contents.
 
 ## Process
 
-1. Require accepted and fresh upstream evidence.
-2. Name and hash exact stage inputs and permitted product surfaces.
-3. Perform this stage's one transformation and required verification.
-4. Write reviewable outputs, then stop for the human gate.
+1. Require accepted/fresh Build; hash every declared evidence dependency.
+2. Independently recompute grades and check every acceptance criterion, all terminal failures, exposure traces, configuration fairness, spend and human approval provenance.
+3. Reproduce saved-transcript mechanics and required regressions; distinguish fresh API reruns and their cost/variation. Do not call a paid API without budget.
+4. Publish per-case dimensions, experiment deltas/regressions, limitations and pending human gate; stop.
 
 ## Outputs
 
@@ -51,28 +35,13 @@ dependencies and do not establish that this A01 stage has run.
 
 ## Verify
 
-Run node factory/03_build/verify.mjs before starting to verify reviewed hashes.
-Then run node --experimental-strip-types --test tests/a01.test.mjs
- tests/a01-release.test.mjs for the complete mechanic/failure matrix, including
-concurrent execution, repeated reload, actual restricted runtime and rehashed
-nested-authority corruption. Run node --experimental-strip-types
-scripts/run-a01.mjs from a fresh output directory and compare all five hashes
-with accepted Build. Run the seven named old regression suites with node --test.
-Lint changed/new verifier files using the existing parent ESLint entry point.
-Carry forward the accepted unchanged app build by exact source bindings; rerun
-only if application/bundling inputs change. No hosted migration applies.
-Map all twelve acceptance IDs and nine negatives explicitly, including partial
-or NOT_RUN outcomes. Check local model availability without downloading/calling
-models. Never convert surrogate approval into an actual human demo.
-Run this stage verifier and git diff --check after assembling output hashes.
+Create/run `node factory/04_verify/verify.mjs`, exact deterministic regrade/replay/regression commands declared in Build, and `git diff --check`.
+Reject changed rubric/data without consistent versioned regrading, leaked answers, false fresh-run labels, omitted failures, unknown charges hidden as zero and unsupported broad competence/recovery claims.
 
 ## Human gate
 
-Verification opens the gate. A person records reviewer, timestamp, artifact
-hashes and accepted/changes-requested/rejected decision. Do not advance without
-fresh accepted upstream and current gates.
+A person accepts exact report/VERIFY hashes before Ship. Required safety failures and missing human-demo proof block completion.
 
 ## Failure routing
 
-Correct this stage or its upstream source. Never manufacture missing acceptance
-or patch a later stage to hide an earlier defect.
+Route defects to Build/Data/Spec; never manufacture evidence or acceptance.

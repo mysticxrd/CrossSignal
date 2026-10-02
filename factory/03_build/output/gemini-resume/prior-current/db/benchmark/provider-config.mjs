@@ -1,0 +1,48 @@
+// Active provider proposal. Gemini files remain preserved historical preparation.
+export const PROVIDER = Object.freeze({
+  provider: 'openai-chatgpt-subscription',
+  credentialKind: 'siwc_oauth',
+  endpoint: 'https://api.openai.com/v1/responses',
+  modelsEndpoint: 'https://api.openai.com/v1/models',
+  candidateModel: 'gpt-6.1-sol',
+  selectedModelStatus: 'pending_account_catalog_and_configuration_review',
+  reasoningEffort: 'low',
+  temperature: null,
+  seed: null,
+  seedUnavailableReason: 'subscription_route_support_not_verified_use_replicate_indices',
+  paidSpendCapUsd: 0,
+  allowCredits: false,
+  allowApiKey: false,
+  allowPaidFallback: false,
+  subscriptionRequestsConditionallyAuthorized: true,
+  oauthEligibilityVerified: false,
+  accountCatalogVerified: false,
+  allowanceOnlyVerified: false,
+  hardOutputCapSupported: false,
+  contractAmendmentAccepted: true,
+  executionProfile: 'b01-siwc-measured-v1',
+  contractAmendmentSha256: 'fb0726293476d13ce909ff042f9712e970c5ba2537c79395a66b9f3f8398651f',
+  dataCompatibilityAccepted: false,
+  requestBytes: 8192,
+  outputLimitKind: 'post_response_qualification_threshold',
+  generatedLimitKind: 'post_response_cumulative_stop_threshold',
+  contextTokens: 8192,
+  outputTokensPerResponse: 1024,
+  generatedTokens: 6144,
+  modelTurns: 12,
+  toolAttempts: 10,
+  requestTimeoutMs: 180_000,
+  investigationTimeoutMs: 900_000,
+  concurrency: 1,
+  automaticRetries: 0,
+});
+
+export function executionBlockers() {
+  return [
+    'additive_data_compatibility_review_pending_human_acceptance',
+    'crosssignal_oauth_grant_and_client_eligibility_unverified',
+    'selected_account_model_catalog_unverified',
+    'subscription_allowance_only_and_zero_credit_settings_unverified',
+    'actual_route_schema_usage_and_model_compatibility_unverified',
+  ];
+}

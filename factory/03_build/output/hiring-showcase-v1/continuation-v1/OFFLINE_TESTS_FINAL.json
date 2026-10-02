@@ -1,0 +1,23 @@
+{
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "--test",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/tests.mjs"
+  ],
+  "startedAtUtc": "2026-10-02T11:01:08.476Z",
+  "finishedAtUtc": "2026-10-02T11:01:10.211Z",
+  "exitCode": 0,
+  "error": null,
+  "stdout": "TAP version 13\n# (node:16120) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n# (Use `node --trace-warnings ...` to show where the warning was created)\n# Subtest: accepted 15-row schedule preserves the approved scope pool and rotates method positions\nok 1 - accepted 15-row schedule preserves the approved scope pool and rotates method positions\n  ---\n  duration_ms: 72.2801\n  type: 'test'\n  ...\n# Subtest: wire normalization is idempotent, preserves input and only makes implied enum types explicit\nok 2 - wire normalization is idempotent, preserves input and only makes implied enum types explicit\n  ---\n  duration_ms: 2.8037\n  type: 'test'\n  ...\n# Subtest: fresh restricted preparations for all ten model contexts match public-only normalized bodies\nok 3 - fresh restricted preparations for all ten model contexts match public-only normalized bodies\n  ---\n  duration_ms: 987.1087\n  type: 'test'\n  ...\n# Subtest: normalized fixture request is counted/bound/committed before original runner dispatch\nok 4 - normalized fixture request is counted/bound/committed before original runner dispatch\n  ---\n  duration_ms: 261.655\n  type: 'test'\n  ...\n# Subtest: fixture HTTP400 retains only bounded diagnostics in a terminal unknown-usage record\nok 5 - fixture HTTP400 retains only bounded diagnostics in a terminal unknown-usage record\n  ---\n  duration_ms: 115.5209\n  type: 'test'\n  ...\n# Subtest: diagnostics reject secret echoes, unknown fields, prose, malformed and oversized bodies\nok 6 - diagnostics reject secret echoes, unknown fields, prose, malformed and oversized bodies\n  ---\n  duration_ms: 2.1574\n  type: 'test'\n  ...\n# Subtest: diagnostic stream stops at its byte limit and request abort; transport never retries\nok 7 - diagnostic stream stops at its byte limit and request abort; transport never retries\n  ---\n  duration_ms: 49.5283\n  type: 'test'\n  ...\n# Subtest: new execution entrypoint remains blocked before key/network/store access, including caller flags\nok 8 - new execution entrypoint remains blocked before key/network/store access, including caller flags\n  ---\n  duration_ms: 66.0382\n  type: 'test'\n  ...\n1..8\n# tests 8\n# suites 0\n# pass 8\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1660.633\n",
+  "stderr": "",
+  "sourceHashes": {
+    "wire.mjs": "2f264b7c6dd8ea08674e020bb289140ca4a370198d82c4dcc4323b3d46ad68ac",
+    "diagnostics.mjs": "0be975524e59595c41e009804bffac2636fef6fa9b58e22865d663d8ae412db2",
+    "transport.mjs": "8a35db414099db995891071346cfe8beb7299bbd062606a06a7c588ed70d6935",
+    "schedule.mjs": "91a66570b466a46034592f1dcee38cb529d6aa8a3df1070316fc7a51770fccf9",
+    "run.mjs": "2fc7da00707e8ba438a1fbcb0a58dfc7ef616a316eb285457c3ed73854058508",
+    "tests.mjs": "968cd16086778bbfee394424a51df7793f3631296f268a6b89a2333cc69fbe70"
+  },
+  "modelRequests": 0,
+  "runtimeEffects": 0
+}

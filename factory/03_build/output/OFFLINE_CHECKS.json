@@ -1,0 +1,133 @@
+{
+  "startedAt": "2026-10-01T16:13:41.729Z",
+  "finishedAt": "2026-10-01T16:14:10.559Z",
+  "stage": "03_build",
+  "scope": "offline-preflight-only",
+  "status": "passed",
+  "completeBuildStatus": "blocked",
+  "upstreamData": {
+    "stage": "02_data",
+    "status": "passed",
+    "upstreamGate": "accepted",
+    "gate": "accepted",
+    "contractChecks": 13,
+    "packageNegativeChecks": 7,
+    "bindings": 22,
+    "cases": 5,
+    "protectedHistoricalFiles": 934,
+    "historicalDrift": [],
+    "preservation": "accepted_preparation_record_plus_current_immutable_history",
+    "modelCalls": 0,
+    "runtimeEffects": 0,
+    "modelEvaluation": "NOT_RUN",
+    "humanRuntimeApproval": "NOT_RUN"
+  },
+  "commands": [
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test",
+        "tests/benchmark.test.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:13:43.772Z",
+      "finishedAt": "2026-10-01T16:13:44.257Z",
+      "exitCode": 0,
+      "stdout": "TAP version 13\n# Subtest: public contracts are byte-identical durable copies of accepted Data\nok 1 - public contracts are byte-identical durable copies of accepted Data\n  ---\n  duration_ms: 11.1999\n  type: 'test'\n  ...\n# Subtest: all five single-shot requests expose only validated synthetic observations and fixed capabilities\nok 2 - all five single-shot requests expose only validated synthetic observations and fixed capabilities\n  ---\n  duration_ms: 46.9645\n  type: 'test'\n  ...\n# Subtest: foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\nok 3 - foreign identities, changed hashes, extra envelope fields and post-cutoff rows never form a request\n  ---\n  duration_ms: 1.7678\n  type: 'test'\n  ...\n# Subtest: unsupported wire keywords are explicit; frozen host constraints remain strict\nok 4 - unsupported wire keywords are explicit; frozen host constraints remain strict\n  ---\n  duration_ms: 2.414\n  type: 'test'\n  ...\n# Subtest: valid visible findings retain wrong citations and unsafe recommendations for independent grading\nok 5 - valid visible findings retain wrong citations and unsafe recommendations for independent grading\n  ---\n  duration_ms: 1.1151\n  type: 'test'\n  ...\n# Subtest: malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\nok 6 - malformed, repaired-looking, unknown-field and truncated output fails without a repair turn\n  ---\n  duration_ms: 0.6238\n  type: 'test'\n  ...\n# Subtest: hidden thoughts, signatures, auth-like metadata and provider errors are never returned\nok 7 - hidden thoughts, signatures, auth-like metadata and provider errors are never returned\n  ---\n  duration_ms: 0.8273\n  type: 'test'\n  ...\n# Subtest: provider-native functions, remote files, images and extra candidates fail closed\nok 8 - provider-native functions, remote files, images and extra candidates fail closed\n  ---\n  duration_ms: 0.5684\n  type: 'test'\n  ...\n# Subtest: missing usage is unknown rather than zero; inconsistent and excessive counts terminate\nok 9 - missing usage is unknown rather than zero; inconsistent and excessive counts terminate\n  ---\n  duration_ms: 1.359\n  type: 'test'\n  ...\n# Subtest: no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\nok 10 - no caller flag, stage acceptance, free-tier assertion or network injection enables a model call\n  ---\n  duration_ms: 1.3889\n  type: 'test'\n  ...\n1..10\n# tests 10\n# suites 0\n# pass 10\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 284.9558\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "db/benchmark",
+        "tests/benchmark.test.mjs",
+        "factory/03_build/verify.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:13:44.257Z",
+      "finishedAt": "2026-10-01T16:13:58.030Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAt": "2026-10-01T16:13:58.030Z",
+      "finishedAt": "2026-10-01T16:13:58.298Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAt": "2026-10-01T16:13:58.298Z",
+      "finishedAt": "2026-10-01T16:13:58.425Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+    }
+  ],
+  "preservation": [
+    {
+      "repository": "outer",
+      "unchangedFiles": 3499,
+      "authorizedChangedOldFiles": [],
+      "preservedDirectories": 1044,
+      "newFiles": 0,
+      "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+      "branch": "codex/supabase-migration",
+      "preservedA01FactoryFiles": 0,
+      "preservedA01StoredFiles": 0,
+      "preservedDataFiles": 9
+    },
+    {
+      "repository": "product",
+      "unchangedFiles": 1309,
+      "authorizedChangedOldFiles": [
+        "factory/03_build/CONTEXT.md"
+      ],
+      "preservedDirectories": 364,
+      "newFiles": 11,
+      "head": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+      "branch": "codex/phase3-decision-ux",
+      "preservedA01FactoryFiles": 118,
+      "preservedA01StoredFiles": 477,
+      "preservedDataFiles": 35
+    }
+  ],
+  "inputBindings": 0,
+  "environment": {
+    "node": "v22.15.0",
+    "platform": "win32",
+    "architecture": "x64"
+  },
+  "modelCalls": 0,
+  "runtimeEffects": 0,
+  "modelEvaluation": "NOT_RUN",
+  "humanRuntimeApproval": "NOT_RUN",
+  "unfinished": [
+    "Specific model/configuration review and explicit authorization for any API/model request",
+    "Account-scoped verified free allocation with no paid fallback at the unchanged USD 0 cap",
+    "Actual provider tokenizer/framing and request/response compatibility checks",
+    "Durable read-only benchmark store, bounded multi-turn investigator and interruption recovery",
+    "Frozen rules/prompts/configuration/schedule, three baselines and independent blinded adjudication",
+    "Development-only failure analysis, one pre-registered change and preserved second-round results",
+    "Separate exact human-approved SIMULATED intervention and observed outcome",
+    "Required complete Build lint/build/A01 and affected regression checks before opening its gate"
+  ]
+}

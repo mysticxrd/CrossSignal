@@ -1,0 +1,33 @@
+{
+  "recordedAtUtc": "2026-10-02T09:41:10.423Z",
+  "originalDocumentationRecord": {
+    "path": "factory/03_build/output/gemini-runner-v1/RECONCILIATION.json",
+    "rawSha256": "e23d2012734ef2d29a63ff374dfc04fbb049d32efda58d44609b225f1d293bbf",
+    "entries": 7,
+    "stillMatchesCurrentBytes": true
+  },
+  "originalIndexRecord": {
+    "path": "factory/03_build/output/gemini-runner-v1/INDEX_OBSERVATION.json",
+    "rawSha256": "ce8b756d80f8ec6dcdc3c8a77058f89a276a81e2449258e63386c5b0fb3d7ae7",
+    "priorBaselineRawSha256": "33cc89df4b1ea6588ca2e40a280c4403cffffba91f138e1a5d70186fd5e508c3",
+    "observedRawSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef",
+    "currentRawSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef",
+    "unchangedSinceObservation": true,
+    "cause": "unconfirmed; no reset or index rewrite"
+  },
+  "documentationAnnotations": [
+    {
+      "path": "CONTEXT.md",
+      "currentRawSha256": "3a3613fe86572e3098701dec0f130b6a1e3e60b5a324249cdcb711f77de182d2",
+      "note": "Historical entry text says no model evaluation ran. Retained benchmark session actually includes one failed scored dispatch and no valid model finding; this additive packet records the distinction. Original router remains unchanged."
+    },
+    {
+      "path": "README.md",
+      "currentRawSha256": "17111761c83616094f53ed17ef7f311cd9d21cdd132e1e3372efabf8bb189001",
+      "note": "Original README preserved; new showcase README is a draft hiring entry document, not historical acceptance or B01 completion."
+    }
+  ],
+  "originalManifestsReplaced": false,
+  "acceptedEvidenceRewritten": false,
+  "strictOriginalIndexCheckStillBlocked": true
+}

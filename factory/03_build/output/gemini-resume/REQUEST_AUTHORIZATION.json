@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-10-01T20:04:05.114Z",
+  "source": "direct_repository_owner_reply_in_chat",
+  "question": "May CrossSignal use gemini-3.5-flash-lite for automated benchmark requests only after I verify a Free-tier project with billing disabled, sufficient quota, and compatibility with the original benchmark limits?",
+  "answer": "Authorize verified free-tier Gemini requests",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash-lite",
+  "conditional": true,
+  "requirements": [
+    "verified_free_tier_project",
+    "billing_disabled",
+    "sufficient_quota",
+    "original_benchmark_limit_compatibility"
+  ],
+  "paidSpendCapUsd": 0,
+  "paidFallback": false,
+  "installation": false,
+  "deployment": false,
+  "runtimeIntervention": false,
+  "stageAcceptance": false
+}

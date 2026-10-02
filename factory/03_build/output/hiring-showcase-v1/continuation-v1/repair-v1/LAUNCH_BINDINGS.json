@@ -1,0 +1,9 @@
+{
+  "recordedAtUtc": "2026-10-02T14:11:38.456Z",
+  "launcherRawSha256": "9978a62730d74c42ffc56d646651a34afa9360868d3e31553c85b4a3d0d8614e",
+  "offlineProofRawSha256": "318d0fbd0302a00689c78734d533f738c24709d2314dba52c99dd94ef036f0a3",
+  "reason": "Host Git rejects sandbox-owned repository; transient exact-root safe.directory plus optional locks disabled",
+  "globalGitConfigWritten": false,
+  "indexWritten": false,
+  "modelRequests": 0
+}

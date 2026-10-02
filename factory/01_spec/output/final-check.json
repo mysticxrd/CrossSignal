@@ -1,0 +1,22 @@
+{
+  "stage": "01_spec",
+  "unit": "b01-api-behavioral-benchmark",
+  "status": "passed",
+  "inputBindings": 30,
+  "causalCases": 5,
+  "acceptanceCriteria": 16,
+  "negativeScopeChecks": [
+    "unequal evidence",
+    "hidden answer over abstention",
+    "unbounded tools",
+    "claimed model proof",
+    "unapproved paid calls",
+    "missing isolation"
+  ],
+  "archivedFactoryFiles": 118,
+  "historicalDrift": [],
+  "gate": "pending",
+  "modelEvaluation": "NOT_RUN",
+  "humanRuntimeApproval": "NOT_RUN",
+  "productImplementationChanged": false
+}

@@ -1,0 +1,7 @@
+{
+  "command": "node node_modules/eslint/bin/eslint.js .",
+  "exitCode": 1,
+  "output": "\nC:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\db\\case-investigator.mjs\n  33:24  error  '_contentHash' is assigned a value but never used  @typescript-eslint/no-unused-vars\n  33:49  error  '_truthMode' is assigned a value but never used    @typescript-eslint/no-unused-vars\n\nC:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\tests\\evaluator\\grade-golden-case.mjs\n  208:169  error  Unnecessary escape character: \\`  no-useless-escape\n  208:173  error  Unnecessary escape character: \\`  no-useless-escape\n\n✖ 4 problems (4 errors, 0 warnings)\n\n",
+  "disposition": "Retain unrelated existing source and evaluator files; these four lint errors block full Build acceptance.",
+  "changesToThoseFiles": false
+}

@@ -1,0 +1,79 @@
+{
+  "recordedAtUtc": "2026-10-02T12:33:43.316Z",
+  "purpose": "Offline continuation; not an execution proof or spending grant",
+  "originalReviewedPacketManifestRawSha256": "f83bd185779a3d7e78b07bb4c51ccb16159d268a86a920ca914acfeb26f5a334",
+  "entries": [
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/wire.mjs",
+      "rawSha256": "2f264b7c6dd8ea08674e020bb289140ca4a370198d82c4dcc4323b3d46ad68ac"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/diagnostics.mjs",
+      "rawSha256": "0be975524e59595c41e009804bffac2636fef6fa9b58e22865d663d8ae412db2"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/transport.mjs",
+      "rawSha256": "8a35db414099db995891071346cfe8beb7299bbd062606a06a7c588ed70d6935"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/schedule.mjs",
+      "rawSha256": "91a66570b466a46034592f1dcee38cb529d6aa8a3df1070316fc7a51770fccf9"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/run.mjs",
+      "rawSha256": "2fc7da00707e8ba438a1fbcb0a58dfc7ef616a316eb285457c3ed73854058508"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/tests.mjs",
+      "rawSha256": "968cd16086778bbfee394424a51df7793f3631296f268a6b89a2333cc69fbe70"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/verify.mjs",
+      "rawSha256": "b5dba7fc2b6fe6fd38cab94f8578edef08798043fbf6aba55b58716a25d5ee58"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/PRESERVATION_BEFORE.json",
+      "rawSha256": "c8c994fb4127106c57d2319641692c9a0dd1804e93919b86d24bdd6926bb28f4"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/SCOPE_ACCEPTANCE.json",
+      "rawSha256": "1a892a01751e3cc3cc0602fc81fb35dfad40618502f2d72d27baa10623ffe39f"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/HUMAN_GATE.md",
+      "rawSha256": "04331e6238b3fb98f6a2692d864e302eccf2e24dffd6770e5d821fbf64b96847"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/INDEX_RECHECK.json",
+      "rawSha256": "7c7eb9f1aef8a72413f59a0653ff6c645b724b1868917a5c40e521cd2ce34996"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/KEY_AVAILABILITY.json",
+      "rawSha256": "a873c0b3f1446897efad154d41384aad8ed09a4163956e0a1a792f70bfb7cce3"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/KEY_HOST_AVAILABILITY.json",
+      "rawSha256": "2df0515d65324b220ec931b9e142b2961b7f29be873ae0bf36bfb5398f0119c2"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/SCHEDULE_PREPARED.json",
+      "rawSha256": "669f9cbfdf95856ec86459c345ac11c1c047565186a7be7173165549a1c60ecf"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/NORMALIZED_REQUESTS.json",
+      "rawSha256": "7e3a8aa325d9ee919f5a798b4381a56ab1209abe101880c880c4dec2aa63da0e"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/README.md",
+      "rawSha256": "67fb2301077cafb25727c8416cd203e7ce14617babc95465b3a7d5b544bb6838"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/COMPATIBILITY_REVIEW.md",
+      "rawSha256": "1a42f40f39dd3c454726c475bdbfcbb110f3a951940850e29d52138be7d06528"
+    },
+    {
+      "path": "factory/03_build/output/hiring-showcase-v1/continuation-v1/PRESERVATION_QUALIFICATION_PROPOSAL.md",
+      "rawSha256": "0b2fdd96d3173ebd4a8a58b38dd65fc59f8112474b08d8c5728551fc591f5901"
+    }
+  ]
+}

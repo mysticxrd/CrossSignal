@@ -1,0 +1,79 @@
+{
+  "version": "b01-showcase-observed-dispatch-v1",
+  "source": "Actual completed host launch and immutable session files",
+  "session": "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5",
+  "command": [
+    "node",
+    "factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/launch.mjs",
+    "--execute"
+  ],
+  "exitCode": 2,
+  "accountAttestation": "Preserved direct owner Free-tier, billing-disabled, sufficient-quota confirmation",
+  "credentialSource": "Windows User GEMINI_API_KEY copied only into child process environment, then restored",
+  "credentialValuePrinted": false,
+  "credentialValuePersisted": false,
+  "globalGitConfigWritten": false,
+  "indexWritten": false,
+  "standaloneSmokeGeneration": false,
+  "manualChat": false,
+  "transport": {
+    "generationCalls": 1,
+    "generationAttempts": 1,
+    "countCalls": 22,
+    "metadataCalls": 1,
+    "automaticRetries": 0,
+    "mode": "FREE_TIER_BENCHMARK",
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400,
+      "diagnostic": {
+        "version": "bounded-provider-diagnostic-v1",
+        "httpStatus": 400,
+        "providerCode": 400,
+        "providerStatus": "INVALID_ARGUMENT",
+        "fields": [],
+        "bodyUnavailableReason": null,
+        "providerProseRetained": false,
+        "rawBodyRetained": false
+      }
+    }
+  },
+  "savedRecords": 1,
+  "notRunRecords": 14,
+  "blocker": {
+    "reason": "http_failure",
+    "completedRecords": 1,
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400,
+      "diagnostic": {
+        "version": "bounded-provider-diagnostic-v1",
+        "httpStatus": 400,
+        "providerCode": 400,
+        "providerStatus": "INVALID_ARGUMENT",
+        "fields": [],
+        "bodyUnavailableReason": null,
+        "providerProseRetained": false,
+        "rawBodyRetained": false
+      }
+    },
+    "atUtc": "2026-10-02T14:12:52.187Z"
+  },
+  "sourceCopiesVerified": 71,
+  "generationUsage": null,
+  "providerRevision": null,
+  "reportedChargeUsd": null,
+  "paidFallback": false,
+  "runtimeEffects": 0,
+  "stage03Accepted": false,
+  "largerB01Complete": false,
+  "artifactHashes": {
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/MANIFEST.json": "abc104fd13458072bc1f684bed86e65e2f388e63a311ed35e124279a139c8f79",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/PROVIDER_READINESS.json": "8ccb4753568d7997ee736ca093fdf1a3bde97d3432c46d556627a18e10a2151b",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/BLOCKER.json": "253fd3af8e0bb1368c4578190178bdaeada6353c983cd021d34c230ebd833ce2",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/SUMMARY.json": "55e9630ee9bbb51d4fa2ee5b18d63b9c9cbab5f5d9f7663b05083c82b468505e",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/case.sqlite": "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/RESULT.json": "9e2ba4d43e56d6c849fbc166b19583920d3ff38999a1a2360197884cba8f2a17",
+    "outputs/b01/gemini-runner-v1/showcase-session-ad309fa3f1fff8f5/r_4ccc5d1f707d/CASE.md": "597a8a2627adfdeaa1c3428b713c99e3205b847d2364e17d42c32a4f736e97a4"
+  }
+}

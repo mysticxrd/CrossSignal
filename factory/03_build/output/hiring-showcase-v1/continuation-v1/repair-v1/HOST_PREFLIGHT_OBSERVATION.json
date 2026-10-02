@@ -1,0 +1,27 @@
+{
+  "observedAtUtc": "2026-10-02T14:08:05.051Z",
+  "executionContext": "host read-only preflight",
+  "sourceDrift": [],
+  "result": {
+    "status": "blocked",
+    "name": "Error",
+    "code": null,
+    "operator": null,
+    "message": "git status --porcelain=v1 --untracked-files=all failed:",
+    "actual": {
+      "type": "undefined",
+      "array": false,
+      "length": null,
+      "digest": null
+    },
+    "expected": {
+      "type": "undefined",
+      "array": false,
+      "length": null,
+      "digest": null
+    }
+  },
+  "providerRequests": 0,
+  "modelRequests": 0,
+  "keyValueRead": false
+}

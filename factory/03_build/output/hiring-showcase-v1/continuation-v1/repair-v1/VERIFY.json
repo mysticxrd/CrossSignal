@@ -1,0 +1,202 @@
+{
+  "version": "b01-hiring-showcase-repair-review-verification-v1",
+  "verifiedAtUtc": "2026-10-02T14:35:50.076Z",
+  "status": "offline_checks_passed_generation_blocked",
+  "preservation": {
+    "repositories": [
+      {
+        "repository": "outer",
+        "unchangedFiles": 3500,
+        "addedFiles": 0,
+        "unchangedHead": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+        "unchangedIndexSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef"
+      },
+      {
+        "repository": "product",
+        "unchangedFiles": 2017,
+        "addedFiles": 121,
+        "unchangedHead": "43d42d255bd22cb227e3410dda31ffb8437f6624",
+        "unchangedIndexSha256": "5c1bd901e7f82582ad13281484112d19c11dcae24fc5d0188b3f508143a66ff3"
+      }
+    ],
+    "qualification": {
+      "decision": "accepted",
+      "indexedEntries": 428,
+      "indexMatchesHead": true,
+      "currentRawIndexUnchanged": true,
+      "historicalStrictAssertion": "failed_preserved_qualified_for_future_checks"
+    },
+    "acceptedEvidenceRewritten": false,
+    "gitReset": false
+  },
+  "acceptedArtifactHashesUnchanged": 7,
+  "parentInputBindings": 70,
+  "originalStage03InputBindings": 51,
+  "historicalPacketFiles": 36,
+  "historicalContinuationFiles": 28,
+  "a01Counts": {
+    "outer": {
+      "archivedFactoryFiles": 0,
+      "storedFiles": 0
+    },
+    "product": {
+      "archivedFactoryFiles": 118,
+      "storedFiles": 572
+    }
+  },
+  "executionSourcesAndCopies": 71,
+  "freshOfflineTests": 15,
+  "retainedOfflineTests": 65,
+  "affectedSourceLint": "passed",
+  "databaseReload": {
+    "old": [
+      "95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8",
+      "462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43"
+    ],
+    "fresh": [
+      "ac724d8014db1b45226695271eeca844795d8234c3a61fe688869ba8027f3524"
+    ],
+    "readOnly": true
+  },
+  "scopeAmendment": "accepted",
+  "preservationQualification": "accepted",
+  "providerCompatibility": "blocked_actual_HTTP_400",
+  "savedRecords": 1,
+  "scheduledRecords": 15,
+  "notRunRecords": 14,
+  "validModelFindings": 0,
+  "actualBenchmarkTransport": {
+    "generationCalls": 1,
+    "generationAttempts": 1,
+    "countCalls": 22,
+    "metadataCalls": 1,
+    "automaticRetries": 0,
+    "mode": "FREE_TIER_BENCHMARK",
+    "lastFailure": {
+      "operation": "generateContent",
+      "httpStatus": 400,
+      "diagnostic": {
+        "version": "bounded-provider-diagnostic-v1",
+        "httpStatus": 400,
+        "providerCode": 400,
+        "providerStatus": "INVALID_ARGUMENT",
+        "fields": [],
+        "bodyUnavailableReason": null,
+        "providerProseRetained": false,
+        "rawBodyRetained": false
+      }
+    }
+  },
+  "furtherModelRequests": "BLOCKED",
+  "verificationModelRequests": 0,
+  "verificationProviderRequests": 0,
+  "runtimeEffects": 0,
+  "stage03Accepted": false,
+  "completeB01": false,
+  "committed": false,
+  "sealed": false,
+  "commands": [
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAtUtc": "2026-10-02T14:35:49.171Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.303Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'eslint.config.mjs', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tsconfig.json', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "status",
+        "--short"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAtUtc": "2026-10-02T14:35:49.303Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.385Z",
+      "exitCode": 0,
+      "stdout": " M CONTEXT.md\n M README.md\n M eslint.config.mjs\n M tsconfig.json\n?? .vscode/\n?? CrossSignal.code-workspace\n?? \"Software Factory - Keeping AI Agents Aligned.md\"\n?? planning/\n",
+      "stderr": "warning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\nwarning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal",
+      "startedAtUtc": "2026-10-02T14:35:49.385Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.447Z",
+      "exitCode": 0,
+      "stdout": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "diff",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAtUtc": "2026-10-02T14:35:49.447Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.664Z",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'factory/03_build/verify.mjs', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "status",
+        "--short"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAtUtc": "2026-10-02T14:35:49.664Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.726Z",
+      "exitCode": 0,
+      "stdout": " M CONTEXT.md\n M README.md\n M eslint.config.mjs\n M factory/01_spec/CONTEXT.md\n M factory/01_spec/output/HUMAN_GATE.md\n M factory/01_spec/output/SPEC.md\n M factory/01_spec/output/VERIFY.md\n M factory/01_spec/verify.mjs\n M factory/02_data/CONTEXT.md\n D factory/02_data/a01/contracts.mjs\n D factory/02_data/a01/evaluator/truth.json\n D factory/02_data/a01/fixture-runner.mjs\n D factory/02_data/a01/isolation-probe.mjs\n D factory/02_data/a01/observable/001.json\n D factory/02_data/a01/observable/002.json\n D factory/02_data/a01/observable/003.json\n D factory/02_data/a01/private/branches.json\n D factory/02_data/a01/storage-check.mjs\n D factory/02_data/a01/store.sql\n D factory/02_data/a01/world.mjs\n M factory/02_data/output/DATA_PACKAGE.md\n M factory/02_data/output/HUMAN_GATE.md\n M factory/02_data/output/VERIFY.md\n D factory/02_data/output/contract-results.json\n M factory/02_data/verify.mjs\n M factory/03_build/CONTEXT.md\n M factory/03_build/output/BUILD_EVIDENCE.md\n M factory/03_build/output/HUMAN_GATE.md\n M factory/03_build/output/VERIFY.md\n D factory/03_build/output/a01-tests.tap\n D factory/03_build/output/grader-tamper-tests.tap\n D factory/03_build/output/preview/artifact.json\n D factory/03_build/output/preview/preview.md\n D factory/03_build/output/preview/proposal.json\n D factory/03_build/output/regression-tests.tap\n D factory/03_build/output/replay-run.json\n D factory/03_build/output/replay/checkout-1/artifact.json\n D factory/03_build/output/replay/checkout.grade.json\n D factory/03_build/output/replay/checkout.md\n D factory/03_build/output/replay/injection-1/artifact.json\n D factory/03_build/output/replay/injection.grade.json\n D factory/03_build/output/replay/injection.md\n D factory/03_build/output/replay/limited-1/artifact.json\n D factory/03_build/output/replay/limited.grade.json\n D factory/03_build/output/replay/limited.md\n D factory/03_build/output/replay/none-1/artifact.json\n D factory/03_build/output/replay/none.grade.json\n D factory/03_build/output/replay/none.md\n D factory/03_build/output/replay/notifications-1/artifact.json\n D factory/03_build/output/replay/notifications.grade.json\n D factory/03_build/output/replay/notifications.md\n M factory/03_build/verify.mjs\n M factory/04_verify/CONTEXT.md\n D factory/04_verify/output/HUMAN_GATE.md\n D factory/04_verify/output/VERIFICATION_REPORT.md\n D factory/04_verify/output/VERIFY.md\n D factory/04_verify/output/after-fix-probe.json\n D factory/04_verify/output/before-fix-probe.json\n D factory/04_verify/output/cold-replay.json\n D factory/04_verify/output/corrections/grade.before.txt\n D factory/04_verify/output/integrated-tests.tap\n D factory/04_verify/output/model-discovery.json\n D factory/04_verify/output/regression-tests.tap\n D factory/04_verify/output/replay/checkout-1/artifact.json\n D factory/04_verify/output/replay/checkout.grade.json\n D factory/04_verify/output/replay/checkout.md\n D factory/04_verify/output/replay/injection-1/artifact.json\n D factory/04_verify/output/replay/injection.grade.json\n D factory/04_verify/output/replay/injection.md\n D factory/04_verify/output/replay/limited-1/artifact.json\n D factory/04_verify/output/replay/limited.grade.json\n D factory/04_verify/output/replay/limited.md\n D factory/04_verify/output/replay/none-1/artifact.json\n D factory/04_verify/output/replay/none.grade.json\n D factory/04_verify/output/replay/none.md\n D factory/04_verify/output/replay/notifications-1/artifact.json\n D factory/04_verify/output/replay/notifications.grade.json\n D factory/04_verify/output/replay/notifications.md\n D factory/04_verify/verify.mjs\n M factory/05_ship/CONTEXT.md\n D factory/05_ship/output/DEMO_SCRIPT.md\n D factory/05_ship/output/HUMAN_GATE.md\n D factory/05_ship/output/RELEASE_MANIFEST.md\n D factory/05_ship/output/VERIFY.md\n D factory/05_ship/output/cold-replay.json\n D factory/05_ship/output/commands.json\n D factory/05_ship/output/release-tests.tap\n D factory/05_ship/output/replay/checkout-1/artifact.json\n D factory/05_ship/output/replay/checkout.grade.json\n D factory/05_ship/output/replay/checkout.md\n D factory/05_ship/output/replay/injection-1/artifact.json\n D factory/05_ship/output/replay/injection.grade.json\n D factory/05_ship/output/replay/injection.md\n D factory/05_ship/output/replay/limited-1/artifact.json\n D factory/05_ship/output/replay/limited.grade.json\n D factory/05_ship/output/replay/limited.md\n D factory/05_ship/output/replay/none-1/artifact.json\n D factory/05_ship/output/replay/none.grade.json\n D factory/05_ship/output/replay/none.md\n D factory/05_ship/output/replay/notifications-1/artifact.json\n D factory/05_ship/output/replay/notifications.grade.json\n D factory/05_ship/output/replay/notifications.md\n D factory/05_ship/prepare.mjs\n D factory/05_ship/verify.mjs\n M factory/CONTEXT.md\n M factory/TRANSITION.md\n M tsconfig.json\n?? .vscode/\n?? _archive/2026-09-30-a01-before-b01/\n?? db/benchmark/\n?? docs/api-benchmark-charter.md\n?? docs/api-execution-boundary.md\n?? docs/benchmark-planning-reconciliation.md\n?? factory/01_spec/amendments/\n?? factory/01_spec/output/commands.json\n?? factory/01_spec/output/final-check.json\n?? factory/02_data/amendments/\n?? factory/02_data/benchmark/\n?? factory/02_data/output/CONTRACT_EVIDENCE.json\n?? factory/03_build/gemini-preflight.mjs\n?? factory/03_build/output/FINAL_CHECK.json\n?? factory/03_build/output/GEMINI_PROPOSAL.md\n?? factory/03_build/output/OFFLINE_CHECKS.json\n?? factory/03_build/output/PREFLIGHT_PRESERVATION.json\n?? factory/03_build/output/PREPARED_REQUESTS.json\n?? factory/03_build/output/chatgpt-subscription/\n?? factory/03_build/output/gemini-resume/\n?? factory/03_build/output/gemini-runner-v1/\n?? factory/03_build/output/hiring-showcase-v1/\n?? factory/03_build/runner-checks.mjs\n?? factory/03_build/subscription-preflight.mjs\n?? factory/A01_PRESERVATION_MANIFEST.json\n?? factory/_shared/BENCHMARK_DIRECTION.md\n?? scripts/run-benchmark.mjs\n?? tests/a01-path-compat.mjs\n?? tests/benchmark-gemini-budget.test.mjs\n?? tests/benchmark-gemini-runner.test.mjs\n?? tests/benchmark-subscription-budget.test.mjs\n?? tests/benchmark-subscription.test.mjs\n?? tests/benchmark.test.mjs\n?? tests/evaluator/benchmark/\n",
+      "stderr": "warning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\nwarning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "safe.directory=C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1",
+        "rev-parse",
+        "HEAD"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1",
+      "startedAtUtc": "2026-10-02T14:35:49.726Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.766Z",
+      "exitCode": 0,
+      "stdout": "43d42d255bd22cb227e3410dda31ffb8437f6624\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "factory/status.mjs"
+      ],
+      "cwd": "C:\\Users\\hisha\\ChatGPT\\CrossSignal\\work\\crosssignal-phase1\\",
+      "startedAtUtc": "2026-10-02T14:35:49.766Z",
+      "finishedAtUtc": "2026-10-02T14:35:49.987Z",
+      "exitCode": 0,
+      "stdout": "STAGE      STATUS       GATE        DEPS     HEAD            NOTE                      \n---------  -----------  ----------  -------  --------------  --------------------------\n01_spec    complete     accepted    fresh    not-applicable  -                         \n02_data    complete     accepted    fresh    not-applicable  -                         \n03_build   in-progress  incomplete  fresh    not-applicable  VERIFY.md is not passed   \n04_verify  never-run    missing     unknown  not-applicable  output directory is absent\n05_ship    never-run    missing     unknown  unknown         output directory is absent\n\nActive stage: 03_build\nRelease seal: unsealed (one or more factory stages are not complete; final release does not bind the current product head; Git worktree or index is not clean)\n",
+      "stderr": ""
+    }
+  ]
+}

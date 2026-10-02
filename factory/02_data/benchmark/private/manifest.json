@@ -1,0 +1,64 @@
+{
+  "version": "benchmark-freeze-v1",
+  "truthMode": "SIMULATED",
+  "authoredFamilyExposure": "Authors know the five families; transfer means frozen before integration, not pristine holdout.",
+  "scoredCalls": 0,
+  "cases": [
+    {
+      "label": "B01",
+      "caseRef": "c_82238562b57a",
+      "split": "development",
+      "observableFile": "observable/c_82238562b57a.json",
+      "observableHash": "084f660ce89fc1f53c49d8b69762c80b60520b5060c00119b314720f97291575",
+      "publicPacketHash": "1b2d833befc17da427ee4a678f1c6fce26b652a286e91cb6fe53a92ca43ea9c5",
+      "rubricHash": "137ee5977d708da648968512099dbb1e190674e91e25959e673785b20e01291d"
+    },
+    {
+      "label": "B02",
+      "caseRef": "c_9a9789cf1e3e",
+      "split": "development",
+      "observableFile": "observable/c_9a9789cf1e3e.json",
+      "observableHash": "1c452245ecfb3d917435720462e6bf2a9ef2fbca271810a975bbc346a78d22a4",
+      "publicPacketHash": "7ae7fd6befc352cf8ab59559eca725fe2605c2233e156e936c3665e41e392a09",
+      "rubricHash": "7f34bda7c9d83d7eb4125a6f92ba6f177bef2ca0d81e01b66e3faad3514c8e4f"
+    },
+    {
+      "label": "B03",
+      "caseRef": "c_9064d6884d46",
+      "split": "frozen_transfer",
+      "observableFile": "observable/c_9064d6884d46.json",
+      "observableHash": "5fddb955442413956b77fce8a8ead0ab9192d81d1b0728765b7acf492e2472da",
+      "publicPacketHash": "647aca01fb6a97a5254b8fb478e9924fc9d8c42e15b1e26fca9c01c3991c4c7e",
+      "rubricHash": "8e106ab9c770f3f288bba1feb44f5958a573a44716a056e6982754d197b93501"
+    },
+    {
+      "label": "B04",
+      "caseRef": "c_96d1716b81ab",
+      "split": "frozen_transfer",
+      "observableFile": "observable/c_96d1716b81ab.json",
+      "observableHash": "2ca92b14087d17906b19df7bd88f6a41978e8fa5aa6248c648870b2ac0c92b02",
+      "publicPacketHash": "8353404b93206d434714d4642d236c6eac80957a3fdc04d50f13b56eb4ab9df6",
+      "rubricHash": "d5b8c602c7b2af1ad1edf7f07adacd4160ae45386e7692fc90695bd6c0e603de"
+    },
+    {
+      "label": "B05",
+      "caseRef": "c_e3439f2540d4",
+      "split": "frozen_transfer",
+      "observableFile": "observable/c_e3439f2540d4.json",
+      "observableHash": "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc",
+      "publicPacketHash": "97a7151e2cccde9cd0a19e32d4baee429c841c872588e3311b7c3767e1007c80",
+      "rubricHash": "ebc4d907562e19c6b47bda1b9f2d60db109fc895c03206bae98506844cf1f0fb"
+    }
+  ],
+  "underidentification": {
+    "caseRef": "c_e3439f2540d4",
+    "privateWorldHashes": [
+      "238b1481b8ee7b8e5ad8b3e6f06cfd7156c70812c1511b07344e42064fbef621",
+      "766f522f0e47c90258c88f9334260a2f17cfb6430d4a673d8884933ad41e58e2"
+    ],
+    "observableHashes": [
+      "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc",
+      "6366bf7a65a222ae84bf35a2efe9c68972fec77b2109325c6d6a3ac51e7d87fc"
+    ]
+  }
+}

@@ -1,0 +1,356 @@
+{
+  "recordedAtUtc": "2026-10-02T10:12:06.672Z",
+  "purpose": "Offline showcase inputs; private evaluator content never loaded into investigations",
+  "entries": [
+    {
+      "repository": "product",
+      "path": "AGENTS.md",
+      "rawSha256": "222241ef15f8d1c00690811492d6a23f842bfc7067924c805e9214968d7e3caf"
+    },
+    {
+      "repository": "product",
+      "path": "CONTEXT.md",
+      "rawSha256": "3a3613fe86572e3098701dec0f130b6a1e3e60b5a324249cdcb711f77de182d2"
+    },
+    {
+      "repository": "product",
+      "path": "factory/CONTEXT.md",
+      "rawSha256": "44a1cf4bb71a164c9fb8e5b10989617b68f986cf97d89832d8624dca3c2d9efe"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/CONTEXT.md",
+      "rawSha256": "d5efd0a0492c95a970b71ec17c77211411c4658719eb51d8c2147370e7c16645"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/HUMAN_GATE.md",
+      "rawSha256": "42bb1c603b67bd0a5911a0ce14a3274002564de5ddad92ab053dd0040bc2a443"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/BUILD_EVIDENCE.md",
+      "rawSha256": "f15607dbbe79b51f44d1bc6230581a6d5d9fb9c79ac860a1997f3e4beb5a5208"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/VERIFY.md",
+      "rawSha256": "c77e68893a65af5ef5215a124bb9aeae8961875d4f3be72d6d15325a65875126"
+    },
+    {
+      "repository": "product",
+      "path": "factory/01_spec/output/SPEC.md",
+      "rawSha256": "e6e2f7fa20903ed4b1dc96b156908a51bf872cee254084313a449914950dbf4e"
+    },
+    {
+      "repository": "product",
+      "path": "factory/01_spec/output/VERIFY.md",
+      "rawSha256": "ba52080e93692f9be2220450a8bfb6fd0905827ee9a2a10c9ed6231ade1019ee"
+    },
+    {
+      "repository": "product",
+      "path": "factory/01_spec/output/HUMAN_GATE.md",
+      "rawSha256": "be8c05213e931e1aaae37ad5c21d68b34194a837ea9b8d94e3e4571d125dc423"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/output/DATA_PACKAGE.md",
+      "rawSha256": "ffa20862857b2083cc83d7c027e16938e5fc98266729852ef2f8df3610dc5d6f"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/output/VERIFY.md",
+      "rawSha256": "2b7e2dc16b1aeaa7706fe800180511133593f85a86aa5011587cb5aede0f1fcc"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/output/HUMAN_GATE.md",
+      "rawSha256": "06bd60ec2e816cddcb4ecfe3db0ca0a9e0e0361edb1a7a326287e4302167a722"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/output/CONTRACT_EVIDENCE.json",
+      "rawSha256": "17e988cb707f00ec913fe7213f47e3f82629580d0d60f845144810f7e0fd4935"
+    },
+    {
+      "repository": "product",
+      "path": "factory/_shared/BENCHMARK_DIRECTION.md",
+      "rawSha256": "361535a1979ff66497ded9ef1aefd6e43b0eae42bce9fadb88e6bab74ba17f6e"
+    },
+    {
+      "repository": "product",
+      "path": "factory/_shared/QUALITY_GATES.md",
+      "rawSha256": "081a6baed840ab54ff0469a67260b43d9dc072d18eff6b766bc1c0106591ee6f"
+    },
+    {
+      "repository": "product",
+      "path": "docs/api-execution-boundary.md",
+      "rawSha256": "e1991c048563420f99543235a1d5bda5dfced6e65ccfb1aa61af3abf35c3dfbd"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/contracts.mjs",
+      "rawSha256": "d4019eaf0291a60cf89ed655b15e1d922fc13c9d7e4c1dbac373dc53b2075bd3"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/schemas.mjs",
+      "rawSha256": "68de595e38e843e58b973c758007a80eb1c591589482540eec7c92ffbab08797"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/exposure.mjs",
+      "rawSha256": "e0ae9e18e5100b5f8050ca33241546524895c553608d86321ee607aca00fd728"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/tools.mjs",
+      "rawSha256": "c2811e9a25336402e52327c7a533e216f0d53bceca5696f7fd73e8f7155e4281"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/task.md",
+      "rawSha256": "f65682dbdc3bed307453a33a9efa938fdfdd4e99ada4f002b1b2e3e8b3415a6e"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-config.mjs",
+      "rawSha256": "bff1118aaaa7adab14405b83e759f43c609dcd43ea5da99213c8556251e14b85"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini.mjs",
+      "rawSha256": "85335a0c0e9f228aa00c0accc24cd54b43e75dc06f120cd896086f9856f8ef91"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-context.mjs",
+      "rawSha256": "7906e14b9cebd4858c90fbf1782fb07115a0053c53c043f874072e344922d540"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-budget.mjs",
+      "rawSha256": "3fe99f4ac19f76264475e62d95899c0092e5a22754178ac10962f1ec98d7e7b8"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-http.mjs",
+      "rawSha256": "52ecb79a2fe4d46e2666f9c98828ad7433413db128518875cf73774e355f0f98"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-inspect.mjs",
+      "rawSha256": "22c901002fa67eb24bb54d3d339571712b957c491dfcfc2c22155eb20f4b0487"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-worker.mjs",
+      "rawSha256": "ae20141235d4f20c5b59e53f6c42d49120d7bdf90a166ebd8d453eed3641bae9"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-isolation.mjs",
+      "rawSha256": "c586ff3a1c0c23d0dfc70c3f17bbb4f8bed3c95cc6e55d3db99c156e40a9b1a4"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-store.mjs",
+      "rawSha256": "2a6bcb49c45da8541b78c52387ed9763f0c0d2236b1c3d8411b80c0a615f78a4"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-runner.mjs",
+      "rawSha256": "1b7893e2545d40d4ea0def4ebb52216ac8a4fc31795b31bb9ba72b9a4fe72130"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/gemini-execution.mjs",
+      "rawSha256": "bea76f92c94c1e35a140bcda8ea35729ea11dd9b745c2a4d53d28d1f1195060d"
+    },
+    {
+      "repository": "product",
+      "path": "db/benchmark/rules.mjs",
+      "rawSha256": "564d51a5adec8cb029f4917cf0ee7b8d6b8866f8218e42c927c2a1b0f3cf7d12"
+    },
+    {
+      "repository": "product",
+      "path": "scripts/run-benchmark.mjs",
+      "rawSha256": "1979c619f8700a60dbefec9094647ebfb93fbc47ea128533d07d8d72624f0ec2"
+    },
+    {
+      "repository": "product",
+      "path": "app/CaseDecisionView.tsx",
+      "rawSha256": "576b7ff2586bf1ffbe07bb0686ba2bf0df86332a926107f0ea2c8fc66ba3fa9e"
+    },
+    {
+      "repository": "product",
+      "path": "tests/benchmark.test.mjs",
+      "rawSha256": "bbf03624252793a9877561fb8762fe749c1ce076520d1c489578ea2659b6760b"
+    },
+    {
+      "repository": "product",
+      "path": "tests/benchmark-subscription.test.mjs",
+      "rawSha256": "cc0bf5310d571f12737164b0d0312cfc6ad734ae677eeceb3814d87c956f218d"
+    },
+    {
+      "repository": "product",
+      "path": "tests/benchmark-subscription-budget.test.mjs",
+      "rawSha256": "460b6c9ee5c66bdab2314fd7c469c26e5a05c08c03e220fa819cd1be229b4bb0"
+    },
+    {
+      "repository": "product",
+      "path": "tests/benchmark-gemini-budget.test.mjs",
+      "rawSha256": "0edd662eb5d21e7e0c53d61f5dc8fa16e2b158bbc9478a877f9046e7761c9d20"
+    },
+    {
+      "repository": "product",
+      "path": "tests/benchmark-gemini-runner.test.mjs",
+      "rawSha256": "f48ee6d896026c75b59fcb6f951a798b72bda197eebc108b26b8adcac2dfe1dd"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/runner-checks.mjs",
+      "rawSha256": "e2f5ac0a9c7b18eb9ed4da2d762137fa9249ae0a6c11c2df0229eff69191b15c"
+    },
+    {
+      "repository": "product",
+      "path": "factory/_lib/verify-kit.mjs",
+      "rawSha256": "b2c7434bf3acacbfb6323b33cf0b175f77d0e3b1d66aeadee6e9ea996c95015c"
+    },
+    {
+      "repository": "product",
+      "path": "factory/_lib/factory-state.mjs",
+      "rawSha256": "72870904445d54f01eea443ed5a5de1b2af2fd19df66e085a52bf47982594d28"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/preservation.mjs",
+      "rawSha256": "5fc6fc4d29d26bcd5d8439eee407edded45390584c8622932d8947d86eaf483f"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/RECONCILIATION.json",
+      "rawSha256": "e23d2012734ef2d29a63ff374dfc04fbb049d32efda58d44609b225f1d293bbf"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/INDEX_OBSERVATION.json",
+      "rawSha256": "ce8b756d80f8ec6dcdc3c8a77058f89a276a81e2449258e63386c5b0fb3d7ae7"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/APPLICATION_LINT.json",
+      "rawSha256": "782985f86ee4e229e5d008de22de283f829cc0c395cc06bfa38e06b836ab1d6f"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/APPLICATION_BUILD_ADDENDUM.json",
+      "rawSha256": "9ff7e05207d6414784ef05bf44d6f36ef8f9117ae75d071d201c5dc23afd6025"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json",
+      "rawSha256": "81cd264704f81f236e50c9c7a8347a593c2ce10c660aff1f92515f8a52c8eeff"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/EXECUTION_CLAIM.json",
+      "rawSha256": "3fcd4d01e9aa7a3e43c90630887f374cce1340bfbd31476df0a50e1867b949f4"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/EXECUTION_SOURCE_SNAPSHOT.json",
+      "rawSha256": "02c32dfffb047c1794eecfc4c5eb533e1824db914daabb87dc9953724b8378c1"
+    },
+    {
+      "repository": "product",
+      "path": "factory/03_build/output/gemini-runner-v1/OFFLINE_VERIFICATION_FINAL.json",
+      "rawSha256": "525ff4c9a1da697a094ecb39721cdfb6f822b14ee211c205ab5136adbde69a63"
+    },
+    {
+      "repository": "product",
+      "path": "eslint.config.mjs",
+      "rawSha256": "fd783131de1685f7971a45e0b493e1e8b818fc5c9d56ecd3fe401b29b8272c7d"
+    },
+    {
+      "repository": "product",
+      "path": "package.json",
+      "rawSha256": "a3e13c18962d9b5b1f4d68bf7114921e479ac240189918663e0960dec19d4274"
+    },
+    {
+      "repository": "product",
+      "path": "package-lock.json",
+      "rawSha256": "5cdde3db2fa840e2e9a3f162f706336c04296e5f52dc8be574956521c9453d87"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/observable/c_82238562b57a.json",
+      "rawSha256": "370f571d39d324f66effc167fc7f599e1bb30353701c3d60c9f6ecf4911a2a8b"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/observable/c_9064d6884d46.json",
+      "rawSha256": "d34175971febcb872145692ad9fe31b6a705e261efae80d4b75036e5f82d24d5"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/observable/c_96d1716b81ab.json",
+      "rawSha256": "355d9a89539127454cdb45f3e77e0b6053a9353f64cd3213c3b72653c06efa20"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/observable/c_9a9789cf1e3e.json",
+      "rawSha256": "659a227ed9a7b5813fd012e85544c8a6282b489cc5fd0bc9cd27d1ded4cea0fc"
+    },
+    {
+      "repository": "product",
+      "path": "factory/02_data/benchmark/observable/c_e3439f2540d4.json",
+      "rawSha256": "7bc5a4e542ae7aa09bf9b6feb1d472c1f591c939e23ffa5fb9d0e02129836241"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/MANIFEST.json",
+      "rawSha256": "24a0918914e4326a56e4dc1fc1e74fbac186666d8c1fa11d380af77fee67af3f"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/SUMMARY.json",
+      "rawSha256": "938f1489f0fb8e087f7f6b698ea9e46f24895d1383e6b13c25a4b297ea97d773"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/PROVIDER_READINESS.json",
+      "rawSha256": "e7be8a8b5e0cd8b70c0f622bf3236efa87fe0b3b8dcafcbbdb6a1b3106e6cd5d"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_d564012e62fd/case.sqlite",
+      "rawSha256": "95c998a4f3bc499768d3dd402a54cdba0f0753f31c1fface57587334de827ad8"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_d564012e62fd/RESULT.json",
+      "rawSha256": "e1eac3178d49575ab6cb914b27a8d1c70c488b0ba7c485d7b949c884211bddbc"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_05af95690c5e/case.sqlite",
+      "rawSha256": "462c4e344e1d4652e9bc13c421309ae074abeff9614050e026004e374f3e5c43"
+    },
+    {
+      "repository": "product",
+      "path": "outputs/b01/gemini-runner-v1/session-a629b14640c9c81c/r_05af95690c5e/RESULT.json",
+      "rawSha256": "889e77321d318ec41e0c1b1d17bf55670c1adb7b0a613af7c294f322ecfe2ab1"
+    },
+    {
+      "repository": "outer",
+      "path": "AGENTS.md",
+      "rawSha256": "222241ef15f8d1c00690811492d6a23f842bfc7067924c805e9214968d7e3caf"
+    },
+    {
+      "repository": "outer",
+      "path": "CONTEXT.md",
+      "rawSha256": "26016ff186b3548883cf246131a26afa0dfcb828b4336aeefc98a8e99d13db7c"
+    }
+  ]
+}

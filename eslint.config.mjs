@@ -10,9 +10,16 @@ import tseslint from "typescript-eslint";
 const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
+    ".vinext/**",
     "dist/**",
     "out/**",
-    "build/**",
+    "_archive/**",
+    "work/**",
+    "planning/**",
+    "outputs/**",
+    ".wrangler/**",
+    "coverage/**",
+    "**/*.tsbuildinfo",
     "next-env.d.ts",
   ]),
   eslint.configs.recommended,
@@ -24,6 +31,7 @@ const eslintConfig = defineConfig([
   next.configs["core-web-vitals"],
   {
     languageOptions: {
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
       globals: {
         ...globals.browser,
         ...globals.node,

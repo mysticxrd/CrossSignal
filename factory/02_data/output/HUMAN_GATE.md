@@ -1,36 +1,25 @@
 ---
-unit: a01-synthetic-revenue-investigation
+type: human-gate
+unit: b01-api-behavioral-benchmark
 stage: 02_data
 gate_status: closed
 decision: accepted
-reviewer: user (explicit acceptance in this task)
-reviewed_at: 2026-09-26T17:32:28.621Z
-data_package_sha256: 2a3c7d8c5668eee58992284edbe0d14774ea6057a4a3991031816a39ab638eae
-verification_sha256: 08fd239cf1eaecebb3ced35deb41dfcd4b25c1daf3b0e8d2cf5c3afc963d2986
+reviewer: repository-owner-in-chat
+reviewed_at: 2026-10-01T21:22:14+05:30
+data_package_sha256: ffa20862857b2083cc83d7c027e16938e5fc98266729852ef2f8df3610dc5d6f
+verification_sha256: 2b7e2dc16b1aeaa7706fe800180511133593f85a86aa5011587cb5aede0f1fcc
+contract_evidence.json_sha256: 17e988cb707f00ec913fe7213f47e3f82629580d0d60f845144810f7e0fd4935
 ---
 
-# Human review — A01 Data
+# Data human gate
 
-Review [DATA_PACKAGE.md](DATA_PACKAGE.md) and [VERIFY.md](VERIFY.md).
-The hashes bind these exact artifacts. Verification does not record acceptance.
+The repository owner said "approved" after reviewing the Stage 02 handoff on
+2026-10-01. This accepts the exact DATA_PACKAGE/VERIFY hashes above, including
+the frozen cases/rubric, B05 ambiguity, exposure/identity boundaries, conditional
+context-fit evidence and separate-store proposal. Both artifacts were reverified
+before recording the decision; their bytes and accepted evidence are unchanged.
 
-The accepted Spec authorized this Data preparation. Per AGENTS.md and the
-factory stage contract, a person must now accept, request changes or reject
-this package before Build starts. Record reviewer, time and decision against
-the reviewed hashes; changed artifacts require renewed verification and review.
-
-## Decision to review
-
-Accept the synthetic evidence contracts, provenance and private-world/evaluator
-separation, exact proposal bindings, local append-only storage and recovery
-contract, and documented verification limits as inputs to Build.
-
-Data acceptance permits Build preparation. It does not approve a runtime
-rollback, a later gate, a model-quality claim or an external/LIVE effect.
-
-## Reviewer notes
-
-The user explicitly replied “accepted” to the reviewed Data handoff. The
-artifact hashes above are unchanged. The timestamp records when acceptance
-was applied. Build preparation is authorized; later gates and runtime rollback
-approvals remain separate. Model evaluation is still outstanding.
+Acceptance must bind the exact hashes above. Per CONTEXT.md: "A person accepts
+exact Data/VERIFY hashes before Build; expected answers remain inaccessible to
+the model/tools." Stage 03 entry is permitted. Stage acceptance grants no API spend, runtime
+intervention, LIVE change, effect, deployment or later-stage acceptance.

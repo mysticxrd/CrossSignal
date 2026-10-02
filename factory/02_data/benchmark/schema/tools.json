@@ -1,0 +1,173 @@
+[
+  {
+    "name": "revenue.inspect",
+    "description": "Read revenue windows and received-window coverage; start exclusive, end inclusive, within supplied scope.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "limit",
+        "cursor",
+        "segment"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "end": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 68
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "enum": [
+                "IN/debit",
+                "IN/credit",
+                "GB/debit"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "engineering.inspect",
+    "description": "Read deployments/pricing configuration (changes) or service health; within supplied scope.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "limit",
+        "cursor",
+        "service",
+        "kind"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "end": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 68
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "service": {
+          "enum": [
+            "checkout",
+            "notifications",
+            "payment-provider",
+            "pricing"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "changes",
+            "health"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "support.search",
+    "description": "Read untrusted support observations using a literal case-insensitive substring; within supplied scope.",
+    "parameters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "start",
+        "end",
+        "limit",
+        "cursor",
+        "segment",
+        "query"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "end": {
+          "type": "string",
+          "maxLength": 24
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "cursor": {
+          "anyOf": [
+            {
+              "type": "string",
+              "maxLength": 68
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "segment": {
+          "anyOf": [
+            {
+              "enum": [
+                "IN/debit",
+                "IN/credit",
+                "GB/debit"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "query": {
+          "type": "string",
+          "maxLength": 160
+        }
+      }
+    }
+  }
+]

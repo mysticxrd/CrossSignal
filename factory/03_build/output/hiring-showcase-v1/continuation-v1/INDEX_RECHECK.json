@@ -1,0 +1,75 @@
+{
+  "observedAtUtc": "2026-10-02T11:02:30.208Z",
+  "head": "ca44f2eb180ed2d7d1fba1b606208a3294d4830d",
+  "branch": "codex/supabase-migration",
+  "historicalRawSha256": "33cc89df4b1ea6588ca2e40a280c4403cffffba91f138e1a5d70186fd5e508c3",
+  "currentRawSha256": "f2b71d8c898fa92339eb453c6dac09052ec0a824d017f9466a85789157f02fef",
+  "rawUnchangedSincePriorObservation": true,
+  "logicalIndexMatchesHead": true,
+  "indexedEntries": 428,
+  "logicalEntriesSha256": "fa45e1634e339325cceafa6ef15bbb88f4fff5db5bb3e12f13378f62920de5f6",
+  "stagedDiffEmpty": true,
+  "commands": [
+    {
+      "args": [
+        "rev-parse",
+        "HEAD"
+      ],
+      "startedAtUtc": "2026-10-02T11:02:30.025Z",
+      "finishedAtUtc": "2026-10-02T11:02:30.061Z",
+      "exitCode": 0,
+      "stdoutSha256": "c92221b551d2a5e0d6d13d0a56ab0a089c617ef02bd79b999dbf7e24791727ba",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "branch",
+        "--show-current"
+      ],
+      "startedAtUtc": "2026-10-02T11:02:30.061Z",
+      "finishedAtUtc": "2026-10-02T11:02:30.097Z",
+      "exitCode": 0,
+      "stdoutSha256": "814e960be9184b76d8c2f2aac82e19e5433054d53bffc715267e42a5d7ace47b",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "ls-files",
+        "--stage"
+      ],
+      "startedAtUtc": "2026-10-02T11:02:30.098Z",
+      "finishedAtUtc": "2026-10-02T11:02:30.129Z",
+      "exitCode": 0,
+      "stdoutSha256": "f162f033b96b620edfa929365ac1bfd957a553062567fec4d9f25b0f6a477a8e",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "ls-tree",
+        "-r",
+        "HEAD"
+      ],
+      "startedAtUtc": "2026-10-02T11:02:30.130Z",
+      "finishedAtUtc": "2026-10-02T11:02:30.167Z",
+      "exitCode": 0,
+      "stdoutSha256": "b7790b8fed0f4bd5c20ff80b89553bdf899a9c62e68a14534762ecd269a27907",
+      "stderr": ""
+    },
+    {
+      "args": [
+        "diff",
+        "--cached",
+        "--raw"
+      ],
+      "startedAtUtc": "2026-10-02T11:02:30.168Z",
+      "finishedAtUtc": "2026-10-02T11:02:30.201Z",
+      "exitCode": 0,
+      "stdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "warning: unable to access 'C:\\Users\\hisha/.config/git/ignore': Permission denied\n"
+    }
+  ],
+  "indexWritten": false,
+  "writerCause": "unconfirmed",
+  "originalAssertionWaived": false,
+  "modelRequests": 0
+}
