@@ -152,3 +152,16 @@ Measured with du -sb (apparent bytes; metadata only). The following preparatory 
 - `factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/PRESERVATION_BEFORE.json`: 1128964 bytes.
 - `factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/execution-source`: 1854300 bytes.
 - `outputs/build-checks`: 11328972 bytes.
+
+## D-10 — Behavior-preserving lint repairs
+
+- Date: 2026-10-03
+- Decided by: Owner
+- Scope: Express-lane repairs in db/case-investigator.mjs and tests/evaluator/grade-golden-case.mjs.
+- Source: `db/case-investigator.mjs@62787d1:32-35`, `tests/evaluator/grade-golden-case.mjs@62787d1:208`; preservation: `factory/02_data/benchmark/private/preservation-baseline.json@62787d1:1-20`.
+
+Owner words, verbatim:
+
+In stripHash, make a spread copy of the row, then delete contentHash and truthMode from the copy. This keeps the key order.
+
+Both files are in B01's preservation baseline, which remains unchanged. The spread/delete operation preserves remaining key order and values; removing escapes inside the separator string preserves the resulting string. No behavior changes. Lint, verify:a01, case-investigator, golden-revenue-leak and the nearest grader suite passed. The B01 resume must use the D-06 Git preservation replacement before runner continuation.

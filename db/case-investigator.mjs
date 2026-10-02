@@ -30,7 +30,9 @@ function same(actual, expected, label) {
   }
 }
 function stripHash(row) {
-  const { contentHash: _contentHash, truthMode: _truthMode, ...event } = row;
+  const event = { ...row };
+  delete event.contentHash;
+  delete event.truthMode;
   return event;
 }
 function verifyHash(value, expected, label) {

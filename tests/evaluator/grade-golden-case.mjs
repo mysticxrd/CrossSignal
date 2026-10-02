@@ -205,7 +205,7 @@ const lines = [
     return `- \`${item.id}\` (${item.relation}): ${evidence.eventIds.length} recorded IDs; first \`${evidence.eventIds[0]}\`, last \`${evidence.eventIds.at(-1)}\`.`;
   }),
   ...assessment.transitions.map((transition) =>
-    `- \`${transition.runId}\` (${transition.scenario}, ${transition.from} → ${transition.to}): artifact \`${transition.runHash}\`; trace \`${transition.eventIds.join("\`, \`")}\`.`),
+    `- \`${transition.runId}\` (${transition.scenario}, ${transition.from} → ${transition.to}): artifact \`${transition.runHash}\`; trace \`${transition.eventIds.join("`, `")}\`.`),
   "",
   "## Deliberate failures",
   "",
