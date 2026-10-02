@@ -1,4 +1,5 @@
 import { deriveFactoryState } from "./_lib/factory-state.mjs";
+import { measureBudgets } from "./_lib/budgets.mjs";
 
 function note(stage) {
   if (stage.reasons.length > 0) return stage.reasons[0];
@@ -39,12 +40,20 @@ export function formatFactoryState(state) {
         : `Release seal: unsealed (${state.seal.reasons.join("; ")})`,
     );
   }
+  if (state.budgets) {
+    lines.push(`Cold load: ${state.budgets.coldLoad.words}/${state.budgets.coldLoad.limit} words (${state.budgets.coldLoad.stage})`);
+    lines.push(...state.budgets.breaches.map((breach) => `Budget breach: ${breach}`));
+  }
   return lines.join("\n");
 }
 
 const json = process.argv.includes("--json");
 deriveFactoryState()
-  .then((state) => process.stdout.write(`${json ? JSON.stringify(state, null, 2) : formatFactoryState(state)}\n`))
+  .then(async (state) => {
+    state.budgets = await measureBudgets(undefined, state.activeStage);
+    process.stdout.write(`${json ? JSON.stringify(state, null, 2) : formatFactoryState(state)}\n`);
+    if (process.argv.includes("--strict") && state.budgets.breaches.length > 0) process.exitCode = 1;
+  })
   .catch((error) => {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;

@@ -1,0 +1,57 @@
+import assert from "node:assert/strict";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { LIMITS, countLines, countWords, measureBudgets } from "./budgets.mjs";
+import { runChecked } from "./verify-kit.mjs";
+
+const root = new URL("../../", import.meta.url);
+
+test("counts ASCII whitespace like wc and calibrates the B01 snapshot", () => {
+  assert.equal(countWords(" a\tb\nc\rd\ve\ff \u00a0g "), 7);
+  assert.equal(countWords(" \t\n"), 0);
+  assert.equal(countLines("a\r\nb\r\n"), 2);
+  const paths = ["AGENTS.md", "CONTEXT.md", "factory/CONTEXT.md", "factory/03_build/CONTEXT.md", "factory/_shared/BENCHMARK_DIRECTION.md", "factory/_shared/QUALITY_GATES.md"];
+  const words = paths.reduce((sum, path) => sum + countWords(runChecked("git", ["show", `62787d1:${path}`], { cwd: root }).stdout), 0);
+  assert.equal(words, 2555);
+});
+
+test("measures only the active contract's declared shared inputs", async () => {
+  const budgets = await measureBudgets(fileURLToPath(root), "03_build");
+  assert.deepEqual(budgets.breaches, []);
+  assert.equal(budgets.coldLoad.limit, LIMITS.coldWords);
+  assert.deepEqual(budgets.coldLoad.paths.filter((path) => path.startsWith("factory/_shared/")), ["factory/_shared/BENCHMARK_DIRECTION.md", "factory/_shared/QUALITY_GATES.md"]);
+  assert.equal(countWords(await readFile(new URL("AGENTS.md", root), "utf8")), 244);
+});
+
+test("reports individual and cold-load breaches without changing files", async () => {
+  const temp = await mkdtemp(join(tmpdir(), "factory-budget-"));
+  try {
+    await mkdir(join(temp, "factory/_shared"), { recursive: true });
+    await mkdir(join(temp, "factory/_templates/stage"), { recursive: true });
+    await mkdir(join(temp, "factory/03_build"), { recursive: true });
+    const fill = (count) => Array(count).fill("word").join(" ");
+    const contract = "## Inputs\n- `../_shared/ONE.md`\n- `../_shared/TWO.md`\n";
+    const files = {
+      "AGENTS.md": "line\n".repeat(LIMITS.agentsLines + 1),
+      "CONTEXT.md": fill(LIMITS.rootWords + 1),
+      "factory/CONTEXT.md": fill(LIMITS.factoryWords + 1),
+      "factory/_templates/stage/CONTEXT.md": fill(LIMITS.stageWords + 1),
+      "factory/03_build/CONTEXT.md": contract + fill(LIMITS.stageWords),
+      "factory/_shared/ONE.md": fill(LIMITS.sharedWords + 1),
+      "factory/_shared/TWO.md": fill(LIMITS.sharedWords),
+    };
+    for (const [path, text] of Object.entries(files)) await writeFile(join(temp, path), text);
+    const budgets = await measureBudgets(temp, "03_build");
+    assert.equal(budgets.breaches.length, 7);
+    assert.ok(budgets.coldLoad.words > LIMITS.coldWords);
+    assert.match(budgets.breaches.join("\n"), /AGENTS.md: 61 lines > 60/);
+    for (const [path, text] of Object.entries(files)) assert.equal(await readFile(join(temp, path), "utf8"), text);
+  } finally {
+    assert.equal(dirname(resolve(temp)), resolve(tmpdir()));
+    assert.ok(temp.startsWith(join(tmpdir(), "factory-budget-")));
+    await rm(temp, { recursive: true });
+  }
+});

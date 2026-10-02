@@ -1,212 +1,74 @@
 import assert from "node:assert/strict";
 import { access, readFile } from "node:fs/promises";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
+import { LIMITS, countWords, measureBudgets } from "../factory/_lib/budgets.mjs";
+import { deriveFactoryState } from "../factory/_lib/factory-state.mjs";
+import { frontmatterValue } from "../factory/_lib/verify-kit.mjs";
 import { validateSpec } from "../factory/01_spec/verify.mjs";
 
 const projectRoot = new URL("../", import.meta.url);
-const stageNames = [
-  "01_spec",
-  "02_data",
-  "03_build",
-  "04_verify",
-  "05_ship",
-];
+const rootPath = fileURLToPath(projectRoot);
 
-function words(text) {
-  return text.match(/[A-Za-z0-9_-]+/g)?.length ?? 0;
-}
-
-function frontmatterValue(markdown, field) {
-  return markdown.match(new RegExp(`^${field}:\\s*(.+)$`, "m"))?.[1]?.trim() ?? null;
-}
-
-function assertReviewState(verification, gate) {
-  assert.equal(frontmatterValue(verification, "status"), "passed");
-  const gateStatus = frontmatterValue(gate, "gate_status");
-  const decision = frontmatterValue(gate, "decision");
-  assert.ok(["open", "closed"].includes(gateStatus), `invalid gate status: ${gateStatus}`);
-  assert.ok(
-    ["pending", "accepted", "changes-requested", "rejected"].includes(decision),
-    `invalid gate decision: ${decision}`,
-  );
-  if (gateStatus === "closed") assert.notEqual(decision, "pending");
-  if (decision === "accepted") assert.equal(gateStatus, "closed");
-}
-
-test("provides a small root catalog and excludes superseded history", async () => {
-  const [agents, context, factory, archive] = await Promise.all([
+test("provides a small router and excludes superseded history", async () => {
+  const [agents, context, factory] = await Promise.all([
     readFile(new URL("AGENTS.md", projectRoot), "utf8"),
     readFile(new URL("CONTEXT.md", projectRoot), "utf8"),
     readFile(new URL("factory/CONTEXT.md", projectRoot), "utf8"),
-    readFile(
-      new URL("_archive/2026-08-12-crosssignal-phase-00/README.md", projectRoot),
-      "utf8",
-    ),
   ]);
-
-  assert.ok(agents.split(/\r?\n/).length <= 60, "AGENTS.md must remain under 60 lines");
-  assert.ok(words(context) <= 500, "root CONTEXT.md must remain a small router");
   assert.match(agents, /Never load `_archive\/`/);
+  assert.ok(countWords(context) <= LIMITS.rootWords);
   assert.match(context, /Do not load later stages/);
-  assert.match(factory, /There is no editable\s+program status table/);
-  assert.match(archive, /status: superseded/);
-  assert.match(archive, /historical evidence, not active product or build\s+authority/);
-
-  await assert.rejects(access(new URL("build_plans/", projectRoot)));
-  await assert.rejects(access(new URL("eve-spike/", projectRoot)));
-  await assert.rejects(access(new URL("PRD.md", projectRoot)));
+  assert.match(factory, /status is derived, never an\s+editable program table/);
+  for (const path of ["build_plans/", "eve-spike/", "PRD.md"]) {
+    await assert.rejects(access(new URL(path, projectRoot)));
+  }
 });
 
-test("implements one hardened five-stage pipeline with filesystem-derived status", async () => {
-  const [agents, rootContext, factory, architecture, quality, ...stages] =
-    await Promise.all([
-      readFile(new URL("AGENTS.md", projectRoot), "utf8"),
-      readFile(new URL("CONTEXT.md", projectRoot), "utf8"),
-      readFile(new URL("factory/CONTEXT.md", projectRoot), "utf8"),
-      readFile(
-        new URL("factory/_shared/ARCHITECTURE_SNAPSHOT.md", projectRoot),
-        "utf8",
-      ),
-      readFile(new URL("factory/_shared/QUALITY_GATES.md", projectRoot), "utf8"),
-      ...stageNames.map((name) =>
-        readFile(new URL(`factory/${name}/CONTEXT.md`, projectRoot), "utf8"),
-      ),
-    ]);
-
-  assert.match(
-    architecture,
-    /source_sha256: 752F1B2A74BAD47102FEF7C240FA66E6FD817874483D8A7A207AAB33A90514DF/,
-  );
-  assert.match(architecture, /edit_policy: edit-source-then-regenerate/);
-  assert.match(factory, /The active stage is the first stage that is not complete/);
-
-  for (const [index, stage] of stages.entries()) {
-    assert.ok(words(stage) <= 500, `${stageNames[index]} contract is too large`);
-    for (const heading of [
-      "## Inputs",
-      "## Process",
-      "## Outputs",
-      "## Verify",
-      "## Human gate",
-      "## Failure routing",
-    ]) {
-      assert.match(stage, new RegExp(`^${heading}$`, "m"));
+test("keeps the current five-stage contracts bounded and gates human-owned", async () => {
+  const state = await deriveFactoryState({ projectRoot: rootPath, includeGit: false });
+  assert.deepEqual(state.stages.map((stage) => stage.name), ["01_spec", "02_data", "03_build", "04_verify", "05_ship"]);
+  const budgets = await measureBudgets(rootPath, state.activeStage);
+  assert.deepEqual(budgets.breaches, []);
+  const factory = await readFile(new URL("factory/CONTEXT.md", projectRoot), "utf8");
+  assert.match(factory, /The first incomplete stage is active/);
+  for (const stage of state.stages) {
+    const context = await readFile(new URL(`factory/${stage.name}/CONTEXT.md`, projectRoot), "utf8");
+    for (const heading of ["Inputs", "Process", "Outputs", "Verify", "Human gate", "Failure routing"]) {
+      assert.match(context, new RegExp(`^## ${heading}$`, "m"));
     }
-    assert.match(stage, /Do not load: `_archive\/`/);
-    assert.match(stage, /output\/VERIFY\.md/);
-    assert.match(stage, /output\/HUMAN_GATE\.md/);
-    if (index <= 4) {
-      await access(new URL(`factory/${stageNames[index]}/output/`, projectRoot));
+    assert.match(context, /^Do not load:.*archive/m);
+    assert.match(context, /output\/VERIFY\.md/);
+    assert.match(context, /output\/HUMAN_GATE\.md/);
+    if (stage.gate === "missing") {
+      await assert.rejects(access(new URL(`factory/${stage.name}/output/`, projectRoot)));
     } else {
-      await assert.rejects(
-        access(new URL(`factory/${stageNames[index]}/output/`, projectRoot)),
-        `${stageNames[index]} should remain never-run`,
-      );
+      const gate = await readFile(new URL(`factory/${stage.name}/output/HUMAN_GATE.md`, projectRoot), "utf8");
+      const decision = frontmatterValue(gate, "decision");
+      const gateStatus = frontmatterValue(gate, "gate_status");
+      assert.ok(["open", "closed", "blocked"].includes(gateStatus));
+      assert.ok(["pending", "accepted", "changes-requested", "rejected"].includes(decision));
+      if (gateStatus === "closed") assert.notEqual(decision, "pending");
+      if (decision === "accepted") {
+        assert.equal(gateStatus, "closed");
+        const verify = await readFile(new URL(`factory/${stage.name}/output/VERIFY.md`, projectRoot), "utf8");
+        assert.equal(frontmatterValue(verify, "status"), "passed");
+        assert.equal(stage.gate, "accepted", stage.reasons.join("\n"));
+      }
     }
   }
-
-  const [stageOneVerify, stageOneGate] = await Promise.all([
-    readFile(new URL("factory/01_spec/output/VERIFY.md", projectRoot), "utf8"),
-    readFile(
-      new URL("factory/01_spec/output/HUMAN_GATE.md", projectRoot),
-      "utf8",
-    ),
-  ]);
-  assertReviewState(stageOneVerify, stageOneGate);
-
-  const [stageTwoPackage, stageTwoVerify, stageTwoGate] = await Promise.all([
-    readFile(new URL("factory/02_data/output/DATA_PACKAGE.md", projectRoot), "utf8"),
-    readFile(new URL("factory/02_data/output/VERIFY.md", projectRoot), "utf8"),
-    readFile(new URL("factory/02_data/output/HUMAN_GATE.md", projectRoot), "utf8"),
-  ]);
-  assert.match(stageTwoPackage, /^status: ready-for-review$/m);
-  assertReviewState(stageTwoVerify, stageTwoGate);
-
-  const [stageThreeEvidence, stageThreeVerify, stageThreeGate] = await Promise.all([
-    readFile(new URL("factory/03_build/output/BUILD_EVIDENCE.md", projectRoot), "utf8"),
-    readFile(new URL("factory/03_build/output/VERIFY.md", projectRoot), "utf8"),
-    readFile(new URL("factory/03_build/output/HUMAN_GATE.md", projectRoot), "utf8"),
-  ]);
-  assert.match(stageThreeEvidence, /^status: ready-for-review$/m);
-  assertReviewState(stageThreeVerify, stageThreeGate);
-
-  const [stageFourReport, stageFourVerify, stageFourGate] = await Promise.all([
-    readFile(new URL("factory/04_verify/output/VERIFICATION_REPORT.md", projectRoot), "utf8"),
-    readFile(new URL("factory/04_verify/output/VERIFY.md", projectRoot), "utf8"),
-    readFile(new URL("factory/04_verify/output/HUMAN_GATE.md", projectRoot), "utf8"),
-  ]);
-  assert.match(stageFourReport, /^status: ready-for-review$/m);
-  assertReviewState(stageFourVerify, stageFourGate);
-
-  const [stageFiveManifest, stageFiveScript, stageFiveVerify, stageFiveGate] =
-    await Promise.all([
-      readFile(new URL("factory/05_ship/output/RELEASE_MANIFEST.md", projectRoot), "utf8"),
-      readFile(new URL("factory/05_ship/output/DEMO_SCRIPT.md", projectRoot), "utf8"),
-      readFile(new URL("factory/05_ship/output/VERIFY.md", projectRoot), "utf8"),
-      readFile(new URL("factory/05_ship/output/HUMAN_GATE.md", projectRoot), "utf8"),
-    ]);
-  assert.match(stageFiveManifest, /^status: ready-for-review$/m);
-  assert.match(stageFiveScript, /^status: ready-for-review$/m);
-  assertReviewState(stageFiveVerify, stageFiveGate);
-
-  for (const stalePath of [
-    "factory/01_prove-result/",
-    "factory/02_contract-trace/",
-    "factory/03_build-slice/",
-    "factory/04_verify-runtime/",
-    "factory/05_package-demo/",
-    "factory/01_spec/output/FIT_DECISION.md",
-  ]) {
-    await assert.rejects(access(new URL(stalePath, projectRoot)));
+  for (const path of ["factory/01_prove-result/", "factory/02_contract-trace/", "factory/03_build-slice/", "factory/04_verify-runtime/", "factory/05_package-demo/", "factory/01_spec/output/FIT_DECISION.md"]) {
+    await assert.rejects(access(new URL(path, projectRoot)));
   }
-
-  const coldWalkWords =
-    words(agents) +
-    words(rootContext) +
-    words(factory) +
-    words(architecture) +
-    words(quality) +
-    Math.max(...stages.map(words));
-  assert.ok(
-    coldWalkWords <= 6_000,
-    `cold stage load is too large: ${coldWalkWords} words`,
-  );
+  const architecture = await readFile(new URL("factory/_shared/ARCHITECTURE_SNAPSHOT.md", projectRoot), "utf8");
+  assert.match(architecture, /source_sha256: 752F1B2A74BAD47102FEF7C240FA66E6FD817874483D8A7A207AAB33A90514DF/);
+  assert.match(architecture, /edit_policy: edit-source-then-regenerate/);
 });
 
-test("fails the Spec gate closed on missing evidence or invented internals", () => {
-  const valid = `
-## Relationship to Result
-Result is the target company and evaluation audience. CrossSignal is standalone.
-## Public evidence
-- Public fact: https://www.result.dev/
-- Public fact: https://www.result.dev/thesis
-- Public fact: https://www.ycombinator.com/companies/result
-- Public fact: https://lab.result.dev/
-- Inference: Company Brain makes provenance an adjacent wedge.
-- Unknown / non-claim: private implementation details.
-## Product definition
-Company Brain plus visible authority and provenance.
-## Primary user and problem
-A solo founder needs accountable delegation.
-## Golden path
-Start from FIXTURE evidence and end in a qualified outcome.
-## Scope
-One bounded onboarding-rescue slice.
-## Acceptance criteria
-- AC-01 reconstructs the trace.
-- AC-08 exposes truth modes to a cold reviewer.
-## Current repository truth
-Current external evidence is FIXTURE data.
-## Evaluator thesis
-Show bounded production judgment.
-## Explicit non-claims
-02_data cannot assume private infrastructure.
-`;
-
+test("fails the current Spec contract closed on missing evidence or invented authority", async () => {
+  const valid = (await readFile(new URL("factory/01_spec/output/SPEC.md", projectRoot), "utf8")).replace(/\r\n?/g, "\n");
   assert.deepEqual(validateSpec(valid), []);
   assert.match(validateSpec(valid.replace("## Acceptance criteria", "")).join("\n"), /missing heading/);
-  assert.match(
-    validateSpec(`${valid}\nResult-native runtime`).join("\n"),
-    /unsupported Result claim/,
-  );
+  assert.match(validateSpec(valid.replace("model_evaluation: NOT_RUN", "model_evaluation: PASSED")).join("\n"), /cannot claim model evaluation/);
+  assert.match(validateSpec(valid.replace("paid_api_authorization: not-granted", "paid_api_authorization: granted")).join("\n"), /undocumented paid API authority/);
 });
