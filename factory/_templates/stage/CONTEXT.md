@@ -25,6 +25,10 @@ not named above.
 2. Perform one transformation under the shared constraints.
 3. Write the primary edit surface and verification record, then stop.
 
+Preservation means "unchanged since commit X, checked with changedSince".
+New runs create no inventories, hash-list snapshots or copied trees. Gitignored
+runtime stores such as `outputs/` keep hash bindings.
+
 ## Outputs
 
 - `output/PRIMARY.md`
@@ -48,6 +52,7 @@ ownership. The final Ship manifest separately binds the complete release head.
 The reviewer edits the primary output if needed, records reviewed hashes and a
 decision in `HUMAN_GATE.md`, and chooses `accepted`, `changes-requested`, or
 `rejected`. Do not begin the next stage without `accepted`.
+Commit stage outputs at every gate decision.
 
 ## Failure routing
 

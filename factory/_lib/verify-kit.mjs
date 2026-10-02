@@ -80,3 +80,10 @@ export function runChecked(command, args, options = {}) {
   }
   return { stdout: result.stdout, stderr: result.stderr };
 }
+
+export function changedSince(commit, paths = [], { cwd = resolve(import.meta.dirname, "../..") } = {}) {
+  const git = (args) => runChecked("git", ["-c", `safe.directory=${resolve(cwd)}`, ...args], { cwd }).stdout;
+  const tracked = git(["--literal-pathspecs", "diff", "--name-only", "--no-renames", "-z", commit, "--", ...paths]);
+  const untracked = git(["--literal-pathspecs", "ls-files", "--others", "--exclude-standard", "-z", "--", ...paths]);
+  return [...new Set([...tracked.split("\0"), ...untracked.split("\0")].filter(Boolean))].sort();
+}

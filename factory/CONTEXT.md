@@ -33,6 +33,11 @@ references. Product surfaces remain historical bindings until Ship binds the
 whole release head. A stage writes its outputs and stops for a person's gate.
 Never bypass an unaccepted stage or regenerate accepted artifacts to hide drift.
 
+Preservation means "unchanged since commit X, checked with changedSince".
+New runs create no inventories, hash-list snapshots or copied trees. Gitignored
+runtime stores such as `outputs/` keep hash bindings. Commit stage outputs at
+every gate decision; a person owns that decision.
+
 After final acceptance, commit the complete release and run the read-only
 `node factory/seal.mjs`; it requires all stages complete, Ship head fresh and
 Git clean. A new run starts only from a sealed commit. Preserve the complete

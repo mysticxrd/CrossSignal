@@ -124,3 +124,31 @@ Owner words, verbatim:
 When a workspace test disagrees with an accepted, hash-bound file, change the test but keep what it was protecting, and report each such change.
 
 The original suite is retained byte-for-byte in tests/icm-workspace-legacy.test.mjs. Current tests retain historical exclusion with /^Do not load:.*archive/m rather than requiring the literal _archive/ token in accepted Data. The active-stage and derived-status assertions use the existing factory contract wording. Gate checks permit blocked/pending and missing future outputs while requiring closed gates, passed verification and intact bindings for accepted decisions. The valid Spec fixture is extended to the accepted B01 Spec; missing-evidence and invented-authority negatives remain. Central budgets replace the old word tokenizer and 500/6000 limits. Historical architecture provenance and obsolete-path exclusions remain tested.
+
+## D-09 — Git preservation and deferred inventory removal
+
+- Date: 2026-10-03
+- Decided by: Owner
+- Scope: New-run preservation and superseded B01 preparatory inventories/copies.
+- Source: owner pasted request; existing checks: `factory/03_build/gemini-preflight.mjs@62787d1:74-89` and `factory/03_build/subscription-preflight.mjs@62787d1:76-90`.
+
+Owner words, verbatim:
+
+Delete nothing. In DECISIONS.md, list the existing inventories and copies, with sizes from du, as removable when the B01 Build re-runs. Do not read archive contents.
+
+Measured with du -sb (apparent bytes; metadata only). The following preparatory inventories/copies are removable only when B01 Build re-runs with the Git preservation replacement, after their consumers and any uniquely needed evidence are retained. No removal occurs in this diet. Accepted outputs/gates, the A01 archive and preservation manifest, and factory/02_data/benchmark/private/preservation-baseline.json remain protected.
+
+- `factory/03_build/output/chatgpt-subscription/PRESERVATION_BEFORE.json`: 990078 bytes.
+- `factory/03_build/output/chatgpt-subscription/measured-profile/PRESERVATION_BEFORE.json`: 994734 bytes.
+- `factory/03_build/output/chatgpt-subscription/measured-profile/prior-current`: 57644 bytes.
+- `factory/03_build/output/chatgpt-subscription/prior-current`: 25870 bytes.
+- `factory/03_build/output/gemini-resume/PRESERVATION_BEFORE.json`: 1001924 bytes.
+- `factory/03_build/output/gemini-resume/prior-current`: 48248 bytes.
+- `factory/03_build/output/gemini-runner-v1/PRESERVATION_BEFORE.json`: 1008033 bytes.
+- `factory/03_build/output/gemini-runner-v1/execution-source`: 236556 bytes.
+- `factory/03_build/output/gemini-runner-v1/prior-current`: 22692 bytes.
+- `factory/03_build/output/hiring-showcase-v1/PRESERVATION_BEFORE.json`: 1114873 bytes.
+- `factory/03_build/output/hiring-showcase-v1/continuation-v1/PRESERVATION_BEFORE.json`: 1121677 bytes.
+- `factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/PRESERVATION_BEFORE.json`: 1128964 bytes.
+- `factory/03_build/output/hiring-showcase-v1/continuation-v1/repair-v1/execution-source`: 1854300 bytes.
+- `outputs/build-checks`: 11328972 bytes.
