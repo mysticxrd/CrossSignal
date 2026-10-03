@@ -9,7 +9,8 @@ import { bindRun, digest, validateObservable } from '../../db/benchmark/contract
 import { inventory } from '../02_data/benchmark/preservation.mjs';
 import { verifyData } from '../02_data/verify.mjs';
 import { deriveFactoryState } from '../_lib/factory-state.mjs';
-import { fileHash, pathHash, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
+import { checkB01GitPreservation, checkHistoricalBinding, checkSavedRuntimeBindings, checkSavedStructure, transitionPaths } from '../_lib/b01-preservation.mjs';
+import { fileHash, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
 
 export const root=fileURLToPath(new URL('../..',import.meta.url));
 export const packet=resolve(root,'factory/03_build/output/gemini-runner-v1');
@@ -55,6 +56,7 @@ export const inputPaths=Object.freeze([
 ]);
 export async function sourceHashes() {
   const names=[...newSources,'db/benchmark/gemini-budget.mjs','db/benchmark/gemini-config.mjs',
+    'db/benchmark/gemini-diagnostics.mjs','factory/_lib/b01-preservation.mjs','factory/_lib/verify-kit.mjs',
     'db/benchmark/gemini-context.mjs','db/benchmark/gemini.mjs','db/benchmark/contracts.mjs',
     'db/benchmark/schemas.mjs','db/benchmark/exposure.mjs','db/benchmark/tools.mjs','db/benchmark/task.md',
     'factory/01_spec/output/SPEC.md','factory/01_spec/output/HUMAN_GATE.md','factory/02_data/output/DATA_PACKAGE.md',
@@ -67,20 +69,35 @@ export async function sourceHashes() {
 }
 
 export async function checkRunnerPreservation() {
+  const gitPreservation=await checkB01GitPreservation({projectRoot:root});
   const before=JSON.parse(await readFile(resolve(packet,'PRESERVATION_BEFORE.json'),'utf8'));
   const reconciliation=JSON.parse(await readFile(resolve(packet,'RECONCILIATION.json'),'utf8'));
   const historical=JSON.parse(await readFile(resolve(root,reconciliation.historicalBaseline.path),'utf8'));
   assert.equal(sha(await readFile(resolve(root,reconciliation.historicalBaseline.path))),reconciliation.historicalBaseline.sha256);
   assert.equal(reconciliation.entries.length,7);
+  const qualifiedReconciliation=[];
   for(const entry of reconciliation.entries) {
     assert.equal(historical.repositories[entry.repository].files[entry.path]??null,entry.historicalSha256);
     assert.equal(before.repositories[entry.repository].files[entry.path],entry.currentSha256);
-    assert.equal(sha(await readFile(resolve(before.repositories[entry.repository].root,entry.path))),entry.currentSha256);
+    if(entry.repository!=='product'||transitionPaths(gitPreservation,entry.path).length===0)
+      assert.equal(sha(await readFile(resolve(before.repositories[entry.repository].root,entry.path))),entry.currentSha256);
+    else qualifiedReconciliation.push({path:entry.path,historicalSha256:entry.currentSha256,
+      transitionPaths:transitionPaths(gitPreservation,entry.path),reviewRequired:true,bindingReplaced:false});
     assert.equal(sha(await readFile(resolve(packet,'documentation-current',entry.repository,entry.path))),entry.currentSha256);
   }
   assert.deepEqual(JSON.parse(await readFile(resolve(packet,'AUTHORIZED_CHANGES.json'),'utf8')),changedOldFiles);
   const results=[];
   for(const [kind,saved] of Object.entries(before.repositories)) {
+    if(kind==='product') {
+      assert.equal(resolve(saved.root),resolve(root),'Preservation checkout changed');
+      const runtime=await checkSavedRuntimeBindings(root,saved.files);
+      const structure=await checkSavedStructure(root,saved);
+      for(const name of changedOldFiles)
+        assert.equal(sha(await readFile(resolve(packet,'prior-current',name))),saved.files[name],`Missing prior bytes: ${name}`);
+      results.push({...gitPreservation,runtime,structure});
+      continue;
+    }
+    // The outer repository has no B01 snapshot; keep its unrelated legacy checks.
     const current=await inventory(saved.root,false);
     const changed=Object.keys(saved.files).filter(n=>saved.files[n]!==current.files[n]);
     assert(changed.every(n=>kind==='product' && changedOldFiles.includes(n)),`Unrelated existing bytes changed: ${kind}/${changed.join(',')}`);
@@ -104,7 +121,8 @@ export async function checkRunnerPreservation() {
       addedFiles:added.length,head:current.head,indexUnchanged:true,preservedDirectories:saved.directories.length,
       a01PreservedFiles:Object.keys(saved.files).filter(n=>n.startsWith('_archive/2026-09-30-a01-before-b01/factory/')||n.startsWith('outputs/a01/')).length});
   }
-  return {documentationReconciliationEntries:7,originalManifestUnchanged:true,repositories:results};
+  return {documentationReconciliationEntries:7,originalManifestUnchanged:true,repositories:results,
+    qualifiedReconciliation,reviewRequired:true,providerRequestsAuthorized:false};
 }
 
 export async function checkExecutedBenchmark() {
@@ -199,19 +217,22 @@ export async function verifyRunner({checkReports=true}={}) {
   const executedBenchmark=await checkExecutedBenchmark();
   assert.deepEqual(await sourceHashes(),frozenSourceHashes,'Sources changed during offline verification');
   let inputBindings=0;
+  const qualifiedBindings=[];
   if(checkReports) {
     const evidence=await readFile(resolve(root,'factory/03_build/output/BUILD_EVIDENCE.md'),'utf8');
     const bindings=markdownHashBindings(markdownSection(evidence,/^## Declared input hashes$/));
     assert.deepEqual(bindings.map(b=>b.input).sort(),[...inputPaths].sort());
-    for(const binding of bindings)assert.equal(await pathHash(root,resolve(root,binding.input)),binding.expected,`Input drift: ${binding.input}`);
+    for(const binding of bindings)qualifiedBindings.push(await checkHistoricalBinding(root,binding,
+      preservation.repositories.find(repository=>repository.repository==='product')));
     inputBindings=bindings.length;
     const gate=await readFile(resolve(root,'factory/03_build/output/HUMAN_GATE.md'),'utf8');
     assert.match(gate,/^gate_status: blocked$/m);assert.match(gate,/^decision: pending$/m);
     for(const [field,name] of [['build_evidence_sha256','BUILD_EVIDENCE.md'],['verification_sha256','VERIFY.md']])
       assert(gate.includes(`${field}: ${await fileHash(root,resolve(root,'factory/03_build/output',name))}`));
   }
-  return {version:'gemini-runner-offline-verification-v1',status:'passed',stage:'03_build',completeBuildStatus:'blocked',
+  return {version:'gemini-runner-offline-verification-v1',status:'review-required',stage:'03_build',completeBuildStatus:'blocked',
     verificationCommandModelRequests:0,runtimeEffects:0,coverage:{everyAcceptedLimit:true,realRestrictedWorker:true,durableRecovery:true,abortableTransport:true},
     sourceHashes:frozenSourceHashes,data,commands,preservation,executedBenchmark,inputBindings,
+    qualifiedBindings,providerRequestsAuthorized:false,
     environment:{node:process.version,platform:process.platform},verifiedAtUtc:new Date().toISOString()};
 }

@@ -2,6 +2,7 @@ import { performance } from 'node:perf_hooks';
 import { canonical, digest, exact, requireThat } from './contracts.mjs';
 import { prepareTokenCount } from './gemini-context.mjs';
 import { GEMINI } from './gemini-config.mjs';
+import { readDiagnostic } from './gemini-diagnostics.mjs';
 
 // Core HTTP routine is dependency-injected only for explicitly labelled offline tests.
 // Online entrypoint supplies global fetch and a verified host-only key source.
@@ -9,6 +10,7 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
   requireThat(['OFFLINE_FIXTURE', 'FREE_TIER_BENCHMARK'].includes(mode), 'invalid_transport_mode');
   requireThat(mode !== 'FREE_TIER_BENCHMARK' || typeof beforeRequest === 'function', 'verified_host_gate_required');
   let busy = false, generationCalls = 0, generationAttempts = 0, countCalls = 0, metadataCalls = 0, stopped = false, lastFailure = null;
+  let lastFailureDiagnostic = null;
   function validatePrepared(prepared) {
     requireThat(prepared.provider === 'gemini' && prepared.endpoint === GEMINI.endpoint
       && prepared.requestSha256 === digest(prepared.body), 'request_binding_mismatch');
@@ -56,6 +58,8 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
         if (!response.ok) {
           lastFailure = { operation: endpoint.endsWith(':generateContent') ? 'generateContent'
             : endpoint.endsWith(':countTokens') ? 'countTokens' : 'modelMetadata', httpStatus: response.status };
+          lastFailureDiagnostic = await readDiagnostic(response, { signal: controller.signal,
+            requestBody: body ?? {}, secret: key });
           throw new Error('http_failure');
         }
         const reader = response.body?.getReader();
@@ -120,6 +124,7 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
       return request(GEMINI.endpoint, prepared.body, lease.deadlineMonotonicMs);
     },
     stop() { stopped = true; },
-    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries: 0, mode, lastFailure }; },
+    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries: 0, mode, lastFailure,
+      ...(lastFailureDiagnostic === null ? {} : { lastFailureDiagnostic }) }; },
   };
 }

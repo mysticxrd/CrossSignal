@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { verifyData } from '../02_data/verify.mjs';
 import { inventory } from '../02_data/benchmark/preservation.mjs';
 import { deriveFactoryState } from '../_lib/factory-state.mjs';
-import { fileHash, pathHash, sha256, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
+import { checkB01GitPreservation, checkHistoricalBinding, checkSavedRuntimeBindings, checkSavedStructure } from '../_lib/b01-preservation.mjs';
+import { fileHash, sha256, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
 import { PROVIDER, executionBlockers } from '../../db/benchmark/provider-config.mjs';
 import { prepareSubscription } from '../../db/benchmark/subscription.mjs';
 import { START, CUTOFF } from '../../db/benchmark/contracts.mjs';
@@ -73,10 +74,21 @@ export async function preparedRecords() {
   return records;
 }
 
-async function preservation() {
+export async function checkSubscriptionPreservation() {
   const before = JSON.parse(await readFile(resolve(packet, 'PRESERVATION_BEFORE.json'), 'utf8'));
   const results = [];
   for (const [kind, saved] of Object.entries(before.repositories)) {
+    if (kind === 'product') {
+      assert.equal(resolve(saved.root), root, 'Preservation checkout changed');
+      const gitPreservation = await checkB01GitPreservation({ projectRoot: root });
+      const runtime = await checkSavedRuntimeBindings(root, saved.files);
+      const structure = await checkSavedStructure(root, saved);
+      for (const name of changedOldFiles)
+        assert.equal(sha256(await readFile(resolve(packet, 'prior-current', name))), saved.files[name], `Prior bytes not retained: ${name}`);
+      results.push({ ...gitPreservation, runtime, structure });
+      continue;
+    }
+    // The outer repository has no B01 snapshot; keep its unrelated legacy checks.
     const current = await inventory(saved.root, false);
     const changed = Object.entries(saved.files).filter(([name, sha]) => current.files[name] !== sha).map(([name]) => name);
     assert(changed.every(name => kind === 'product' && changedOldFiles.includes(name)), `Original bytes changed: ${kind}/${changed.join(',')}`);
@@ -129,7 +141,9 @@ export async function verifySubscriptionPreflight({ checkReports = true } = {}) 
     command(['-c', `safe.directory=${root.replaceAll('\\', '/')}`, 'diff', '--check'], root, 'git'),
     command(['-c', `safe.directory=${resolve(root, '../..').replaceAll('\\', '/')}`, 'diff', '--check'], resolve(root, '../..'), 'git'),
   ];
-  const kept = await preservation();
+  const kept = await checkSubscriptionPreservation();
+  const productPreservation = kept.find(repository => repository.repository === 'product');
+  const qualifiedBindings = [];
   const originalPacket = resolve(packet, '..');
   const review = await readFile(resolve(originalPacket, 'CONTRACT_REVIEW.md'), 'utf8');
   assert.match(review, /^decision: accepted$/m); assert.match(review, /^gate_status: closed$/m);
@@ -148,14 +162,14 @@ export async function verifySubscriptionPreflight({ checkReports = true } = {}) 
     const compatibilityBindings = markdownHashBindings(markdownSection(compatibilityReport, /^## Declared input hashes$/));
     assert.equal(compatibilityBindings.length, 13, 'Incomplete compatibility input bindings');
     for (const b of compatibilityBindings)
-      assert.equal(await pathHash(root, resolve(root, b.input)), b.expected, `Compatibility input drift: ${b.input}`);
+      qualifiedBindings.push(await checkHistoricalBinding(root, b, productPreservation));
     assert.match(await readFile(resolve(compatibilityDir, 'VERIFY.md'), 'utf8'), /^status: passed$/m);
     for (const [field, file] of [['data_compatibility_sha256', 'DATA_COMPATIBILITY.md'], ['verification_sha256', 'VERIFY.md']])
       assert(compatibilityGate.includes(`${field}: ${await fileHash(root, resolve(compatibilityDir, file))}`), `Compatibility gate mismatch: ${file}`);
     const evidence = await readFile(resolve(output, 'BUILD_EVIDENCE.md'), 'utf8');
     const bindings = markdownHashBindings(markdownSection(evidence, /^## Declared input hashes$/));
     assert.deepEqual(bindings.map(b => b.input).sort(), [...inputPaths].sort(), 'Incomplete input bindings');
-    for (const b of bindings) assert.equal(await pathHash(root, resolve(root, b.input)), b.expected, `Input drift: ${b.input}`);
+    for (const b of bindings) qualifiedBindings.push(await checkHistoricalBinding(root, b, productPreservation));
     bindingCount = bindings.length;
     assert.match(evidence, /^provider: openai-chatgpt-subscription$/m); assert.match(evidence, /^complete_build: false$/m);
     const gate = await readFile(resolve(output, 'HUMAN_GATE.md'), 'utf8');
@@ -167,8 +181,9 @@ export async function verifySubscriptionPreflight({ checkReports = true } = {}) 
     assert.equal(checks.status, 'passed'); assert.equal(checks.modelCalls, 0); assert.equal(checks.runtimeEffects, 0);
     assert(checks.commands.every(c => c.exitCode === 0));
   }
-  return { stage: '03_build', scope: 'subscription-offline-preflight-only', status: 'passed',
+  return { stage: '03_build', scope: 'subscription-offline-preflight-only', status: 'review-required',
     completeBuildStatus: 'blocked', upstreamData: data, commands, preservation: kept,
+    qualifiedBindings, providerRequestsAuthorized: false,
     inputBindings: bindingCount, environment: { node: process.version, platform: process.platform, architecture: process.arch },
     provider: PROVIDER.provider, candidateModel: PROVIDER.candidateModel, modelCalls: 0, runtimeEffects: 0,
     modelEvaluation: 'NOT_RUN', humanRuntimeApproval: 'NOT_RUN', unfinished };

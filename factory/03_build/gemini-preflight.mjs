@@ -6,7 +6,8 @@ import { spawnSync } from 'node:child_process';
 import { verifyData } from '../02_data/verify.mjs';
 import { inventory } from '../02_data/benchmark/preservation.mjs';
 import { deriveFactoryState } from '../_lib/factory-state.mjs';
-import { fileHash, pathHash, sha256, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
+import { checkB01GitPreservation, checkHistoricalBinding, checkSavedRuntimeBindings, checkSavedStructure } from '../_lib/b01-preservation.mjs';
+import { fileHash, sha256, markdownHashBindings, markdownSection } from '../_lib/verify-kit.mjs';
 import { PROVIDER, executionBlockers } from '../../db/benchmark/provider-config.mjs';
 import { prepareGemini, prepareTokenCount } from '../../db/benchmark/gemini-context.mjs';
 import { START, CUTOFF } from '../../db/benchmark/contracts.mjs';
@@ -70,11 +71,22 @@ export async function preparedRecords() {
   return records;
 }
 
-async function preservation() {
+export async function checkGeminiPreservation() {
   const before = JSON.parse(await readFile(resolve(packet, 'PRESERVATION_BEFORE.json'), 'utf8'));
   assert.deepEqual(JSON.parse(await readFile(resolve(packet, 'AUTHORIZED_CHANGES.json'), 'utf8')), changedOldFiles);
   const results = [];
   for (const [kind, saved] of Object.entries(before.repositories)) {
+    if (kind === 'product') {
+      assert.equal(resolve(saved.root), root, 'Preservation checkout changed');
+      const gitPreservation = await checkB01GitPreservation({ projectRoot: root });
+      const runtime = await checkSavedRuntimeBindings(root, saved.files);
+      const structure = await checkSavedStructure(root, saved);
+      for (const name of changedOldFiles)
+        assert.equal(sha256(await readFile(resolve(packet, 'prior-current', name))), saved.files[name], `Prior bytes missing: ${name}`);
+      results.push({ ...gitPreservation, runtime, structure });
+      continue;
+    }
+    // The outer repository has no B01 snapshot; keep its unrelated legacy checks.
     const current = await inventory(saved.root, false);
     const changed = Object.entries(saved.files).filter(([name, sha]) => current.files[name] !== sha).map(([name]) => name);
     assert(changed.every(name => kind === 'product' && changedOldFiles.includes(name)), `Original bytes changed: ${kind}/${changed.join(',')}`);
@@ -134,13 +146,15 @@ export async function verifyGeminiPreflight({ checkReports = true } = {}) {
     command(['-c', `safe.directory=${root.replaceAll('\\', '/')}`, 'diff', '--check'], root, 'git'),
     command(['-c', `safe.directory=${resolve(root, '../..').replaceAll('\\', '/')}`, 'diff', '--check'], resolve(root, '../..'), 'git'),
   ];
-  const kept = await preservation();
+  const kept = await checkGeminiPreservation();
+  const productPreservation = kept.find(repository => repository.repository === 'product');
+  const qualifiedBindings = [];
   let bindings = [];
   if (checkReports) {
     const evidence = await readFile(resolve(output, 'BUILD_EVIDENCE.md'), 'utf8');
     bindings = markdownHashBindings(markdownSection(evidence, /^## Declared input hashes$/));
     assert.deepEqual(bindings.map(b => b.input).sort(), [...inputPaths].sort());
-    for (const binding of bindings) assert.equal(await pathHash(root, resolve(root, binding.input)), binding.expected, `Input drift: ${binding.input}`);
+    for (const binding of bindings) qualifiedBindings.push(await checkHistoricalBinding(root, binding, productPreservation));
     assert.match(evidence, /^provider: gemini$/m); assert.match(evidence, /^complete_build: false$/m);
     const gate = await readFile(resolve(output, 'HUMAN_GATE.md'), 'utf8');
     assert.match(gate, /^gate_status: blocked$/m); assert.match(gate, /^decision: pending$/m);
@@ -151,9 +165,10 @@ export async function verifyGeminiPreflight({ checkReports = true } = {}) {
     assert.equal(checks.status, 'passed'); assert.equal(checks.modelCalls, 0); assert.equal(checks.runtimeEffects, 0);
     assert(checks.commands.every(c => c.exitCode === 0));
   }
-  return { stage: '03_build', scope: 'gemini-offline-preparation-only', status: 'passed', completeBuildStatus: 'blocked',
+  return { stage: '03_build', scope: 'gemini-offline-preparation-only', status: 'review-required', completeBuildStatus: 'blocked',
     provider: PROVIDER.provider, candidateModel: PROVIDER.model, executionProfile: PROVIDER.executionProfile,
     conditionalRequestAuthorization: 'recorded', upstreamData: data, commands, preservation: kept,
+    qualifiedBindings, providerRequestsAuthorized: false,
     inputBindings: bindings.length, environment: { node: process.version, platform: process.platform, architecture: process.arch },
     modelCalls: 0, runtimeEffects: 0, modelEvaluation: 'NOT_RUN', humanRuntimeApproval: 'NOT_RUN', unfinished };
 }
