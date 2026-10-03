@@ -1,38 +1,54 @@
-# Company Flight Recorder
+# CrossSignal ship lane
 
-This repository holds a durable product prototype and the ICM/MWP factory that
-turns it into one evaluator-verifiable Company Flight Recorder slice.
+This checkout builds the CrossSignal hiring demo: an AI incident investigator
+that reads company signals, names the change behind a revenue drop and
+recommends an action a person must approve. The goal is visible, public
+progress before December 2026.
 
-## Start
+## Factory frozen
 
-1. Read `CONTEXT.md` to route the task.
-2. For governed build work, read `factory/CONTEXT.md`.
-3. Read only the active stage's `CONTEXT.md`, its declared inputs, and the two
-   shared references it names.
-4. Stop after writing the stage outputs; a person owns the gate.
+The `spec -> data -> build -> verify -> ship` factory is frozen at tag
+`factory-freeze-2026-10-03`. `CONTEXT.md` and `factory/` describe that frozen
+process; they do not govern ship-lane work.
+
+- Do not edit `factory/**/output/`; frozen evidence stays as it is.
+- Do not create gate, seal, preservation, proposal or review files.
+- Do not stop for human gates. `node factory/status.mjs` reports history only.
+
+## Loop: fix -> test -> commit -> deploy
+
+1. Fix: make the smallest change that moves the demo forward.
+2. Test: add or update the nearest test; `npm test` and `npm run lint` pass.
+3. Commit: one focused, working commit per change.
+4. Deploy: no free host is wired up yet. Until one is, the demo replays
+   recorded runs, each labelled with its run id, date and model.
+
+## Model calls
+
+- Gemini free tier only (`gemini-3.5-flash-lite`); paid spend is never
+  allowed. The runner refuses to send unless the account attestation says
+  billing is off with no paid fallback.
+- The key comes from `GEMINI_API_KEY` (environment or a gitignored `.env`).
+  Never print, log or commit it. Failures print Google's full error with
+  only the key hidden.
+- Retries cover 429/500/503/504 only, bounded and inside the request deadline.
+- Run one investigation with `node scripts/run-a01-gemini.mjs`; each run is
+  saved under `outputs/a01-gemini/` (gitignored).
+
+## Choosing work
+
+Ask: "Will this show up in the demo or in this week's post?" If not, skip it.
+Spend two hours on the simplest fix before writing any doc about a problem.
 
 ## Map
 
 | Path | One job |
 |---|---|
-| `factory/` | `spec -> data -> build -> verify -> ship` pipeline and reviewed artifacts |
-| `factory/_shared/` | Stable product and quality constraints |
-| `factory/_templates/` | Blank hardened stage contract |
-| `app/`, `db/`, `drizzle/`, `worker/` | Durable product implementation |
-| `tests/` | Product and workspace verification |
-| `_archive/` | Superseded history; excluded from normal loading |
+| `app/`, `db/`, `worker/` | Product code: UI, data and the investigation runner |
+| `db/benchmark/` | Gemini request, transport, budget and schemas |
+| `scripts/` | Runnable entry points |
+| `tests/` | `npm test` suites |
+| `factory/` | Frozen pipeline and evidence; read-only |
 
-## Route
-
-| Need | Go to |
-|---|---|
-| Product or architecture question | `docs/api-benchmark-charter.md`, `docs/benchmark-planning-reconciliation.md`, `factory/_shared/BENCHMARK_DIRECTION.md` |
-| Start or continue the governed build | `factory/CONTEXT.md` |
-| Make a tiny, low-risk correction | `CONTEXT.md` express lane |
-| Diagnose an incident or broad refactor | `CONTEXT.md` direct engineering lane |
-| Inspect historical CrossSignal decisions | `_archive/2026-08-12-crosssignal-phase-00/README.md` |
-| Report status | Run `node factory/status.mjs`; it derives state without writing a table |
-
-Never load `_archive/`, the whole Obsidian vault, or every stage unless the task
-explicitly requires historical comparison. Nothing advances past a stage until
-its human gate is accepted.
+Never load `_archive/`, the whole Obsidian vault, or every factory stage unless
+the task explicitly requires historical comparison.

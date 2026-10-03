@@ -33,7 +33,7 @@ function store(method = 'single-shot-model') {
   return new GeminiStore(join(dir, 'case.sqlite'), { metadata: { scope, method, truthMode: 'SIMULATED', configHash: digest(GEMINI) }, observable: input });
 }
 function fixtureTransport({ generated = () => response(), tokens = 1000, onFetch = () => {} } = {}) {
-  return createHttpTransport({ mode: 'OFFLINE_FIXTURE', keySource: () => fixtureKey,
+  return createHttpTransport({ mode: 'OFFLINE_FIXTURE', keySource: () => fixtureKey, log: () => {},
     fetchImpl: async (url, options) => {
       onFetch(url, options);
       const payload = url.endsWith(':countTokens') ? { totalTokens: tokens } : generated();
@@ -115,21 +115,21 @@ test('durable dispatch precedes HTTP; only sanitized visible response and counte
 
 test('HTTP and body streaming deadline abort even an uncooperative transport, without retries', async () => {
   let calls = 0, aborted = false;
-  const t = createHttpTransport({ mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,fetchImpl:async (_url,o)=>{
+  const t = createHttpTransport({ mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,log:()=>{},fetchImpl:async (_url,o)=>{
     calls++; o.signal.addEventListener('abort',()=>{aborted=true}); return new Promise(()=>{});
   } });
   const r=prepareGemini(input,scope);
   await assert.rejects(t.count(r,performance.now()+25),/request_timeout/);
   assert.equal(calls,1); assert.equal(aborted,true); assert.equal(t.counters().automaticRetries,0);
   await assert.rejects(t.count(r,performance.now()+100),/terminal/);
-  const stream = createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,
+  const stream = createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,log:()=>{},
     fetchImpl:async()=>new Response(new ReadableStream({start(){}}))});
   await assert.rejects(stream.count(r,performance.now()+25),/request_timeout/);
 });
 
-test('HTTP rejection retains the dispatched failed artifact with unknown usage and no replay', async () => {
-  const s=store();let dispatched=0;
-  const t=createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,fetchImpl:async url=>{
+test('HTTP rejection retains the dispatched failed artifact and the full redacted error, with unknown usage and no replay', async () => {
+  const s=store();let dispatched=0;const printed=[];
+  const t=createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,log:line=>printed.push(line),fetchImpl:async url=>{
     if(url.endsWith(':countTokens')) return new Response(JSON.stringify({totalTokens:1000}));
     dispatched++;
     assert.equal(s.history().at(-1).kind,'request');
@@ -140,8 +140,10 @@ test('HTTP rejection retains the dispatched failed artifact with unknown usage a
   assert.equal(result.budget.records[0].generatedTokens,null);
   assert.equal(dispatched,1);assert.equal(t.counters().automaticRetries,0);
   assert.deepEqual(t.counters().lastFailure,{operation:'generateContent',httpStatus:400});
-  assert(!JSON.stringify(s.history()).includes('PRIVATE_DIAGNOSTIC'));
-  assert(!JSON.stringify(s.history()).includes(fixtureKey));
+  assert.equal(t.counters().lastFailureDiagnostic.message,'PRIVATE_DIAGNOSTIC [REDACTED_API_KEY]');
+  assert(JSON.stringify(s.history()).includes('PRIVATE_DIAGNOSTIC [REDACTED_API_KEY]'));
+  assert.equal(printed.length,1);assert(printed[0].includes('PRIVATE_DIAGNOSTIC [REDACTED_API_KEY]'));
+  assert(!JSON.stringify(s.history()).includes(fixtureKey));assert(!printed[0].includes(fixtureKey));
   assert.equal(s.history().at(-1).kind,'terminal');
   assert.throws(()=>s.claim(),/already_started/);s.close();
 });
@@ -217,7 +219,7 @@ test('transport refuses rehashed native capabilities, extra fields, larger gener
 });
 
 test('concurrency one rejects simultaneous counts and fixed endpoint binding prevents paid/native routing', async () => {
-  let release;const t=createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,
+  let release;const t=createHttpTransport({mode:'OFFLINE_FIXTURE',keySource:()=>fixtureKey,log:()=>{},
     fetchImpl:()=>new Promise(r=>{release=r})});
   const r=prepareGemini(input,scope), pending=t.count(r,performance.now()+1000);
   await new Promise(resolve=>setTimeout(resolve,5));

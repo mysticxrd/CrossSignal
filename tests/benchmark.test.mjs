@@ -64,10 +64,16 @@ test('unsupported wire keywords are explicit; frozen host constraints remain str
   assert.equal(JSON.stringify(findingSchema), original);
   assert.equal(schema.properties.version.type, 'string');
   assert.deepEqual(schema.properties.version.enum, ['benchmark-finding-v1']);
-  assert(changes.some(c => c.keyword === 'maxLength' && c.disposition === 'host_only'));
-  assert.doesNotMatch(JSON.stringify(schema), /"maxLength"|"const"/);
+  for (const keyword of ['maxLength', 'maxItems'])
+    assert(changes.some(c => c.keyword === keyword && c.disposition === 'host_only'));
+  assert.doesNotMatch(JSON.stringify(schema), /"maxLength"|"maxItems"|"const"/);
+  // The model still sees every limit the host enforces.
+  assert.equal(schema.properties.hypotheses.description, 'At most 3 items.');
+  assert.equal(schema.properties.hypotheses.items.properties.diagnosis.description, 'At most 120 characters.');
   const tooLong = finding(); tooLong.signalSummary = 'x'.repeat(401);
   assert.equal(inspectResponse(response(tooLong)).reason, 'invalid_finding_json_or_schema');
+  const tooMany = finding(); tooMany.unresolvedAlternatives = ['a', 'b', 'c', 'd'];
+  assert.equal(inspectResponse(response(tooMany)).reason, 'invalid_finding_json_or_schema');
   const wrongConst = finding(); wrongConst.recommendation.boundary = 'execute_now';
   assert.equal(inspectResponse(response(wrongConst)).terminalStatus, 'invalid_output');
 });
@@ -109,6 +115,11 @@ test('missing usage is unknown rather than zero; inconsistent and excessive coun
   const raw = response(); delete raw.usageMetadata.thoughtsTokenCount;
   const missing = inspectResponse(raw); assert.equal(missing.reason, 'usage_unavailable');
   assert.equal(missing.usage.counts.thoughtsTokenCount, null);
+  // An omitted zero is accepted only when the total proves it: 1300 prompt + 200 output = 1500.
+  raw.usageMetadata.totalTokenCount = 1500;
+  const zero = inspectResponse(raw); assert.equal(zero.status, 'parsed');
+  assert.equal(zero.usage.counts.thoughtsTokenCount, 0); assert.equal(zero.usage.generatedTokens, 200);
+  assert.equal(zero.usage.inferred.thoughtsTokenCount, 'omitted_zero_proven_by_total');
   const over = response(); over.usageMetadata.thoughtsTokenCount = 825;
   assert.equal(inspectResponse(over).terminalStatus, 'budget_exhausted');
   const inconsistent = response(); inconsistent.usageMetadata.totalTokenCount = 1;

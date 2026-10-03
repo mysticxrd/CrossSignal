@@ -1,16 +1,23 @@
 import { performance } from 'node:perf_hooks';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { canonical, digest, exact, requireThat } from './contracts.mjs';
 import { prepareTokenCount } from './gemini-context.mjs';
 import { GEMINI } from './gemini-config.mjs';
-import { readDiagnostic } from './gemini-diagnostics.mjs';
+import { formatDiagnostic, readDiagnostic, redactKey, retryDelayMs } from './gemini-diagnostics.mjs';
+
+// Google asks clients to back off and retry these statuses; every other failure is final.
+const RETRYABLE_STATUS = new Set([429, 500, 503, 504]);
+const describeCause = e => `${e?.name ?? 'Error'}: ${e?.message ?? e}${e?.cause ? ` (cause: ${e.cause.message ?? e.cause})` : ''}`;
 
 // Core HTTP routine is dependency-injected only for explicitly labelled offline tests.
 // Online entrypoint supplies global fetch and a verified host-only key source.
-export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest = null }) {
+// Every failure is printed through `log` with the API key redacted and nothing else hidden.
+export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest = null,
+  log = line => process.stderr.write(`${line}\n`) }) {
   requireThat(['OFFLINE_FIXTURE', 'FREE_TIER_BENCHMARK'].includes(mode), 'invalid_transport_mode');
   requireThat(mode !== 'FREE_TIER_BENCHMARK' || typeof beforeRequest === 'function', 'verified_host_gate_required');
   let busy = false, generationCalls = 0, generationAttempts = 0, countCalls = 0, metadataCalls = 0, stopped = false, lastFailure = null;
-  let lastFailureDiagnostic = null;
+  let lastFailureDiagnostic = null, automaticRetries = 0;
   function validatePrepared(prepared) {
     requireThat(prepared.provider === 'gemini' && prepared.endpoint === GEMINI.endpoint
       && prepared.requestSha256 === digest(prepared.body), 'request_binding_mismatch');
@@ -43,25 +50,11 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
     requireThat(remaining > 0, 'investigation_timeout');
     busy = true;
     const controller = new AbortController();
+    const operation = endpoint.endsWith(':generateContent') ? 'generateContent'
+      : endpoint.endsWith(':countTokens') ? 'countTokens' : 'modelMetadata';
     let timer, key;
     try {
-      const work = async () => {
-        if (beforeRequest) await beforeRequest();
-        key = keySource();
-        requireThat(typeof key === 'string' && key.length >= 16 && key.length <= 512 && !/[\r\n]/.test(key), 'scoped_key_unavailable');
-        if(endpoint.endsWith(':generateContent')) generationCalls++;
-        else if(endpoint.endsWith(':countTokens')) countCalls++;
-        else metadataCalls++;
-        const response = await fetchImpl(endpoint, { method, redirect: 'error', signal: controller.signal,
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-          ...(body === null ? {} : { body: JSON.stringify(body) }) });
-        if (!response.ok) {
-          lastFailure = { operation: endpoint.endsWith(':generateContent') ? 'generateContent'
-            : endpoint.endsWith(':countTokens') ? 'countTokens' : 'modelMetadata', httpStatus: response.status };
-          lastFailureDiagnostic = await readDiagnostic(response, { signal: controller.signal,
-            requestBody: body ?? {}, secret: key });
-          throw new Error('http_failure');
-        }
+      const read = async response => {
         const reader = response.body?.getReader();
         requireThat(reader, 'response_stream_required');
         const parts = []; let size = 0;
@@ -80,6 +73,33 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
         const requestId = /^[a-zA-Z0-9._:-]{1,160}$/.test(id ?? '') && !id.includes(key) ? id : null;
         return { data, requestId, requestIdUnavailableReason: requestId === null ? 'not_reported_or_invalid' : null };
       };
+      const work = async () => {
+        for (let retry = 0; ; retry++) {
+          if (beforeRequest) await beforeRequest();
+          key = keySource();
+          requireThat(typeof key === 'string' && key.length >= 16 && key.length <= 512 && !/[\r\n]/.test(key), 'scoped_key_unavailable');
+          if (operation === 'generateContent') generationCalls++;
+          else if (operation === 'countTokens') countCalls++;
+          else metadataCalls++;
+          const response = await fetchImpl(endpoint, { method, redirect: 'error', signal: controller.signal,
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+            ...(body === null ? {} : { body: JSON.stringify(body) }) });
+          if (response.ok) return read(response);
+          const diagnostic = await readDiagnostic(response, { signal: controller.signal, secret: key });
+          log(formatDiagnostic(operation, diagnostic));
+          // Honour Google's RetryInfo when present, else back off 2s, 4s, 8s, 16s inside this request's deadline.
+          const wait = retryDelayMs(diagnostic) ?? 2000 * 2 ** retry;
+          if (RETRYABLE_STATUS.has(response.status) && retry < GEMINI.maxRetries && performance.now() + wait < requestDeadline) {
+            log(`Retrying Gemini ${operation} in ${wait} ms (retry ${retry + 1} of ${GEMINI.maxRetries}).`);
+            automaticRetries++;
+            await sleep(wait, undefined, { signal: controller.signal });
+            continue;
+          }
+          lastFailure = { operation, httpStatus: response.status };
+          lastFailureDiagnostic = diagnostic;
+          throw new Error('http_failure');
+        }
+      };
       const result = await Promise.race([work(), new Promise((_, reject) => {
         timer = setTimeout(() => { controller.abort(); reject(new Error('request_timeout')); }, remaining);
       })]);
@@ -88,6 +108,8 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
     } catch (e) {
       stopped = true;
       const known = ['http_failure', 'response_size_limit', 'provider_secret_echo', 'request_timeout', 'scoped_key_unavailable'];
+      // HTTP failures were already printed with their full body; print every other cause here.
+      if (e.message !== 'http_failure') log(`Gemini ${operation} failed: ${redactKey(known.includes(e.message) ? e.message : describeCause(e), key)}`);
       throw new Error(known.includes(e.message) ? e.message : 'transport_failure');
     } finally { clearTimeout(timer); controller.abort(); key = null; busy = false; }
   }
@@ -124,7 +146,7 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
       return request(GEMINI.endpoint, prepared.body, lease.deadlineMonotonicMs);
     },
     stop() { stopped = true; },
-    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries: 0, mode, lastFailure,
+    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries, mode, lastFailure,
       ...(lastFailureDiagnostic === null ? {} : { lastFailureDiagnostic }) }; },
   };
 }

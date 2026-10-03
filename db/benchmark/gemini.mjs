@@ -7,15 +7,18 @@ import { GEMINI } from './gemini-config.mjs';
 const task = readFileSync(new URL('./task.md', import.meta.url), 'utf8').trim();
 
 // Project the frozen schema onto the documented Gemini JSON-schema subset.
-// Host validation retains every original constant and string-length constraint.
+// Host validation retains every original constant, string-length and array-length constraint.
 export function wireSchema(schema, path = '$', changes = []) {
-  const result = {};
+  const result = {}, limits = [];
   for (const [key, value] of Object.entries(schema)) {
     if (key === 'const') {
       result.enum = [value];
       result.type = typeof value;
       changes.push({ path, keyword: 'const', disposition: 'wire_enum_host_constant' });
-    } else if (key === 'maxLength') {
+    } else if (key === 'maxLength' || key === 'maxItems') {
+      // gemini-3.5-flash-lite answers any maxItems with a bare 400 INVALID_ARGUMENT (bisected 2026-10-03),
+      // so both limits travel as description text the model can follow; the host still enforces them.
+      limits.push(`At most ${value} ${key === 'maxLength' ? 'characters' : 'items'}.`);
       changes.push({ path, keyword: key, disposition: 'host_only' });
     } else if (key === 'properties') {
       result.properties = Object.fromEntries(Object.entries(value).map(([name, child]) =>
@@ -24,6 +27,7 @@ export function wireSchema(schema, path = '$', changes = []) {
     else if (key === 'anyOf') result.anyOf = value.map((child, i) => wireSchema(child, `${path}.anyOf[${i}]`, changes));
     else result[key] = structuredClone(value);
   }
+  if (limits.length > 0) result.description = [schema.description, ...limits].filter(Boolean).join(' ');
   return result;
 }
 
@@ -59,16 +63,23 @@ export function prepareSingleShot(input, scope) {
 const usageFields = ['promptTokenCount', 'cachedContentTokenCount', 'candidatesTokenCount',
   'toolUsePromptTokenCount', 'thoughtsTokenCount', 'totalTokenCount'];
 export function sanitizeUsage(raw = {}) {
-  const counts = {}, unavailable = {};
+  const counts = {}, unavailable = {}, inferred = {};
   for (const field of usageFields) {
     if (Number.isSafeInteger(raw?.[field]) && raw[field] >= 0) counts[field] = raw[field];
     else { counts[field] = null; unavailable[field] = raw?.[field] === undefined ? 'not_reported' : 'invalid_count'; }
+  }
+  // Gemini omits a zero thoughtsTokenCount (proto3 drops default values). Read the omission as 0
+  // only when the reported total proves no thinking tokens were spent; otherwise usage stays unknown.
+  if (raw?.thoughtsTokenCount === undefined && counts.promptTokenCount !== null && counts.candidatesTokenCount !== null
+    && counts.totalTokenCount === counts.promptTokenCount + counts.candidatesTokenCount + (counts.toolUsePromptTokenCount ?? 0)) {
+    counts.thoughtsTokenCount = 0; delete unavailable.thoughtsTokenCount;
+    inferred.thoughtsTokenCount = 'omitted_zero_proven_by_total';
   }
   const known = ['promptTokenCount', 'candidatesTokenCount', 'thoughtsTokenCount', 'totalTokenCount']
     .every(field => counts[field] !== null);
   const generatedTokens = counts.candidatesTokenCount !== null && counts.thoughtsTokenCount !== null
     ? counts.candidatesTokenCount + counts.thoughtsTokenCount : null;
-  return { counts, unavailable, generatedTokens, budgetCheckable: known,
+  return { counts, unavailable, inferred, generatedTokens, budgetCheckable: known,
     chargeUsd: null, chargeUnavailableReason: 'account_billing_not_verified' };
 }
 

@@ -20,7 +20,8 @@ export const GEMINI = Object.freeze({
   requestTimeoutMs: 180_000,
   investigationTimeoutMs: 900_000,
   concurrency: 1,
-  automaticRetries: 0,
+  // 429/500/503/504 only, inside one request's deadline; a 4xx request error is never retried.
+  maxRetries: 4,
   seed: null,
   seedUnavailableReason: 'model_specific_support_not_verified',
 });

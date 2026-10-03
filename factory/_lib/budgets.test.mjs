@@ -23,7 +23,8 @@ test("measures only the active contract's declared shared inputs", async () => {
   assert.deepEqual(budgets.breaches, []);
   assert.equal(budgets.coldLoad.limit, LIMITS.coldWords);
   assert.deepEqual(budgets.coldLoad.paths.filter((path) => path.startsWith("factory/_shared/")), ["factory/_shared/BENCHMARK_DIRECTION.md", "factory/_shared/QUALITY_GATES.md"]);
-  assert.equal(countWords(await readFile(new URL("AGENTS.md", root), "utf8")), 245);
+  // AGENTS.md is the ship-lane entry point and changes with it; pin that it is measured, not its size.
+  assert.ok(budgets.coldLoad.paths.includes("AGENTS.md"));
   assert.deepEqual(budgets.coldLoad.decisionEntries, ["D-01", "D-02", "D-03"]);
   assert.equal(budgets.coldLoad.words, budgets.coldLoad.upfrontWords + budgets.coldLoad.decisionWords);
 });
