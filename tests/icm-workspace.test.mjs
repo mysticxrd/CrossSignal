@@ -11,15 +11,18 @@ const projectRoot = new URL("../", import.meta.url);
 const rootPath = fileURLToPath(projectRoot);
 
 test("provides a small router and excludes superseded history", async () => {
-  const [agents, context, factory] = await Promise.all([
+  const [agents, context, factory, archive] = await Promise.all([
     readFile(new URL("AGENTS.md", projectRoot), "utf8"),
     readFile(new URL("CONTEXT.md", projectRoot), "utf8"),
     readFile(new URL("factory/CONTEXT.md", projectRoot), "utf8"),
+    readFile(new URL("_archive/2026-08-12-crosssignal-phase-00/README.md", projectRoot), "utf8"),
   ]);
   assert.match(agents, /Never load `_archive\/`/);
   assert.ok(countWords(context) <= LIMITS.rootWords);
   assert.match(context, /Do not load later stages/);
   assert.match(factory, /status is derived, never an\s+editable program table/);
+  assert.match(archive, /status: superseded/);
+  assert.match(archive, /historical evidence, not active product or build\s+authority/);
   for (const path of ["build_plans/", "eve-spike/", "PRD.md"]) {
     await assert.rejects(access(new URL(path, projectRoot)));
   }

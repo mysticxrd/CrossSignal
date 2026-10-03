@@ -45,7 +45,8 @@ export function formatFactoryState(state) {
     );
   }
   if (state.budgets) {
-    lines.push(`Cold load: ${state.budgets.coldLoad.words}/${state.budgets.coldLoad.limit} words (${state.budgets.coldLoad.stage})`);
+    const load = state.budgets.coldLoad;
+    lines.push(`Cold load: ${load.words}/${load.limit} words (${load.stage}; upfront ${load.upfrontWords}, referenced D-entries ${load.decisionWords})`);
     lines.push(...state.budgets.breaches.map((breach) => `Budget breach: ${breach}`));
   }
   return lines.join("\n");

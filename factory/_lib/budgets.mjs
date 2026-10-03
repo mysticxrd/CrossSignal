@@ -46,6 +46,17 @@ export async function measureBudgets(projectRoot = defaultRoot, activeStage = nu
     const words = countWords(text), lines = countLines(text);
     return { path, words, lines, unit, limit, breached: (unit === "words" ? words : lines) > limit };
   }));
+  const decisionIds = new Map(stageNames.map((name) => [name,
+    [...new Set(documents.get(`factory/${name}/CONTEXT.md`).match(/\bD-\d+\b/g) ?? [])].sort(),
+  ]));
+  const decisionWordsById = new Map();
+  if ([...decisionIds.values()].some((ids) => ids.length > 0)) {
+    const decisions = await readFile(join(projectRoot, "factory/DECISIONS.md"), "utf8");
+    for (const entry of decisions.split(/(?=^## D-\d+\b)/m)) {
+      const id = /^## (D-\d+)\b/.exec(entry)?.[1];
+      if (id) decisionWordsById.set(id, countWords(entry));
+    }
+  }
   const coldLoads = stageNames.map((name) => {
     const contract = `factory/${name}/CONTEXT.md`;
     const inputs = markdownSection(documents.get(contract), /^## Inputs$/);
@@ -56,7 +67,13 @@ export async function measureBudgets(projectRoot = defaultRoot, activeStage = nu
       return path;
     });
     const paths = [...new Set(["AGENTS.md", "CONTEXT.md", "factory/CONTEXT.md", contract, ...shared])];
-    return { stage: name, paths, words: paths.reduce((sum, path) => sum + countWords(documents.get(path)), 0), limit: LIMITS.coldWords };
+    const upfrontWords = paths.reduce((sum, path) => sum + countWords(documents.get(path)), 0);
+    const decisionEntries = decisionIds.get(name);
+    const decisionWords = decisionEntries.reduce((sum, id) => {
+      if (!decisionWordsById.has(id)) throw new Error(`Missing decision entry: ${id}`);
+      return sum + decisionWordsById.get(id);
+    }, 0);
+    return { stage: name, paths, upfrontWords, decisionEntries, decisionWords, words: upfrontWords + decisionWords, limit: LIMITS.coldWords };
   });
   const coldLoad = activeStage
     ? coldLoads.find((load) => load.stage === activeStage)

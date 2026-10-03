@@ -26,6 +26,8 @@ Do not load: later stages, archive, unrelated product, source vault or private t
 ## Process
 
 1. Require accepted/fresh Data and explicit provider/model/spend conditions; see D-03. Unsupported limits require an exact contract proposal before scoring.
+   No paid fallback, purchase, installation, deployment or runtime intervention is authorized.
+   Never treat a caller flag or account subscription badge as API billing proof.
 2. Implement trusted API transport, strict outputs and bounded durable tools; freeze configurations before scoring.
 3. Run three baselines, retain/analyze failures, pre-register one change, rerun and record regressions.
 4. Prepare one exact SIMULATED proposal; pause for separate runtime human approval, record its one-time effect/outcome. Never synthesize a grant.
@@ -49,4 +51,4 @@ Review exact Build/VERIFY hashes. Losses are valid results; absent model/demo ev
 
 ## Failure routing
 
-Fix this stage or upstream contract; preserve initial measured-change results.
+Fix this stage or upstream contract; preserve the initial results when applying the one measured change.

@@ -9,7 +9,7 @@ Append-only owner decisions, never a status table. Historical quotes retain thei
 - Scope: B01 subscription history and conditional compatibility
 - Source: `factory/03_build/CONTEXT.md@62787d1:18,31`
 
-Owner words, verbatim:
+Source text, verbatim:
 
 - Historical subscription amendment inputs: `../01_spec/amendments/b01-siwc-measured-v1/CONTRACT.md` and `HUMAN_GATE.md`; `../02_data/amendments/b01-siwc-measured-v1/DATA_COMPATIBILITY.md`, `VERIFY.md`, `HUMAN_GATE.md`. Preserve the accepted amendment and pending compatibility decision. The SIWC profile is not selected; its acceptance conditions apply if that route is resumed. Gemini preparation retains the original accepted Spec/Data token limits.
 
@@ -22,7 +22,7 @@ Owner words, verbatim:
 - Scope: B01 runner inputs, stores, preservation and prohibitions
 - Source: `factory/03_build/CONTEXT.md@62787d1:23`
 
-Owner words, verbatim:
+Source text, verbatim:
 
 - October 2 runner continuation inputs: `runner-checks.mjs`, `output/gemini-runner-v1/` (additive preservation/reconciliation, owner Free-tier attestation, provider contract, initial/final offline verification and application checks), `../../tests/benchmark-gemini-runner.test.mjs`, and test-only `../../tests/a01-path-compat.mjs`. The owner authorized offline runner completion followed only by already-authorized Free-tier benchmark requests after every accepted limit/isolation check. Original manifests and accepted Spec/Data/A01 inputs remain unchanged. Existing documentation edits are retained through exact old/current hash records, not a replaced baseline. New benchmark stores live in `../../outputs/b01/gemini-runner-v1/`; no A01 migration, paid fallback, smoke generation, runtime effect or gate advance. Disposable build-input snapshots under `../../outputs/build-checks/` protect existing dist/.vinext contents from the packaging hook; use existing project-root dependencies only.
 
@@ -33,11 +33,12 @@ Owner words, verbatim:
 - Scope: Original limits, conditional $0 requests and authority boundaries
 - Source: `factory/03_build/CONTEXT.md@62787d1:29-31`
 
-Owner words, verbatim:
+Source text, verbatim:
 
 1. Require accepted/fresh Data and explicit provider/model/spend conditions.
    The owner requested the fastest testing route and directed skipping ChatGPT subscription integration if it adds complexity. Continue Gemini preparation using the existing gemini-3.5-flash-lite proposal and original accepted limits. The owner answered "Authorize verified free-tier Gemini requests": this permits $0 requests only after a Free-tier project with billing disabled, sufficient quota and original-limit compatibility are verified. No paid fallback, purchase, installation, deployment or runtime intervention is authorized. Account/actual-route checks and complete Build evidence remain unfinished; never treat a caller flag or account subscription badge as API billing proof.
-   Preserve the previously accepted b01-siwc-measured-v1 amendment (proposal hash fb0726293476d13ce909ff042f9712e970c5ba2537c79395a66b9f3f8398651f) as history. Its pending Data compatibility gate is not accepted or revoked. It does not replace Gemini's original token contract. Unsupported limits on any resumed route require an exact contract proposal before scoring. No complete Build or runtime grant is inferred from provider selection.
+
+See D-01 for the preserved subscription-amendment source paragraph cited above.
 
 ## D-04 — Confirmed B01 transition
 
@@ -46,7 +47,7 @@ Owner words, verbatim:
 - Scope: Stage entry is separate from stage acceptance
 - Source: `CONTEXT.md@62787d1:28-32`
 
-Owner words, verbatim:
+Source text, verbatim:
 
 The current run is `b01-api-behavioral-benchmark`. The user confirmed transition
 and Stage 01 entry on October 1. Start with `factory/CONTEXT.md`, derive status,
@@ -61,7 +62,7 @@ The [transition record](factory/TRANSITION.md) binds the sealed A01 baseline
 - Scope: Exact runtime-human approval and deferred mobile follow-up
 - Source: `CONTEXT.md@62787d1:47-49`
 
-Owner words, verbatim:
+Source text, verbatim:
 
 Complete
 one exact approved SIMULATED intervention within B01; stage acceptance never

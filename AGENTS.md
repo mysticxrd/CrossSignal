@@ -26,7 +26,7 @@ turns it into one evaluator-verifiable Company Flight Recorder slice.
 
 | Need | Go to |
 |---|---|
-| Understand the current product decision | `factory/_shared/ARCHITECTURE_SNAPSHOT.md` |
+| Product or architecture question | `docs/api-benchmark-charter.md`, `docs/benchmark-planning-reconciliation.md`, `factory/_shared/BENCHMARK_DIRECTION.md` |
 | Start or continue the governed build | `factory/CONTEXT.md` |
 | Make a tiny, low-risk correction | `CONTEXT.md` express lane |
 | Diagnose an incident or broad refactor | `CONTEXT.md` direct engineering lane |

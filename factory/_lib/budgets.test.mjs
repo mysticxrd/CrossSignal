@@ -23,7 +23,46 @@ test("measures only the active contract's declared shared inputs", async () => {
   assert.deepEqual(budgets.breaches, []);
   assert.equal(budgets.coldLoad.limit, LIMITS.coldWords);
   assert.deepEqual(budgets.coldLoad.paths.filter((path) => path.startsWith("factory/_shared/")), ["factory/_shared/BENCHMARK_DIRECTION.md", "factory/_shared/QUALITY_GATES.md"]);
-  assert.equal(countWords(await readFile(new URL("AGENTS.md", root), "utf8")), 244);
+  assert.equal(countWords(await readFile(new URL("AGENTS.md", root), "utf8")), 245);
+  assert.deepEqual(budgets.coldLoad.decisionEntries, ["D-01", "D-02", "D-03"]);
+  assert.equal(budgets.coldLoad.words, budgets.coldLoad.upfrontWords + budgets.coldLoad.decisionWords);
+});
+
+test("counts each referenced decision once and enforces the unchanged cold-load limit", async () => {
+  const temp = await mkdtemp(join(tmpdir(), "factory-budget-"));
+  try {
+    await mkdir(join(temp, "factory/_shared"), { recursive: true });
+    await mkdir(join(temp, "factory/_templates/stage"), { recursive: true });
+    await mkdir(join(temp, "factory/03_build"), { recursive: true });
+    const decisions = `## D-01\nallowed words\n\n## D-02\n${"unreferenced ".repeat(3000)}\n`;
+    const files = {
+      "AGENTS.md": "agent",
+      "CONTEXT.md": "router",
+      "factory/CONTEXT.md": "factory",
+      "factory/_templates/stage/CONTEXT.md": "template",
+      "factory/03_build/CONTEXT.md": "## Inputs\nSee D-01 and D-01.\n",
+      "factory/DECISIONS.md": decisions,
+    };
+    for (const [path, text] of Object.entries(files)) await writeFile(join(temp, path), text);
+    const budgets = await measureBudgets(temp, "03_build");
+    assert.deepEqual(budgets.breaches, []);
+    assert.deepEqual(budgets.coldLoad.decisionEntries, ["D-01"]);
+    assert.equal(budgets.coldLoad.decisionWords, 4);
+    assert.equal(budgets.coldLoad.upfrontWords, 9);
+    assert.equal(budgets.coldLoad.words, 13);
+    for (const [path, text] of Object.entries(files)) assert.equal(await readFile(join(temp, path), "utf8"), text);
+    await writeFile(join(temp, "factory/DECISIONS.md"), `## D-01\n${"word ".repeat(LIMITS.coldWords)}\n`);
+    const overBudget = await measureBudgets(temp, "03_build");
+    assert.equal(overBudget.coldLoad.limit, 2500);
+    assert.equal(overBudget.breaches.length, 1);
+    assert.match(overBudget.breaches[0], /cold load \(03_build\)/);
+    await writeFile(join(temp, "factory/DECISIONS.md"), "## D-02\nunreferenced\n");
+    await assert.rejects(measureBudgets(temp, "03_build"), /Missing decision entry: D-01/);
+  } finally {
+    assert.equal(dirname(resolve(temp)), resolve(tmpdir()));
+    assert.ok(temp.startsWith(join(tmpdir(), "factory-budget-")));
+    await rm(temp, { recursive: true });
+  }
 });
 
 test("reports individual and cold-load breaches without changing files", async () => {
