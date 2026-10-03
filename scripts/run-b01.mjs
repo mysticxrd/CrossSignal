@@ -1,0 +1,186 @@
+// Runs the B01 batch: the 5 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
+// each, one after another, with Gemini on the free tier. Resumable: saved runs are skipped, so after a daily-quota stop
+// just run it again later. A batch belongs to one commit, so its table does too. Once all 15 runs are saved it starts
+// the separate grader (tests/evaluator/grade-b01.mjs); this process never opens the hidden answers.
+// Usage: node scripts/run-b01.mjs [--new]   (--new starts a fresh batch instead of resuming the latest one)
+import { spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
+import { fileURLToPath } from 'node:url';
+import { bindRun, CUTOFF, START, digest, requireThat } from '../db/benchmark/contracts.mjs';
+import { GEMINI } from '../db/benchmark/gemini-config.mjs';
+import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
+import { runGeminiInvestigation } from '../db/benchmark/gemini-runner.mjs';
+import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
+import { rulesFinding } from '../db/benchmark/rules.mjs';
+
+const root = fileURLToPath(new URL('..', import.meta.url));
+const CASES = 'factory/02_data/benchmark/observable';
+export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
+// Request, network and quota failures say nothing about a method: the attempt is kept but never scored.
+const UNSCORED = ['http_failure', 'transport_failure', 'request_timeout'];
+const id = prefix => `${prefix}_${randomBytes(6).toString('hex')}`;
+const json = value => `${JSON.stringify(value, null, 2)}\n`;
+const localDate = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-');
+
+export async function createBatch({ parent, commit, date = localDate() }) {
+  let name = date;
+  for (let n = 2; existsSync(join(parent, name)); n++) name = `${date}-${n}`;
+  const cases = readdirSync(resolve(root, CASES)).filter(file => file.endsWith('.json')).sort().map(file => {
+    const source = JSON.parse(readFileSync(resolve(root, CASES, file), 'utf8'));
+    return { caseRef: source.caseRef, file: `${CASES}/${file}`, sha256: digest(source) };
+  });
+  const directory = join(parent, name);
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, 'BATCH.json'), json({ version: 'b01-batch-v1', truthMode: 'SIMULATED', date,
+    startedAtUtc: new Date().toISOString(), commit, model: GEMINI.model, configHash: digest(GEMINI), methods: METHODS, cases,
+    slots: cases.flatMap(c => METHODS.map(method => `${c.caseRef}-${method}`)) }), { flag: 'wx' });
+  return directory;
+}
+
+export function latestBatch(parent) {
+  if (!existsSync(parent)) return null;
+  const batches = readdirSync(parent).filter(name => /^\d{4}-\d{2}-\d{2}(-\d+)?$/.test(name) && existsSync(join(parent, name, 'BATCH.json')))
+    .map(name => ({ directory: join(parent, name), started: JSON.parse(readFileSync(join(parent, name, 'BATCH.json'), 'utf8')).startedAtUtc }))
+    .sort((a, b) => a.started.localeCompare(b.started));
+  return batches.at(-1)?.directory ?? null;
+}
+
+function isSaved(directory, slot) {
+  const folder = join(directory, 'runs', slot);
+  return existsSync(folder) && readdirSync(folder).some(name => existsSync(join(folder, name, 'RESULT.json'))
+    && JSON.parse(readFileSync(join(folder, name, 'RESULT.json'), 'utf8')).saved === true);
+}
+
+function metrics(method, result, history, observable) {
+  const records = history.map(row => ({ kind: row.kind, payload: JSON.parse(row.payload) }));
+  const counts = records.filter(r => r.kind === 'response').map(r => r.payload.parsed?.usage?.counts ?? {});
+  const tokens = key => counts.reduce((n, c) => n + (c[key] ?? 0), 0);
+  const calls = result.transport ?? { generationCalls: 0, countCalls: 0, metadataCalls: 0, automaticRetries: 0 };
+  return {
+    tokens: { input: tokens('promptTokenCount'), output: tokens('candidatesTokenCount') + tokens('thoughtsTokenCount'),
+      total: tokens('totalTokenCount') },
+    turns: result.budget?.turns ?? 0, toolCalls: result.budget?.toolAttempts ?? 0, elapsedMs: result.elapsedMs,
+    requests: { generate: calls.generationCalls, countTokens: calls.countCalls, metadata: calls.metadataCalls,
+      retries: calls.automaticRetries, total: calls.generationCalls + calls.countCalls + calls.metadataCalls },
+    // Rows the method saw: every row for rules, else the rows placed in its model requests (all of them for single-shot;
+    // the tool-using model starts from a row-free summary and sees rows only through tool results sent back to it).
+    exposedEvidenceIds: method === 'rules' ? observable.events.map(e => e.id)
+      : [...new Set(records.filter(r => r.kind === 'request').flatMap(r => r.payload.prepared.exposedEvidenceIds))],
+  };
+}
+
+async function runSlot({ directory, slot, entry, source, method, commit, transportFactory }) {
+  const sourceScope = { workspaceId: source.events[0].workspaceId, caseId: source.caseRef,
+    runId: source.events[0].runId, actorId: id('a'), start: START, clock: CUTOFF };
+  const scope = { ...sourceScope, workspaceId: id('w'), caseId: id('c'), runId: id('r'), actorId: id('a') };
+  const observable = bindRun(source, sourceScope, scope);
+  const folder = join(directory, 'runs', slot, new Date().toISOString().replace(/[:.]/g, '-'));
+  await mkdir(folder, { recursive: true });
+  const store = new GeminiStore(join(folder, 'case.sqlite'),
+    { metadata: { scope, method, truthMode: 'SIMULATED', configHash: digest(GEMINI) }, observable });
+  let result, history;
+  try {
+    if (method === 'rules') {
+      store.claim();
+      const started = performance.now(), finding = rulesFinding(observable, scope);
+      result = { truthMode: 'SIMULATED', method, terminalStatus: finding.terminalStatus, failureReason: null, finding,
+        elapsedMs: performance.now() - started, completedAtUtc: new Date().toISOString(), runtimeEffects: 0 };
+      store.append('terminal', result);
+    } else result = await runGeminiInvestigation({ observable, scope, method, store, transport: transportFactory() });
+    history = store.history();
+  } finally { store.close(); }
+  const run = { version: 'b01-run-v1', saved: !UNSCORED.includes(result.failureReason), slot, case: entry.file,
+    caseRef: entry.caseRef, method, model: method === 'rules' ? null : GEMINI.model, commit, scope,
+    metrics: metrics(method, result, history, observable), result };
+  await writeFile(join(folder, 'HISTORY.json'), json(history));
+  await writeFile(join(folder, 'RESULT.json'), json(run));
+  return { run, folder };
+}
+
+function describe({ slot, result, metrics: m }) {
+  const status = result.failureReason && result.failureReason !== result.terminalStatus
+    ? `${result.terminalStatus} (${result.failureReason})` : result.terminalStatus;
+  const diagnosis = result.finding?.hypotheses[0]?.diagnosis;
+  return `${slot}: ${status} · ${m.tokens.total} tok · ${m.turns} turns · ${m.toolCalls} tools · `
+    + `${(m.elapsedMs / 1000).toFixed(1)} s · ${m.requests.total} req${diagnosis ? `\n  diagnosis: ${diagnosis}` : ''}`;
+}
+
+export async function runBatch({ directory, commit, transportFactory, log = line => console.log(line) }) {
+  const batch = JSON.parse(await readFile(join(directory, 'BATCH.json'), 'utf8'));
+  requireThat(batch.commit === commit, 'batch_commit_mismatch');
+  for (const entry of batch.cases) {
+    const source = JSON.parse(await readFile(resolve(root, entry.file), 'utf8'));
+    requireThat(digest(source) === entry.sha256, 'case_file_changed');
+    for (const method of METHODS) {
+      const slot = `${entry.caseRef}-${method}`;
+      if (isSaved(directory, slot)) { log(`${slot}: saved, skipped`); continue; }
+      const { run, folder } = await runSlot({ directory, slot, entry, source, method, commit, transportFactory });
+      log(describe(run));
+      if (!run.saved) return { complete: false, stopped: run, folder };
+    }
+  }
+  return { complete: true };
+}
+
+// Google marks a used-up daily free-tier quota with a QuotaFailure such as GenerateRequestsPerDayPerProjectPerModel-FreeTier.
+export function dailyQuota(run) {
+  const failure = run.result.transport?.lastFailure, body = run.result.transport?.lastFailureDiagnostic?.body ?? '';
+  if (failure?.httpStatus !== 429 || !body.includes('PerDay')) return null;
+  return /"quotaId":\s*"([^"]*PerDay[^"]*)"/.exec(body)?.[1] ?? 'a daily quota';
+}
+
+function headCommit() {
+  const git = (...args) => spawnSync('git', ['-c', 'safe.directory=*', ...args], { cwd: root, encoding: 'utf8' });
+  const head = git('rev-parse', 'HEAD'), status = git('status', '--porcelain');
+  requireThat(head.status === 0 && status.status === 0, 'git_unavailable');
+  requireThat(status.stdout.trim() === '', 'commit_changes_before_running: a batch must come from one commit');
+  return head.stdout.trim();
+}
+
+function requireFreeTierKey() {
+  // $0 only: refuse to send anything unless the owner's attestation says billing is off with no paid fallback.
+  const account = JSON.parse(readFileSync(resolve(root, 'factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json'), 'utf8'));
+  requireThat(account.model === GEMINI.model && account.freeTier === true && account.billingDisabled === true
+    && account.paidSpendCapUsd === 0 && account.paidFallback === false, 'free_tier_attestation_required');
+  if (!process.env.GEMINI_API_KEY && existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
+  requireThat(typeof process.env.GEMINI_API_KEY === 'string' && process.env.GEMINI_API_KEY.trim().length > 0, 'GEMINI_API_KEY_unset');
+}
+
+async function main(args) {
+  const parent = resolve(root, 'outputs/b01'), commit = headCommit();
+  let directory = args.includes('--new') ? null : latestBatch(parent);
+  if (directory) {
+    const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+    requireThat(batch.commit === commit, `${directory} was run at ${batch.commit} but HEAD is ${commit}; `
+      + 'a table must come from one commit, so start a fresh batch with --new');
+    console.log(`Resuming ${directory}`);
+  } else {
+    directory = await createBatch({ parent, commit });
+    console.log(`New batch ${directory} at ${commit}`);
+  }
+  const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+  if (batch.slots.some(slot => !slot.endsWith('-rules') && !isSaved(directory, slot))) requireFreeTierKey();
+  const outcome = await runBatch({ directory, commit, transportFactory: () => createHttpTransport({ mode: 'FREE_TIER_BENCHMARK',
+    fetchImpl: globalThis.fetch, keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {} }) });
+  if (!outcome.complete) {
+    const quota = dailyQuota(outcome.stopped);
+    console.log(quota ? `Stopped: the Gemini free-tier daily quota is used up (${quota}). That attempt is kept unscored in `
+      + `${outcome.folder}. Run node scripts/run-b01.mjs again after the quota resets; saved runs are skipped.`
+      : `Stopped: ${outcome.stopped.slot} ended with ${outcome.stopped.result.failureReason} (Google's error is printed above). `
+      + `That attempt is kept unscored in ${outcome.folder}. If it was a request bug, commit the fix and rerun with --new; `
+      + 'otherwise run again later to resume.');
+    process.exitCode = 2;
+    return;
+  }
+  // Grading runs in its own process, the only one that reads the rubric.
+  const graded = spawnSync(process.execPath, [resolve(root, 'tests/evaluator/grade-b01.mjs'), directory], { cwd: root, stdio: 'inherit' });
+  process.exitCode = graded.status ?? 1;
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main(process.argv.slice(2)).catch(error => { console.error(error.stack ?? error.message); process.exitCode = 1; });
+}
