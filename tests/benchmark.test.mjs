@@ -27,9 +27,17 @@ function response(answer = finding()) {
 }
 
 test('public contracts are byte-identical durable copies of accepted Data', () => {
-  for (const name of ['contracts.mjs', 'schemas.mjs', 'exposure.mjs', 'task.md']) {
+  for (const name of ['contracts.mjs', 'schemas.mjs', 'exposure.mjs']) {
     assert.deepEqual(readFileSync(new URL(`../db/benchmark/${name}`, import.meta.url)), readFileSync(new URL(name, source)));
   }
+});
+test('the task is the accepted Data task plus only the step-5 check-before-you-blame paragraph', () => {
+  const frozen = readFileSync(new URL('task.md', source), 'utf8'), task = readFileSync(new URL('../db/benchmark/task.md', import.meta.url), 'utf8');
+  assert(task.startsWith(frozen));
+  const added = task.slice(frozen.length).trim();
+  assert.match(added, /^Check before you blame: before naming a deployment or configuration change as the cause, confirm in cited observations that the changed service shows failures after the change went out\./);
+  assert.match(added, /If no candidate cause fits the observations, or the observations needed to check are missing, abstain/);
+  assert.doesNotMatch(added, /\bB\d\d\b|\bv\d+\b|IN\/|GB\//);
 });
 test('all five single-shot requests expose only validated synthetic observations and fixed capabilities', () => {
   assert.equal(publicCases.length, 5);

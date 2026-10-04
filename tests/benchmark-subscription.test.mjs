@@ -30,8 +30,10 @@ test('preserved subscription proposal retains its original profile and public Da
   assert.equal(PROVIDER.candidateModel, 'gpt-6.1-sol');
   assert.equal(PROVIDER.reasoningEffort, 'low');
   assert.equal(PROVIDER.subscriptionRequestsConditionallyAuthorized, true);
-  for (const name of ['contracts.mjs', 'schemas.mjs', 'exposure.mjs', 'tools.mjs', 'task.md'])
+  for (const name of ['contracts.mjs', 'schemas.mjs', 'exposure.mjs', 'tools.mjs'])
     assert.deepEqual(readFileSync(new URL(`../db/benchmark/${name}`, import.meta.url)), readFileSync(new URL(name, source)));
+  // The shared task keeps the accepted Data text and adds only the step-5 paragraph (pinned in benchmark.test.mjs).
+  assert(readFileSync(new URL('../db/benchmark/task.md', import.meta.url), 'utf8').startsWith(readFileSync(new URL('task.md', source), 'utf8')));
 });
 test('all five isolated single-shot requests use SIWC fields and no stored conversation or native capabilities', () => {
   for (const input of inputs) {
