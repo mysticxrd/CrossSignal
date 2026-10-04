@@ -11,7 +11,7 @@ import { CHECKS, METHODS, gradeBatch } from './grade-b01.mjs';
 
 const MODELS = METHODS.filter(method => method !== 'rules');
 const NAMES = { 'single-shot-model': 'Single-shot', 'tool-using-model': 'Tool-using' };
-const SPLITS = { development: 'Dev', frozen_transfer: 'Holdout', fresh_holdout: 'Fresh holdout' };
+const SPLITS = { development: 'Dev', frozen_transfer: 'Holdout', fresh_holdout: 'Fresh holdout', fresh_holdout_2: 'Fresh holdout 2' };
 const MEANS = [['tokens', 'Tokens (input + output)'], ['outputTokens', 'Output tokens (thinking included)'], ['turns', 'Model turns'],
   ['toolCalls', 'Tool calls'], ['requests', 'Gemini requests'], ['elapsedMs', 'Wall time']];
 const USAGE = 'Usage: node tests/evaluator/compare-b01.mjs --out <dir> <batch-dir>...';

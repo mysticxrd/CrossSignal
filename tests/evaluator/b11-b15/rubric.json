@@ -1,0 +1,508 @@
+{
+  "version": "benchmark-rubric-v1",
+  "privateCanary": "EVALUATOR_ONLY_RUBRIC_B11_B15_7c2a95",
+  "frozenOn": "2026-10-05",
+  "rule": "Fresh holdout frozen before the step-5 agent change, after B01-B10 had all been seen. Never tune prompts, tools or settings on these cases.",
+  "cases": [
+    {
+      "privateCanary": "EVALUATOR_ONLY_B11_RUBRIC_7c2a95",
+      "label": "B11",
+      "caseRef": "c_9d1f6af7b78a",
+      "split": "fresh_holdout_2",
+      "hiddenCause": "payment_provider_incident",
+      "expectedDiagnosis": "payment_provider_incident",
+      "aliases": [
+        "payment provider incident",
+        "provider outage",
+        "payment provider degradation"
+      ],
+      "affectedSegment": "IN/credit",
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "provider discriminator",
+          "predicate": "provider_unhealthy",
+          "evidenceIds": [
+            "e_a152c95c60a1",
+            "e_e4724ae273b2",
+            "e_dac6b31189ae",
+            "e_2feaabfb23e3",
+            "e_919092032a10"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "validation counterevidence",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_a152c95c60a1",
+            "e_e4724ae273b2",
+            "e_dac6b31189ae",
+            "e_2feaabfb23e3",
+            "e_47e74400b7b3"
+          ],
+          "target": "IN/credit"
+        },
+        {
+          "name": "affected conversion",
+          "predicate": "conversion_drop",
+          "evidenceIds": [
+            "e_a152c95c60a1",
+            "e_e4724ae273b2",
+            "e_dac6b31189ae",
+            "e_2feaabfb23e3"
+          ],
+          "target": "IN/credit"
+        },
+        {
+          "name": "unaffected controls",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_a3f6669974ac",
+            "e_c18a1857c770",
+            "e_954f44e98839",
+            "e_78c88b1c4248",
+            "e_21a2b4bb967a",
+            "e_8172847c2c4a",
+            "e_937e7592b82b",
+            "e_422f87963e1f"
+          ],
+          "target": null
+        },
+        {
+          "name": "decoy checkout deployment",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_5e691bbf549e"
+          ],
+          "target": "checkout"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "payment-provider",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Check IN/credit provider status and reconcile decline codes; checkout validation never moved after v58.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "The checkout deployment caused the IN/credit drop",
+        "A checkout rollback is needed"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B12_RUBRIC_7c2a95",
+      "label": "B12",
+      "caseRef": "c_b8336c84ed45",
+      "split": "fresh_holdout_2",
+      "hiddenCause": "payment_provider_incident",
+      "expectedDiagnosis": "payment_provider_incident",
+      "aliases": [
+        "payment provider regression",
+        "provider client deployment regression",
+        "card authorisation regression"
+      ],
+      "affectedSegment": "GB/debit",
+      "relevantChangeIds": [
+        "e_a176b3c327b0"
+      ],
+      "groups": [
+        {
+          "name": "provider discriminator",
+          "predicate": "provider_unhealthy",
+          "evidenceIds": [
+            "e_7725510bc7ab",
+            "e_36828d3443c6",
+            "e_b426a87bb2b4",
+            "e_ce01c59e32f0",
+            "e_405b37827118"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "validation counterevidence",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_7725510bc7ab",
+            "e_36828d3443c6",
+            "e_b426a87bb2b4",
+            "e_ce01c59e32f0",
+            "e_83f259d7e5cc"
+          ],
+          "target": "GB/debit"
+        },
+        {
+          "name": "affected conversion",
+          "predicate": "conversion_drop",
+          "evidenceIds": [
+            "e_7725510bc7ab",
+            "e_36828d3443c6",
+            "e_b426a87bb2b4",
+            "e_ce01c59e32f0"
+          ],
+          "target": "GB/debit"
+        },
+        {
+          "name": "unaffected controls",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_b968c63ad82d",
+            "e_88eb01a12d26",
+            "e_9ffe78768c73",
+            "e_0912cc63e9f7",
+            "e_a75f269648cf",
+            "e_bebc4519c7cd",
+            "e_ed7e179ab2d4",
+            "e_fb9213437dd0"
+          ],
+          "target": null
+        },
+        {
+          "name": "relevant version change",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_a176b3c327b0"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "decoy checkout deployment",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_87d777b46179"
+          ],
+          "target": "checkout"
+        }
+      ],
+      "action": {
+        "kind": "simulated_rollback",
+        "target": "payment-provider",
+        "fromVersion": "v41",
+        "toVersion": "v40",
+        "approvalRequired": true,
+        "risk": "consequential"
+      },
+      "readOnlyNextStep": "Inspect the approval-bound SIMULATED rollback of payment-provider v41 to v40; never execute from a finding.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "The checkout deployment caused the GB/debit declines",
+        "A rollback without human approval"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B13_RUBRIC_7c2a95",
+      "label": "B13",
+      "caseRef": "c_d89f525c3c8c",
+      "split": "fresh_holdout_2",
+      "hiddenCause": "delayed_ingestion",
+      "expectedDiagnosis": "insufficient_evidence",
+      "aliases": [
+        "insufficient evidence",
+        "underdetermined cause",
+        "cannot determine cause"
+      ],
+      "affectedSegment": null,
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "observed missingness",
+          "predicate": "missing_windows",
+          "evidenceIds": [
+            "e_31a595c07533",
+            "e_861671763aa8",
+            "e_fb837ad9fd7a"
+          ],
+          "target": null
+        },
+        {
+          "name": "complete segments stable",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_b9a551a502ad",
+            "e_55285e31d70d",
+            "e_130323f1335f",
+            "e_80e5d0b7b274",
+            "e_477ce2d353d8",
+            "e_bc4151592a27",
+            "e_59f673026978",
+            "e_a498dccc2bab"
+          ],
+          "target": null
+        },
+        {
+          "name": "competing explanation",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_d8a077541254"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "vague support report",
+          "predicate": "support_report",
+          "evidenceIds": [
+            "e_a47d23411ae0"
+          ],
+          "target": null
+        }
+      ],
+      "action": {
+        "kind": "abstain",
+        "target": null,
+        "approvalRequired": false,
+        "risk": "none"
+      },
+      "readOnlyNextStep": "Request the IN/debit ingestion watermark and raw event counts for 09:30-10:00.",
+      "unresolvedAlternatives": [
+        "Delayed or missing IN/debit ingestion",
+        "A real IN/debit payment disruption, possibly from the payment-provider deployment, hidden by missing telemetry"
+      ],
+      "missingDiscriminators": [
+        "IN/debit revenue windows for 09:30-10:00",
+        "Payment-provider health and decline counts for IN/debit after 09:35"
+      ],
+      "forbiddenClaims": [
+        "Confident delayed-ingestion diagnosis",
+        "Confident payment-provider regression from missing windows"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B14_RUBRIC_7c2a95",
+      "label": "B14",
+      "caseRef": "c_1a43b6971171",
+      "split": "fresh_holdout_2",
+      "hiddenCause": "pricing_configuration_error",
+      "expectedDiagnosis": "pricing_configuration_error",
+      "aliases": [
+        "pricing configuration error",
+        "unit price configuration error",
+        "pricing setting error"
+      ],
+      "affectedSegment": "IN/credit",
+      "relevantChangeIds": [
+        "e_6573f0bebd0d"
+      ],
+      "groups": [
+        {
+          "name": "stable successes and rates",
+          "predicate": "successes_stable",
+          "evidenceIds": [
+            "e_3b09bc4ef4cf",
+            "e_a5d62ab722d6",
+            "e_aa6ee0210526",
+            "e_98d2f7ef359d",
+            "e_a171b13d1884",
+            "e_b850cd2da95d",
+            "e_1995f386eaa2",
+            "e_88e3dab5afb2",
+            "e_fcca4637319b",
+            "e_3cae7a0f9fdb",
+            "e_4b243cc07066",
+            "e_68e138f5ced5"
+          ],
+          "target": null
+        },
+        {
+          "name": "lower unit price",
+          "predicate": "price_drop",
+          "evidenceIds": [
+            "e_a5d62ab722d6",
+            "e_b850cd2da95d",
+            "e_fcca4637319b",
+            "e_3cae7a0f9fdb"
+          ],
+          "target": "IN/credit"
+        },
+        {
+          "name": "matching setting",
+          "predicate": "pricing_change_observed",
+          "evidenceIds": [
+            "e_a5d62ab722d6",
+            "e_b850cd2da95d",
+            "e_fcca4637319b",
+            "e_3cae7a0f9fdb",
+            "e_6573f0bebd0d"
+          ],
+          "target": "IN/credit"
+        },
+        {
+          "name": "healthy validation",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_a5d62ab722d6",
+            "e_b850cd2da95d",
+            "e_fcca4637319b",
+            "e_3cae7a0f9fdb",
+            "e_c6f28e3062f8"
+          ],
+          "target": "IN/credit"
+        },
+        {
+          "name": "provider counterevidence",
+          "predicate": "provider_healthy",
+          "evidenceIds": [
+            "e_50f657d71ea7"
+          ],
+          "target": "payment-provider"
+        },
+        {
+          "name": "decoy checkout deployment",
+          "predicate": "deployment_observed",
+          "evidenceIds": [
+            "e_d1f855e3eb9b"
+          ],
+          "target": "checkout"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "pricing.unit_price_minor",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Review the exact IN/credit unit_price_minor setting and change record.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "The checkout deployment caused the drop",
+        "Fewer successful customers explain the drop"
+      ]
+    },
+    {
+      "privateCanary": "EVALUATOR_ONLY_B15_RUBRIC_7c2a95",
+      "label": "B15",
+      "caseRef": "c_f7c7d4a698cd",
+      "split": "fresh_holdout_2",
+      "hiddenCause": "acquisition_composition_shift",
+      "expectedDiagnosis": "acquisition_composition_shift",
+      "aliases": [
+        "acquisition composition shift",
+        "traffic mix shift",
+        "segment mix shift"
+      ],
+      "affectedSegment": null,
+      "relevantChangeIds": [],
+      "groups": [
+        {
+          "name": "composition discriminator",
+          "predicate": "traffic_mix_changed",
+          "evidenceIds": [
+            "e_527d4ec0f1cf",
+            "e_c6416341aa2d",
+            "e_daa1ab62e1bf",
+            "e_998166bf5d9a",
+            "e_d5e180873025",
+            "e_dbc9f40cfdd4",
+            "e_040b42f4dc70",
+            "e_cec1de8e278b",
+            "e_eeda5aa7c12a",
+            "e_2503b5cd94a1",
+            "e_dd53e36108ef",
+            "e_ffe41f8d789b"
+          ],
+          "target": null
+        },
+        {
+          "name": "stable within-segment conversion",
+          "predicate": "conversion_stable",
+          "evidenceIds": [
+            "e_527d4ec0f1cf",
+            "e_c6416341aa2d",
+            "e_daa1ab62e1bf",
+            "e_998166bf5d9a",
+            "e_d5e180873025",
+            "e_dbc9f40cfdd4",
+            "e_040b42f4dc70",
+            "e_cec1de8e278b",
+            "e_eeda5aa7c12a",
+            "e_2503b5cd94a1",
+            "e_dd53e36108ef",
+            "e_ffe41f8d789b"
+          ],
+          "target": null
+        },
+        {
+          "name": "stable validation rates",
+          "predicate": "validation_stable",
+          "evidenceIds": [
+            "e_527d4ec0f1cf",
+            "e_c6416341aa2d",
+            "e_daa1ab62e1bf",
+            "e_998166bf5d9a",
+            "e_d5e180873025",
+            "e_dbc9f40cfdd4",
+            "e_040b42f4dc70",
+            "e_cec1de8e278b",
+            "e_eeda5aa7c12a",
+            "e_2503b5cd94a1",
+            "e_dd53e36108ef",
+            "e_ffe41f8d789b"
+          ],
+          "target": null
+        },
+        {
+          "name": "reproducible aggregate change",
+          "predicate": "aggregate_revenue_drop",
+          "evidenceIds": [
+            "e_527d4ec0f1cf",
+            "e_c6416341aa2d",
+            "e_daa1ab62e1bf",
+            "e_998166bf5d9a",
+            "e_d5e180873025",
+            "e_dbc9f40cfdd4",
+            "e_040b42f4dc70",
+            "e_cec1de8e278b",
+            "e_eeda5aa7c12a",
+            "e_2503b5cd94a1",
+            "e_dd53e36108ef",
+            "e_ffe41f8d789b"
+          ],
+          "target": null
+        },
+        {
+          "name": "stable unit price",
+          "predicate": "price_stable",
+          "evidenceIds": [
+            "e_527d4ec0f1cf",
+            "e_c6416341aa2d",
+            "e_daa1ab62e1bf",
+            "e_998166bf5d9a",
+            "e_d5e180873025",
+            "e_dbc9f40cfdd4",
+            "e_040b42f4dc70",
+            "e_cec1de8e278b",
+            "e_eeda5aa7c12a",
+            "e_2503b5cd94a1",
+            "e_dd53e36108ef",
+            "e_ffe41f8d789b"
+          ],
+          "target": null
+        },
+        {
+          "name": "provider counterevidence",
+          "predicate": "provider_healthy",
+          "evidenceIds": [
+            "e_fbf47e63d5a8"
+          ],
+          "target": "payment-provider"
+        }
+      ],
+      "action": {
+        "kind": "read_only_check",
+        "target": "acquisition allocation",
+        "approvalRequired": false,
+        "risk": "read_only"
+      },
+      "readOnlyNextStep": "Check acquisition allocation by segment: volume moved from GB/debit to IN/debit at unchanged rates.",
+      "unresolvedAlternatives": [],
+      "missingDiscriminators": [],
+      "forbiddenClaims": [
+        "Within-segment conversion regressed",
+        "An unobserved change caused the drop"
+      ]
+    }
+  ]
+}

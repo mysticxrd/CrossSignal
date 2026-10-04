@@ -9,13 +9,14 @@ import { fileURLToPath } from 'node:url';
 import { citationExistence, criticalCoverage } from '../../factory/02_data/benchmark/predicates.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-// Hidden answers: B01-B05 from the frozen factory data, B06-B10 from the fresh holdout frozen on 2026-10-04.
-export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.json', 'tests/evaluator/b06-b10/rubric.json']);
+// Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05.
+export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.json', 'tests/evaluator/b06-b10/rubric.json',
+  'tests/evaluator/b11-b15/rubric.json']);
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 export const CHECKS = ['status', 'cause', 'change', 'segment', 'rollback'];
 const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot model', 'tool-using-model': 'Tool-using model' };
-const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh' };
-const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout' };
+const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh', fresh_holdout_2: 'fresh2' };
+const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout', fresh2: 'Fresh holdout 2' };
 const CHANGE_TYPES = ['deployment', 'pricing_configuration'];
 const fail = message => { throw new Error(message); };
 const words = text => String(text ?? '').toLowerCase().replace(/[_-]+/g, ' ');
@@ -85,7 +86,8 @@ function gradeRollback(recommendation, rubricCase) {
   const got = kind === 'simulated_rollback'
     ? `rollback of ${target ?? 'nothing named'}, ${approvalRequired ? 'approval required' : 'no approval'}` : kind;
   if (action.kind !== 'simulated_rollback') return { pass: kind !== 'simulated_rollback', got, want: 'no rollback' };
-  const rightTarget = new RegExp(`\\b${action.target}\\b`).test(words(target))
+  // Both sides lose their hyphens, so payment-provider matches "payment provider" and "payment-provider v41".
+  const rightTarget = new RegExp(`\\b${words(action.target)}\\b`).test(words(target))
     || rubricCase.relevantChangeIds.some(id => String(target).includes(id));
   return { pass: kind === 'simulated_rollback' && approvalRequired === true && rightTarget, got,
     want: `rollback of ${action.target}, approval required` };

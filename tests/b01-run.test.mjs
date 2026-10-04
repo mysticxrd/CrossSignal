@@ -38,11 +38,11 @@ test('a daily-quota stop keeps that attempt unscored and the rerun resumes witho
   const directory = await createBatch({ parent, commit: 'fixture-commit', date: '2026-10-03' });
   assert.equal(latestBatch(parent), directory);
   const { slots, cases, caseSets } = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
-  // Both case sets by default: B01-B05, then the fresh B06-B10.
-  assert.deepEqual(caseSets, ['b01-b05', 'b06-b10']);
+  // Every case set by default: B01-B05, then the fresh B06-B10 and B11-B15.
+  assert.deepEqual(caseSets, ['b01-b05', 'b06-b10', 'b11-b15']);
   assert.deepEqual(cases.map(c => c.file.slice(0, c.file.lastIndexOf('/'))),
-    [...Array(5).fill(CASE_SETS['b01-b05']), ...Array(5).fill(CASE_SETS['b06-b10'])]);
-  assert.equal(slots.length, 30);
+    [...Array(5).fill(CASE_SETS['b01-b05']), ...Array(5).fill(CASE_SETS['b06-b10']), ...Array(5).fill(CASE_SETS['b11-b15'])]);
+  assert.equal(slots.length, 45);
   const rows = JSON.parse(readFileSync(cases[0].file, 'utf8')).events.map(e => e.id);
   const quiet = { directory, commit: 'fixture-commit', log: () => {} };
 

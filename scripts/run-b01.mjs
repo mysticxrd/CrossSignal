@@ -1,4 +1,4 @@
-// Runs the B01 batch: the 10 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
+// Runs the B01 batch: the 15 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
 // each, one after another, with Gemini on the free tier. Gemini requests start at least 4.5 s apart, under the free
 // tier's 15 a minute. Resumable: saved runs are skipped, so after a daily-quota stop just run it again later. A batch
 // belongs to one commit and one profile, so its table does too. Once every run is saved it starts the separate grader
@@ -21,8 +21,10 @@ import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
 import { rulesFinding } from '../db/benchmark/rules.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-// Public case files in batch order. B01-B05 were frozen on 2026-10-01; B06-B10 on 2026-10-04, before any agent change.
-export const CASE_SETS = Object.freeze({ 'b01-b05': 'factory/02_data/benchmark/observable', 'b06-b10': 'db/benchmark/cases/b06-b10' });
+// Public case files in batch order. B01-B05 were frozen on 2026-10-01; B06-B10 on 2026-10-04, before any agent change;
+// B11-B15 on 2026-10-05, before the step-5 change, once B01-B10 had all been seen.
+export const CASE_SETS = Object.freeze({ 'b01-b05': 'factory/02_data/benchmark/observable', 'b06-b10': 'db/benchmark/cases/b06-b10',
+  'b11-b15': 'db/benchmark/cases/b11-b15' });
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 // Request, network and quota failures say nothing about a method: the attempt is kept but never scored.
 const UNSCORED = ['http_failure', 'transport_failure', 'request_timeout'];

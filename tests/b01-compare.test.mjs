@@ -11,7 +11,7 @@ import { compareBatches, renderComparison } from './evaluator/compare-b01.mjs';
 import { METHODS, RUBRICS } from './evaluator/grade-b01.mjs';
 
 // Fixture batches only: the rules answer stands in for every method, so no model and no network.
-const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10'];
+const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10', 'db/benchmark/cases/b11-b15'];
 const cases = RUBRICS.flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases
   .map(c => ({ label: c.label, caseRef: c.caseRef, file: `${FOLDERS[i]}/${c.caseRef}.json` }))).sort((a, b) => a.label.localeCompare(b.label));
 const source = c => JSON.parse(readFileSync(c.file, 'utf8'));
@@ -45,16 +45,17 @@ const minimal2 = batch('minimal-2', { started: '2026-10-04T03:00:00.000Z', broke
 const low2 = batch('low-2', { profile: 'low', started: '2026-10-04T04:00:00.000Z', tokens: 4000 });
 
 test('a comparison adds up each profile\'s repeated batches, case by case and in start order', () => {
-  // The frozen rules answer scores 46/50 a batch: it abstains on B06 and picks the wrong segment on B07 and B08.
+  // The frozen rules answer scores 67/75 a batch: it abstains on B06, picks the wrong segment on B07, B08 and B11, and misses
+  // B12's provider deploy.
   const comparison = compareBatches([low2, minimal1, low1, minimal2]);
   assert.deepEqual(comparison.batches.map(b => b.profile), ['minimal', 'low', 'minimal', 'low']);
   assert.deepEqual(comparison.profiles.map(p => [p.name, p.batches, p.tokenLimits.thinkingLevel]), [['minimal', 2, 'MINIMAL'], ['low', 2, 'LOW']]);
   const all = comparison.totals.all.cells;
-  assert.deepEqual([all['single-shot-model'].minimal.perBatch, all['tool-using-model'].minimal.perBatch], [[46, 41], [41, 46]]);
-  assert.deepEqual([all['single-shot-model'].low.perBatch, all['tool-using-model'].low.perBatch], [[46, 46], [46, 46]]);
-  assert.deepEqual([all['tool-using-model'].minimal.score, all['tool-using-model'].minimal.maxScore], [87, 100]);
-  assert.deepEqual(all.rules.perBatch, [46, 46, 46, 46]);
-  assert.deepEqual(Object.keys(comparison.totals), ['development', 'frozen_transfer', 'fresh_holdout', 'all']);
+  assert.deepEqual([all['single-shot-model'].minimal.perBatch, all['tool-using-model'].minimal.perBatch], [[67, 62], [62, 67]]);
+  assert.deepEqual([all['single-shot-model'].low.perBatch, all['tool-using-model'].low.perBatch], [[67, 67], [67, 67]]);
+  assert.deepEqual([all['tool-using-model'].minimal.score, all['tool-using-model'].minimal.maxScore], [129, 150]);
+  assert.deepEqual(all.rules.perBatch, [67, 67, 67, 67]);
+  assert.deepEqual(Object.keys(comparison.totals), ['development', 'frozen_transfer', 'fresh_holdout', 'fresh_holdout_2', 'all']);
   const b01 = comparison.cases.find(c => c.label === 'B01').cells['tool-using-model'];
   assert.deepEqual([b01.minimal.perBatch, b01.low.perBatch], [[0, 5], [5, 5]]);
   assert.equal(b01.minimal.endings['invalid_output (invalid_json_or_schema)'], 1);
@@ -62,16 +63,17 @@ test('a comparison adds up each profile\'s repeated batches, case by case and in
   assert.deepEqual([all['tool-using-model'].minimal.mean.tokens, all['tool-using-model'].low.mean.outputTokens], [1000, 3100]);
 
   const markdown = renderComparison(comparison);
-  assert.match(markdown, /^# Benchmark: `minimal` vs `low` on 10 simulated cases$/m);
+  assert.match(markdown, /^# Benchmark: `minimal` vs `low` on 15 simulated cases$/m);
   assert.match(markdown, /This compares 4 batches: 2 with `minimal` and 2 with `low`, started in the order listed under Provenance\./);
   assert.match(markdown, /^\| Method \| `minimal`: MINIMAL thinking, up to 1,024 output tokens a response \| `low`: LOW thinking, up to 4,096 /m);
-  assert.match(markdown, /^\| Tool-using model \| \*\*87\/100\*\* \(87%\) · per batch 41, 46 \| \*\*92\/100\*\* \(92%\) · per batch 46, 46 \|$/m);
-  assert.match(markdown, /so 2 batches of 10 cases make 100\. Rules, the no-model baseline in `db\/benchmark\/rules\.mjs`, scored 46\/50 in every batch;/);
+  assert.match(markdown, /^\| Tool-using model \| \*\*129\/150\*\* \(86%\) · per batch 62, 67 \| \*\*134\/150\*\* \(89%\) · per batch 67, 67 \|$/m);
+  assert.match(markdown, /so 2 batches of 15 cases make 150\. Rules, the no-model baseline in `db\/benchmark\/rules\.mjs`, scored 67\/75 in every batch;/);
   assert.match(markdown, /^\| Case \| Split \| Single-shot · `minimal` \| Single-shot · `low` \| Tool-using · `minimal` \| Tool-using · `low` \| Rules \|$/m);
   assert.match(markdown, /^\| B01 \| Dev \| 10\/10 \(5, 5\) \| 10\/10 \(5, 5\) \| 5\/10 \(0, 5\) \| 10\/10 \(5, 5\) \| 5\/5 in every batch \|$/m);
   assert.match(markdown, /^\| Dev \(B01, B02\) \| \| 15\/20 \(10, 5\) \| 20\/20 \(10, 10\) \| 15\/20 \(5, 10\) \| 20\/20 \(10, 10\) \| 10\/10 in every batch \|$/m);
   assert.match(markdown, /^\| Fresh holdout \(B06, B07, B08, B09, B10\) \| \| 42\/50 \(21, 21\) \|/m);
-  assert.match(markdown, /^\| \*\*All\*\* \| \| \*\*87\/100 \(46, 41\)\*\* \| \*\*92\/100 \(46, 46\)\*\* \| \*\*87\/100 \(41, 46\)\*\* \| \*\*92\/100 \(46, 46\)\*\* \| 46\/50 in every batch \|$/m);
+  assert.match(markdown, /^\| Fresh holdout 2 \(B11, B12, B13, B14, B15\) \| \| 42\/50 \(21, 21\) \|/m);
+  assert.match(markdown, /^\| \*\*All\*\* \| \| \*\*129\/150 \(67, 62\)\*\* \| \*\*134\/150 \(67, 67\)\*\* \| \*\*129\/150 \(62, 67\)\*\* \| \*\*134\/150 \(67, 67\)\*\* \| 67\/75 in every batch \|$/m);
   assert.match(markdown, /^\| invalid_output \(invalid_json_or_schema\) \| 1 \| 0 \| 1 \| 0 \|$/m);
   assert.match(markdown, /^\| Output tokens \(thinking included\) \| 100 \| 3,100 \| 100 \| 3,100 \|$/m);
   assert.match(markdown, /^\| Wall time \| 1\.5 s \| 1\.5 s \| 1\.5 s \| 1\.5 s \|$/m);
@@ -96,7 +98,7 @@ test('the comparison runs as its own process and writes COMPARISON.md and compar
   const compared = spawnSync(process.execPath, ['tests/evaluator/compare-b01.mjs', '--out', out, minimal1, low1], { encoding: 'utf8' });
   assert.equal(compared.status, 0, compared.stderr);
   assert.equal(JSON.parse(readFileSync(join(out, 'comparison.json'), 'utf8')).version, 'b01-comparison-v1');
-  assert.match(readFileSync(join(out, 'COMPARISON.md'), 'utf8'), /^\| Single-shot model \| \*\*46\/50\*\* \(92%\) · per batch 46 \| /m);
+  assert.match(readFileSync(join(out, 'COMPARISON.md'), 'utf8'), /^\| Single-shot model \| \*\*67\/75\*\* \(89%\) · per batch 67 \| /m);
   // Without --out it refuses rather than write into a batch folder.
   const refused = spawnSync(process.execPath, ['tests/evaluator/compare-b01.mjs', minimal1, low1], { encoding: 'utf8' });
   assert.notEqual(refused.status, 0);

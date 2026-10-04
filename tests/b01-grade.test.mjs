@@ -10,7 +10,7 @@ import { rulesFinding } from '../db/benchmark/rules.mjs';
 import { CHECKS, METHODS, RUBRICS, gradeBatch, gradeRun, namedCause, renderResults } from './evaluator/grade-b01.mjs';
 
 // Fixture findings only: no model, no network. Public case folders in the order of RUBRICS.
-const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10'];
+const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10', 'db/benchmark/cases/b11-b15'];
 const rubricCases = RUBRICS.flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases.map(c => ({ c, folder: FOLDERS[i] })));
 const entry = label => rubricCases.find(({ c }) => c.label === label);
 const rubricCase = label => entry(label).c;
@@ -125,6 +125,17 @@ test('on B08 the checkout deploy explains the drop, not the newer provider deplo
   assert.deepEqual(passed(newest), ['status', 'segment']);
 });
 
+test('on B12 the payment-provider deploy explains the drop, and its rollback matches with or without the hyphen', () => {
+  const id = service => source('B12').events.find(e => e.type === 'deployment' && e.payload.service === service).id;
+  const rollback = target => finding({ diagnosis: 'Payment-provider v41 broke GB/debit card authorisation', change: id('payment-provider'),
+    segment: 'GB/debit', kind: 'simulated_rollback', target, approval: true });
+  for (const target of ['payment-provider v41 -> v40', 'Payment provider', id('payment-provider')]) assert.equal(grade('B12', rollback(target)).score, 5);
+  assert.equal(grade('B12', rollback('checkout')).checks.rollback.pass, false);
+  const decoy = grade('B12', finding({ diagnosis: 'Promo banner copy update broke checkout', change: id('checkout'), segment: 'GB/debit',
+    kind: 'simulated_rollback', target: 'checkout v131 -> v130', approval: true }));
+  assert.deepEqual(passed(decoy), ['status', 'segment']);
+});
+
 test('only B01 may roll back, and only checkout with approval', () => {
   const rollback = (label, target, approval) => grade(label, finding({ kind: 'simulated_rollback', target, approval })).checks.rollback;
   assert.equal(rollback('B01', 'checkout v142 -> v141', true).pass, true);
@@ -166,7 +177,7 @@ test('the runner never opens the hidden answers or imports the grader', () => {
   assert(!/^import .*evaluator/m.test(runner));
 });
 
-test('the grader runs as its own process on a finished batch and writes the 10 x 3 table', () => {
+test('the grader runs as its own process on a finished batch and writes the 15 x 3 table', () => {
   const directory = mkdtempSync(join(tmpdir(), 'crosssignal-b01-grade-'));
   const runs = rubricCases.map(({ c }) => c.label).sort().flatMap(label => METHODS.map(method => {
     const value = label === 'B02' && method === 'tool-using-model' ? null : rulesFinding(source(label), sourceScope(source(label)));
@@ -187,16 +198,18 @@ test('the grader runs as its own process on a finished batch and writes the 10 x
   assert.equal(results.version, 'b01-results-v2');
   assert.deepEqual(results.cases.map(c => [c.label, c.split]), [['B01', 'development'], ['B02', 'development'],
     ['B03', 'frozen_transfer'], ['B04', 'frozen_transfer'], ['B05', 'frozen_transfer'], ['B06', 'fresh_holdout'],
-    ['B07', 'fresh_holdout'], ['B08', 'fresh_holdout'], ['B09', 'fresh_holdout'], ['B10', 'fresh_holdout']]);
+    ['B07', 'fresh_holdout'], ['B08', 'fresh_holdout'], ['B09', 'fresh_holdout'], ['B10', 'fresh_holdout'],
+    ...['B11', 'B12', 'B13', 'B14', 'B15'].map(label => [label, 'fresh_holdout_2'])]);
   assert.deepEqual(results.rubrics.map(r => r.file), RUBRICS);
-  // The frozen rules baseline: abstains on B06 and picks the wrong segment on B07 and B08.
+  // The frozen rules baseline: abstains on B06, picks the wrong segment on B07, B08 and B11, and misses B12's provider deploy.
   assert.deepEqual(Object.fromEntries(Object.entries(results.totals).map(([split, t]) => [split, METHODS.map(m => t[m].score)])),
-    { dev: [10, 10, 5], holdout: [15, 15, 15], fresh: [21, 21, 21], all: [46, 46, 41] });
+    { dev: [10, 10, 5], holdout: [15, 15, 15], fresh: [21, 21, 21], fresh2: [21, 21, 21], all: [67, 67, 62] });
   assert.match(markdown, /^\| B01 \| dev \| \*\*5\/5\*\* · 1,000 tok · 1 turn · 0 tools · 1\.5 s · 3 req \|/m);
   assert.match(markdown, /^\| B05 \| holdout \|/m);
   assert.match(markdown, /^\| B06 \| fresh \| \*\*3\/5\*\* /m);
   assert.match(markdown, /^\| Fresh holdout \(B06, B07, B08, B09, B10\) \| \| \*\*21\/25\*\* /m);
   assert.match(markdown, /^- Rubric `tests\/evaluator\/b06-b10\/rubric\.json` sha256 `[0-9a-f]{64}`$/m);
+  assert.match(markdown, /^\| Fresh holdout 2 \(B11, B12, B13, B14, B15\) \| \| \*\*21\/25\*\* /m);
   assert.match(markdown, /^- \*\*B02 · Tool-using model\*\* \(0\/5\): no finding: invalid_output \(invalid_json_or_schema\)$/m);
   assert.match(markdown, /^\| B02 \| Tool-using model \| 0\/5 \| ✗ no finding: invalid_output \(invalid_json_or_schema\) \| — \| ✗ — \|/m);
   // A batch from before the profile switch ran the baseline, without request spacing.
