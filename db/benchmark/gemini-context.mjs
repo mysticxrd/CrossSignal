@@ -87,6 +87,8 @@ export function prepareGemini(input, scope, options = {}) {
   }
   request.body.generationConfig.maxOutputTokens = outputReservation;
   assertNoCanaries(request.body, []);
+  // exposure.mjs is pinned to its frozen copy, whose label check stops at B05; every case label is refused here.
+  requireThat(!/\bB\d\d\b/.test(canonical(request.body)), 'private field or case label exposed');
   request.requestSha256 = digest(request.body);
   request.context = { requestBytes: Buffer.byteLength(JSON.stringify(request.body)), outputReservation,
     actualProviderTokens: null, framingAndSchemaTokensVerified: false, dispatchPermitted: false,

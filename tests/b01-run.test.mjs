@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { GEMINI } from '../db/benchmark/gemini-config.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
-import { createBatch, dailyQuota, latestBatch, runBatch } from '../scripts/run-b01.mjs';
+import { CASE_SETS, createBatch, dailyQuota, latestBatch, runBatch } from '../scripts/run-b01.mjs';
 
 const abstain = { version: 'benchmark-finding-v1', terminalStatus: 'epistemic_abstention', signalSummary: 'OFFLINE_FIXTURE: ungraded test answer.',
   hypotheses: [], affectedSegment: null, relatedChangeId: null, unresolvedAlternatives: [],
@@ -35,8 +35,12 @@ test('a daily-quota stop keeps that attempt unscored and the rerun resumes witho
   const parent = mkdtempSync(join(tmpdir(), 'crosssignal-b01-run-'));
   const directory = await createBatch({ parent, commit: 'fixture-commit', date: '2026-10-03' });
   assert.equal(latestBatch(parent), directory);
-  const { slots, cases } = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
-  assert.equal(slots.length, 15);
+  const { slots, cases, caseSets } = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+  // Both case sets by default: B01-B05, then the fresh B06-B10.
+  assert.deepEqual(caseSets, ['b01-b05', 'b06-b10']);
+  assert.deepEqual(cases.map(c => c.file.slice(0, c.file.lastIndexOf('/'))),
+    [...Array(5).fill(CASE_SETS['b01-b05']), ...Array(5).fill(CASE_SETS['b06-b10'])]);
+  assert.equal(slots.length, 30);
   const rows = JSON.parse(readFileSync(cases[0].file, 'utf8')).events.map(e => e.id);
   const quiet = { directory, commit: 'fixture-commit', log: () => {} };
 
@@ -62,4 +66,7 @@ test('a daily-quota stop keeps that attempt unscored and the rerun resumes witho
 
   await assert.rejects(runBatch({ ...quiet, commit: 'other-commit', transportFactory: fixtureGemini() }), /batch_commit_mismatch/);
   assert.equal(await createBatch({ parent, commit: 'fixture-commit', date: '2026-10-03' }), join(parent, '2026-10-03-2'));
+  const fresh = await createBatch({ parent, commit: 'fixture-commit', date: '2026-10-04', sets: ['b06-b10'] });
+  assert.equal(JSON.parse(readFileSync(join(fresh, 'BATCH.json'), 'utf8')).slots.length, 15);
+  await assert.rejects(createBatch({ parent, commit: 'fixture-commit', sets: ['private'] }), /unknown_case_set/);
 });

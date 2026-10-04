@@ -1,6 +1,6 @@
-// Runs the B01 batch: the 5 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
+// Runs the B01 batch: the 10 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
 // each, one after another, with Gemini on the free tier. Resumable: saved runs are skipped, so after a daily-quota stop
-// just run it again later. A batch belongs to one commit, so its table does too. Once all 15 runs are saved it starts
+// just run it again later. A batch belongs to one commit, so its table does too. Once every run is saved it starts
 // the separate grader (tests/evaluator/grade-b01.mjs); this process never opens the hidden answers.
 // Usage: node scripts/run-b01.mjs [--new]   (--new starts a fresh batch instead of resuming the latest one)
 import { spawnSync } from 'node:child_process';
@@ -18,7 +18,8 @@ import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
 import { rulesFinding } from '../db/benchmark/rules.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
-const CASES = 'factory/02_data/benchmark/observable';
+// Public case files in batch order. B01-B05 were frozen on 2026-10-01; B06-B10 on 2026-10-04, before any agent change.
+export const CASE_SETS = Object.freeze({ 'b01-b05': 'factory/02_data/benchmark/observable', 'b06-b10': 'db/benchmark/cases/b06-b10' });
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 // Request, network and quota failures say nothing about a method: the attempt is kept but never scored.
 const UNSCORED = ['http_failure', 'transport_failure', 'request_timeout'];
@@ -26,17 +27,18 @@ const id = prefix => `${prefix}_${randomBytes(6).toString('hex')}`;
 const json = value => `${JSON.stringify(value, null, 2)}\n`;
 const localDate = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-');
 
-export async function createBatch({ parent, commit, date = localDate() }) {
+export async function createBatch({ parent, commit, date = localDate(), sets = Object.keys(CASE_SETS) }) {
+  requireThat(sets.length > 0 && sets.every(set => set in CASE_SETS), 'unknown_case_set');
   let name = date;
   for (let n = 2; existsSync(join(parent, name)); n++) name = `${date}-${n}`;
-  const cases = readdirSync(resolve(root, CASES)).filter(file => file.endsWith('.json')).sort().map(file => {
-    const source = JSON.parse(readFileSync(resolve(root, CASES, file), 'utf8'));
-    return { caseRef: source.caseRef, file: `${CASES}/${file}`, sha256: digest(source) };
-  });
+  const cases = sets.flatMap(set => readdirSync(resolve(root, CASE_SETS[set])).filter(file => file.endsWith('.json')).sort().map(file => {
+    const source = JSON.parse(readFileSync(resolve(root, CASE_SETS[set], file), 'utf8'));
+    return { caseRef: source.caseRef, file: `${CASE_SETS[set]}/${file}`, sha256: digest(source) };
+  }));
   const directory = join(parent, name);
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, 'BATCH.json'), json({ version: 'b01-batch-v1', truthMode: 'SIMULATED', date,
-    startedAtUtc: new Date().toISOString(), commit, model: GEMINI.model, configHash: digest(GEMINI), methods: METHODS, cases,
+    startedAtUtc: new Date().toISOString(), commit, model: GEMINI.model, configHash: digest(GEMINI), methods: METHODS, caseSets: sets, cases,
     slots: cases.flatMap(c => METHODS.map(method => `${c.caseRef}-${method}`)) }), { flag: 'wx' });
   return directory;
 }

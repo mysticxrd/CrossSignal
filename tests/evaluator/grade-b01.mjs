@@ -1,6 +1,6 @@
-// Grades one finished run-b01 batch: 5 SIMULATED cases x rules, single-shot and tool-using.
+// Grades one finished run-b01 batch: its SIMULATED cases x rules, single-shot and tool-using.
 // Separate evaluator process: scripts/run-b01.mjs never imports this file and starts it only after
-// all 15 runs are saved, so nothing from rubric.json can reach a model request.
+// every run is saved, so nothing from a rubric can reach a model request.
 // Usage: node tests/evaluator/grade-b01.mjs <batch-dir>   (writes results.json and RESULTS.md there)
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -9,11 +9,13 @@ import { fileURLToPath } from 'node:url';
 import { citationExistence, criticalCoverage } from '../../factory/02_data/benchmark/predicates.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-const RUBRIC = 'factory/02_data/benchmark/private/rubric.json';
+// Hidden answers: B01-B05 from the frozen factory data, B06-B10 from the fresh holdout frozen on 2026-10-04.
+export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.json', 'tests/evaluator/b06-b10/rubric.json']);
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 export const CHECKS = ['status', 'cause', 'change', 'segment', 'rollback'];
 const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot model', 'tool-using-model': 'Tool-using model' };
-const SPLITS = { development: 'dev', frozen_transfer: 'holdout' };
+const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh' };
+const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout' };
 const CHANGE_TYPES = ['deployment', 'pricing_configuration'];
 const fail = message => { throw new Error(message); };
 const words = text => String(text ?? '').toLowerCase().replace(/[_-]+/g, ' ');
@@ -28,13 +30,18 @@ export const CAUSE_WORDS = Object.freeze({
   acquisition_composition_shift: ['acquisition', 'composition', 'mix', 'traffic', 'channel', 'share', 'distribution'],
   notifications_deployment: ['notification', 'email'],
 });
+// On the no-incident case, any of these in the top-ranked diagnosis is the right answer: nothing is wrong.
+export const NO_INCIDENT_WORDS = Object.freeze(['no incident', 'no issue', 'no problem', 'no anomaly', 'no regression', 'no outage',
+  'no drop', 'no decline', 'no change', 'no impact', 'stable', 'unchanged', 'flat', 'steady', 'normal']);
 
 export const HOW_GRADED = Object.freeze({
-  status: 'The finding must end `completed`, or `epistemic_abstention` on the case where the rubric says to abstain.',
+  status: 'The finding must end `completed`, or `epistemic_abstention` on the cases where the rubric says to abstain. '
+    + 'On the no-incident case the data is complete and flat, so abstaining fails.',
   cause: 'Graded on meaning, not wording. If `relatedChangeId` names a deploy or pricing change, it must be the rubric\'s change. '
     + 'Otherwise the first cause word in the top-ranked diagnosis decides: checkout/validation, provider/gateway/processor, '
     + 'price/pricing, acquisition/composition/mix/traffic/channel/share/distribution, or notification/email (never right here). '
-    + 'On the abstain case the run must abstain.',
+    + 'On the abstain cases the run must abstain. On the no-incident case it must blame no change, and its top-ranked diagnosis '
+    + 'must say nothing is wrong (no incident, no drop, stable, unchanged, normal and the like) or name no cause at all.',
   change: '`relatedChangeId` must be the rubric\'s change, or empty when the rubric has none.',
   segment: '`affectedSegment` must name the rubric\'s segment (case, word order and separators ignored), or be empty when the rubric has none.',
   rollback: 'Where the rubric wants a rollback, the run must recommend rolling back that service (by name or change id) with '
@@ -43,10 +50,10 @@ export const HOW_GRADED = Object.freeze({
   citations: 'Shown, not scored: cited ids the run had actually seen, out of all ids it cited.',
 });
 
-export function namedCause(diagnosis) {
+export function namedCause(diagnosis, extra = {}) {
   const text = words(diagnosis);
   let first = null;
-  for (const [cause, list] of Object.entries(CAUSE_WORDS)) for (const word of list) {
+  for (const [cause, list] of Object.entries({ ...CAUSE_WORDS, ...extra })) for (const word of list) {
     const at = text.search(new RegExp(`\\b${word}s?\\b`));
     if (at >= 0 && (first === null || at < first.at)) first = { cause, word, at };
   }
@@ -68,8 +75,9 @@ export function gradeCause(finding, rubricCase, events) {
   if (abstained) return { pass: false, got: 'abstained', want };
   const change = events.find(e => e.id === finding.relatedChangeId && CHANGE_TYPES.includes(e.type));
   if (change) return { pass: rubricCase.relevantChangeIds.includes(change.id), got: `blamed ${describeEvent(change.id, events)}`, want };
-  const named = namedCause(finding.hypotheses[0]?.diagnosis);
-  return { pass: named?.cause === want, got: named ? `"${named.word}" → ${named.cause}` : 'no cause word', want };
+  // On the no-incident case the calm words join the race, and a diagnosis that names no cause also passes.
+  const calm = want === 'no_incident', named = namedCause(finding.hypotheses[0]?.diagnosis, calm ? { no_incident: NO_INCIDENT_WORDS } : {});
+  return { pass: named?.cause === want || (calm && !named), got: named ? `"${named.word}" → ${named.cause}` : 'no cause word', want };
 }
 
 function gradeRollback(recommendation, rubricCase) {
@@ -131,25 +139,28 @@ function cell(rows) {
 }
 const byMethod = rows => Object.fromEntries(METHODS.map(m => [m, cell(rows.filter(r => r.method === m))]));
 
-export function gradeBatch(directory, rubric = JSON.parse(readFileSync(resolve(root, RUBRIC), 'utf8'))) {
+export function gradeBatch(directory, rubricFiles = RUBRICS) {
   const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
   const runs = batch.slots.map(slot => savedRun(directory, slot) ?? fail(`${slot} is not saved yet; finish the batch before grading`));
   if (!runs.every(run => run.commit === batch.commit)) fail('runs came from more than one commit');
+  const rubrics = rubricFiles.map(file => ({ file, cases: JSON.parse(readFileSync(resolve(root, file), 'utf8')).cases })), used = new Set();
   const graded = runs.map(run => {
-    const rubricCase = rubric.cases.find(c => c.caseRef === run.caseRef) ?? fail(`no rubric case for ${run.caseRef}`);
-    return gradeRun(run, rubricCase, JSON.parse(readFileSync(resolve(root, run.case), 'utf8')).events);
+    const rubric = rubrics.find(r => r.cases.some(c => c.caseRef === run.caseRef)) ?? fail(`no rubric case for ${run.caseRef}`);
+    used.add(rubric.file);
+    return gradeRun(run, rubric.cases.find(c => c.caseRef === run.caseRef), JSON.parse(readFileSync(resolve(root, run.case), 'utf8')).events);
   }).sort((a, b) => a.label.localeCompare(b.label) || METHODS.indexOf(a.method) - METHODS.indexOf(b.method));
   const cases = [...new Set(graded.map(r => r.label))].map(label => {
     const rows = graded.filter(r => r.label === label);
     return { label, caseRef: rows[0].caseRef, split: rows[0].split, methods: byMethod(rows) };
   });
   const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex');
-  return { version: 'b01-results-v1', truthMode: 'SIMULATED', batch: relative(root, directory).replaceAll('\\', '/'),
+  return { version: 'b01-results-v2', truthMode: 'SIMULATED', batch: relative(root, directory).replaceAll('\\', '/'),
     date: batch.date, startedAtUtc: batch.startedAtUtc, gradedAtUtc: new Date().toISOString(), commit: batch.commit,
     model: batch.model, modelVersions: [...new Set(graded.map(r => r.modelVersion).filter(Boolean))],
-    rubricSha256: hash(resolve(root, RUBRIC)), graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: HOW_GRADED,
-    cases, totals: Object.fromEntries(Object.entries(SPLITS).map(([split, name]) => [name, byMethod(graded.filter(r => r.split === split))])
-      .concat([['all', byMethod(graded)]])), runs: graded };
+    rubrics: rubricFiles.filter(file => used.has(file)).map(file => ({ file, sha256: hash(resolve(root, file)) })),
+    graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: HOW_GRADED, cases,
+    totals: Object.fromEntries(Object.entries(SPLITS).filter(([split]) => graded.some(r => r.split === split))
+      .map(([split, name]) => [name, byMethod(graded.filter(r => r.split === split))]).concat([['all', byMethod(graded)]])), runs: graded };
 }
 
 const escape = text => String(text).replaceAll('|', '\\|').replace(/\s+/g, ' ');
@@ -170,11 +181,11 @@ export function renderResults(results) {
     `# Benchmark results: ${results.cases.length} simulated cases × ${METHODS.length} methods (${results.date})`, '',
     `**SIMULATED incidents, not production data.** One fresh run per case and method (${results.runs.length} runs). `
       + `Model runs use \`${results.model}\` on the Gemini free tier. All runs came from commit \`${results.commit.slice(0, 12)}\`; `
-      + 'the rubric was read only after every run was saved.', '',
+      + 'the rubrics were read only after every run was saved.', '',
     `| Case | Split | ${METHODS.map(m => NAMES[m]).join(' | ')} |`, `|---|---|${METHODS.map(() => '---').join('|')}|`,
     ...results.cases.map(c => `| ${c.label} | ${SPLITS[c.split] ?? c.split} | ${METHODS.map(m => summary(c.methods[m])).join(' | ')} |`),
-    `| Dev (${labels('dev')}) | | ${METHODS.map(m => summary(results.totals.dev[m])).join(' | ')} |`,
-    `| Holdout (${labels('holdout')}) | | ${METHODS.map(m => summary(results.totals.holdout[m])).join(' | ')} |`,
+    ...Object.entries(SPLIT_NAMES).filter(([split]) => results.totals[split]).map(([split, name]) =>
+      `| ${name} (${labels(split)}) | | ${METHODS.map(m => summary(results.totals[split][m])).join(' | ')} |`),
     `| **All** | | ${METHODS.map(m => summary(results.totals.all[m])).join(' | ')} |`, '',
     'Each cell: score (checks passed, of 5 per case) · tokens Gemini reported (input + output, thinking included) · model turns · tool calls · '
       + 'wall time · Gemini API requests (generate and token-count calls, retries included). '
@@ -194,7 +205,8 @@ export function renderResults(results) {
     `- Batch: \`${results.batch}\`, started ${results.startedAtUtc}, graded ${results.gradedAtUtc}`,
     `- Commit: \`${results.commit}\``,
     `- Model: \`${results.model}\`; versions reported: ${results.modelVersions.map(v => `\`${v}\``).join(', ') || 'none'}`,
-    `- Rubric sha256 \`${results.rubricSha256}\`; grader sha256 \`${results.graderSha256}\``, '',
+    ...results.rubrics.map(r => `- Rubric \`${r.file}\` sha256 \`${r.sha256}\``),
+    `- Grader sha256 \`${results.graderSha256}\``, '',
   ].join('\n');
 }
 
