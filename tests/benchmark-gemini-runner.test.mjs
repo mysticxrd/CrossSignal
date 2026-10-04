@@ -193,13 +193,37 @@ test('real query loop stops at ten admitted tools and preserves a budget-denied 
   assert.equal(s.history().filter(r=>r.kind==='tool_attempt').length,11);s.close();
 });
 
-test('actual worker rejects oversized rows/query text, foreign time, unsafe cursor and native tool results', async () => {
+test('actual worker answers oversized rows/query text, foreign time and unsafe cursor with a fixed reason and no rows', async () => {
   const args={start:START,end:CUTOFF,cursor:null,limit:50,segment:null,query:''};
-  for(const changed of [{limit:51},{query:'x'.repeat(161)},{end:'2026-09-01T11:00:00.000Z'},{cursor:'foreign:50'}])
-    await assert.rejects(isolatedGemini({operation:'query',observable:input,scope,query:{tool:'support.search',arguments:{...args,...changed}}}),/validation_failed/);
+  for(const [changed,reason] of [[{limit:51},/^limit must be/],[{query:'x'.repeat(161)},/^query must be text/],
+    [{end:'2026-09-01T11:00:00.000Z'},/end must be at or before 2026-09-01T10:00:00\.000Z/],[{cursor:'foreign:50'},/^cursor must be/]]){
+    const answer=await isolatedGemini({operation:'query',observable:input,scope,query:{tool:'support.search',arguments:{...args,...changed}}});
+    assert.deepEqual(Object.keys(answer).sort(),['error','reason']);assert.equal(answer.error,'invalid_read_only_request');
+    assert.match(answer.reason,reason);assert(!JSON.stringify(answer).includes(String(Object.values(changed)[0])));
+  }
+  // Host faults are not the model's to fix: a foreign observable or a supplied result still fails closed.
+  await assert.rejects(isolatedGemini({operation:'query',observable:{...input,rubric:'PRIVATE'},scope,query:{tool:'support.search',arguments:args}}),/validation_failed/);
+  await assert.rejects(isolatedGemini({operation:'query',observable:input,scope,query:{tool:'support.search',arguments:args,result:'SUPPLIED'}}),/validation_failed/);
   const raw=response();raw.candidates[0].content.parts=[{functionCall:{name:'execute.rollback',args:{}}}];
-  const parsed=await isolatedGemini({operation:'inspect',raw,options:{method:'single-shot-model',scope,outputReservation:1024}});
+  const parsed=await isolatedGemini({operation:'inspect',raw,options:{method:'single-shot-model',outputReservation:1024}});
   assert.equal(parsed.status,'failed');assert.equal(parsed.reason,'unsupported_response_part');
+});
+
+test('a query past the case clock comes back as a reason, uses one tool call and the run goes on to a finding', async () => {
+  const s=store('tool-using-model'),bodies=[];
+  const late={tool:'engineering.inspect',arguments:{start:START,end:'2026-09-01T11:00:00.000Z',cursor:null,limit:50,service:'payment-provider',kind:'health'}};
+  const turns=[response({kind:'query',query:late,finding:null}),response({kind:'finding',query:null,finding:finding()})];
+  const t=fixtureTransport({generated:()=>turns.shift(),
+    onFetch:(url,o)=>{if(url.endsWith(':generateContent')) bodies.push(JSON.parse(o.body))}});
+  const r=await runGeminiInvestigation({observable:input,scope,method:'tool-using-model',store:s,transport:t});
+  assert.equal(r.terminalStatus,'epistemic_abstention');assert.equal(r.failureReason,null);
+  assert.equal(r.budget.toolAttempts,1);assert.equal(t.counters().generationCalls,2);
+  const [toolResult]=s.history().filter(row=>row.kind==='tool_result').map(row=>JSON.parse(row.payload));
+  assert.equal(toolResult.result.error,'invalid_read_only_request');assert.deepEqual(toolResult.exposedEvidenceIds,[]);
+  const {queryResults}=JSON.parse(bodies[1].contents[0].parts[0].text);
+  assert.deepEqual(queryResults,[{attempt:1,tool:'engineering.inspect',result:toolResult.result}]);
+  assert.match(toolResult.result.reason,/end must be at or before 2026-09-01T10:00:00\.000Z/);
+  assert(!JSON.stringify(bodies[1]).includes(late.arguments.end));s.close();
 });
 
 test('the online factory requires fresh verification evidence; caller booleans never authorize requests', async () => {

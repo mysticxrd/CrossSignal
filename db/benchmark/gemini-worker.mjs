@@ -1,8 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
-import { prepareGemini } from './gemini-context.mjs';
+import { answerQuery, prepareGemini } from './gemini-context.mjs';
 import { inspectGeminiTurn } from './gemini-inspect.mjs';
-import { queryObservable } from './tools.mjs';
 import { exact } from './contracts.mjs';
 
 // This trusted worker has no evaluator imports, credentials, writes or subprocess grant.
@@ -28,7 +27,7 @@ try {
     output = inspectGeminiTurn(input.raw, input.options);
   } else if (input.operation === 'query') {
     exact(input, ['operation', 'observable', 'scope', 'query'], 'query command');
-    output = queryObservable(input.observable, input.scope, input.query.tool, input.query.arguments);
+    output = answerQuery(input.observable, input.scope, input.query);
   } else if (input.operation === 'probe') {
     exact(input, ['operation', 'paths'], 'probe command');
     const denied = [];

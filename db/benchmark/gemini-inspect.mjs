@@ -3,7 +3,7 @@ import { validateFinding } from './schemas.mjs';
 import { validateGeminiTurn } from './gemini-context.mjs';
 
 // Only visible, bounded text and numeric usage leave the restricted parser.
-export function inspectGeminiTurn(raw, { method, scope, outputReservation }) {
+export function inspectGeminiTurn(raw, { method, outputReservation }) {
   const usage = sanitizeUsage(raw?.usageMetadata);
   const result = { status: 'failed', terminalStatus: 'invalid_output', reason: null,
     visibleText: null, finding: null, query: null, queryIntent: false, usage,
@@ -35,7 +35,7 @@ export function inspectGeminiTurn(raw, { method, scope, outputReservation }) {
     const value = JSON.parse(text);
     if (method === 'single-shot-model') result.finding = validateFinding(value);
     else {
-      const parsed = validateGeminiTurn(value, scope);
+      const parsed = validateGeminiTurn(value);
       if (value.kind === 'query') result.query = parsed;
       else result.finding = parsed;
     }

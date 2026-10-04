@@ -28,7 +28,7 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
       store.append('request', { atUtc: new Date().toISOString(), prepared, lease });
       const response = await transport.generate(prepared, lease);
       const parsed = await isolatedGemini({ operation: 'inspect', raw: response.data,
-        options: { method, scope, outputReservation } }, { deadline });
+        options: { method, outputReservation } }, { deadline });
       // Raw provider objects and hidden thought/signature channels are discarded.
       if (parsed.queryIntent) {
         const admitted = ledger.registerToolIntent(lease, { visibleTextHash: digest(parsed.visibleText) });
@@ -52,9 +52,10 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
       }
       if (parsed.finding) { finding = parsed.finding; terminalStatus = finding.terminalStatus; break; }
       requireThat(parsed.query, 'invalid_output');
+      // An unservable request comes back as { error, reason }; it used a tool call and the loop goes on.
       const result = await isolatedGemini({ operation: 'query', observable, scope, query: parsed.query }, { deadline });
       store.append('tool_result', { attempt: ledger.snapshot().toolAttempts, queryHash: digest(parsed.query),
-        result, resultHash: digest(result), exposedEvidenceIds: result.events.map(e => e.id) });
+        result, resultHash: digest(result), exposedEvidenceIds: 'error' in result ? [] : result.events.map(e => e.id) });
       queries.push(parsed.query);
     }
   } catch (e) {

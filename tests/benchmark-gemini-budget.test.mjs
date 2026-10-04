@@ -62,13 +62,19 @@ test('accumulated query context is scoped and lossless; old answers, supplied re
 
 test('Gemini JSON query intents cannot broaden tools, windows, rows, query size or effect authority', () => {
   const scope = scopeFor(inputs[0]);
-  assert.deepEqual(validateGeminiTurn({ kind: 'finding', query: null, finding }, scope), finding);
-  assert.deepEqual(validateGeminiTurn({ kind: 'query', query, finding: null }, scope), query);
+  assert.deepEqual(validateGeminiTurn({ kind: 'finding', query: null, finding }), finding);
+  assert.deepEqual(validateGeminiTurn({ kind: 'query', query, finding: null }), query);
   for (const changed of [{ ...query, tool: 'execute' }, { ...query, arguments: { ...query.arguments, limit: 51 } },
-    { ...query, arguments: { ...query.arguments, end: '2026-09-01T10:15:00.000Z' } },
     { tool: 'support.search', arguments: { ...query.arguments, query: 'x'.repeat(161) } }])
-    assert.throws(() => validateGeminiTurn({ kind: 'query', query: changed, finding: null }, scope));
-  assert.throws(() => validateGeminiTurn({ kind: 'finding', query, finding }, scope));
+    assert.throws(() => validateGeminiTurn({ kind: 'query', query: changed, finding: null }));
+  assert.throws(() => validateGeminiTurn({ kind: 'finding', query, finding }));
+  // A well-formed read past the case clock parses; the host answers it with a reason instead of rows.
+  const late = { ...query, arguments: { ...query.arguments, end: '2026-09-01T10:15:00.000Z' } };
+  assert.deepEqual(validateGeminiTurn({ kind: 'query', query: late, finding: null }), late);
+  const answered = prepareGemini(inputs[0], scope, { method: 'tool-using-model', queries: [late] });
+  assert.deepEqual(JSON.parse(answered.body.contents[0].parts[0].text).queryResults, [{ attempt: 1, tool: 'revenue.inspect',
+    result: { error: 'invalid_read_only_request', reason: `start must be at or after ${START} and before end; end must be at or before ${CUTOFF}, the case clock` } }]);
+  assert.equal(answered.toolAttempts, 1); assert.deepEqual(answered.exposedEvidenceIds, []);
 });
 
 test('complete input tokens plus the next output reservation must fit before admission', () => {
