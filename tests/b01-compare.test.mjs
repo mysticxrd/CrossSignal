@@ -49,7 +49,8 @@ test('a comparison adds up each profile\'s repeated batches, case by case and in
   // B12's provider deploy.
   const comparison = compareBatches([low2, minimal1, low1, minimal2]);
   assert.deepEqual(comparison.batches.map(b => b.profile), ['minimal', 'low', 'minimal', 'low']);
-  assert.deepEqual(comparison.profiles.map(p => [p.name, p.batches, p.tokenLimits.thinkingLevel]), [['minimal', 2, 'MINIMAL'], ['low', 2, 'LOW']]);
+  assert.deepEqual(comparison.arms.map(a => [a.name, a.batches, a.tokenLimits.thinkingLevel]), [['minimal', 2, 'MINIMAL'], ['low', 2, 'LOW']]);
+  assert.deepEqual(comparison.commits, ['fixture-commit']);
   const all = comparison.totals.all.cells;
   assert.deepEqual([all['single-shot-model'].minimal.perBatch, all['tool-using-model'].minimal.perBatch], [[67, 62], [62, 67]]);
   assert.deepEqual([all['single-shot-model'].low.perBatch, all['tool-using-model'].low.perBatch], [[67, 67], [67, 67]]);
@@ -83,11 +84,40 @@ test('a comparison adds up each profile\'s repeated batches, case by case and in
   assert.match(markdown, /^- Rubric `tests\/evaluator\/b06-b10\/rubric\.json` sha256 `[0-9a-f]{64}`$/m);
 });
 
-test('a comparison refuses batches that differ in anything but the profile', () => {
-  const other = batch('other-commit', { started: '2026-10-04T05:00:00.000Z', commit: 'other-commit' });
-  assert.throws(() => compareBatches([minimal1, other]), /batches differ in commit; only the profile may change between them/);
+test('with one profile and two commits, each commit is an arm, ordered by its first batch', () => {
+  // Step 5 alternates a baseline commit and a new commit, both under `low`; the new commit breaks one tool-using run.
+  const base = 'aaaaaaa1111111111111111111111111111111111', next = 'bbbbbbb2222222222222222222222222222222222';
+  const arm = (name, started, commit, broken = []) => batch(name, { profile: 'low', started, commit, broken, tokens: 4000 });
+  const b1 = arm('base-1', '2026-10-05T01:00:00.000Z', base), n1 = arm('new-1', '2026-10-05T02:00:00.000Z', next, ['B03-tool-using-model']);
+  const b2 = arm('base-2', '2026-10-05T03:00:00.000Z', base), n2 = arm('new-2', '2026-10-05T04:00:00.000Z', next);
+  const comparison = compareBatches([n2, b2, n1, b1]);
+  assert.equal(comparison.version, 'b01-comparison-v2');
+  assert.deepEqual(comparison.commits, [base, next]);
+  assert.deepEqual(comparison.arms.map(a => [a.name, a.commit, a.profile, a.batches]), [['aaaaaaa', base, 'low', 2], ['bbbbbbb', next, 'low', 2]]);
+  assert.deepEqual(comparison.batches.map(b => b.arm), ['aaaaaaa', 'bbbbbbb', 'aaaaaaa', 'bbbbbbb']);
+  const tool = comparison.totals.all.cells['tool-using-model'];
+  assert.deepEqual([tool.aaaaaaa.perBatch, tool.bbbbbbb.perBatch], [[67, 67], [62, 67]]);
+  assert.deepEqual(comparison.totals.fresh_holdout_2.cells['tool-using-model'].bbbbbbb.perBatch, [21, 21]);
+  const markdown = renderComparison(comparison);
+  assert.match(markdown, /^# Benchmark: `aaaaaaa` vs `bbbbbbb` on 15 simulated cases$/m);
+  assert.match(markdown, /This compares 4 batches: 2 with `aaaaaaa` and 2 with `bbbbbbb`, started in the order listed under Provenance\. /);
+  assert.match(markdown, /Only the commit changed between them: every run used the `low` profile, with `fixture-model` on the Gemini free tier/);
+  assert.match(markdown, /^\| Method \| `aaaaaaa`: commit `aaaaaaa11111`, LOW thinking, up to 4,096 output tokens a response \| `bbbbbbb`: commit /m);
+  assert.match(markdown, /^\| Tool-using model \| \*\*134\/150\*\* \(89%\) · per batch 67, 67 \| \*\*129\/150\*\* \(86%\) · per batch 62, 67 \|$/m);
+  assert.match(markdown, /^\| B03 \| Holdout \| 10\/10 \(5, 5\) \| 10\/10 \(5, 5\) \| 10\/10 \(5, 5\) \| 5\/10 \(0, 5\) \| 5\/5 in every batch \|$/m);
+  assert.match(markdown, /^- Commit: `aaaaaaa1{34}`$/m);
+  assert.match(markdown, /^- Commit: `bbbbbbb2{34}`$/m);
+  assert.match(markdown, /^- Batch 2: `[^`]*new-1`, `bbbbbbb`, started 2026-10-05T02:00:00\.000Z$/m);
+  // When both vary, an arm names both.
+  const mixed = compareBatches([minimal1, b1]);
+  assert.deepEqual(mixed.arms.map(a => a.name), ['minimal @ fixture', 'low @ aaaaaaa']);
+  assert.match(renderComparison(mixed), /Each arm is one commit and one token profile, with/);
+});
+
+test('a comparison refuses batches that differ in anything but the commit and the profile', () => {
   const fewer = batch('b01-b05', { started: '2026-10-04T06:00:00.000Z', labels: ['B01', 'B02', 'B03', 'B04', 'B05'] });
-  assert.throws(() => compareBatches([minimal1, fewer]), /batches differ in cases/);
+  assert.throws(() => compareBatches([minimal1, fewer]),
+    /batches differ in cases; only the commit and the profile may change between them/);
   const stray = batch('high', { profile: 'high', started: '2026-10-04T07:00:00.000Z' });
   assert.throws(() => compareBatches([minimal1, stray]), /uses the unknown profile high/);
   assert.throws(() => compareBatches([]), /Usage/);
@@ -97,7 +127,7 @@ test('the comparison runs as its own process and writes COMPARISON.md and compar
   const out = join(parent, 'comparison');
   const compared = spawnSync(process.execPath, ['tests/evaluator/compare-b01.mjs', '--out', out, minimal1, low1], { encoding: 'utf8' });
   assert.equal(compared.status, 0, compared.stderr);
-  assert.equal(JSON.parse(readFileSync(join(out, 'comparison.json'), 'utf8')).version, 'b01-comparison-v1');
+  assert.equal(JSON.parse(readFileSync(join(out, 'comparison.json'), 'utf8')).version, 'b01-comparison-v2');
   assert.match(readFileSync(join(out, 'COMPARISON.md'), 'utf8'), /^\| Single-shot model \| \*\*67\/75\*\* \(89%\) · per batch 67 \| /m);
   // Without --out it refuses rather than write into a batch folder.
   const refused = spawnSync(process.execPath, ['tests/evaluator/compare-b01.mjs', minimal1, low1], { encoding: 'utf8' });
