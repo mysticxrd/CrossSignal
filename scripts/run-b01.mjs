@@ -1,8 +1,11 @@
 // Runs the B01 batch: the 10 SIMULATED benchmark cases x rules, single-shot-model and tool-using-model, one fresh run
-// each, one after another, with Gemini on the free tier. Resumable: saved runs are skipped, so after a daily-quota stop
-// just run it again later. A batch belongs to one commit, so its table does too. Once every run is saved it starts
-// the separate grader (tests/evaluator/grade-b01.mjs); this process never opens the hidden answers.
-// Usage: node scripts/run-b01.mjs [--new]   (--new starts a fresh batch instead of resuming the latest one)
+// each, one after another, with Gemini on the free tier. Gemini requests start at least 4.5 s apart, under the free
+// tier's 15 a minute. Resumable: saved runs are skipped, so after a daily-quota stop just run it again later. A batch
+// belongs to one commit and one profile, so its table does too. Once every run is saved it starts the separate grader
+// (tests/evaluator/grade-b01.mjs); this process never opens the hidden answers.
+// Usage: node scripts/run-b01.mjs [--new] [--profile minimal|low]
+//   --new starts a fresh batch instead of resuming the latest one. --profile picks the thinking level and token
+//   limits for a new batch (db/benchmark/gemini-config.mjs); the default, minimal, is the accepted B01 baseline.
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
@@ -11,7 +14,7 @@ import { join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { bindRun, CUTOFF, START, digest, requireThat } from '../db/benchmark/contracts.mjs';
-import { GEMINI } from '../db/benchmark/gemini-config.mjs';
+import { GEMINI, PROFILES, tokenProfile } from '../db/benchmark/gemini-config.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
 import { runGeminiInvestigation } from '../db/benchmark/gemini-runner.mjs';
 import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
@@ -27,8 +30,9 @@ const id = prefix => `${prefix}_${randomBytes(6).toString('hex')}`;
 const json = value => `${JSON.stringify(value, null, 2)}\n`;
 const localDate = (d = new Date()) => [d.getFullYear(), d.getMonth() + 1, d.getDate()].map(n => String(n).padStart(2, '0')).join('-');
 
-export async function createBatch({ parent, commit, date = localDate(), sets = Object.keys(CASE_SETS) }) {
+export async function createBatch({ parent, commit, date = localDate(), sets = Object.keys(CASE_SETS), profile = 'minimal' }) {
   requireThat(sets.length > 0 && sets.every(set => set in CASE_SETS), 'unknown_case_set');
+  const tokenLimits = tokenProfile(profile);
   let name = date;
   for (let n = 2; existsSync(join(parent, name)); n++) name = `${date}-${n}`;
   const cases = sets.flatMap(set => readdirSync(resolve(root, CASE_SETS[set])).filter(file => file.endsWith('.json')).sort().map(file => {
@@ -38,7 +42,8 @@ export async function createBatch({ parent, commit, date = localDate(), sets = O
   const directory = join(parent, name);
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, 'BATCH.json'), json({ version: 'b01-batch-v1', truthMode: 'SIMULATED', date,
-    startedAtUtc: new Date().toISOString(), commit, model: GEMINI.model, configHash: digest(GEMINI), methods: METHODS, caseSets: sets, cases,
+    startedAtUtc: new Date().toISOString(), commit, model: GEMINI.model, configHash: digest(GEMINI), profile, tokenLimits,
+    requestGapMs: GEMINI.requestGapMs, methods: METHODS, caseSets: sets, cases,
     slots: cases.flatMap(c => METHODS.map(method => `${c.caseRef}-${method}`)) }), { flag: 'wx' });
   return directory;
 }
@@ -66,6 +71,8 @@ function metrics(method, result, history, observable) {
     tokens: { input: tokens('promptTokenCount'), output: tokens('candidatesTokenCount') + tokens('thoughtsTokenCount'),
       total: tokens('totalTokenCount') },
     turns: result.budget?.turns ?? 0, toolCalls: result.budget?.toolAttempts ?? 0, elapsedMs: result.elapsedMs,
+    // Part of elapsedMs spent waiting for a free-tier request slot.
+    pacingWaitMs: calls.pacingWaitMs ?? 0,
     requests: { generate: calls.generationCalls, countTokens: calls.countCalls, metadata: calls.metadataCalls,
       retries: calls.automaticRetries, total: calls.generationCalls + calls.countCalls + calls.metadataCalls },
     // Rows the method saw: every row for rules, else the rows placed in its model requests (all of them for single-shot;
@@ -75,7 +82,7 @@ function metrics(method, result, history, observable) {
   };
 }
 
-async function runSlot({ directory, slot, entry, source, method, commit, transportFactory }) {
+async function runSlot({ directory, slot, entry, source, method, profile, commit, transportFactory }) {
   const sourceScope = { workspaceId: source.events[0].workspaceId, caseId: source.caseRef,
     runId: source.events[0].runId, actorId: id('a'), start: START, clock: CUTOFF };
   const scope = { ...sourceScope, workspaceId: id('w'), caseId: id('c'), runId: id('r'), actorId: id('a') };
@@ -92,11 +99,12 @@ async function runSlot({ directory, slot, entry, source, method, commit, transpo
       result = { truthMode: 'SIMULATED', method, terminalStatus: finding.terminalStatus, failureReason: null, finding,
         elapsedMs: performance.now() - started, completedAtUtc: new Date().toISOString(), runtimeEffects: 0 };
       store.append('terminal', result);
-    } else result = await runGeminiInvestigation({ observable, scope, method, store, transport: transportFactory() });
+    } else result = await runGeminiInvestigation({ observable, scope, method, store, profile, transport: transportFactory(profile) });
     history = store.history();
   } finally { store.close(); }
   const run = { version: 'b01-run-v1', saved: !UNSCORED.includes(result.failureReason), slot, case: entry.file,
-    caseRef: entry.caseRef, method, model: method === 'rules' ? null : GEMINI.model, commit, scope,
+    caseRef: entry.caseRef, method, model: method === 'rules' ? null : GEMINI.model, profile: method === 'rules' ? null : profile,
+    commit, scope,
     metrics: metrics(method, result, history, observable), result };
   await writeFile(join(folder, 'HISTORY.json'), json(history));
   await writeFile(join(folder, 'RESULT.json'), json(run));
@@ -114,13 +122,14 @@ function describe({ slot, result, metrics: m }) {
 export async function runBatch({ directory, commit, transportFactory, log = line => console.log(line) }) {
   const batch = JSON.parse(await readFile(join(directory, 'BATCH.json'), 'utf8'));
   requireThat(batch.commit === commit, 'batch_commit_mismatch');
+  const profile = batch.profile ?? 'minimal'; // Batches from before the profile switch all ran the baseline.
   for (const entry of batch.cases) {
     const source = JSON.parse(await readFile(resolve(root, entry.file), 'utf8'));
     requireThat(digest(source) === entry.sha256, 'case_file_changed');
     for (const method of METHODS) {
       const slot = `${entry.caseRef}-${method}`;
       if (isSaved(directory, slot)) { log(`${slot}: saved, skipped`); continue; }
-      const { run, folder } = await runSlot({ directory, slot, entry, source, method, commit, transportFactory });
+      const { run, folder } = await runSlot({ directory, slot, entry, source, method, profile, commit, transportFactory });
       log(describe(run));
       if (!run.saved) return { complete: false, stopped: run, folder };
     }
@@ -154,20 +163,27 @@ function requireFreeTierKey() {
 
 async function main(args) {
   const parent = resolve(root, 'outputs/b01'), commit = headCommit();
+  const flag = args.indexOf('--profile'), wanted = flag === -1 ? null : args[flag + 1] ?? '';
+  requireThat(wanted === null || Object.hasOwn(PROFILES, wanted), `--profile must be one of: ${Object.keys(PROFILES).join(', ')}`);
   let directory = args.includes('--new') ? null : latestBatch(parent);
   if (directory) {
     const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
     requireThat(batch.commit === commit, `${directory} was run at ${batch.commit} but HEAD is ${commit}; `
       + 'a table must come from one commit, so start a fresh batch with --new');
+    requireThat(wanted === null || (batch.profile ?? 'minimal') === wanted, `${directory} uses the ${batch.profile ?? 'minimal'} `
+      + `profile; a table must come from one profile, so start a fresh batch with --new --profile ${wanted}`);
     console.log(`Resuming ${directory}`);
   } else {
-    directory = await createBatch({ parent, commit });
+    directory = await createBatch({ parent, commit, profile: wanted ?? 'minimal' });
     console.log(`New batch ${directory} at ${commit}`);
   }
-  const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+  const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8')), limits = tokenProfile(batch.profile ?? 'minimal');
+  console.log(`Profile ${batch.profile ?? 'minimal'}: thinking ${limits.thinkingLevel}, up to ${limits.maxOutputTokens} output tokens `
+    + `a response and ${limits.generatedTokens} a run. Gemini requests start at least ${GEMINI.requestGapMs / 1000} s apart.`);
   if (batch.slots.some(slot => !slot.endsWith('-rules') && !isSaved(directory, slot))) requireFreeTierKey();
-  const outcome = await runBatch({ directory, commit, transportFactory: () => createHttpTransport({ mode: 'FREE_TIER_BENCHMARK',
-    fetchImpl: globalThis.fetch, keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {} }) });
+  // Free-tier transports share one request pacer, so the spacing also holds from one run to the next.
+  const outcome = await runBatch({ directory, commit, transportFactory: profile => createHttpTransport({ mode: 'FREE_TIER_BENCHMARK',
+    fetchImpl: globalThis.fetch, keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {}, profile }) });
   if (!outcome.complete) {
     const quota = dailyQuota(outcome.stopped);
     console.log(quota ? `Stopped: the Gemini free-tier daily quota is used up (${quota}). That attempt is kept unscored in `

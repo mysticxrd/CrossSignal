@@ -1,5 +1,5 @@
 // Runs the A01 case (an Indian debit-card checkout incident) once on the Gemini free tier.
-// Usage: node scripts/run-a01-gemini.mjs [tool-using-model|single-shot-model]
+// Usage: node scripts/run-a01-gemini.mjs [tool-using-model|single-shot-model] [--profile minimal|low]
 // The key comes from GEMINI_API_KEY or a gitignored .env. Failures print Google's full error
 // with only the key hidden; each run writes a fresh, claim-once store under outputs/a01-gemini/.
 import { existsSync } from 'node:fs';
@@ -8,14 +8,17 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { bindRun, CUTOFF, START, digest, requireThat } from '../db/benchmark/contracts.mjs';
-import { GEMINI } from '../db/benchmark/gemini-config.mjs';
+import { GEMINI, PROFILES } from '../db/benchmark/gemini-config.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
 import { runGeminiInvestigation } from '../db/benchmark/gemini-runner.mjs';
 import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const A01_CASE = 'factory/02_data/benchmark/observable/c_82238562b57a.json';
-const method = process.argv[2] ?? 'tool-using-model';
+const args = process.argv.slice(2), flag = args.indexOf('--profile');
+const profile = flag === -1 ? 'minimal' : args[flag + 1] ?? '';
+const method = (flag === -1 ? args : args.toSpliced(flag, 2))[0] ?? 'tool-using-model';
+requireThat(Object.hasOwn(PROFILES, profile), `--profile must be one of: ${Object.keys(PROFILES).join(', ')}`);
 const id = prefix => `${prefix}_${randomBytes(6).toString('hex')}`;
 
 // $0 only: refuse to send anything unless the owner's attestation says billing is off with no paid fallback.
@@ -35,13 +38,13 @@ await mkdir(directory, { recursive: true });
 const store = new GeminiStore(resolve(directory, 'case.sqlite'),
   { metadata: { scope, method, truthMode: 'SIMULATED', configHash: digest(GEMINI) }, observable });
 const transport = createHttpTransport({ mode: 'FREE_TIER_BENCHMARK', fetchImpl: globalThis.fetch,
-  keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {} });
+  keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {}, profile });
 
-console.log(`A01 ${A01_CASE} -> ${GEMINI.model} (${method}), run ${scope.runId}`);
+console.log(`A01 ${A01_CASE} -> ${GEMINI.model} (${method}, ${profile} profile), run ${scope.runId}`);
 let result;
 try {
-  result = await runGeminiInvestigation({ observable, scope, method, store, transport });
-  await writeFile(resolve(directory, 'RESULT.json'), `${JSON.stringify({ case: A01_CASE, model: GEMINI.model, scope, result }, null, 2)}\n`);
+  result = await runGeminiInvestigation({ observable, scope, method, store, transport, profile });
+  await writeFile(resolve(directory, 'RESULT.json'), `${JSON.stringify({ case: A01_CASE, model: GEMINI.model, profile, scope, result }, null, 2)}\n`);
   await writeFile(resolve(directory, 'HISTORY.json'), `${JSON.stringify(store.history(), null, 2)}\n`);
 } finally { store.close(); }
 

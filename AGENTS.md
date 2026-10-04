@@ -32,8 +32,12 @@ process; they do not govern ship-lane work.
   Never print, log or commit it. Failures print Google's full error with
   only the key hidden.
 - Retries cover 429/500/503/504 only, bounded and inside the request deadline.
+- Requests, retries included, start at least 4.5 s apart (free tier: 15 a
+  minute). Run one batch at a time.
 - Run one investigation with `node scripts/run-a01-gemini.mjs`; each run is
   saved under `outputs/a01-gemini/` (gitignored).
+- `node scripts/run-b01.mjs [--new] [--profile minimal|low]` runs the benchmark;
+  `minimal` is the B01 baseline, `low` adds LOW thinking with larger caps.
 
 ## Choosing work
 

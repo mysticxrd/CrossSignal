@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { canonical, digest, requireThat } from './contracts.mjs';
 import { assertNoCanaries, commonDefinitions, exposePacket } from './exposure.mjs';
 import { findingSchema, validateFinding } from './schemas.mjs';
-import { GEMINI } from './gemini-config.mjs';
+import { GEMINI, tokenProfile } from './gemini-config.mjs';
 
 const task = readFileSync(new URL('./task.md', import.meta.url), 'utf8').trim();
 
@@ -33,16 +33,16 @@ export function wireSchema(schema, path = '$', changes = []) {
 
 // Pure preparation: input must be a validated, scoped synthetic observable.
 // Identity, task, schema, model, endpoint and provider-native capabilities are host-owned.
-export function prepareSingleShot(input, scope) {
-  const packet = exposePacket(input, scope, true), schemaProjection = [];
+export function prepareSingleShot(input, scope, profile = 'minimal') {
+  const limits = tokenProfile(profile), packet = exposePacket(input, scope, true), schemaProjection = [];
   const schema = wireSchema(findingSchema, '$', schemaProjection);
   const body = {
     systemInstruction: { parts: [{ text: canonical({ task, commonDefinitions }) }] },
     contents: [{ role: 'user', parts: [{ text: canonical(packet) }] }],
     generationConfig: {
-      candidateCount: 1, maxOutputTokens: GEMINI.maxOutputTokens, temperature: GEMINI.temperature,
+      candidateCount: 1, maxOutputTokens: limits.maxOutputTokens, temperature: GEMINI.temperature,
       responseModalities: ['TEXT'],
-      thinkingConfig: { thinkingLevel: GEMINI.thinkingLevel, includeThoughts: false },
+      thinkingConfig: { thinkingLevel: limits.thinkingLevel, includeThoughts: false },
       responseFormat: { text: { mimeType: 'APPLICATION_JSON', schema } },
     },
   };
@@ -52,8 +52,8 @@ export function prepareSingleShot(input, scope) {
     provider: GEMINI.provider, endpoint: GEMINI.endpoint, body, requestSha256: digest(body),
     schemaProjection, exposedEvidenceIds: input.events.map(e => e.id),
     context: {
-      requestBytes, outputReservation: GEMINI.maxOutputTokens, framingReservation: 256,
-      byteFallbackBoundFits: requestBytes + GEMINI.maxOutputTokens + 256 <= GEMINI.contextTokens,
+      requestBytes, outputReservation: limits.maxOutputTokens, framingReservation: 256,
+      byteFallbackBoundFits: requestBytes + limits.maxOutputTokens + 256 <= limits.contextTokens,
       actualProviderTokens: null, unavailableReason: 'no_tokenizer_or_api_call_authorized',
       dispatchPermitted: false,
     },

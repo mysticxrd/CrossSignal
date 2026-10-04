@@ -1,11 +1,12 @@
 import { performance } from 'node:perf_hooks';
 import { digest, requireThat } from './contracts.mjs';
-import { GEMINI } from './gemini-config.mjs';
+import { GEMINI, tokenProfile } from './gemini-config.mjs';
 
 // Pure host admission/accounting. This ledger never authorizes credentials/network.
 // Real transport must cancel at the returned deadline and persist before dispatch.
-export function createGeminiBudget({ method = 'tool-using-model', clock = () => performance.now() } = {}) {
+export function createGeminiBudget({ method = 'tool-using-model', clock = () => performance.now(), profile = 'minimal' } = {}) {
   requireThat(['single-shot-model', 'tool-using-model'].includes(method), 'unknown method');
+  const limits = tokenProfile(profile);
   let last = clock(), turns = 0, tools = 0, generated = 0, inFlight = null, terminal = null;
   requireThat(Number.isFinite(last), 'invalid monotonic clock');
   const deadline = last + GEMINI.investigationTimeoutMs, records = [];
@@ -24,8 +25,8 @@ export function createGeminiBudget({ method = 'tool-using-model', clock = () => 
     remainingMs() { open(); return deadline - now(); },
     nextOutputReservation() {
       open();
-      if (generated >= GEMINI.generatedTokens) stop('budget_exhausted');
-      return Math.min(GEMINI.maxOutputTokens, GEMINI.generatedTokens - generated);
+      if (generated >= limits.generatedTokens) stop('budget_exhausted');
+      return Math.min(limits.maxOutputTokens, limits.generatedTokens - generated);
     },
     begin(request, tokenReceipt) {
       open();
@@ -40,7 +41,7 @@ export function createGeminiBudget({ method = 'tool-using-model', clock = () => 
       const complete = tokenReceipt.completeInputTokenBound ?? input;
       requireThat(Number.isSafeInteger(complete) && complete >= input, 'complete_token_bound_invalid');
       // Receipt must cover task, schemas, framing and the complete accumulated context.
-      if (complete + limit > GEMINI.contextTokens) stop('context_overflow');
+      if (complete + limit > limits.contextTokens) stop('context_overflow');
       const start = now();
       inFlight = Object.freeze({ turn: ++turns, requestSha256: request.requestSha256, inputTokens: input,
         completeInputTokenBound: complete, conservativeCount: tokenReceipt.completeInputTokenBound !== undefined,
@@ -79,7 +80,7 @@ export function createGeminiBudget({ method = 'tool-using-model', clock = () => 
         || (nativeTools !== null && nativeTools !== undefined && nativeTools !== 0));
       const result = ended >= lease.deadlineMonotonicMs ? 'request_timeout'
         : !known || count === null ? 'usage_unknown' : inconsistent ? 'token_count_or_usage_mismatch'
-          : count > lease.outputReservation || generated > GEMINI.generatedTokens ? 'budget_exhausted'
+          : count > lease.outputReservation || generated > limits.generatedTokens ? 'budget_exhausted'
             : terminalStatus;
       Object.assign(row, { endedAtMonotonicMs: ended, generatedTokens: count, status: result });
       inFlight = null;
@@ -93,7 +94,7 @@ export function createGeminiBudget({ method = 'tool-using-model', clock = () => 
       inFlight = null;
     },
     snapshot() {
-      return structuredClone({ profile: 'original-accepted-b01-token-limits', turns, toolAttempts: tools,
+      return structuredClone({ profile: limits.name, turns, toolAttempts: tools,
         cumulativeGeneratedTokens: generated, terminalStatus: terminal,
         inFlight: inFlight !== null, records, networkAuthorized: false, automaticRetries: 0 });
     },

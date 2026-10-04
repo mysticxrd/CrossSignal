@@ -3,7 +3,7 @@ import test from 'node:test';
 import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { GEMINI } from '../db/benchmark/gemini-config.mjs';
+import { GEMINI, PROFILES } from '../db/benchmark/gemini-config.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
 import { CASE_SETS, createBatch, dailyQuota, latestBatch, runBatch } from '../scripts/run-b01.mjs';
 
@@ -16,13 +16,15 @@ const dailyQuotaBody = JSON.stringify({ error: { code: 429, status: 'RESOURCE_EX
   { '@type': 'type.googleapis.com/google.rpc.RetryInfo', retryDelay: '0s' }] } });
 
 // Offline stand-in for Gemini: every model abstains until `quotaAfter` generate calls have used up the day.
-function fixtureGemini({ quotaAfter = Infinity } = {}) {
+// Each generation config sent is pushed to `sent`.
+function fixtureGemini({ quotaAfter = Infinity, sent = [] } = {}) {
   let generations = 0;
-  return () => createHttpTransport({ mode: 'OFFLINE_FIXTURE', keySource: () => 'OFFLINE_SECRET_KEY_CANARY_ONLY', log: () => {},
-    fetchImpl: async (url, options) => {
+  return profile => createHttpTransport({ mode: 'OFFLINE_FIXTURE', profile, keySource: () => 'OFFLINE_SECRET_KEY_CANARY_ONLY',
+    log: () => {}, fetchImpl: async (url, options) => {
       if (url.endsWith(':countTokens')) return new Response(JSON.stringify({ totalTokens: 1000 }));
       if (++generations > quotaAfter) return new Response(dailyQuotaBody, { status: 429 });
-      const toolTurn = 'query' in (JSON.parse(options.body).generationConfig.responseFormat.text.schema.properties ?? {});
+      const config = JSON.parse(options.body).generationConfig, toolTurn = 'query' in (config.responseFormat.text.schema.properties ?? {});
+      sent.push(config);
       const text = JSON.stringify(toolTurn ? { kind: 'finding', query: null, finding: abstain } : abstain);
       return new Response(JSON.stringify({ modelVersion: GEMINI.model, candidates: [{ finishReason: 'STOP', content: { parts: [{ text }] } }],
         usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 100, thoughtsTokenCount: 0, totalTokenCount: 1100 } }));
@@ -69,4 +71,29 @@ test('a daily-quota stop keeps that attempt unscored and the rerun resumes witho
   const fresh = await createBatch({ parent, commit: 'fixture-commit', date: '2026-10-04', sets: ['b06-b10'] });
   assert.equal(JSON.parse(readFileSync(join(fresh, 'BATCH.json'), 'utf8')).slots.length, 15);
   await assert.rejects(createBatch({ parent, commit: 'fixture-commit', sets: ['private'] }), /unknown_case_set/);
+});
+
+test('a batch keeps one profile: recorded with its limits and the request spacing, and used by every model request', async () => {
+  const parent = mkdtempSync(join(tmpdir(), 'crosssignal-b01-profile-'));
+  await assert.rejects(createBatch({ parent, commit: 'fixture-commit', profile: 'high' }), /unknown_token_profile/);
+  assert.deepEqual(readdirSync(parent), []);
+  const create = () => createBatch({ parent, commit: 'fixture-commit', date: '2026-10-04', sets: ['b06-b10'], profile: 'low' });
+  const directory = await create(), batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+  assert.equal(batch.profile, 'low');
+  assert.deepEqual(batch.tokenLimits, { ...PROFILES.low });
+  assert.equal(batch.requestGapMs, 4500);
+  const sent = [], quiet = { commit: 'fixture-commit', log: () => {} };
+  assert.equal((await runBatch({ ...quiet, directory, transportFactory: fixtureGemini({ sent }) })).complete, true);
+  assert.equal(sent.length, 10);
+  assert(sent.every(config => config.thinkingConfig.thinkingLevel === 'LOW' && config.maxOutputTokens === 4096));
+  const runs = batch.slots.map(slot => attempts(directory, slot)).map(([run]) => run);
+  assert.deepEqual(runs.map(run => run.profile), batch.slots.map(slot => slot.endsWith('-rules') ? null : 'low'));
+  for (const run of runs.filter(r => r.method !== 'rules')) {
+    assert.equal(run.result.budget.profile, PROFILES.low.name);
+    // Offline fixtures are not paced; free-tier runs report their wait here.
+    assert.equal(run.metrics.pacingWaitMs, 0);
+  }
+  // A transport bound to another profile stops the batch before its first model run is claimed.
+  await assert.rejects(runBatch({ ...quiet, directory: await create(), transportFactory: () => fixtureGemini()('minimal') }),
+    /transport_profile_mismatch/);
 });

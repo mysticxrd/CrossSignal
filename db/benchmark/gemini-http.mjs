@@ -2,22 +2,40 @@ import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { canonical, digest, exact, requireThat } from './contracts.mjs';
 import { prepareTokenCount } from './gemini-context.mjs';
-import { GEMINI } from './gemini-config.mjs';
+import { GEMINI, tokenProfile } from './gemini-config.mjs';
 import { formatDiagnostic, readDiagnostic, redactKey, retryDelayMs } from './gemini-diagnostics.mjs';
 
 // Google asks clients to back off and retry these statuses; every other failure is final.
 const RETRYABLE_STATUS = new Set([429, 500, 503, 504]);
 const describeCause = e => `${e?.name ?? 'Error'}: ${e?.message ?? e}${e?.cause ? ` (cause: ${e.cause.message ?? e.cause})` : ''}`;
 
+// Each call takes the next start slot, at least `gapMs` after the slot before, and waits for it, so even
+// overlapping callers start that far apart. Resolves to the milliseconds waited.
+export function createRequestPacer({ gapMs = GEMINI.requestGapMs, now = () => performance.now(),
+  wait = (ms, signal) => sleep(ms, undefined, { signal }) } = {}) {
+  let next = -Infinity;
+  return async signal => {
+    const asked = now(), start = Math.max(asked, next);
+    next = start + gapMs;
+    if (start > asked) await wait(start - asked, signal);
+    return start - asked;
+  };
+}
+// One pacer per process: every free-tier transport, so every run in a batch, shares one request clock.
+const freeTierPacer = createRequestPacer();
+
 // Core HTTP routine is dependency-injected only for explicitly labelled offline tests.
 // Online entrypoint supplies global fetch and a verified host-only key source.
 // Every failure is printed through `log` with the API key redacted and nothing else hidden.
-export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest = null,
-  log = line => process.stderr.write(`${line}\n`) }) {
+export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest = null, profile = 'minimal',
+  pace = mode === 'FREE_TIER_BENCHMARK' ? freeTierPacer : null, log = line => process.stderr.write(`${line}\n`) }) {
   requireThat(['OFFLINE_FIXTURE', 'FREE_TIER_BENCHMARK'].includes(mode), 'invalid_transport_mode');
   requireThat(mode !== 'FREE_TIER_BENCHMARK' || typeof beforeRequest === 'function', 'verified_host_gate_required');
+  requireThat(pace === null ? mode !== 'FREE_TIER_BENCHMARK' : typeof pace === 'function', 'free_tier_pacing_required');
+  // A transport admits only its own profile's thinking level and caps.
+  const limits = tokenProfile(profile);
   let busy = false, generationCalls = 0, generationAttempts = 0, countCalls = 0, metadataCalls = 0, stopped = false, lastFailure = null;
-  let lastFailureDiagnostic = null, automaticRetries = 0;
+  let lastFailureDiagnostic = null, automaticRetries = 0, pacingWaitMs = 0;
   function validatePrepared(prepared) {
     requireThat(prepared.provider === 'gemini' && prepared.endpoint === GEMINI.endpoint
       && prepared.requestSha256 === digest(prepared.body), 'request_binding_mismatch');
@@ -25,9 +43,9 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
     const config=prepared.body.generationConfig;
     exact(config,['candidateCount','maxOutputTokens','temperature','responseModalities','thinkingConfig','responseFormat'],'generation config');
     requireThat(config.candidateCount===1 && config.temperature===1
-      && Number.isSafeInteger(config.maxOutputTokens) && config.maxOutputTokens>0 && config.maxOutputTokens<=1024
+      && Number.isSafeInteger(config.maxOutputTokens) && config.maxOutputTokens>0 && config.maxOutputTokens<=limits.maxOutputTokens
       && JSON.stringify(config.responseModalities)==='["TEXT"]'
-      && config.thinkingConfig?.thinkingLevel==='MINIMAL' && config.thinkingConfig.includeThoughts===false
+      && config.thinkingConfig?.thinkingLevel===limits.thinkingLevel && config.thinkingConfig.includeThoughts===false
       && config.responseFormat?.text?.mimeType==='APPLICATION_JSON','fixed_generation_configuration_required');
     exact(config.thinkingConfig,['thinkingLevel','includeThoughts'],'thinking config');
     exact(config.responseFormat,['text'],'response format');
@@ -75,6 +93,8 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
       };
       const work = async () => {
         for (let retry = 0; ; retry++) {
+          // Retries wait their turn too; an abort ends the wait.
+          if (pace) pacingWaitMs += await pace(controller.signal);
           if (beforeRequest) await beforeRequest();
           key = keySource();
           requireThat(typeof key === 'string' && key.length >= 16 && key.length <= 512 && !/[\r\n]/.test(key), 'scoped_key_unavailable');
@@ -115,11 +135,12 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
   }
   return {
     mode,
+    profile,
     async modelMetadata(deadline) {
       const { data } = await request(GEMINI.endpoint.replace(':generateContent', ''), null, deadline, 'GET');
       requireThat(data.name === `models/${GEMINI.model}` && data.supportedGenerationMethods?.includes('generateContent')
-        && Number.isSafeInteger(data.inputTokenLimit) && data.inputTokenLimit >= GEMINI.contextTokens
-        && Number.isSafeInteger(data.outputTokenLimit) && data.outputTokenLimit >= GEMINI.maxOutputTokens, 'model_metadata_incompatible');
+        && Number.isSafeInteger(data.inputTokenLimit) && data.inputTokenLimit >= limits.contextTokens
+        && Number.isSafeInteger(data.outputTokenLimit) && data.outputTokenLimit >= limits.maxOutputTokens, 'model_metadata_incompatible');
       return { name: data.name, inputTokenLimit: data.inputTokenLimit, outputTokenLimit: data.outputTokenLimit };
     },
     async count(requestBody, deadline) {
@@ -146,7 +167,8 @@ export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest 
       return request(GEMINI.endpoint, prepared.body, lease.deadlineMonotonicMs);
     },
     stop() { stopped = true; },
-    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries, mode, lastFailure,
+    counters() { return { generationCalls, generationAttempts, countCalls, metadataCalls, automaticRetries,
+      pacingWaitMs: Math.round(pacingWaitMs), mode, profile, lastFailure,
       ...(lastFailureDiagnostic === null ? {} : { lastFailureDiagnostic }) }; },
   };
 }

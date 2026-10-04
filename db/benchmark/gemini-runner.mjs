@@ -8,19 +8,21 @@ const knownErrors = ['context_overflow', 'budget_exhausted', 'tool_budget_exhaus
   'request_timeout', 'http_failure', 'transport_failure', 'response_size_limit', 'usage_unknown',
   'token_count_or_usage_mismatch', 'isolated_validation_failed', 'isolated_worker_timeout', 'provider_secret_echo'];
 
-export async function runGeminiInvestigation({ observable, scope, method, store, transport }) {
+export async function runGeminiInvestigation({ observable, scope, method, store, transport, profile = 'minimal' }) {
   requireThat(['single-shot-model', 'tool-using-model'].includes(method), 'invalid_method');
   requireThat(store.metadata.scope.runId === scope.runId && store.metadata.method === method, 'run_store_binding_mismatch');
+  // The transport refuses any other profile's requests, so a mismatch stops here, before the run is used up.
+  requireThat((transport.profile ?? 'minimal') === profile, 'transport_profile_mismatch');
   store.claim(); // Atomic and durable: repeated execution of this run is prohibited.
   const started = performance.now(), deadline = started + GEMINI.investigationTimeoutMs;
-  const ledger = createGeminiBudget({ method }), queries = [];
+  const ledger = createGeminiBudget({ method, profile }), queries = [];
   let lease = null, finding = null, terminalStatus = null, failureReason = null;
   let modelVersion = null;
   try {
     for (;;) {
       const outputReservation = ledger.nextOutputReservation();
       const prepared = await isolatedGemini({ operation: 'prepare', observable, scope,
-        options: { method, queries, outputReservation } }, { deadline });
+        options: { method, queries, outputReservation, profile } }, { deadline });
       const tokenReceipt = await transport.count(prepared, deadline);
       store.append('token_count', { tokenReceipt, atUtc: new Date().toISOString() });
       lease = ledger.begin(prepared, tokenReceipt);

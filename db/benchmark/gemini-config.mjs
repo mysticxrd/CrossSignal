@@ -22,9 +22,27 @@ export const GEMINI = Object.freeze({
   concurrency: 1,
   // 429/500/503/504 only, inside one request's deadline; a 4xx request error is never retried.
   maxRetries: 4,
+  // The free tier allows 15 requests a minute. Starting every request, retries included, at least 4.5 s
+  // after the one before keeps any 60 s window to 14.
+  requestGapMs: 4500,
   seed: null,
   seedUnavailableReason: 'model_specific_support_not_verified',
 });
+
+// Thinking and token limits, chosen per batch. `minimal` is the accepted B01 baseline above and the default.
+// Thinking tokens are output tokens: they count against maxOutputTokens per response and generatedTokens per
+// run, so `low` raises both, and the context to hold the larger reservation.
+export const PROFILES = Object.freeze({
+  minimal: Object.freeze({ name: 'original-accepted-b01-token-limits', thinkingLevel: GEMINI.thinkingLevel,
+    maxOutputTokens: GEMINI.maxOutputTokens, contextTokens: GEMINI.contextTokens, generatedTokens: GEMINI.generatedTokens }),
+  low: Object.freeze({ name: 'low-thinking-raised-token-limits', thinkingLevel: 'LOW',
+    maxOutputTokens: 4096, contextTokens: 16384, generatedTokens: 24576 }),
+});
+
+export function tokenProfile(name = 'minimal') {
+  if (!Object.hasOwn(PROFILES, name)) throw new Error('unknown_token_profile');
+  return PROFILES[name];
+}
 
 // No key lookup, environment inspection or network dispatch exists in this preflight.
 // A generic stage acceptance or a caller-supplied option cannot enable requests.

@@ -157,6 +157,8 @@ export function gradeBatch(directory, rubricFiles = RUBRICS) {
   return { version: 'b01-results-v2', truthMode: 'SIMULATED', batch: relative(root, directory).replaceAll('\\', '/'),
     date: batch.date, startedAtUtc: batch.startedAtUtc, gradedAtUtc: new Date().toISOString(), commit: batch.commit,
     model: batch.model, modelVersions: [...new Set(graded.map(r => r.modelVersion).filter(Boolean))],
+    // Batches from before the profile switch all ran the baseline, without request pacing.
+    profile: batch.profile ?? 'minimal', tokenLimits: batch.tokenLimits ?? null, requestGapMs: batch.requestGapMs ?? null,
     rubrics: rubricFiles.filter(file => used.has(file)).map(file => ({ file, sha256: hash(resolve(root, file)) })),
     graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: HOW_GRADED, cases,
     totals: Object.fromEntries(Object.entries(SPLITS).filter(([split]) => graded.some(r => r.split === split))
@@ -174,13 +176,16 @@ const mark = (run, name) => run.raw === null && name !== 'status' ? '✗ —'
 
 export function renderResults(results) {
   const labels = split => results.cases.filter(c => SPLITS[c.split] === split).map(c => c.label).join(', ');
+  const limits = results.tokenLimits, gap = results.requestGapMs;
+  const profile = `\`${results.profile}\` profile` + (limits ? ` (thinking ${limits.thinkingLevel}, up to `
+    + `${limits.maxOutputTokens.toLocaleString('en-US')} output tokens a response)` : '');
   const failures = results.runs.filter(r => r.score < r.maxScore).map(r => `- **${r.label} · ${NAMES[r.method]}** (${r.score}/${r.maxScore}): `
     + (r.raw === null ? escape(r.checks.status.got) : CHECKS.filter(name => !r.checks[name].pass)
       .map(name => `${name}: ${escape(r.checks[name].got)}` + (r.checks[name].want ? `, want ${escape(r.checks[name].want)}` : '')).join('; ')));
   return [
     `# Benchmark results: ${results.cases.length} simulated cases × ${METHODS.length} methods (${results.date})`, '',
     `**SIMULATED incidents, not production data.** One fresh run per case and method (${results.runs.length} runs). `
-      + `Model runs use \`${results.model}\` on the Gemini free tier. All runs came from commit \`${results.commit.slice(0, 12)}\`; `
+      + `Model runs use \`${results.model}\` on the Gemini free tier with the ${profile}. All runs came from commit \`${results.commit.slice(0, 12)}\`; `
       + 'the rubrics were read only after every run was saved.', '',
     `| Case | Split | ${METHODS.map(m => NAMES[m]).join(' | ')} |`, `|---|---|${METHODS.map(() => '---').join('|')}|`,
     ...results.cases.map(c => `| ${c.label} | ${SPLITS[c.split] ?? c.split} | ${METHODS.map(m => summary(c.methods[m])).join(' | ')} |`),
@@ -188,7 +193,8 @@ export function renderResults(results) {
       `| ${name} (${labels(split)}) | | ${METHODS.map(m => summary(results.totals[split][m])).join(' | ')} |`),
     `| **All** | | ${METHODS.map(m => summary(results.totals.all[m])).join(' | ')} |`, '',
     'Each cell: score (checks passed, of 5 per case) · tokens Gemini reported (input + output, thinking included) · model turns · tool calls · '
-      + 'wall time · Gemini API requests (generate and token-count calls, retries included). '
+      + `wall time${gap ? ` (Gemini requests start at least ${gap / 1000} s apart to stay inside the free tier)` : ''} · `
+      + 'Gemini API requests (generate and token-count calls, retries included). '
       + 'Rules is the no-model baseline in `db/benchmark/rules.mjs`; its rules target this benchmark\'s incident families, '
       + 'so read its score as a reference point.',
     '', '## Verdicts', '',
@@ -205,6 +211,8 @@ export function renderResults(results) {
     `- Batch: \`${results.batch}\`, started ${results.startedAtUtc}, graded ${results.gradedAtUtc}`,
     `- Commit: \`${results.commit}\``,
     `- Model: \`${results.model}\`; versions reported: ${results.modelVersions.map(v => `\`${v}\``).join(', ') || 'none'}`,
+    `- Profile: \`${results.profile}\`` + (limits ? `: thinking ${limits.thinkingLevel}; ${limits.maxOutputTokens} output tokens a `
+      + `response, ${limits.generatedTokens} a run; ${limits.contextTokens}-token context` : ''),
     ...results.rubrics.map(r => `- Rubric \`${r.file}\` sha256 \`${r.sha256}\``),
     `- Grader sha256 \`${results.graderSha256}\``, '',
   ].join('\n');

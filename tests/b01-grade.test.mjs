@@ -5,8 +5,9 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { CUTOFF, START } from '../db/benchmark/contracts.mjs';
+import { PROFILES } from '../db/benchmark/gemini-config.mjs';
 import { rulesFinding } from '../db/benchmark/rules.mjs';
-import { CHECKS, METHODS, RUBRICS, gradeBatch, gradeRun, namedCause } from './evaluator/grade-b01.mjs';
+import { CHECKS, METHODS, RUBRICS, gradeBatch, gradeRun, namedCause, renderResults } from './evaluator/grade-b01.mjs';
 
 // Fixture findings only: no model, no network. Public case folders in the order of RUBRICS.
 const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10'];
@@ -176,8 +177,8 @@ test('the grader runs as its own process on a finished batch and writes the 10 x
     writeFileSync(join(directory, 'runs', saved.slot, '2026-10-03T00-00-00-000Z', 'RESULT.json'), JSON.stringify(saved));
   };
   runs.forEach(save);
-  const batch = slots => writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1', date: '2026-10-04',
-    startedAtUtc: '2026-10-04T00:00:00.000Z', commit: 'fixture-commit', model: 'fixture-model', slots }));
+  const batch = (slots, extra = {}) => writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1',
+    date: '2026-10-04', startedAtUtc: '2026-10-04T00:00:00.000Z', commit: 'fixture-commit', model: 'fixture-model', slots, ...extra }));
   batch(runs.map(r => r.slot));
   const graded = spawnSync(process.execPath, ['tests/evaluator/grade-b01.mjs', directory], { encoding: 'utf8' });
   assert.equal(graded.status, 0, graded.stderr);
@@ -198,11 +199,22 @@ test('the grader runs as its own process on a finished batch and writes the 10 x
   assert.match(markdown, /^- Rubric `tests\/evaluator\/b06-b10\/rubric\.json` sha256 `[0-9a-f]{64}`$/m);
   assert.match(markdown, /^- \*\*B02 · Tool-using model\*\* \(0\/5\): no finding: invalid_output \(invalid_json_or_schema\)$/m);
   assert.match(markdown, /^\| B02 \| Tool-using model \| 0\/5 \| ✗ no finding: invalid_output \(invalid_json_or_schema\) \| — \| ✗ — \|/m);
+  // A batch from before the profile switch ran the baseline, without request spacing.
+  assert.deepEqual([results.profile, results.tokenLimits, results.requestGapMs], ['minimal', null, null]);
+  assert.match(markdown, /free tier with the `minimal` profile\. All runs/);
+  assert.match(markdown, /^- Profile: `minimal`$/m);
+  assert.doesNotMatch(markdown, /start at least/);
   // A batch of B01-B05 alone reports only the splits and rubric it used.
   batch(runs.slice(0, 15).map(r => r.slot));
   const first = gradeBatch(directory);
   assert.deepEqual(Object.keys(first.totals), ['dev', 'holdout', 'all']);
   assert.deepEqual(first.rubrics.map(r => r.file), RUBRICS.slice(0, 1));
+  // A profiled batch names its thinking level and caps, and notes the spacing inside the wall times.
+  batch(runs.slice(0, 15).map(r => r.slot), { profile: 'low', tokenLimits: PROFILES.low, requestGapMs: 4500 });
+  const low = renderResults(gradeBatch(directory));
+  assert.match(low, /free tier with the `low` profile \(thinking LOW, up to 4,096 output tokens a response\)\. All runs/);
+  assert.match(low, /wall time \(Gemini requests start at least 4\.5 s apart to stay inside the free tier\) · Gemini API requests/);
+  assert.match(low, /^- Profile: `low`: thinking LOW; 4096 output tokens a response, 24576 a run; 16384-token context$/m);
   save({ ...runs[0], saved: false });
   assert.throws(() => gradeBatch(directory), /is not saved yet/);
 });
