@@ -2,8 +2,8 @@ import { sanitizeUsage } from './gemini.mjs';
 import { validateFinding } from './schemas.mjs';
 import { validateGeminiTurn } from './gemini-context.mjs';
 
-// Only visible, bounded text and numeric usage leave the restricted parser.
-export function inspectGeminiTurn(raw, { method, outputReservation }) {
+// Only visible, bounded text and numeric usage leave the restricted parser. frame: a daily case's frame, null for v2.
+export function inspectGeminiTurn(raw, { method, outputReservation, frame = null }) {
   const usage = sanitizeUsage(raw?.usageMetadata);
   const result = { status: 'failed', terminalStatus: 'invalid_output', reason: null,
     visibleText: null, finding: null, query: null, queryIntent: false, usage,
@@ -35,7 +35,7 @@ export function inspectGeminiTurn(raw, { method, outputReservation }) {
     const value = JSON.parse(text);
     if (method === 'single-shot-model') result.finding = validateFinding(value);
     else {
-      const parsed = validateGeminiTurn(value);
+      const parsed = validateGeminiTurn(value, frame);
       if (value.kind === 'query') result.query = parsed;
       else result.finding = parsed;
     }

@@ -3,6 +3,7 @@ import { digest, requireThat } from './contracts.mjs';
 import { GEMINI } from './gemini-config.mjs';
 import { createGeminiBudget } from './gemini-budget.mjs';
 import { isolatedGemini } from './gemini-isolation.mjs';
+import { formatOf } from './formats.mjs';
 
 const knownErrors = ['context_overflow', 'budget_exhausted', 'tool_budget_exhausted', 'investigation_timeout',
   'request_timeout', 'http_failure', 'transport_failure', 'response_size_limit', 'usage_unknown',
@@ -13,6 +14,8 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
   requireThat(store.metadata.scope.runId === scope.runId && store.metadata.method === method, 'run_store_binding_mismatch');
   // The transport refuses any other profile's requests, so a mismatch stops here, before the run is used up.
   requireThat((transport.profile ?? 'minimal') === profile, 'transport_profile_mismatch');
+  // A daily case's turns are checked against its own segments and services.
+  const { truthMode } = formatOf(observable), frame = observable.frame ?? null;
   store.claim(); // Atomic and durable: repeated execution of this run is prohibited.
   const started = performance.now(), deadline = started + GEMINI.investigationTimeoutMs;
   const ledger = createGeminiBudget({ method, profile }), queries = [];
@@ -30,7 +33,7 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
       store.append('request', { atUtc: new Date().toISOString(), prepared, lease });
       const response = await transport.generate(prepared, lease);
       const parsed = await isolatedGemini({ operation: 'inspect', raw: response.data,
-        options: { method, outputReservation } }, { deadline });
+        options: { method, outputReservation, frame } }, { deadline });
       // Raw provider objects and hidden thought/signature channels are discarded.
       if (parsed.queryIntent) {
         const admitted = ledger.registerToolIntent(lease, { visibleTextHash: digest(parsed.visibleText) });
@@ -66,7 +69,7 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
     if (lease) { ledger.abort(lease); terminalStatus = 'indeterminate_usage'; transport.stop(); }
     else if (!['context_overflow', 'budget_exhausted', 'tool_budget_exhausted', 'investigation_timeout'].includes(failureReason)) transport.stop();
   }
-  const result = { truthMode: 'SIMULATED', method, terminalStatus, failureReason, finding,
+  const result = { truthMode, method, terminalStatus, failureReason, finding,
     modelVersion, modelVersionUnavailableReason: modelVersion === null ? 'not_reported_or_invalid' : null,
     budget: ledger.snapshot(), elapsedMs: performance.now() - started,
     completedAtUtc: new Date().toISOString(), transport: transport.counters(), runtimeEffects: 0 };

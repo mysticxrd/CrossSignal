@@ -1,12 +1,16 @@
 import { DatabaseSync } from 'node:sqlite';
 import { openSync, closeSync } from 'node:fs';
-import { canonical, digest, validateScope, validateObservable, requireThat } from './contracts.mjs';
+import { canonical, digest, requireThat } from './contracts.mjs';
+import { formatOf, storedObservable } from './formats.mjs';
 
 // New benchmark-only SQLite databases. No A01 imports, migrations or effect endpoint.
+// A daily case keeps its frame in the run metadata, so a reopened run can check its evidence against it.
 export class GeminiStore {
   constructor(path, { metadata, observable } = {}) {
     if (metadata) {
-      validateScope(metadata.scope); validateObservable(observable, metadata.scope);
+      const format = formatOf(observable);
+      format.validateScope(metadata.scope); format.validateObservable(observable, metadata.scope);
+      requireThat(canonical(metadata.frame ?? null) === canonical(observable.frame ?? null), 'run_frame_mismatch');
       const fd = openSync(path, 'wx'); closeSync(fd); // Existing files can never be replaced.
     }
     this.db = new DatabaseSync(path);
@@ -38,16 +42,16 @@ export class GeminiStore {
     }
     const rows = this.db.prepare('SELECT * FROM benchmark_runs').all();
     requireThat(rows.length === 1 && digest(JSON.parse(rows[0].metadata)) === rows[0].hash, 'run_metadata_corrupt');
-    this.metadata = JSON.parse(rows[0].metadata); validateScope(this.metadata.scope);
+    this.metadata = JSON.parse(rows[0].metadata);
+    this.format = formatOf(storedObservable(this.metadata, [])); this.format.validateScope(this.metadata.scope);
     this.validate();
   }
   validate() {
     const { scope } = this.metadata;
     const evidence = this.db.prepare('SELECT * FROM benchmark_evidence ORDER BY evidence_id').all();
     for (const row of evidence) requireThat(row.workspace === scope.workspaceId && row.case_id === scope.caseId && row.run_id === scope.runId, 'stored_evidence_scope_mismatch');
-    const observable = { version: 'incident-data-v2', truthMode: 'SIMULATED', caseRef: scope.caseId, events: evidence.map(e => JSON.parse(e.payload)) };
     // The exact frozen observable shape is retained in run metadata for reopen checks.
-    validateObservable({ ...observable, asOf: scope.clock }, scope);
+    this.format.validateObservable(storedObservable(this.metadata, evidence.map(e => JSON.parse(e.payload))), scope);
     let previous = '0'.repeat(64), sequence = 0;
     for (const row of this.history()) {
       requireThat(row.workspace === scope.workspaceId && row.case_id === scope.caseId && row.run_id === scope.runId
@@ -74,7 +78,7 @@ export class GeminiStore {
   }
   claim() {
     requireThat(this.history().length === 0, 'run_already_started_no_automatic_replay');
-    return this.append('started', { atUtc: new Date().toISOString(), truthMode: 'SIMULATED' });
+    return this.append('started', { atUtc: new Date().toISOString(), truthMode: this.format.truthMode });
   }
   recover() {
     this.validate();

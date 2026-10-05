@@ -36,8 +36,8 @@ process; they do not govern ship-lane work.
   minute). Run one batch at a time.
 - Run one investigation with `node scripts/run-a01-gemini.mjs`; each run is
   saved under `outputs/a01-gemini/` (gitignored).
-- `node scripts/run-b01.mjs [--new] [--profile minimal|low]` runs the benchmark;
-  `minimal` is the B01 baseline, `low` adds LOW thinking with larger caps.
+- `node scripts/run-b01.mjs [--new] [--profile minimal|low] [--sets ...]` runs the
+  benchmark; `minimal` is the B01 baseline, `low` adds LOW thinking with larger caps.
 
 ## Choosing work
 

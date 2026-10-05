@@ -1,10 +1,8 @@
-import { readFileSync } from 'node:fs';
 import { canonical, digest, requireThat } from './contracts.mjs';
-import { assertNoCanaries, commonDefinitions, exposePacket } from './exposure.mjs';
+import { assertNoCanaries } from './exposure.mjs';
+import { formatOf } from './formats.mjs';
 import { findingSchema, validateFinding } from './schemas.mjs';
 import { GEMINI, tokenProfile } from './gemini-config.mjs';
-
-const task = readFileSync(new URL('./task.md', import.meta.url), 'utf8').trim();
 
 // Project the frozen schema onto the documented Gemini JSON-schema subset.
 // Host validation retains every original constant, string-length and array-length constraint.
@@ -31,13 +29,13 @@ export function wireSchema(schema, path = '$', changes = []) {
   return result;
 }
 
-// Pure preparation: input must be a validated, scoped synthetic observable.
+// Pure preparation: input must be a validated, scoped observable of either case format.
 // Identity, task, schema, model, endpoint and provider-native capabilities are host-owned.
 export function prepareSingleShot(input, scope, profile = 'minimal') {
-  const limits = tokenProfile(profile), packet = exposePacket(input, scope, true), schemaProjection = [];
+  const format = formatOf(input), limits = tokenProfile(profile), packet = format.exposePacket(input, scope, true), schemaProjection = [];
   const schema = wireSchema(findingSchema, '$', schemaProjection);
   const body = {
-    systemInstruction: { parts: [{ text: canonical({ task, commonDefinitions }) }] },
+    systemInstruction: { parts: [{ text: canonical({ task: format.task, commonDefinitions: format.commonDefinitions }) }] },
     contents: [{ role: 'user', parts: [{ text: canonical(packet) }] }],
     generationConfig: {
       candidateCount: 1, maxOutputTokens: limits.maxOutputTokens, temperature: GEMINI.temperature,
