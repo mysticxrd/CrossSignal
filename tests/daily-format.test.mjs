@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { canonical, digest } from '../db/benchmark/contracts.mjs';
 import { TRUTH, VERSION, WEEKDAYS, signal, validateObservable } from '../db/benchmark/daily.mjs';
 import { dailyRulesFinding } from '../db/benchmark/daily-rules.mjs';
@@ -14,6 +14,8 @@ import { inspectGeminiTurn } from '../db/benchmark/gemini-inspect.mjs';
 import { isolatedGemini } from '../db/benchmark/gemini-isolation.mjs';
 import { runGeminiInvestigation } from '../db/benchmark/gemini-runner.mjs';
 import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
+import { compareBatches, renderComparison } from './evaluator/compare-b01.mjs';
+import { gradeBatch, renderResults } from './evaluator/grade-b01.mjs';
 
 const DAY = 86_400_000;
 const frame = { start: '2020-12-01T00:00:00.000Z', clock: '2020-12-11T00:00:00.000Z', recentFrom: '2020-12-08T00:00:00.000Z',
@@ -212,6 +214,64 @@ test('the daily rule baseline keeps the frozen order and has no "nothing happene
   assert.equal(traffic.relatedChangeId, null);
   for (const name of ['calm', 'incomplete']) assert.equal(rules(name).terminalStatus, 'epistemic_abstention');
   assert(checkout.hypotheses[0].supportIds.includes(checkoutDeploy.id));
+});
+
+test('a daily batch is graded and compared under its own truth mode', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'crosssignal-daily-grade-'));
+  const write = (path, value) => { mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, JSON.stringify(value)); };
+  const checkoutDeploy = cases.checkout.events.find(e => e.type === 'deployment' && e.payload.service === 'checkout').id;
+  const look = target => ({ kind: 'read_only_check', target, approvalRequired: false, risk: 'read_only' });
+  // In the W1 order, each fixture case under its own id, with what its hidden rubric case would ask.
+  const plan = [['traffic', 'acquisition_composition_shift', look('acquisition allocation'), null, []],
+    ['checkout', 'checkout_validation_regression', { kind: 'simulated_rollback', target: 'checkout', approvalRequired: true,
+      risk: 'consequential' }, 'mobile/organic', [checkoutDeploy]],
+    ['provider', 'payment_provider_incident', look('payment-provider'), null, []],
+    ['calm', 'no_incident', { kind: 'none', target: null, approvalRequired: false, risk: 'none' }, null, []],
+    ['incomplete', 'insufficient_evidence', { kind: 'abstain', target: null, approvalRequired: false, risk: 'none' }, null, []]];
+  const rubric = { cases: [] }, slots = [];
+  plan.forEach(([name, expectedDiagnosis, action, affectedSegment, relevantChangeIds], i) => {
+    const caseId = `c_00000000e00${i + 1}`, file = join(directory, 'cases', `${caseId}.json`), slot = `${caseId}-rules`;
+    const input = { ...cases[name], caseRef: caseId, events: cases[name].events.map(({ contentHash, ...body }) => {
+      void contentHash;
+      return seal({ ...body, caseId });
+    }) };
+    const finding = dailyRulesFinding(input, { ...scope, caseId });
+    write(file, input);
+    rubric.cases.push({ label: `D${i + 1}`, caseRef: caseId, split: 'real_baseline', expectedDiagnosis, action, affectedSegment,
+      relevantChangeIds, groups: relevantChangeIds.map(id => ({ name: 'relevant release', predicate: 'deployment_observed',
+        evidenceIds: [id], target: 'checkout' })) });
+    write(join(directory, 'runs', slot, 'attempt', 'RESULT.json'), { version: 'b01-run-v1', saved: true, slot, case: file,
+      caseRef: caseId, method: 'rules', model: null, commit: 'fixture-commit', scope: { runId: ids.runId },
+      metrics: { tokens: { input: 0, output: 0, total: 0 }, turns: 0, toolCalls: 0, elapsedMs: 1, requests: { total: 0, retries: 0 },
+        exposedEvidenceIds: input.events.map(e => e.id) },
+      result: { truthMode: TRUTH, terminalStatus: finding.terminalStatus, failureReason: null, finding } });
+    slots.push(slot);
+  });
+  const rubricFile = join(directory, 'rubric.json'), grade = dir => gradeBatch(dir, [rubricFile]);
+  write(rubricFile, rubric);
+  write(join(directory, 'BATCH.json'), { version: 'b01-batch-v1', truthMode: TRUTH, date: '2026-10-09',
+    startedAtUtc: '2026-10-09T00:00:00.000Z', commit: 'fixture-commit', model: 'fixture-model', profile: 'low', slots });
+  const results = grade(directory), markdown = renderResults(results);
+  assert.equal(results.truthMode, TRUTH);
+  // With no "nothing happened" answer the rule baseline abstains on the calm case; it gets the other four right.
+  assert.deepEqual(results.runs.map(r => [r.label, r.score]), [['D1', 5], ['D2', 5], ['D3', 5], ['D4', 3], ['D5', 5]]);
+  assert.deepEqual(Object.keys(results.totals), ['real', 'all']);
+  assert.equal(results.runs[1].checks.change.got, `${checkoutDeploy} (checkout deploy v4→v5)`);
+  assert.equal(results.runs[1].keyEvidence.covered, 1);
+  assert.match(markdown, /^# Benchmark results: 5 real-baseline cases × 3 methods \(2026-10-09\)$/m);
+  assert.match(markdown, /^\*\*Real store data, injected incidents\.\*\* Revenue rows are a real store's daily traffic and sales;/m);
+  assert.match(markdown, /Rules is the no-model baseline in `db\/benchmark\/daily-rules\.mjs`;/);
+  assert.match(markdown, /^\| Real baseline \(D1, D2, D3, D4, D5\) \| \| \*\*23\/25\*\* /m);
+  assert.match(markdown, /On the no-incident case the data is complete and moves only with the store's ordinary day-to-day variation/);
+  assert.doesNotMatch(markdown, /SIMULATED|complete and flat/);
+  // Repeats of a daily batch compare the same way.
+  const comparison = compareBatches([directory, directory], grade), compared = renderComparison(comparison);
+  assert.equal(comparison.truthMode, TRUTH);
+  assert.match(compared, /^# Benchmark: `low` on 5 real-baseline cases$/m);
+  assert.match(compared, /^\*\*Real store data, injected incidents\.\*\* .* A batch is one fresh run of every case with every method\./m);
+  assert.match(compared, /Rules, the no-model baseline in `db\/benchmark\/daily-rules\.mjs`, scored 23\/25 in every batch;/);
+  assert.match(compared, /^\| Real baseline \(D1, D2, D3, D4, D5\) \| \|/m);
+  assert.doesNotMatch(compared, /SIMULATED/);
 });
 
 test('the daily task differs from the frozen one only in the SIMULATED label', () => {

@@ -35,7 +35,7 @@ function run(label, value, { method = 'tool-using-model', exposed = source(label
     model: method === 'rules' ? null : 'fixture-model', commit: 'fixture-commit', scope: { runId: 'r_000000000000' },
     metrics: { tokens: { input: 900, output: 100, total: 1000 }, turns: 1, toolCalls: 0, elapsedMs: 1500,
       requests: { total: 3, retries: 0 }, exposedEvidenceIds: exposed },
-    result: { terminalStatus: value?.terminalStatus ?? 'invalid_output', failureReason, finding: value } };
+    result: { truthMode: 'SIMULATED', terminalStatus: value?.terminalStatus ?? 'invalid_output', failureReason, finding: value } };
 }
 const grade = (label, value, options) => gradeRun(run(label, value, options), rubricCase(label), source(label).events);
 const passed = graded => CHECKS.filter(name => graded.checks[name].pass);
@@ -189,13 +189,17 @@ test('the grader runs as its own process on a finished batch and writes the 15 x
   };
   runs.forEach(save);
   const batch = (slots, extra = {}) => writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1',
-    date: '2026-10-04', startedAtUtc: '2026-10-04T00:00:00.000Z', commit: 'fixture-commit', model: 'fixture-model', slots, ...extra }));
+    truthMode: 'SIMULATED', date: '2026-10-04', startedAtUtc: '2026-10-04T00:00:00.000Z', commit: 'fixture-commit', model: 'fixture-model', slots, ...extra }));
   batch(runs.map(r => r.slot));
   const graded = spawnSync(process.execPath, ['tests/evaluator/grade-b01.mjs', directory], { encoding: 'utf8' });
   assert.equal(graded.status, 0, graded.stderr);
   const markdown = readFileSync(join(directory, 'RESULTS.md'), 'utf8');
   const results = JSON.parse(readFileSync(join(directory, 'results.json'), 'utf8'));
   assert.equal(results.version, 'b01-results-v2');
+  assert.equal(results.truthMode, 'SIMULATED');
+  assert.match(markdown, /^# Benchmark results: 15 simulated cases × 3 methods \(2026-10-04\)$/m);
+  assert.match(markdown, /^\*\*SIMULATED incidents, not production data\.\*\* One fresh run per case and method \(45 runs\)\. /m);
+  assert.match(markdown, /Rules is the no-model baseline in `db\/benchmark\/rules\.mjs`;/);
   assert.deepEqual(results.cases.map(c => [c.label, c.split]), [['B01', 'development'], ['B02', 'development'],
     ['B03', 'frozen_transfer'], ['B04', 'frozen_transfer'], ['B05', 'frozen_transfer'], ['B06', 'fresh_holdout'],
     ['B07', 'fresh_holdout'], ['B08', 'fresh_holdout'], ['B09', 'fresh_holdout'], ['B10', 'fresh_holdout'],
@@ -228,6 +232,12 @@ test('the grader runs as its own process on a finished batch and writes the 15 x
   assert.match(low, /free tier with the `low` profile \(thinking LOW, up to 4,096 output tokens a response\)\. All runs/);
   assert.match(low, /wall time \(Gemini requests start at least 4\.5 s apart to stay inside the free tier\) · Gemini API requests/);
   assert.match(low, /^- Profile: `low`: thinking LOW; 4096 output tokens a response, 24576 a run; 16384-token context$/m);
+  // The truth mode comes from the batch, and every run must carry the same one.
+  batch(runs.slice(0, 15).map(r => r.slot), { truthMode: 'MADE_UP' });
+  assert.throws(() => gradeBatch(directory), /unknown truth mode MADE_UP/);
+  batch(runs.slice(0, 15).map(r => r.slot));
+  save({ ...runs[0], result: { ...runs[0].result, truthMode: 'REAL_BASELINE_PARTLY_SYNTHETIC' } });
+  assert.throws(() => gradeBatch(directory), /runs disagree with the batch's truth mode SIMULATED/);
   save({ ...runs[0], saved: false });
   assert.throws(() => gradeBatch(directory), /is not saved yet/);
 });

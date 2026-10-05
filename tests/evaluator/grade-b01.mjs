@@ -1,4 +1,4 @@
-// Grades one finished run-b01 batch: its SIMULATED cases x rules, single-shot and tool-using.
+// Grades one finished run-b01 batch: its cases x rules, single-shot and tool-using, under the truth mode the batch records.
 // Separate evaluator process: scripts/run-b01.mjs never imports this file and starts it only after
 // every run is saved, so nothing from a rubric can reach a model request.
 // Usage: node tests/evaluator/grade-b01.mjs <batch-dir>   (writes results.json and RESULTS.md there)
@@ -15,8 +15,8 @@ export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 export const CHECKS = ['status', 'cause', 'change', 'segment', 'rollback'];
 const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot model', 'tool-using-model': 'Tool-using model' };
-const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh', fresh_holdout_2: 'fresh2' };
-const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout', fresh2: 'Fresh holdout 2' };
+const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh', fresh_holdout_2: 'fresh2', real_baseline: 'real' };
+const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout', fresh2: 'Fresh holdout 2', real: 'Real baseline' };
 const CHANGE_TYPES = ['deployment', 'pricing_configuration'];
 const fail = message => { throw new Error(message); };
 const words = text => String(text ?? '').toLowerCase().replace(/[_-]+/g, ' ');
@@ -49,6 +49,18 @@ export const HOW_GRADED = Object.freeze({
     + '`approvalRequired: true`. Everywhere else it must not recommend a rollback.',
   keyEvidence: 'Shown, not scored: rubric evidence groups whose rows the run both saw and cited, with the group\'s typed fact holding on them.',
   citations: 'Shown, not scored: cited ids the run had actually seen, out of all ids it cited.',
+});
+
+// What a batch's truth mode tells the reader about its data and its no-incident case, and which rule baseline its cases ran.
+export const TRUTH_MODES = Object.freeze({
+  SIMULATED: { cases: 'simulated cases', banner: '**SIMULATED incidents, not production data.**', rules: 'db/benchmark/rules.mjs',
+    howGraded: HOW_GRADED },
+  REAL_BASELINE_PARTLY_SYNTHETIC: { cases: 'real-baseline cases', rules: 'db/benchmark/daily-rules.mjs',
+    banner: '**Real store data, injected incidents.** Revenue rows are a real store\'s daily traffic and sales; where a case has an '
+      + 'incident, it was injected into those rows and labelled before any run. Deploys, health readings and support messages are synthetic.',
+    howGraded: Object.freeze({ ...HOW_GRADED, status: 'The finding must end `completed`, or `epistemic_abstention` on the cases where '
+      + 'the rubric says to abstain. On the no-incident case the data is complete and moves only with the store\'s ordinary '
+      + 'day-to-day variation, so abstaining fails.' }) },
 });
 
 export function namedCause(diagnosis, extra = {}) {
@@ -143,8 +155,10 @@ const byMethod = rows => Object.fromEntries(METHODS.map(m => [m, cell(rows.filte
 
 export function gradeBatch(directory, rubricFiles = RUBRICS) {
   const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
+  const mode = Object.hasOwn(TRUTH_MODES, batch.truthMode) ? TRUTH_MODES[batch.truthMode] : fail(`unknown truth mode ${batch.truthMode}`);
   const runs = batch.slots.map(slot => savedRun(directory, slot) ?? fail(`${slot} is not saved yet; finish the batch before grading`));
   if (!runs.every(run => run.commit === batch.commit)) fail('runs came from more than one commit');
+  if (!runs.every(run => run.result.truthMode === batch.truthMode)) fail(`runs disagree with the batch's truth mode ${batch.truthMode}`);
   const rubrics = rubricFiles.map(file => ({ file, cases: JSON.parse(readFileSync(resolve(root, file), 'utf8')).cases })), used = new Set();
   const graded = runs.map(run => {
     const rubric = rubrics.find(r => r.cases.some(c => c.caseRef === run.caseRef)) ?? fail(`no rubric case for ${run.caseRef}`);
@@ -156,13 +170,13 @@ export function gradeBatch(directory, rubricFiles = RUBRICS) {
     return { label, caseRef: rows[0].caseRef, split: rows[0].split, methods: byMethod(rows) };
   });
   const hash = path => createHash('sha256').update(readFileSync(path)).digest('hex');
-  return { version: 'b01-results-v2', truthMode: 'SIMULATED', batch: relative(root, directory).replaceAll('\\', '/'),
+  return { version: 'b01-results-v2', truthMode: batch.truthMode, batch: relative(root, directory).replaceAll('\\', '/'),
     date: batch.date, startedAtUtc: batch.startedAtUtc, gradedAtUtc: new Date().toISOString(), commit: batch.commit,
     model: batch.model, modelVersions: [...new Set(graded.map(r => r.modelVersion).filter(Boolean))],
     // Batches from before the profile switch all ran the baseline, without request pacing.
     profile: batch.profile ?? 'minimal', tokenLimits: batch.tokenLimits ?? null, requestGapMs: batch.requestGapMs ?? null,
     rubrics: rubricFiles.filter(file => used.has(file)).map(file => ({ file, sha256: hash(resolve(root, file)) })),
-    graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: HOW_GRADED, cases,
+    graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: mode.howGraded, cases,
     totals: Object.fromEntries(Object.entries(SPLITS).filter(([split]) => graded.some(r => r.split === split))
       .map(([split, name]) => [name, byMethod(graded.filter(r => r.split === split))]).concat([['all', byMethod(graded)]])), runs: graded };
 }
@@ -177,7 +191,8 @@ const mark = (run, name) => run.raw === null && name !== 'status' ? '✗ —'
   : `${run.checks[name].pass ? '✓' : '✗'} ${escape(run.checks[name].got)}`;
 
 export function renderResults(results) {
-  const labels = split => results.cases.filter(c => SPLITS[c.split] === split).map(c => c.label).join(', ');
+  const mode = TRUTH_MODES[results.truthMode];
+  const labels =split => results.cases.filter(c => SPLITS[c.split] === split).map(c => c.label).join(', ');
   const limits = results.tokenLimits, gap = results.requestGapMs;
   const profile = `\`${results.profile}\` profile` + (limits ? ` (thinking ${limits.thinkingLevel}, up to `
     + `${limits.maxOutputTokens.toLocaleString('en-US')} output tokens a response)` : '');
@@ -185,8 +200,8 @@ export function renderResults(results) {
     + (r.raw === null ? escape(r.checks.status.got) : CHECKS.filter(name => !r.checks[name].pass)
       .map(name => `${name}: ${escape(r.checks[name].got)}` + (r.checks[name].want ? `, want ${escape(r.checks[name].want)}` : '')).join('; ')));
   return [
-    `# Benchmark results: ${results.cases.length} simulated cases × ${METHODS.length} methods (${results.date})`, '',
-    `**SIMULATED incidents, not production data.** One fresh run per case and method (${results.runs.length} runs). `
+    `# Benchmark results: ${results.cases.length} ${mode.cases} × ${METHODS.length} methods (${results.date})`, '',
+    `${mode.banner} One fresh run per case and method (${results.runs.length} runs). `
       + `Model runs use \`${results.model}\` on the Gemini free tier with the ${profile}. All runs came from commit \`${results.commit.slice(0, 12)}\`; `
       + 'the rubrics were read only after every run was saved.', '',
     `| Case | Split | ${METHODS.map(m => NAMES[m]).join(' | ')} |`, `|---|---|${METHODS.map(() => '---').join('|')}|`,
@@ -197,7 +212,7 @@ export function renderResults(results) {
     'Each cell: score (checks passed, of 5 per case) · tokens Gemini reported (input + output, thinking included) · model turns · tool calls · '
       + `wall time${gap ? ` (Gemini requests start at least ${gap / 1000} s apart to stay inside the free tier)` : ''} · `
       + 'Gemini API requests (generate and token-count calls, retries included). '
-      + 'Rules is the no-model baseline in `db/benchmark/rules.mjs`; its rules target this benchmark\'s incident families, '
+      + `Rules is the no-model baseline in \`${mode.rules}\`; its rules target this benchmark's incident families, `
       + 'so read its score as a reference point.',
     '', '## Verdicts', '',
     '| Case | Method | Score | Status | Raw diagnosis (top-ranked) | Cause | Change | Segment | Rollback | Key evidence | Citations seen |',

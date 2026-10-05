@@ -7,11 +7,12 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILES } from '../../db/benchmark/gemini-config.mjs';
-import { CHECKS, METHODS, gradeBatch } from './grade-b01.mjs';
+import { CHECKS, METHODS, TRUTH_MODES, gradeBatch } from './grade-b01.mjs';
 
 const MODELS = METHODS.filter(method => method !== 'rules');
 const NAMES = { 'single-shot-model': 'Single-shot', 'tool-using-model': 'Tool-using' };
-const SPLITS = { development: 'Dev', frozen_transfer: 'Holdout', fresh_holdout: 'Fresh holdout', fresh_holdout_2: 'Fresh holdout 2' };
+const SPLITS = { development: 'Dev', frozen_transfer: 'Holdout', fresh_holdout: 'Fresh holdout', fresh_holdout_2: 'Fresh holdout 2',
+  real_baseline: 'Real baseline' };
 const MEANS = [['tokens', 'Tokens (input + output)'], ['outputTokens', 'Output tokens (thinking included)'], ['turns', 'Model turns'],
   ['toolCalls', 'Tool calls'], ['requests', 'Gemini requests'], ['elapsedMs', 'Wall time']];
 const USAGE = 'Usage: node tests/evaluator/compare-b01.mjs --out <dir> <batch-dir>...';
@@ -52,7 +53,7 @@ export function compareBatches(directories, grade = gradeBatch) {
     [method, Object.fromEntries(arms.map(arm => [arm.name, tally(runs(arm.batches, method, labels))]))])) } });
   const inSplit = split => first.cases.filter(c => c.split === split).map(c => c.label);
   return {
-    version: 'b01-comparison-v2', truthMode: 'SIMULATED', comparedAtUtc: new Date().toISOString(), commits,
+    version: 'b01-comparison-v2', truthMode: first.truthMode, comparedAtUtc: new Date().toISOString(), commits,
     model: first.model, modelVersions: [...new Set(batches.flatMap(b => b.modelVersions))], requestGapMs: first.requestGapMs,
     // Batches from before the profile switch recorded no limits; they all ran the baseline.
     arms: arms.map(arm => ({ name: arm.name, commit: arm.commit, profile: arm.profile,
@@ -76,6 +77,7 @@ const steady = c => c.perBatch.every(n => n === c.perBatch[0]) ? `${c.perBatch[0
 
 export function renderComparison(comparison) {
   const { arms, commits, cases, totals } = comparison, all = totals.all.cells, counts = [...new Set(arms.map(a => a.batches))];
+  const mode = TRUTH_MODES[comparison.truthMode];
   const profiles = arms.filter((a, i) => arms.findIndex(b => b.profile === a.profile) === i);
   const columns = MODELS.flatMap(method => arms.map(a => ({ method, arm: a.name, title: `${NAMES[method]} · \`${a.name}\`` })));
   const cell = (cells, column) => cells[column.method][column.arm];
@@ -92,8 +94,8 @@ export function renderComparison(comparison) {
   const describe = a => (commits.length > 1 ? `commit \`${a.commit.slice(0, 12)}\`, ` : '')
     + `${limits(a).thinkingLevel} thinking, up to ${number(limits(a).maxOutputTokens)} output tokens a response`;
   return [
-    `# Benchmark: ${arms.map(a => `\`${a.name}\``).join(' vs ')} on ${cases.length} simulated cases`, '',
-    '**SIMULATED incidents, not production data.** A batch is one fresh run of every case with every method. This compares '
+    `# Benchmark: ${arms.map(a => `\`${a.name}\``).join(' vs ')} on ${cases.length} ${mode.cases}`, '',
+    `${mode.banner} A batch is one fresh run of every case with every method. This compares `
       + `${comparison.batches.length} batches: ${arms.map(a => `${a.batches} with \`${a.name}\``).join(' and ')}, started in the `
       + `order listed under Provenance. ${varied}, with \`${comparison.model}\` on the Gemini free tier, and one grader scored `
       + 'them all after every run was saved.', '',
@@ -105,7 +107,7 @@ export function renderComparison(comparison) {
     }).join(' | ')} |`), '',
     `Scores count checks passed: 5 a run (status, cause, change, segment, rollback)${counts.length === 1
       ? `, so ${counts[0]} batch${counts[0] === 1 ? '' : 'es'} of ${cases.length} cases make ${counts[0] * cases.length * 5}` : ''}. `
-      + `Rules, the no-model baseline in \`db/benchmark/rules.mjs\`, scored ${steady(all.rules)}; its rules target this `
+      + `Rules, the no-model baseline in \`${mode.rules}\`, scored ${steady(all.rules)}; its rules target this `
       + 'benchmark\'s incident families, so read it as a reference point.',
     '', '## By case', '', 'Each cell: checks passed over all runs, then each batch\'s score in start order.', '',
     ...table(['Case', 'Split'], ['Rules'], [

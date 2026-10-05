@@ -29,13 +29,14 @@ function batch(name, { profile = 'minimal', started, commit = 'fixture-commit', 
       model: method === 'rules' ? null : 'fixture-model', scope: { runId: 'r_000000000000' },
       metrics: { tokens: { input: Math.min(used, 900), output: Math.max(used - 900, 0), total: used }, turns: 1, toolCalls: 0,
         elapsedMs: 1500, requests: { total: 3, retries: 0 }, exposedEvidenceIds: source(c).events.map(e => e.id) },
-      result: { terminalStatus: finding?.terminalStatus ?? 'invalid_output', failureReason: finding ? null : 'invalid_json_or_schema', finding } };
+      result: { truthMode: 'SIMULATED', terminalStatus: finding?.terminalStatus ?? 'invalid_output',
+        failureReason: finding ? null : 'invalid_json_or_schema', finding } };
     mkdirSync(join(directory, 'runs', slot, 'attempt'), { recursive: true });
     writeFileSync(join(directory, 'runs', slot, 'attempt', 'RESULT.json'), JSON.stringify(run));
     slots.push(slot);
   }
-  writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1', date: '2026-10-04', startedAtUtc: started, commit,
-    model: 'fixture-model', profile, tokenLimits: PROFILES[profile] ?? null, requestGapMs: 4500, slots }));
+  writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1', truthMode: 'SIMULATED', date: '2026-10-04',
+    startedAtUtc: started, commit, model: 'fixture-model', profile, tokenLimits: PROFILES[profile] ?? null, requestGapMs: 4500, slots }));
   return directory;
 }
 // Interleaved like the real step-4 run; one model run of each minimal batch ends without a finding.
@@ -63,8 +64,10 @@ test('a comparison adds up each profile\'s repeated batches, case by case and in
   assert.equal(all['tool-using-model'].minimal.checks.status, all['tool-using-model'].low.checks.status - 1);
   assert.deepEqual([all['tool-using-model'].minimal.mean.tokens, all['tool-using-model'].low.mean.outputTokens], [1000, 3100]);
 
+  assert.equal(comparison.truthMode, 'SIMULATED');
   const markdown = renderComparison(comparison);
   assert.match(markdown, /^# Benchmark: `minimal` vs `low` on 15 simulated cases$/m);
+  assert.match(markdown, /^\*\*SIMULATED incidents, not production data\.\*\* A batch is one fresh run of every case with every method\. /m);
   assert.match(markdown, /This compares 4 batches: 2 with `minimal` and 2 with `low`, started in the order listed under Provenance\./);
   assert.match(markdown, /^\| Method \| `minimal`: MINIMAL thinking, up to 1,024 output tokens a response \| `low`: LOW thinking, up to 4,096 /m);
   assert.match(markdown, /^\| Tool-using model \| \*\*129\/150\*\* \(86%\) · per batch 62, 67 \| \*\*134\/150\*\* \(89%\) · per batch 67, 67 \|$/m);
