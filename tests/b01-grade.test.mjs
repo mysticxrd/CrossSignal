@@ -9,9 +9,11 @@ import { PROFILES } from '../db/benchmark/gemini-config.mjs';
 import { rulesFinding } from '../db/benchmark/rules.mjs';
 import { CHECKS, METHODS, RUBRICS, gradeBatch, gradeRun, namedCause, renderResults } from './evaluator/grade-b01.mjs';
 
-// Fixture findings only: no model, no network. Public case folders in the order of RUBRICS.
+// Fixture findings only: no model, no network. Public case folders of the SIMULATED rubrics, the first three of RUBRICS;
+// the daily real-baseline cases have tests of their own.
 const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10', 'db/benchmark/cases/b11-b15'];
-const rubricCases = RUBRICS.flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases.map(c => ({ c, folder: FOLDERS[i] })));
+const SIMULATED_RUBRICS = RUBRICS.slice(0, FOLDERS.length);
+const rubricCases = SIMULATED_RUBRICS.flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases.map(c => ({ c, folder: FOLDERS[i] })));
 const entry = label => rubricCases.find(({ c }) => c.label === label);
 const rubricCase = label => entry(label).c;
 const file = label => `${entry(label).folder}/${rubricCase(label).caseRef}.json`;
@@ -204,7 +206,7 @@ test('the grader runs as its own process on a finished batch and writes the 15 x
     ['B03', 'frozen_transfer'], ['B04', 'frozen_transfer'], ['B05', 'frozen_transfer'], ['B06', 'fresh_holdout'],
     ['B07', 'fresh_holdout'], ['B08', 'fresh_holdout'], ['B09', 'fresh_holdout'], ['B10', 'fresh_holdout'],
     ...['B11', 'B12', 'B13', 'B14', 'B15'].map(label => [label, 'fresh_holdout_2'])]);
-  assert.deepEqual(results.rubrics.map(r => r.file), RUBRICS);
+  assert.deepEqual(results.rubrics.map(r => r.file), SIMULATED_RUBRICS);
   // The frozen rules baseline: abstains on B06, picks the wrong segment on B07, B08 and B11, and misses B12's provider deploy.
   assert.deepEqual(Object.fromEntries(Object.entries(results.totals).map(([split, t]) => [split, METHODS.map(m => t[m].score)])),
     { dev: [10, 10, 5], holdout: [15, 15, 15], fresh: [21, 21, 21], fresh2: [21, 21, 21], all: [67, 67, 62] });

@@ -26,9 +26,10 @@ import { rulesFinding } from '../db/benchmark/rules.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 // Public case files in batch order. B01-B05 were frozen on 2026-10-01; B06-B10 on 2026-10-04, before any agent change;
-// B11-B15 on 2026-10-05, before the step-5 change, once B01-B10 had all been seen.
+// B11-B15 on 2026-10-05, before the step-5 change, once B01-B10 had all been seen; the daily real-baseline B16-B20 on
+// 2026-10-06, before any model saw a daily case.
 export const CASE_SETS = Object.freeze({ 'b01-b05': 'factory/02_data/benchmark/observable', 'b06-b10': 'db/benchmark/cases/b06-b10',
-  'b11-b15': 'db/benchmark/cases/b11-b15' });
+  'b11-b15': 'db/benchmark/cases/b11-b15', 'b16-b20': 'db/benchmark/cases/b16-b20' });
 // The SIMULATED cases. A batch holds one case format, so the daily cases run as a batch of their own.
 export const DEFAULT_SETS = Object.freeze(['b01-b05', 'b06-b10', 'b11-b15']);
 // The frozen rule baseline for each case format.

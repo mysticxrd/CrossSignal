@@ -10,9 +10,10 @@ import { citationExistence, criticalCoverage } from '../../factory/02_data/bench
 import { dailyCoverage } from './daily-predicates.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
-// Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05.
+// Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05,
+// and B16-B20 from the real-baseline cases frozen on 2026-10-06.
 export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.json', 'tests/evaluator/b06-b10/rubric.json',
-  'tests/evaluator/b11-b15/rubric.json']);
+  'tests/evaluator/b11-b15/rubric.json', 'tests/evaluator/b16-b20/rubric.json']);
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 export const CHECKS = ['status', 'cause', 'change', 'segment', 'rollback'];
 const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot model', 'tool-using-model': 'Tool-using model' };

@@ -15,8 +15,9 @@ What the profile (`node scripts/profile-ga4.mjs`) found, exported 2026-10-06:
 
 - 92 days, 6,316 rows, 360,129 sessions, 4,848 purchasing sessions, $362,165.
 - Case segments are the three device categories (desktop, mobile, tablet), so a
-  case's rows add up to the whole store. The traffic medium fields are mostly
-  obfuscated placeholders.
+  case's rows add up to the whole store. The traffic medium fields are not used:
+  the placeholders `<Other>` and `(data deleted)` hold 21% of sessions by user
+  medium, and `(none)` another 23%.
 - Revenue is unusable from 2021-01-26: orders continue but revenue falls to
   nearly zero. Cases stop at 2021-01-25.
 - 2020-12-19 to 2021-01-04 is the Christmas slump, when checkouts fall by about

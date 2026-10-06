@@ -12,7 +12,8 @@ import { METHODS, RUBRICS } from './evaluator/grade-b01.mjs';
 
 // Fixture batches only: the rules answer stands in for every method, so no model and no network.
 const FOLDERS = ['factory/02_data/benchmark/observable', 'db/benchmark/cases/b06-b10', 'db/benchmark/cases/b11-b15'];
-const cases = RUBRICS.flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases
+// The SIMULATED rubrics, the first three of RUBRICS.
+const cases = RUBRICS.slice(0, FOLDERS.length).flatMap((path, i) => JSON.parse(readFileSync(path, 'utf8')).cases
   .map(c => ({ label: c.label, caseRef: c.caseRef, file: `${FOLDERS[i]}/${c.caseRef}.json` }))).sort((a, b) => a.label.localeCompare(b.label));
 const source = c => JSON.parse(readFileSync(c.file, 'utf8'));
 const scope = observable => ({ workspaceId: observable.events[0].workspaceId, caseId: observable.caseRef,
