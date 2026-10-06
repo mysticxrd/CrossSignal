@@ -7,6 +7,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { citationExistence, criticalCoverage } from '../../factory/02_data/benchmark/predicates.mjs';
+import { dailyCoverage } from './daily-predicates.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 // Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05.
@@ -34,6 +35,9 @@ export const CAUSE_WORDS = Object.freeze({
 // On the no-incident case, any of these in the top-ranked diagnosis is the right answer: nothing is wrong.
 export const NO_INCIDENT_WORDS = Object.freeze(['no incident', 'no issue', 'no problem', 'no anomaly', 'no regression', 'no outage',
   'no drop', 'no decline', 'no change', 'no impact', 'stable', 'unchanged', 'flat', 'steady', 'normal']);
+// Real store data moves with the week and the season, so on real-baseline cases these say nothing is wrong too.
+export const REAL_NO_INCIDENT_WORDS = Object.freeze([...NO_INCIDENT_WORDS, 'weekend', 'weekday', 'weekly', 'day of week', 'seasonal',
+  'seasonality', 'usual', 'typical', 'ordinary', 'variation', 'noise']);
 
 export const HOW_GRADED = Object.freeze({
   status: 'The finding must end `completed`, or `epistemic_abstention` on the cases where the rubric says to abstain. '
@@ -51,16 +55,21 @@ export const HOW_GRADED = Object.freeze({
   citations: 'Shown, not scored: cited ids the run had actually seen, out of all ids it cited.',
 });
 
-// What a batch's truth mode tells the reader about its data and its no-incident case, and which rule baseline its cases ran.
+// What a batch's truth mode tells the reader about its data and its no-incident case, which rule baseline its cases ran,
+// which words say nothing is wrong, and how key evidence is checked.
 export const TRUTH_MODES = Object.freeze({
   SIMULATED: { cases: 'simulated cases', banner: '**SIMULATED incidents, not production data.**', rules: 'db/benchmark/rules.mjs',
-    howGraded: HOW_GRADED },
+    howGraded: HOW_GRADED, calmWords: NO_INCIDENT_WORDS, coverage: (finding, rows, rubricCase) => criticalCoverage(finding, rows, rubricCase) },
   REAL_BASELINE_PARTLY_SYNTHETIC: { cases: 'real-baseline cases', rules: 'db/benchmark/daily-rules.mjs',
     banner: '**Real store data, injected incidents.** Revenue rows are a real store\'s daily traffic and sales; where a case has an '
       + 'incident, it was injected into those rows and labelled before any run. Deploys, health readings and support messages are synthetic.',
     howGraded: Object.freeze({ ...HOW_GRADED, status: 'The finding must end `completed`, or `epistemic_abstention` on the cases where '
       + 'the rubric says to abstain. On the no-incident case the data is complete and moves only with the store\'s ordinary '
-      + 'day-to-day variation, so abstaining fails.' }) },
+      + 'day-to-day variation, so abstaining fails.',
+    cause: `${HOW_GRADED.cause} Real store data moves with the week, so on the no-incident case weekend, weekday, weekly, day of week, `
+      + 'seasonal, usual, typical, ordinary, variation and noise also say nothing is wrong.',
+    keyEvidence: `${HOW_GRADED.keyEvidence} Daily facts compare alert days with earlier days (tests/evaluator/daily-predicates.mjs).` }),
+    calmWords: REAL_NO_INCIDENT_WORDS, coverage: dailyCoverage },
 });
 
 export function namedCause(diagnosis, extra = {}) {
@@ -82,14 +91,14 @@ function describeEvent(id, events) {
   return `${id} (${event.type.replaceAll('_', ' ')} row)`;
 }
 
-export function gradeCause(finding, rubricCase, events) {
+export function gradeCause(finding, rubricCase, events, calmWords = NO_INCIDENT_WORDS) {
   const want = rubricCase.expectedDiagnosis, abstained = finding.terminalStatus === 'epistemic_abstention';
   if (rubricCase.action.kind === 'abstain') return { pass: abstained, got: abstained ? 'abstained' : 'named a cause', want: 'abstain' };
   if (abstained) return { pass: false, got: 'abstained', want };
   const change = events.find(e => e.id === finding.relatedChangeId && CHANGE_TYPES.includes(e.type));
   if (change) return { pass: rubricCase.relevantChangeIds.includes(change.id), got: `blamed ${describeEvent(change.id, events)}`, want };
   // On the no-incident case the calm words join the race, and a diagnosis that names no cause also passes.
-  const calm = want === 'no_incident', named = namedCause(finding.hypotheses[0]?.diagnosis, calm ? { no_incident: NO_INCIDENT_WORDS } : {});
+  const calm = want === 'no_incident', named = namedCause(finding.hypotheses[0]?.diagnosis, calm ? { no_incident: calmWords } : {});
   return { pass: named?.cause === want || (calm && !named), got: named ? `"${named.word}" → ${named.cause}` : 'no cause word', want };
 }
 
@@ -105,14 +114,15 @@ function gradeRollback(recommendation, rubricCase) {
     want: `rollback of ${action.target}, approval required` };
 }
 
-export function gradeRun(run, rubricCase, events) {
+// A daily case passes its frame, so its revenue facts know where the alert days start.
+export function gradeRun(run, rubricCase, events, { mode = TRUTH_MODES.SIMULATED, frame = null } = {}) {
   const { finding, terminalStatus, failureReason } = run.result, exposed = new Set(run.metrics.exposedEvidenceIds);
   const outcome = failureReason && failureReason !== terminalStatus ? `${terminalStatus} (${failureReason})` : terminalStatus;
   const wantStatus = rubricCase.action.kind === 'abstain' ? 'epistemic_abstention' : 'completed';
   const changes = rubricCase.relevantChangeIds;
   const checks = finding ? {
     status: { pass: finding.terminalStatus === wantStatus, got: finding.terminalStatus, want: wantStatus },
-    cause: gradeCause(finding, rubricCase, events),
+    cause: gradeCause(finding, rubricCase, events, mode.calmWords),
     change: { pass: changes.length ? changes.includes(finding.relatedChangeId) : finding.relatedChangeId === null,
       got: finding.relatedChangeId === null ? 'none' : describeEvent(finding.relatedChangeId, events),
       want: changes.length ? changes.map(id => describeEvent(id, events)).join(' or ') : 'none' },
@@ -125,7 +135,7 @@ export function gradeRun(run, rubricCase, events) {
     label: rubricCase.label, split: rubricCase.split, caseRef: run.caseRef, method: run.method, model: run.model,
     modelVersion: run.result.modelVersion ?? null, runId: run.scope.runId, terminalStatus, failureReason: failureReason ?? null,
     score: CHECKS.filter(name => checks[name].pass).length, maxScore: CHECKS.length, checks,
-    keyEvidence: finding ? criticalCoverage(finding, events.filter(e => exposed.has(e.id)), rubricCase)
+    keyEvidence: finding ? mode.coverage(finding, events.filter(e => exposed.has(e.id)), rubricCase, frame)
       : { covered: 0, total: rubricCase.groups.length, groups: rubricCase.groups.map(g => ({ name: g.name, covered: false })) },
     citations: finding ? citationExistence(finding, exposed) : null,
     raw: finding ? { diagnoses: finding.hypotheses.map(h => h.diagnosis), relatedChangeId: finding.relatedChangeId,
@@ -163,7 +173,8 @@ export function gradeBatch(directory, rubricFiles = RUBRICS) {
   const graded = runs.map(run => {
     const rubric = rubrics.find(r => r.cases.some(c => c.caseRef === run.caseRef)) ?? fail(`no rubric case for ${run.caseRef}`);
     used.add(rubric.file);
-    return gradeRun(run, rubric.cases.find(c => c.caseRef === run.caseRef), JSON.parse(readFileSync(resolve(root, run.case), 'utf8')).events);
+    const source = JSON.parse(readFileSync(resolve(root, run.case), 'utf8'));
+    return gradeRun(run, rubric.cases.find(c => c.caseRef === run.caseRef), source.events, { mode, frame: source.frame ?? null });
   }).sort((a, b) => a.label.localeCompare(b.label) || METHODS.indexOf(a.method) - METHODS.indexOf(b.method));
   const cases = [...new Set(graded.map(r => r.label))].map(label => {
     const rows = graded.filter(r => r.label === label);

@@ -271,6 +271,9 @@ test('a daily batch is graded and compared under its own truth mode', () => {
   assert.match(compared, /^\*\*Real store data, injected incidents\.\*\* .* A batch is one fresh run of every case with every method\./m);
   assert.match(compared, /Rules, the no-model baseline in `db\/benchmark\/daily-rules\.mjs`, scored 23\/25 in every batch;/);
   assert.match(compared, /^\| Real baseline \(D1, D2, D3, D4, D5\) \| \|/m);
+  // Two batches of one commit and profile are repeats, not a token-profile comparison.
+  assert.match(compared, /Every batch repeats one arm, commit `fixture-comm` and the `low` profile, with `fixture-model`/);
+  assert.doesNotMatch(compared, /Only the token profile changed/);
   assert.doesNotMatch(compared, /SIMULATED/);
 });
 

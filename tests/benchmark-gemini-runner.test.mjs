@@ -46,6 +46,7 @@ test('real restricted worker denies private/evaluator/history/credential/write/p
     'factory/02_data/benchmark/private/manifest.json', 'factory/01_spec/output/SPEC.md',
     'tests/evaluator/benchmark/expected-judgments.md', 'tests/evaluator/b06-b10/rubric.json',
     'tests/evaluator/b06-b10/generate.mjs', 'tests/evaluator/b11-b15/rubric.json', 'tests/evaluator/b11-b15/generate.mjs',
+    'tests/evaluator/daily-predicates.mjs',
     'db/benchmark/gemini-store.mjs',
     'db/benchmark/gemini-http.mjs', 'factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json',
     'outputs/a01', '../crosssignal-test', '../../README.md'].map(p => resolve(p));

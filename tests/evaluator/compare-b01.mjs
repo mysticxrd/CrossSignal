@@ -88,7 +88,8 @@ export function renderComparison(comparison) {
   const endings = [...new Set(columns.flatMap(column => Object.keys(cell(all, column).endings)))].map(name =>
     [name, sum(columns, column => cell(all, column).endings[name] ?? 0)]).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const limits = a => a.tokenLimits;
-  const varied = commits.length === 1 ? `Only the token profile changed between them: every run came from commit \`${commits[0].slice(0, 12)}\``
+  const varied = arms.length === 1 ? `Every batch repeats one arm, commit \`${commits[0].slice(0, 12)}\` and the \`${arms[0].profile}\` profile`
+    : commits.length === 1 ? `Only the token profile changed between them: every run came from commit \`${commits[0].slice(0, 12)}\``
     : profiles.length === 1 ? `Only the commit changed between them: every run used the \`${profiles[0].profile}\` profile`
       : 'Each arm is one commit and one token profile';
   const describe = a => (commits.length > 1 ? `commit \`${a.commit.slice(0, 12)}\`, ` : '')
