@@ -7,21 +7,22 @@ progress before December 2026.
 
 ## Factory frozen
 
-The `spec -> data -> build -> verify -> ship` factory is frozen at tag
-`factory-freeze-2026-10-03`. `CONTEXT.md` and `factory/` describe that frozen
-process; they do not govern ship-lane work.
+The factory is frozen at tag `factory-freeze-2026-10-03`; `CONTEXT.md` and
+`factory/` describe that process and do not govern ship-lane work. Do not edit
+`factory/**/output/`, create gate, seal, preservation, proposal or review files,
+or stop for factory gates; `node factory/status.mjs` reports history only.
 
-- Do not edit `factory/**/output/`; frozen evidence stays as it is.
-- Do not create gate, seal, preservation, proposal or review files.
-- Do not stop for human gates. `node factory/status.mjs` reports history only.
+## Owner loop
 
-## Loop: fix -> test -> commit -> deploy
-
-1. Fix: make the smallest change that moves the demo forward.
-2. Test: add or update the nearest test; `npm test` and `npm run lint` pass.
-3. Commit: one focused, working commit per change.
-4. Deploy: no free host is wired up yet. Until one is, the demo replays
-   recorded runs, each labelled with its run id, date and model.
+I own the design; you build and teach. Chores skip steps 1, 2, 4, 5.
+1. Predict: get my prediction before yours.
+2. Design: run `/design`; wait for "build".
+3. Build: a reviewable slice and its nearest test; `npm test`, `npm run lint` pass.
+4. Teach: run `/walkthrough` on the diff.
+5. Own: leave one design decision as `TODO(human)`; never write `docs/owner/`.
+6. Commit: one focused, working commit per change.
+7. Deploy: none yet; demo replays recorded runs labelled with run id, date and model.
+Codex: `/name` means `.claude/skills/name/SKILL.md`.
 
 ## Model calls
 
@@ -34,14 +35,15 @@ process; they do not govern ship-lane work.
 - Retries cover 429/500/503/504 only, bounded and inside the request deadline.
 - Requests, retries included, start at least 4.5 s apart (free tier: 15 a
   minute). Run one batch at a time.
-- Run one investigation with `node scripts/run-a01-gemini.mjs`; each run is
-  saved under `outputs/a01-gemini/` (gitignored).
+- `node scripts/run-a01-gemini.mjs` runs one investigation, saved under
+  `outputs/a01-gemini/` (gitignored).
 - `node scripts/run-b01.mjs [--new] [--profile minimal|low] [--sets ...]` runs the
   benchmark; `minimal` is the B01 baseline, `low` adds LOW thinking with larger caps.
 
 ## Choosing work
 
 Ask: "Will this show up in the demo or in this week's post?" If not, skip it.
+Each week's post explains one thing I couldn't explain before.
 Spend two hours on the simplest fix before writing any doc about a problem.
 
 ## Map
