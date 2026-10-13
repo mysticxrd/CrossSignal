@@ -8,7 +8,11 @@
       "https://finney.calendar.eternitywall.com",
       "https://btc.calendar.catallaxy.com"
     ],
-    "bitcoin": null
+    "bitcoin": {
+      "height": 971218,
+      "blockHash": "0000000000000000000035f1efc1f2eb3268433ddf2571a4283e8c1230be6d60",
+      "blockTimeUtc": "2026-10-13T08:43:31.000Z"
+    }
   },
   "r_c72728d0a839": {
     "sha256": "ce77e790421ffd30524b377b8aae8218c3324550dea15056034e125d86eb9d87",
@@ -19,7 +23,11 @@
       "https://finney.calendar.eternitywall.com",
       "https://btc.calendar.catallaxy.com"
     ],
-    "bitcoin": null
+    "bitcoin": {
+      "height": 971218,
+      "blockHash": "0000000000000000000035f1efc1f2eb3268433ddf2571a4283e8c1230be6d60",
+      "blockTimeUtc": "2026-10-13T08:43:31.000Z"
+    }
   },
   "r_fcb7e11ebcfa": {
     "sha256": "3f3897641b01a496c1f632ec0cdb5385e4240f6191bf7ef92dfec0112b6eb2cb",
@@ -30,6 +38,10 @@
       "https://finney.calendar.eternitywall.com",
       "https://btc.calendar.catallaxy.com"
     ],
-    "bitcoin": null
+    "bitcoin": {
+      "height": 971218,
+      "blockHash": "0000000000000000000035f1efc1f2eb3268433ddf2571a4283e8c1230be6d60",
+      "blockTimeUtc": "2026-10-13T08:43:31.000Z"
+    }
   }
 }
