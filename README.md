@@ -4,8 +4,8 @@ An AI incident investigator. It reads a store's signals (daily revenue, deploys,
 messages), names the change behind a revenue drop and recommends an action that a person must approve. It never
 takes the action itself.
 
-**Live demo:** not deployed yet. The public replay is built for Cloudflare's free Workers plan
-(`npm run deploy:replay`); its link goes here once it is up. Until then, [run it locally](#run-it-locally).
+**Live demo:** [crosssignal.hishamxrd.workers.dev](https://crosssignal.hishamxrd.workers.dev), a read-only replay
+on Cloudflare's free Workers plan (`npm run deploy:replay`). You can also [run it locally](#run-it-locally).
 
 ## What the demo shows
 
