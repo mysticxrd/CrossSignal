@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { loadReplay } from "../../../db/replays/index.mjs";
+import { loadReplay, SOURCE_URL } from "../../../db/replays/index.mjs";
 
 // Public and read-only: a recorded investigation replayed from db/replays. No sign-in, no database, no model call,
 // no server action. The run id is only a key into the committed recordings.
@@ -14,11 +14,26 @@ type Step = { sequence: number; kind: string; atUtc?: string; tool?: string | nu
   failureReason?: string | null; modelVersion?: string | null; finding?: Finding | null };
 type Check = { name: string; pass: boolean; got: string; want: string };
 type Sibling = { runId: string; batch: string; score: number; maxScore: number };
+type Stamped = { state: "anchored" | "pending" | "missing" | "changed"; sha256: string; stamp: { sha256: string; submittedAtUtc: string;
+  calendars: string[]; bitcoin: { height: number; blockHash: string; blockTimeUtc: string } | null } | null };
 
 const TRUTH_MODES: Record<string, string> = { REAL_BASELINE_PARTLY_SYNTHETIC: "Real store baseline · synthetic incident", SIMULATED: "Simulated incident" };
 const words = (value: string) => value.replaceAll("_", " ");
 const utc = (iso: string) => `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
 const DENIED = { budget: " · denied by budget", invalid: " · not a valid call" };
+
+// The chain is checked inside the file; the timestamp is the check from outside it (db/replay.mjs checkStamp).
+function stampBadge({ state, stamp }: Stamped) {
+  if (state === "anchored") return `Timestamped · Bitcoin block ${stamp!.bitcoin!.height}`;
+  if (state === "pending") return `Timestamped ${stamp!.submittedAtUtc.slice(0, 10)} · Bitcoin pending`;
+  return state === "changed" ? "Changed since its timestamp" : "Not timestamped";
+}
+
+function stampText({ state, stamp }: Stamped) {
+  if (state === "anchored") return `Bitcoin block ${stamp!.bitcoin!.height}, mined ${utc(stamp!.bitcoin!.blockTimeUtc)}`;
+  if (state === "pending") return `Sent to ${stamp!.calendars.length} OpenTimestamps calendars ${utc(stamp!.submittedAtUtc)}; waiting for a Bitcoin block`;
+  return state === "changed" ? `Stamped ${stamp!.submittedAtUtc.slice(0, 10)} for other bytes (${stamp!.sha256.slice(0, 12)}…)` : "None";
+}
 
 function describe(step: Step) {
   const { start, end, cursor, ...rest } = step.arguments ?? {};
@@ -47,6 +62,7 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
   if (!replay) notFound();
   const { bundle, check, verdict } = replay;
   const steps = replay.steps as Step[], siblings = replay.siblings as Sibling[], checks = replay.grade as Check[] | null;
+  const stamped = replay.stamped as Stamped, file = `${SOURCE_URL}${bundle.run.scope.runId}.json`;
   // Everything labelled "in the chain" (run id, date, model, finding) comes only from rows the verdict lets the page
   // show, and every row shown verifies. The grade quotes the finding, so it is hidden with it.
   const shown = steps.filter((step) => step.sequence <= verdict.rows);
@@ -60,7 +76,8 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
         <h1>{bundle.grade.label} · {words(bundle.grade.method)}</h1>
         <p>A recording of one run of the CrossSignal investigator, replayed exactly as saved. Nothing on this page calls a model or changes anything.</p></div>
       <div className="case-badges"><span className="truth-badge truth-test">{TRUTH_MODES[bundle.batch.truthMode] ?? bundle.batch.truthMode}</span>
-        <span className={check.ok ? "case-status" : "case-status replay-broken"}>{check.ok ? `Hash chain verified · ${check.rows} rows` : `Does not verify at row ${check.brokenAt}`}</span></div>
+        <span className={check.ok ? "case-status" : "case-status replay-broken"}>{check.ok ? `Chain intact · ${check.rows} rows` : `Does not verify at row ${check.brokenAt}`}</span>
+        <span className={`case-status replay-stamp-${stamped.state}`}>{stampBadge(stamped)}</span></div>
     </header>
     {verdict.notice && <p role="alert" className="replay-notice">{verdict.notice}</p>}
 
@@ -71,7 +88,7 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
             <span>{shown.filter((step) => step.kind === "query").length} tool calls</span></div>
           <p className="case-section-lead">Numbers are row numbers in the hash chain. Requests, responses and token counts are in the chain too; only the steps a person follows are listed.</p>
           <ol className="replay-steps">{shown.map((step) => <li key={step.sequence} className={step.kind}>
-            <span>#{step.sequence}</span><p>{stepText(step)}</p><small>verified</small></li>)}</ol>
+            <span>#{step.sequence}</span><p>{stepText(step)}</p><small>in chain</small></li>)}</ol>
         </section>
 
         {finding && <section className="case-section">
@@ -104,10 +121,18 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
           <div><dt>Date · in the chain</dt><dd>{started?.atUtc ? utc(started.atUtc) : "unknown"}</dd></div>
           <div><dt>Model · in the chain</dt><dd>{end?.modelVersion ?? "unknown"}</dd></div>
           <div><dt>Last row hash</dt><dd><code>{check.head}</code></dd></div>
+          <div><dt>File sha256 · computed by this page</dt><dd><code>{stamped.sha256}</code></dd></div>
+          <div><dt>Timestamp · outside the chain</dt><dd>{stampText(stamped)}</dd></div>
           <div><dt>Commit · beside the chain</dt><dd><code>{bundle.batch.commit}</code></dd></div>
           <div><dt>Profile · batch · beside the chain</dt><dd>{bundle.batch.profile} · {bundle.batch.name}</dd></div>
           <div><dt>Case file</dt><dd><code>{bundle.batch.caseFile}</code></dd></div>
         </dl></section>
+        <section><span className="eyebrow">CHECK IT WITHOUT THIS SITE</span><h2>The file, its proof and Bitcoin</h2>
+          <ol className="replay-check"><li>Download <a href={file}>the recording</a> and <a href={`${file}.ots`}>its proof</a>.</li>
+            <li>Drop both on <a href="https://opentimestamps.org">opentimestamps.org</a>, which checks the proof against Bitcoin.</li>
+            <li>The file hash it reports must be the sha256 above.</li></ol>
+          <p className="case-footnote">That proves the recording has not changed since it was stamped. It cannot prove what happened before then, or that the replies came from Gemini: Google does not sign them.</p>
+        </section>
         <section><span className="eyebrow">EVERY RECORDED RUN OF THIS CASE</span><h2>{siblings.filter((s) => s.score === s.maxScore && (checks || s.runId !== runId)).length} of {siblings.length} scored full marks</h2>
           <ul className="replay-siblings">{siblings.map((s) => <li key={s.runId}>{s.runId === runId ? <strong>{s.runId}</strong> : <Link href={`/runs/${s.runId}`}>{s.runId}</Link>}
             {" "}· batch {s.batch} · {s.runId === runId && !checks ? "grade hidden" : `${s.score}/${s.maxScore}`}</li>)}</ul>

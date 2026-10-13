@@ -1461,3 +1461,6 @@ code { font-family: var(--font-geist-mono), monospace; }
 .replay-steps code, .replay-siblings { font: 12px var(--font-geist-mono), monospace; }
 .replay-siblings { margin: 12px 0 0; padding-left: 18px; line-height: 1.8; overflow-wrap: anywhere; }
 .replay-page .case-approve-button:disabled { cursor: not-allowed; }
+.replay-stamp-pending { background: var(--control-amber-soft); color: var(--control-amber); }
+.replay-stamp-missing, .replay-stamp-changed { background: var(--control-red-soft); color: var(--control-red); }
+.replay-check { margin: 12px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
