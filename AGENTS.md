@@ -21,7 +21,7 @@ I own the design; you build and teach. Chores skip steps 1, 2, 4, 5.
 4. Teach: run `/walkthrough` on the diff.
 5. Own: decide; list alternatives to overrule; no `TODO(human)`; never write `docs/owner/`.
 6. Commit: one focused, working commit per change.
-7. Deploy: none yet; demo replays recorded runs labelled with run id, date and model.
+7. Deploy: `npm run deploy:replay` publishes only replays, labelled with run id, date and model.
 Codex: `/name` means `.claude/skills/name/SKILL.md`.
 
 ## Model calls

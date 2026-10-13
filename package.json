@@ -9,6 +9,7 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
+    "deploy:replay": "node scripts/deploy-replay.mjs",
     "factory:status": "node factory/status.mjs",
     "factory:seal": "node factory/seal.mjs",
     "demo:prepare": "node factory/05_ship/prepare.mjs",

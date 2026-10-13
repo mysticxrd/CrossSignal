@@ -11,6 +11,15 @@ const { d1, r2 } = hostingConfig;
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
+// `npm run deploy:replay` builds the public Worker for Cloudflare's free plan: no database binding, and
+// worker/public-replay.mjs lets through only reads of /runs/*.
+export const publicReplayConfig = {
+  name: "crosssignal",
+  main: "./worker/index.ts",
+  compatibility_flags: ["nodejs_compat"],
+  vars: { CROSSSIGNAL_PUBLIC_REPLAY: "1" },
+};
+
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
@@ -53,7 +62,7 @@ export default defineConfig(async () => {
       sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
-        config: localBindingConfig,
+        config: process.env.CROSSSIGNAL_DEPLOY === "public-replay" ? publicReplayConfig : localBindingConfig,
       }),
     ],
   };

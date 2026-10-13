@@ -1,10 +1,12 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { publicReplayGate } from "./public-replay.mjs";
 
 interface Env {
   ASSETS: Fetcher;
   CFR_DATABASE_PROVIDER?: "d1" | "supabase";
+  CROSSSIGNAL_PUBLIC_REPLAY?: string;
   DB: D1Database;
   IMAGES: {
     input(stream: ReadableStream): {
@@ -30,6 +32,10 @@ interface ExecutionContext {
 
 const worker = {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    if (env.CROSSSIGNAL_PUBLIC_REPLAY === "1") {
+      const gated = publicReplayGate(request);
+      if (gated) return gated;
+    }
     const url = new URL(request.url);
 
     if (url.pathname === "/_vinext/image") {
