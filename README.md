@@ -1,172 +1,108 @@
-# CrossSignal — Revenue Leak Investigator
+# CrossSignal
 
-This is the authoritative product checkout at
-`C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1`. The current milestone
-is **B01 API behavioral benchmark**: five causally different simulated cases,
-rules/single-shot/tool-model comparisons, failure analysis and one measured
-change. Read the [current charter](docs/api-benchmark-charter.md),
-[planning reconciliation](docs/benchmark-planning-reconciliation.md) and
-[API execution boundary](docs/api-execution-boundary.md). No local-model setup
-is needed. Provider selection and execution conditions follow the current
-stage contract, rather than the older planning headers. The October 2 review
-found Gemini preparation selected, conditional verified-free-tier requests
-recorded, and account/route prerequisites unverified. No paid fallback is allowed.
+An AI incident investigator. It reads a store's signals (daily revenue, deploys, service health and support
+messages), names the change behind a revenue drop and recommends an action that a person must approve. It never
+takes the action itself.
 
-The A01 → B01 transition is [confirmed](factory/TRANSITION.md). On October 2,
-`factory/status.mjs` reported B01 Stage 01 Spec and Stage 02 Data accepted and
-fresh, Stage 03 Build in progress with an incomplete gate, and Stages 04–05
-never run. [Build verification](factory/03_build/output/VERIFY.md) reports
-offline preparation passed but full Build blocked;
-[Build human acceptance](factory/03_build/output/HUMAN_GATE.md) remains pending.
-This is a dated observation, not an editable state machine. The working tree
-is intentionally uncommitted and unsealed. Derive fresh status from this checkout
-before every resume; the outer repository's factory is historical:
+**Live demo:** not deployed yet. The public replay is built for Cloudflare's free Workers plan
+(`npm run deploy:replay`); its link goes here once it is up. Until then, [run it locally](#run-it-locally).
 
-```powershell
-node factory/status.mjs
-```
+## What the demo shows
 
-Model evaluation and actual human runtime approval remain **NOT_RUN**. Stage
-acceptance never grants runtime intervention authority. Open the parent
-[`CrossSignal.code-workspace`](../../CrossSignal.code-workspace) for focused
-development and the [cleanup manifest](../../planning/2026-10-01-workspace-cleanup/MANIFEST.md).
-The ICM architecture uses thin entry guidance, this router, the derived active
-stage, its declared inputs and two named shared references. Product runtime
-state stays in the application/database; archives and planning candidates are
-historical references loaded only for an explicit task. Accepted documents can
-retain older pending-stage or local-model wording; the manifest reconciles those
-dated statements without rewriting their hashes.
+One recorded investigation, replayed read-only: every tool call the model made, what came back, its finding and
+recommendation, and the grade a separate grader gave it against a frozen answer key. Nothing on the page calls a
+model or changes anything, and the Approve button is disabled. Each replay is labelled with its run id, date and model.
 
-## Preserved A01 local mechanics baseline
+The demo run is case B17, where a checkout deploy broke validation for mobile shoppers. The tool-using model queried
+revenue twice and engineering once, blamed the deploy and recommended a rollback for a person to approve: 5/5. The
+page links the other two recorded runs of the same case, including the one that scored 0/5.
 
-A01 is sealed at `43d42d255bd22cb227e3410dda31ffb8437f6624`. Its five accepted
-stages prove local deterministic mechanics, not five-case model diagnosis quality
-or hiring-MVP completion. Complete factory evidence is preserved under
-`_archive/2026-09-30-a01-before-b01/`:
-[Spec](_archive/2026-09-30-a01-before-b01/factory/01_spec/output/SPEC.md),
-[Data package](_archive/2026-09-30-a01-before-b01/factory/02_data/output/DATA_PACKAGE.md),
-[Build](_archive/2026-09-30-a01-before-b01/factory/03_build/output/BUILD_EVIDENCE.md),
-[Verification](_archive/2026-09-30-a01-before-b01/factory/04_verify/output/VERIFICATION_REPORT.md),
-[release manifest](_archive/2026-09-30-a01-before-b01/factory/05_ship/output/RELEASE_MANIFEST.md)
-and [cold demo](_archive/2026-09-30-a01-before-b01/factory/05_ship/output/DEMO_SCRIPT.md).
-The [A01 checkpoint](docs/a01-release-status.md) retains its historical source text.
+## Results so far (W1)
 
-## Local A01 Case commands
+`gemini-3.5-flash-lite` on the Gemini free tier with LOW thinking (profile `low`), commit `a37afcc`, run on
+2026-10-06. Five cases built on a real store's daily traffic and sales; each incident was injected into those rows and
+labelled before any run, and the deploys, health readings and support messages are synthetic. Three batches, each one
+fresh run of every case with every method. A run scores one point per check passed: status, cause, change, segment
+and rollback.
 
-These commands create new stored results or prepare runtime proposals; they are
-reference instructions and are not required for workspace cleanup. Existing
-`outputs/a01/` Cases, databases, approval state and history must be preserved.
+| Case | What happened | Single-shot model | Tool-using model | Rules |
+|---|---|---|---|---|
+| B16 | Traffic mix shifted away from desktop | 4/15 | 7/15 | 2/5 |
+| B17 | A checkout deploy broke validation on mobile | 13/15 | 10/15 | 5/5 |
+| B18 | The payment provider had an incident | 11/15 | 9/15 | 1/5 |
+| B19 | No incident, only the ordinary weekly dip | 11/15 | 11/15 | 3/5 |
+| B20 | Data arrived late; the right answer is "not enough evidence" | 0/15 | 2/15 | 5/5 |
+| **All** | | **39/75 (52%)** | **39/75 (52%)** | **16/25 (64%)** |
 
-```powershell
-node --experimental-strip-types scripts/run-a01.mjs
-```
+Rules is the no-model baseline in `db/benchmark/daily-rules.mjs`. It scores the same in every batch, so it is shown
+per batch; its rules were written for these incident families, so read it as a reference point, not a rival.
 
-This writes five independently graded, repeatable SIMULATED comparisons under
-`outputs/a01/replay-*`. Each run preserves previous output and uses its own
-local SQLite store. Automated grants are labeled `fixture_surrogate`.
+| Mean per run | Single-shot | Tool-using |
+|---|---|---|
+| Tokens (input + output) | 5,439 | 25,904 |
+| Gemini requests | 3.1 | 17.6 |
+| Wall time (free-tier spacing included) | 16.3 s | 84.5 s |
 
-To prepare a Case for your own exact approval, run
-`node --experimental-strip-types scripts/a01-case.mjs prepare` and open the
-printed preview. Preparing a Case executes no rollback. The preview gives
-the exact approval command; `inspect`, `resume`, `pause`, and `unpause` use
-the same printed Case directory. No paid model or hosted database is needed.
+What it says so far:
 
-The [hiring direction](docs/hiring-mvp-direction.md) is historical; current work
-starts with [CONTEXT.md](CONTEXT.md) and [factory status](factory/CONTEXT.md).
-Existing local regression commands are
-`node scripts/run-golden-case-replay.mjs` and
-`node scripts/run-case-scenario-matrix.mjs`. Their deterministic results do
-not establish AI investigation quality or business recovery.
+- Letting the model call tools did not beat one well-packed prompt: both scored 39/75, and tool use cost about
+  five times the tokens and time.
+- Both models fail B20. Asked about a drop the data cannot explain, they name a cause anyway.
+- The sample is small. Batch-to-batch swings (the tool-using model scored 5, 0 and 5 on B17) are as large as the
+  gap between methods.
 
-## Historical onboarding-rescue release
+The full comparison, with per-check results, how runs ended and how each check is graded, is in
+[reports/b01-w1/COMPARISON.md](reports/b01-w1/COMPARISON.md), written by `tests/evaluator/compare-b01.mjs`.
 
-The description and cold-review instructions below belong to the prior
-release, preserved at sealed commit `58b2aa0`. Its factory evidence is
-[archived intact](_archive/2026-09-26-l14-before-a01/README.md). The current
-B01 stage is derived from `factory/status.mjs`; historical stage commands
-require the sealed release layout and should not be used to advance B01. Use the historical checkout
-for the reviewer commands below; the active B01 factory has no Stage 05 prepare script.
+## How a replay is checked
 
-CrossSignal is a human control layer for consequential agent actions. Before
-an agent can act, a person sees the exact proposed action, recipients, and
-spending cap, authorizes that exact scope, and can pause all agent actions at
-any time. CrossSignal then preserves an honest narrative of what happened and
-what the action may—or may not—have caused.
+There are two checks, one inside the recording and one outside it.
 
-## Historical onboarding-rescue truth
+1. **Chain intact.** Each row's hash covers the row before it, as the recorder wrote them. This catches a careless
+   edit but not a careful one: whoever edits a row can recompute every hash after it.
+2. **Timestamped.** Each recording's sha256 is timestamped with [OpenTimestamps](https://opentimestamps.org), which
+   commits it to a Bitcoin block (`db/replays/<runId>.json.ots`). The page hashes its own copy, and if the bytes no
+   longer match the stamp it hides the finding and the grade. A rewritten recording would need a new stamp, and that
+   stamp would carry a later date.
 
-This repository contains one evaluator-ready onboarding-rescue slice:
+To check one yourself, download a recording from `db/replays/` with its `.ots` file and drop both on
+opentimestamps.org. The timestamp proves the file has not changed since it was stamped. It cannot prove what
+happened before then (the W1 runs were recorded on 2026-10-06 and stamped on 2026-10-13), or that the replies came
+from Gemini, because Google does not sign them.
 
-- an exact, immutable email intent for at most three recipients and a
-  `$0.15` spending ceiling;
-- human authorization bound to the displayed payload, context, policy, nonce,
-  and expiry;
-- a visible workspace-wide Global Pause checked before effect reservation;
-- a reviewed planner → workers → skeptic → synthesizer playbook;
-- a durable D1 narrative from evidence through execution and outcome; and
-- explicit failed and indeterminate terminal states with no blind retry.
+## Run it locally
 
-All demo evidence is **FIXTURE** data and all email effects use a **TEST**
-adapter. The interface does not send live email, visually prove tenant
-isolation, establish causal impact, or claim exactly-once delivery. The
-confirmed outcome is labeled **Correlated, not proven**.
-
-CrossSignal is a standalone portfolio project for the Result team, not a
-claimed integration with Result's private infrastructure.
-
-## Historical reviewer release commands
-
-Requires Node.js `>=22.13.0`.
+Requires Node.js 22.13 or later.
 
 ```bash
 npm install
-npm run demo:prepare
 npm run dev
 ```
 
-Open `http://localhost:3000/`. If a completed trace is present, open
-**Outcome** and choose **Reset exact FIXTURE trace for replay**.
+Then open `http://localhost:3000/runs/r_c72728d0a839`. Other commands:
 
-Then follow the cold walkthrough and 90-second narrative in
-[`historical DEMO_SCRIPT.md`](_archive/2026-09-26-l14-before-a01/factory/05_ship/output/DEMO_SCRIPT.md).
-The release identity, truth manifest, architecture, threats, and complete proof
-index are in
-[`historical RELEASE_MANIFEST.md`](_archive/2026-09-26-l14-before-a01/factory/05_ship/output/RELEASE_MANIFEST.md).
+| Command | What it does |
+|---|---|
+| `npm test`, `npm run lint` | Offline test suites and lint |
+| `node scripts/run-b01.mjs --profile low` | Runs the benchmark. Needs a free-tier `GEMINI_API_KEY`; the runner refuses to send unless the account attestation says billing is off with no paid fallback |
+| `node scripts/export-replay.mjs --batch <batch> --case B17 --method tool-using-model` | Copies a graded run into `db/replays/` |
+| `node scripts/stamp-replays.mjs [--upgrade]` | Timestamps new recordings; `--upgrade` adds the Bitcoin block once the calendars have committed |
+| `npm run deploy:replay` | Publishes the read-only replay to Cloudflare's free Workers plan |
 
-## Start here
+## Layout
 
-- Agent orientation and task routing: [`AGENTS.md`](AGENTS.md) then
-  [`CONTEXT.md`](CONTEXT.md).
-- Active `spec -> data -> build -> verify -> ship` factory:
-  [`factory/CONTEXT.md`](factory/CONTEXT.md).
-- Historical architecture snapshot:
-  [`factory/_shared/ARCHITECTURE_SNAPSHOT.md`](factory/_shared/ARCHITECTURE_SNAPSHOT.md).
-- Superseded CrossSignal plans and Phase 00 evidence:
-  [`_archive/2026-08-12-crosssignal-phase-00/README.md`](_archive/2026-08-12-crosssignal-phase-00/README.md).
+| Path | What it holds |
+|---|---|
+| `app/runs/[runId]/` | The public replay page |
+| `db/replays/` | Committed recordings, their timestamp proofs and `stamps.json` |
+| `db/benchmark/` | Gemini request, transport, budget and schemas |
+| `tests/evaluator/` | Grader, rubrics and the batch comparison |
+| `worker/` | The Cloudflare Worker, including the read-only gate |
+| `reports/` | Committed results |
 
-## Historical product commands
+## History
 
-```bash
-npm run demo:prepare
-npm run dev
-npm run build
-npm run lint
-npm test
-npm run verify:release
-npm run verify:ship
-```
-
-## Factory commands
-
-```bash
-npm run factory:status
-npm run factory:seal
-```
-
-`factory:status` derives the active stage without writing a status table.
-After the final human gate and commit, `factory:seal` confirms that the release
-bindings cover the current product and that Git is clean.
-
-The ICM/MWP factory authors and verifies the product. Application code,
-database transactions, authorization, retries, and live tenant state remain in
-the conventional product runtime.
+Until October 2026 this repository was built through a staged spec → data → build → verify → ship "factory", which
+shipped an onboarding-rescue approval demo and a local replay of the A01 investigation mechanics. The factory is
+frozen at tag `factory-freeze-2026-10-03`. Its evidence stays in `factory/` and `_archive/`, and
+[CONTEXT.md](CONTEXT.md) is the way in. [AGENTS.md](AGENTS.md) describes how agents work here now.

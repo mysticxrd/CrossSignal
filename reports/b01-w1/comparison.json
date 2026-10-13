@@ -1,0 +1,771 @@
+{
+  "version": "b01-comparison-v2",
+  "truthMode": "REAL_BASELINE_PARTLY_SYNTHETIC",
+  "comparedAtUtc": "2026-10-06T07:29:56.372Z",
+  "commits": [
+    "a37afcc6d381e24f1a2b9a7f05870df464d6da65"
+  ],
+  "model": "gemini-3.5-flash-lite",
+  "modelVersions": [
+    "gemini-3.5-flash-lite"
+  ],
+  "requestGapMs": 4500,
+  "arms": [
+    {
+      "name": "low",
+      "commit": "a37afcc6d381e24f1a2b9a7f05870df464d6da65",
+      "profile": "low",
+      "tokenLimits": {
+        "name": "low-thinking-raised-token-limits",
+        "thinkingLevel": "LOW",
+        "maxOutputTokens": 4096,
+        "contextTokens": 16384,
+        "generatedTokens": 24576
+      },
+      "batches": 3
+    }
+  ],
+  "batches": [
+    {
+      "batch": "outputs/b01/2026-10-06",
+      "arm": "low",
+      "commit": "a37afcc6d381e24f1a2b9a7f05870df464d6da65",
+      "profile": "low",
+      "startedAtUtc": "2026-10-06T07:01:41.512Z"
+    },
+    {
+      "batch": "outputs/b01/2026-10-06-2",
+      "arm": "low",
+      "commit": "a37afcc6d381e24f1a2b9a7f05870df464d6da65",
+      "profile": "low",
+      "startedAtUtc": "2026-10-06T07:12:29.117Z"
+    },
+    {
+      "batch": "outputs/b01/2026-10-06-3",
+      "arm": "low",
+      "commit": "a37afcc6d381e24f1a2b9a7f05870df464d6da65",
+      "profile": "low",
+      "startedAtUtc": "2026-10-06T07:20:39.720Z"
+    }
+  ],
+  "graderSha256": "d24bd72350bc31e27ce64705f226db23a330c4e21489e1acdb33e12dbf4852b5",
+  "rubrics": [
+    {
+      "file": "tests/evaluator/b16-b20/rubric.json",
+      "sha256": "9cbb8055164d55a5f8730b21e40472aa71ec992496df20d879ca3a8e381dad9a"
+    }
+  ],
+  "howGraded": {
+    "status": "The finding must end `completed`, or `epistemic_abstention` on the cases where the rubric says to abstain. On the no-incident case the data is complete and moves only with the store's ordinary day-to-day variation, so abstaining fails.",
+    "cause": "Graded on meaning, not wording. If `relatedChangeId` names a deploy or pricing change, it must be the rubric's change. Otherwise the first cause word in the top-ranked diagnosis decides: checkout/validation, provider/gateway/processor, price/pricing, acquisition/composition/mix/traffic/channel/share/distribution, or notification/email (never right here). On the abstain cases the run must abstain. On the no-incident case it must blame no change, and its top-ranked diagnosis must say nothing is wrong (no incident, no drop, stable, unchanged, normal and the like) or name no cause at all. Real store data moves with the week, so on the no-incident case weekend, weekday, weekly, day of week, seasonal, usual, typical, ordinary, variation and noise also say nothing is wrong.",
+    "change": "`relatedChangeId` must be the rubric's change, or empty when the rubric has none.",
+    "segment": "`affectedSegment` must name the rubric's segment (case, word order and separators ignored), or be empty when the rubric has none.",
+    "rollback": "Where the rubric wants a rollback, the run must recommend rolling back that service (by name or change id) with `approvalRequired: true`. Everywhere else it must not recommend a rollback.",
+    "keyEvidence": "Shown, not scored: rubric evidence groups whose rows the run both saw and cited, with the group's typed fact holding on them. Daily facts compare alert days with earlier days (tests/evaluator/daily-predicates.mjs).",
+    "citations": "Shown, not scored: cited ids the run had actually seen, out of all ids it cited."
+  },
+  "cases": [
+    {
+      "label": "B16",
+      "caseRef": "c_3638537ed98a",
+      "split": "real_baseline",
+      "labels": [
+        "B16"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 6,
+          "maxScore": 15,
+          "perBatch": [
+            2,
+            2,
+            2
+          ],
+          "checks": {
+            "status": 0,
+            "cause": 0,
+            "change": 3,
+            "segment": 0,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 9.827200000000014
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 3,
+            "score": 4,
+            "maxScore": 15,
+            "perBatch": [
+              2,
+              0,
+              2
+            ],
+            "checks": {
+              "status": 2,
+              "cause": 0,
+              "change": 0,
+              "segment": 1,
+              "rollback": 1
+            },
+            "endings": {
+              "completed": 2,
+              "invalid_output (incomplete_provider_output)": 1
+            },
+            "mean": {
+              "tokens": 6349.333333333333,
+              "outputTokens": 1700.3333333333333,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3.3333333333333335,
+              "elapsedMs": 20024.220966666664
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 3,
+            "score": 7,
+            "maxScore": 15,
+            "perBatch": [
+              3,
+              2,
+              2
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 0,
+              "change": 1,
+              "segment": 0,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 25936,
+              "outputTokens": 1278.6666666666667,
+              "turns": 5.666666666666667,
+              "toolCalls": 4.666666666666667,
+              "requests": 17,
+              "elapsedMs": 85442.59476666666
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B17",
+      "caseRef": "c_5270474566d4",
+      "split": "real_baseline",
+      "labels": [
+        "B17"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 15,
+          "maxScore": 15,
+          "perBatch": [
+            5,
+            5,
+            5
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 3,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "completed": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 19.648033333340816
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 3,
+            "score": 13,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              5,
+              3
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 3,
+              "change": 2,
+              "segment": 3,
+              "rollback": 2
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 5394.666666666667,
+              "outputTokens": 565.6666666666666,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 15237.914533333329
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 3,
+            "score": 10,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              0,
+              5
+            ],
+            "checks": {
+              "status": 2,
+              "cause": 2,
+              "change": 2,
+              "segment": 2,
+              "rollback": 2
+            },
+            "endings": {
+              "completed": 2,
+              "epistemic_abstention": 1
+            },
+            "mean": {
+              "tokens": 17143,
+              "outputTokens": 1358.3333333333333,
+              "turns": 4.666666666666667,
+              "toolCalls": 3.6666666666666665,
+              "requests": 14,
+              "elapsedMs": 63343.88930000001
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B18",
+      "caseRef": "c_7a2f6fce30cb",
+      "split": "real_baseline",
+      "labels": [
+        "B18"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 3,
+          "maxScore": 15,
+          "perBatch": [
+            1,
+            1,
+            1
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 0,
+            "change": 0,
+            "segment": 0,
+            "rollback": 0
+          },
+          "endings": {
+            "completed": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 9.854999999981374
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 3,
+            "score": 11,
+            "maxScore": 15,
+            "perBatch": [
+              3,
+              5,
+              3
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 1,
+              "change": 1,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 5368.666666666667,
+              "outputTokens": 564.3333333333334,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 13088.134366666645
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 3,
+            "score": 9,
+            "maxScore": 15,
+            "perBatch": [
+              3,
+              3,
+              3
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 0,
+              "change": 0,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 27439.666666666668,
+              "outputTokens": 1500.3333333333333,
+              "turns": 6.333333333333333,
+              "toolCalls": 5.333333333333333,
+              "requests": 19,
+              "elapsedMs": 87071.3139
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B19",
+      "caseRef": "c_47be81d0fe02",
+      "split": "real_baseline",
+      "labels": [
+        "B19"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 9,
+          "maxScore": 15,
+          "perBatch": [
+            3,
+            3,
+            3
+          ],
+          "checks": {
+            "status": 0,
+            "cause": 0,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 12.10690000000371
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 3,
+            "score": 11,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              3,
+              3
+            ],
+            "checks": {
+              "status": 1,
+              "cause": 1,
+              "change": 3,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 1,
+              "epistemic_abstention": 2
+            },
+            "mean": {
+              "tokens": 5081.333333333333,
+              "outputTokens": 449.3333333333333,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 19524.334333333332
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 3,
+            "score": 11,
+            "maxScore": 15,
+            "perBatch": [
+              3,
+              5,
+              3
+            ],
+            "checks": {
+              "status": 1,
+              "cause": 1,
+              "change": 3,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "epistemic_abstention": 2,
+              "completed": 1
+            },
+            "mean": {
+              "tokens": 22316.666666666668,
+              "outputTokens": 1139,
+              "turns": 5.333333333333333,
+              "toolCalls": 4.333333333333333,
+              "requests": 16,
+              "elapsedMs": 86943.51063333332
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B20",
+      "caseRef": "c_a3298348fd2d",
+      "split": "real_baseline",
+      "labels": [
+        "B20"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 15,
+          "maxScore": 15,
+          "perBatch": [
+            5,
+            5,
+            5
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 3,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 14.30779999999019
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 3,
+            "score": 0,
+            "maxScore": 15,
+            "perBatch": [
+              0,
+              0,
+              0
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 0,
+              "segment": 0,
+              "rollback": 0
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 5000.333333333333,
+              "outputTokens": 510.6666666666667,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 13855.886166666673
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 3,
+            "score": 2,
+            "maxScore": 15,
+            "perBatch": [
+              0,
+              1,
+              1
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 0,
+              "segment": 0,
+              "rollback": 2
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 36685.333333333336,
+              "outputTokens": 1865.3333333333333,
+              "turns": 7.333333333333333,
+              "toolCalls": 6.333333333333333,
+              "requests": 22,
+              "elapsedMs": 99723.20726666664
+            }
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "real_baseline": {
+      "labels": [
+        "B16",
+        "B17",
+        "B18",
+        "B19",
+        "B20"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 15,
+          "score": 48,
+          "maxScore": 75,
+          "perBatch": [
+            16,
+            16,
+            16
+          ],
+          "checks": {
+            "status": 9,
+            "cause": 6,
+            "change": 12,
+            "segment": 9,
+            "rollback": 12
+          },
+          "endings": {
+            "epistemic_abstention": 9,
+            "completed": 6
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 13.148986666663221
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 15,
+            "score": 39,
+            "maxScore": 75,
+            "perBatch": [
+              15,
+              13,
+              11
+            ],
+            "checks": {
+              "status": 9,
+              "cause": 5,
+              "change": 6,
+              "segment": 10,
+              "rollback": 9
+            },
+            "endings": {
+              "completed": 12,
+              "invalid_output (incomplete_provider_output)": 1,
+              "epistemic_abstention": 2
+            },
+            "mean": {
+              "tokens": 5438.866666666667,
+              "outputTokens": 758.0666666666667,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3.066666666666667,
+              "elapsedMs": 16346.09807333333
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 15,
+            "score": 39,
+            "maxScore": 75,
+            "perBatch": [
+              14,
+              11,
+              14
+            ],
+            "checks": {
+              "status": 9,
+              "cause": 3,
+              "change": 6,
+              "segment": 8,
+              "rollback": 13
+            },
+            "endings": {
+              "completed": 12,
+              "epistemic_abstention": 3
+            },
+            "mean": {
+              "tokens": 25904.133333333335,
+              "outputTokens": 1428.3333333333333,
+              "turns": 5.866666666666666,
+              "toolCalls": 4.866666666666666,
+              "requests": 17.6,
+              "elapsedMs": 84504.90317333334
+            }
+          }
+        }
+      }
+    },
+    "all": {
+      "labels": [
+        "B16",
+        "B17",
+        "B18",
+        "B19",
+        "B20"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 15,
+          "score": 48,
+          "maxScore": 75,
+          "perBatch": [
+            16,
+            16,
+            16
+          ],
+          "checks": {
+            "status": 9,
+            "cause": 6,
+            "change": 12,
+            "segment": 9,
+            "rollback": 12
+          },
+          "endings": {
+            "epistemic_abstention": 9,
+            "completed": 6
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 13.148986666663221
+          }
+        },
+        "single-shot-model": {
+          "low": {
+            "runs": 15,
+            "score": 39,
+            "maxScore": 75,
+            "perBatch": [
+              15,
+              13,
+              11
+            ],
+            "checks": {
+              "status": 9,
+              "cause": 5,
+              "change": 6,
+              "segment": 10,
+              "rollback": 9
+            },
+            "endings": {
+              "completed": 12,
+              "invalid_output (incomplete_provider_output)": 1,
+              "epistemic_abstention": 2
+            },
+            "mean": {
+              "tokens": 5438.866666666667,
+              "outputTokens": 758.0666666666667,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3.066666666666667,
+              "elapsedMs": 16346.09807333333
+            }
+          }
+        },
+        "tool-using-model": {
+          "low": {
+            "runs": 15,
+            "score": 39,
+            "maxScore": 75,
+            "perBatch": [
+              14,
+              11,
+              14
+            ],
+            "checks": {
+              "status": 9,
+              "cause": 3,
+              "change": 6,
+              "segment": 8,
+              "rollback": 13
+            },
+            "endings": {
+              "completed": 12,
+              "epistemic_abstention": 3
+            },
+            "mean": {
+              "tokens": 25904.133333333335,
+              "outputTokens": 1428.3333333333333,
+              "turns": 5.866666666666666,
+              "toolCalls": 4.866666666666666,
+              "requests": 17.6,
+              "elapsedMs": 84504.90317333334
+            }
+          }
+        }
+      }
+    }
+  }
+}
