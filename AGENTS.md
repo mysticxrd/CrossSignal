@@ -19,7 +19,7 @@ I own the design; you build and teach. Chores skip steps 1, 2, 4, 5.
 2. Design: run `/design`; wait for "build".
 3. Build: a reviewable slice and its nearest test; `npm test`, `npm run lint` pass.
 4. Teach: run `/walkthrough` on the diff.
-5. Own: decide; give me each real choice with alternatives to overrule. No `TODO(human)`; never write `docs/owner/`.
+5. Own: decide; list alternatives to overrule; no `TODO(human)`; never write `docs/owner/`.
 6. Commit: one focused, working commit per change.
 7. Deploy: none yet; demo replays recorded runs labelled with run id, date and model.
 Codex: `/name` means `.claude/skills/name/SKILL.md`.
