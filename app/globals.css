@@ -1448,3 +1448,16 @@ code { font-family: var(--font-geist-mono), monospace; }
 
 @media (max-width: 1080px) { .case-layout { grid-template-columns: 1fr; }.case-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }.case-provenance { grid-column: 1 / -1; } }
 @media (max-width: 700px) { .case-heading { flex-direction: column; }.case-badges { justify-content: flex-start; }.case-metrics, .case-side { grid-template-columns: 1fr; }.case-provenance { grid-column: auto; }.case-section-head { align-items: flex-start; flex-direction: column; }.case-section, .case-side section { padding: 17px; } }
+
+/* Public replay of a recorded run (app/runs/[runId]) */
+.replay-page { max-width: 1180px; margin: 0 auto; padding: 36px 16px 56px; }
+.replay-notice { margin: 0 0 18px; padding: 12px 14px; border: 1px solid #e4b6a6; border-radius: 9px; background: var(--control-red-soft); color: var(--control-red); font-size: 13px; font-weight: 650; }
+.replay-broken { background: var(--control-red-soft); color: var(--control-red); }
+.replay-steps { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--control-line); }
+.replay-steps li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--control-line); font-size: 13px; }
+.replay-steps li > span, .replay-steps small { color: var(--control-muted); font: 11px var(--font-geist-mono), monospace; }
+.replay-steps p { margin: 0; overflow-wrap: anywhere; line-height: 1.5; }
+.replay-steps .refused p { color: var(--control-amber); }.replay-steps .finding p { font-weight: 700; }
+.replay-steps code, .replay-siblings { font: 12px var(--font-geist-mono), monospace; }
+.replay-siblings { margin: 12px 0 0; padding-left: 18px; line-height: 1.8; overflow-wrap: anywhere; }
+.replay-page .case-approve-button:disabled { cursor: not-allowed; }
