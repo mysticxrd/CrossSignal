@@ -47,8 +47,9 @@ Read the files on the path from trigger to stored result. Cite `file:line`.
    changed lines of product code (frozen data excluded), and the test that
    proves it. Split anything bigger.
 7. Where the prediction was wrong or incomplete, quoting the owner's words.
-8. The `TODO(human)`: the one real design decision the owner will write (a
-   stopping rule, retry rule, failure state, eval case or grader), with its
-   trade-offs and the tests that will check it.
+8. The owner's decision: the one real design choice (a stopping rule, retry
+   rule, failure state, eval case or grader), with two or three alternatives,
+   their trade-offs, the one you will build unless overruled, and the tests
+   that will check it. The owner picks or overrules; you write the code.
 
 End with: "Reply build when this makes sense." Then wait.

@@ -56,9 +56,9 @@ test("answers the PreToolUse protocol over stdin", () => {
   assert.equal(allowed.stdout, "");
 });
 
-test("wires the guard and Learning style into project settings", async () => {
+test("wires the guard and Explanatory style into project settings", async () => {
   const settings = JSON.parse(await readFile(new URL(".claude/settings.json", projectRoot), "utf8"));
-  assert.equal(settings.outputStyle, "Learning");
+  assert.equal(settings.outputStyle, "Explanatory");
   const [entry] = settings.hooks.PreToolUse;
   for (const tool of ["Write", "Edit", "NotebookEdit", "Bash", "PowerShell"]) {
     assert.ok(entry.matcher.split("|").includes(tool), tool);

@@ -22,8 +22,8 @@ Base: $ARGUMENTS (default: the commit the slice started from, else `HEAD`).
      idempotent, and what a person sees;
    - the three concepts this change relies on, each with a short analogy and
      then its proper name.
-4. Point to the `TODO(human)`: where it is, what it decides, and what goes
-   wrong if it is decided badly. Don't fill it in.
+4. Point to the owner's decision: where it lives in the code, which
+   alternative was built and why, and what goes wrong if it was decided badly.
 5. Ask the owner to trace one request end to end in their own words. Check
    their answer against the code, correct it with `file:line` references, and
    ask a follow-up on the weakest part.
