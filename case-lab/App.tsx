@@ -1,0 +1,74 @@
+import { useEffect, useState } from 'react';
+import { CaseDetail } from './CaseDetail';
+import { type CaseSummary, type CaseView, type Session, label } from './types';
+async function read<T>(path: string): Promise<T> {
+  const response = await fetch(path); const data = await response.json();
+  if (!response.ok) throw new Error(data.error); return data;
+}
+const scenarios = [['incident', 'Paid-conversion incident'], ['limited', 'Incident with missing health evidence'],
+  ['normal', 'Normal conversion'], ['partial', 'Partial recovery'], ['ineffective', 'Unchanged after action'],
+  ['incomplete', 'Incomplete source coverage'], ['spontaneous', 'Recovery without an intervention']];
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null), [cases, setCases] = useState<CaseSummary[]>([]);
+  const [selected, setSelected] = useState(() => location.hash.slice(1)), [detail, setDetail] = useState<CaseView | null>(null);
+  const [scenario, setScenario] = useState('incident'), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  useEffect(() => {
+    let active = true;
+    const refresh = async () => {
+      try {
+        const [nextSession, nextCases, nextDetail] = await Promise.all([read<Session>('/api/session'), read<CaseSummary[]>('/api/cases'),
+          selected ? read<CaseView>(`/api/cases/${selected}`) : Promise.resolve(null)]);
+        if (active) { setSession(nextSession); setCases(nextCases); setDetail(current => current && nextDetail && current.id === nextDetail.id && current.revision > nextDetail.revision ? current : nextDetail); }
+      } catch (failure) { if (active) setError(failure instanceof Error ? failure.message : 'Connection interrupted'); }
+    };
+    void refresh(); const timer = setInterval(refresh, 2500);
+    return () => { active = false; clearInterval(timer); };
+  }, [selected]);
+  const select = (id: string) => { setSelected(id); setDetail(null); location.hash = id; setError(''); };
+  async function post(path: string, body: unknown) {
+    if (!session) return null;
+    const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Case-Token': session.token }, body: JSON.stringify(body) });
+    const value = await response.json(); if (!response.ok) throw new Error(value.error); return value;
+  }
+  async function perform(action: string, reason = '') {
+    if (!detail || busy) return;
+    setBusy(true); setError('');
+    try {
+      const suffix = action === 'investigate' || action === 'approve' ? action : 'command';
+      const body = action === 'approve' ? { proposalHash: detail.proposal?.hash } : action === 'investigate'
+        ? { revision: detail.revision } : { revision: detail.revision, command: action, reason };
+      setDetail(await post(`/api/cases/${detail.id}/${suffix}`, body));
+      setCases(await read('/api/cases')); setSession(await read('/api/session'));
+    } catch (failure) { setError(failure instanceof Error ? failure.message : 'Request failed'); }
+    finally { setBusy(false); }
+  }
+  async function create() {
+    setBusy(true); setError('');
+    try { const result = await post('/api/cases', { key: crypto.randomUUID(), scenario });
+      if (result) { select(result.id); setCases(await read('/api/cases')); } }
+    catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not create Case'); }
+    finally { setBusy(false); }
+  }
+  return <div className="shell">
+    <aside className="sidebar">
+      <button onClick={() => select('')} className="brand"><span className="brand-mark">×</span> CrossSignal<span className="brand-dot">●</span></button>
+      <p className="eyebrow">LOCAL CASE LAB</p><p className="sidebar-intro">Follow the evidence.<br />Keep the decision yours.</p>
+      <div className="create-form"><label htmlFor="scenario">Start with a synthetic situation</label>
+        <select id="scenario" value={scenario} onChange={event => setScenario(event.target.value)}>{scenarios.map(([value, name]) => <option value={value} key={value}>{name}</option>)}</select>
+        <button className="primary" disabled={busy || !session} onClick={create}>+ Open a Case</button></div>
+      <div className="list-title">YOUR CASES <span>{cases.length}</span></div>
+      <nav aria-label="Cases">{cases.map((item, i) => <button key={item.id} className={`case-link ${item.id === selected ? 'selected' : ''}`} onClick={() => select(item.id)}>
+        <span className="case-number">CASE {String(cases.length - i).padStart(2, '0')}</span><strong>{item.title}</strong>
+        <span className="case-link-status"><i className={item.status === 'closed' ? 'closed-dot' : ''} />{label(item.status)} · {label(item.investigation)}</span></button>)}</nav>
+      <div className="sidebar-foot"><span className="live-dot" /> Local owner<br /><small>All business data and actions are simulated.</small></div>
+    </aside>
+    <main className="workspace"><header className="topbar"><span>WORKSPACE / INVESTIGATIONS</span><span className="badge">SIMULATED</span></header>
+      {error && <div className="error" role="alert"><strong>Request needs attention</strong><p>{label(error)}</p><button onClick={() => setError('')}>Dismiss</button></div>}
+      {detail && session ? <CaseDetail data={detail} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
+        <span className="eyebrow">FROM SIGNAL TO OUTCOME</span><h1>A decision you can<br />trace back to evidence.</h1>
+        <p>Open a Case to investigate a SaaS paid-conversion incident. Review competing explanations, decide whether to run a simulation, then observe what happened.</p>
+        <div className="empty-steps"><span>01 / Investigate</span><span>02 / Decide</span><span>03 / Observe</span></div>
+        <p className="muted">{selected ? 'Loading the saved Case…' : 'Choose a situation in the sidebar to begin.'}</p></div>}
+    </main>
+  </div>;
+}

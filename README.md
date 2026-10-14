@@ -107,3 +107,25 @@ shipped an onboarding-rescue approval demo and a local replay of the A01 investi
 frozen at tag `factory-freeze-2026-10-03`. Its evidence stays in `factory/` and `_archive/`, and
 [factory/CONTEXT.md](factory/CONTEXT.md) is the way in. [AGENTS.md](AGENTS.md) describes how agents work here now,
 and [CONTEXT.md](CONTEXT.md) maps the folders.
+
+## Local SaaS Case lab
+
+Run `npm run case:lab`, then open **http://127.0.0.1:4317**. This is a separate local Node/React app; the public replay worker is unchanged.
+
+The journey is: observed conversion signal -> immutable evidence packet -> Gemini investigation -> trusted proposal eligibility -> **Approve and run this simulation** -> observed outcome -> owner closure. All company data and effects are **SIMULATED**. A real Gemini response is not evidence of real business impact.
+
+- Choose a synthetic situation and open a Case. Source records show unique purchase intents, successful first payments, subscription activations, maturity and coverage.
+- Investigate to run the existing isolated Gemini runner with a SaaS evidence packet. Only `gemini-3.5-flash-lite`, the `low` profile and the existing $0 account attestation are supported. `GEMINI_API_KEY` stays in the host's environment or ignored `.env`.
+- Review citations, competing explanations and eligibility reasons. Missing health evidence cannot produce an executable proposal even when the model recommends one.
+- Exact approval records a grant and pending job together. Execution rechecks scope, versions, evidence, plan, expiry and pause, then commits the simulated transition and receipt together. Double clicks and restarts do not repeat it.
+- Choose **Advance simulation and observe** to produce subsequent observations. Reloading never advances time. A receipt alone does not satisfy the outcome criterion.
+- Close with recovery observed, close unresolved with a reason, or continue investigating. Late data retains the original measurement interval; a separately labelled later regression can reopen the Case.
+- An expired or deferred proposal can be rechecked/refreshed from its existing finding without spending another model attempt. The refreshed proposal requires its own exact approval.
+
+Synthetic parameters are versioned in `db/cases/measurement.mjs`: two 15-minute windows, at least 80 intents per cohort/window, 10 minutes to complete and 5 minutes for arrival. The sample incident is 80% -> 40%, with a stable assisted cohort. The follow-up target is baseline minus 5 percentage points in **both** windows, with stable controls. These are demonstration defaults, not a validated real-world detection policy.
+
+Durable state lives in ignored `outputs/case-lab/cases.sqlite`; immutable per-attempt recordings are under `outputs/case-lab/recordings/`. Do not delete these to reset the attempt budget. The initial development allowance is **two attempts total**, failures included, persisted across restarts. Additional calls require an explicit owner budget decision. `node scripts/case-smoke.mjs` requests only the two named smoke Cases and reuses their existing records on rerun; it never approves an action.
+
+Validation: `npm test`, `npm run lint`, `npm run case:typecheck`, `npm run case:build`. `node tests/helpers/case-browser.mjs` starts a separate offline browser harness at port 4318, with generated test answers and approvals labelled `fixture_surrogate`; it makes no model calls. The actual owner approval remains separate from those tests.
+
+The local service binds only `127.0.0.1`, uses a same-origin request token, and rejects foreign Host/Origin requests. This first slice is for one trusted local owner; it is not a hosted multi-user authentication system. Adaptive tools, live company connectors, public deployment and model-quality claims remain outside this slice.

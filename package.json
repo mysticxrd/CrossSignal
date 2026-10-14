@@ -32,7 +32,11 @@
     "a01:prepare": "node --experimental-strip-types scripts/a01-case.mjs prepare",
     "verify:a01": "node --experimental-strip-types --test tests/a01.test.mjs",
     "test:legacy": "node scripts/test-offline.mjs --legacy",
-    "test:build": "npm run build && node --test tests/rendered-html-build.test.mjs"
+    "test:build": "npm run build && node --test tests/rendered-html-build.test.mjs",
+    "case:build": "vite build --config vite.case.config.ts",
+    "case:start": "node scripts/case-lab.mjs",
+    "case:lab": "npm run case:build && npm run case:start",
+    "case:typecheck": "tsc --project tsconfig.case.json"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
