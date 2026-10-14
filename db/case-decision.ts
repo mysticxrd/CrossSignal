@@ -85,6 +85,10 @@ export type DecisionCaseResult =
   | { kind: "not_found" }
   | { kind: "unavailable" };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 export async function readCaseDecision(
   userId: string,
   workspaceId: string,
@@ -149,7 +153,7 @@ export async function approveSavedCaseResponse(
       : response.status === 404 ? "The Case response is unavailable."
         : "Approval could not be saved." };
     const result = await response.json();
-    return result?.kind === "approved" && typeof result.reused === "boolean"
+    return isRecord(result) && result.kind === "approved" && typeof result.reused === "boolean"
       ? { ok: true, reused: result.reused }
       : { ok: false, error: "Approval response was invalid." };
   } catch (error) {
@@ -181,7 +185,7 @@ export async function recordSavedCaseCheck(
       : response.status === 404 ? "The Case response is unavailable."
         : "The TEST check receipt could not be saved." };
     const result = await response.json();
-    return result?.kind === "recorded" && typeof result.reused === "boolean"
+    return isRecord(result) && result.kind === "recorded" && typeof result.reused === "boolean"
       ? { ok: true, reused: result.reused }
       : { ok: false, error: "The TEST check receipt response was invalid." };
   } catch (error) {
@@ -212,7 +216,7 @@ export async function executeSavedCaseCheckout(
         : response.status === 404 ? "This TEST Case is unavailable."
           : "Simulation could not be confirmed. Retry the same run ID." };
     const result = await response.json();
-    return result?.kind === "simulated" && result.runId === runId && typeof result.reused === "boolean"
+    return isRecord(result) && result.kind === "simulated" && result.runId === runId && typeof result.reused === "boolean"
       ? { ok: true, runId, reused: result.reused }
       : { ok: false, error: "Simulation response was invalid. Retry the same run ID." };
   } catch {
@@ -241,7 +245,7 @@ export async function markSavedCaseCheckTrial(
       : response.status === 404 ? "The Case receipt is unavailable."
         : "The trial marker could not be saved." };
     const result = await response.json();
-    return result?.kind === "marked" && typeof result.reused === "boolean"
+    return isRecord(result) && result.kind === "marked" && typeof result.reused === "boolean"
       ? { ok: true, reused: result.reused }
       : { ok: false, error: "The trial marker response was invalid." };
   } catch (error) {

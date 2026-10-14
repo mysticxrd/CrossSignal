@@ -108,6 +108,16 @@ frozen at tag `factory-freeze-2026-10-03`. Its evidence stays in `factory/` and 
 [factory/CONTEXT.md](factory/CONTEXT.md) is the way in. [AGENTS.md](AGENTS.md) describes how agents work here now,
 and [CONTEXT.md](CONTEXT.md) maps the folders.
 
+## Type checking
+
+Run `npm run typecheck` to check all three runtimes: the Cloudflare web app, the local Case lab, and the Supabase Edge Function. No application code or model calls run during these checks.
+
+- `npm run typecheck:web` first generates Cloudflare runtime declarations with Wrangler, then runs TypeScript. `wrangler.jsonc` pins the compatibility date already used by the Vite build; resource bindings remain in `vite.config.ts`. Regenerate the ignored `worker-configuration.d.ts` with `npm run cf:typegen` after configuration changes or a clean checkout.
+- `npm run case:typecheck` checks the local browser app using its own browser and Node types.
+- `npm run typecheck:functions` checks the Edge Function using the pinned Deno development dependency and `supabase/functions/deno.lock`. The first run downloads public type dependencies; it does not invoke the function or connect to a database. Deno-only sources are excluded from the web TypeScript project and checked here instead.
+
+References: [Cloudflare runtime types](https://developers.cloudflare.com/workers/languages/typescript/), [Supabase development environment](https://supabase.com/docs/guides/functions/development-environment).
+
 ## Local SaaS Case lab
 
 Run `npm run case:lab`, then open **http://127.0.0.1:4317**. This is a separate local Node/React app; the public replay worker is unchanged.

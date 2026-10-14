@@ -15,7 +15,13 @@
     "incremental": true,
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    "types": [
+      "node",
+      "react",
+      "react-dom",
+      "./worker-configuration.d.ts"
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -32,6 +38,10 @@
     "planning",
     "outputs",
     "dist",
-    ".vinext"
+    ".vinext",
+    ".wrangler",
+    "supabase/functions",
+    "case-lab",
+    "vite.case.config.ts"
   ]
 }

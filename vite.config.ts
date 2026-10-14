@@ -16,13 +16,11 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 export const publicReplayConfig = {
   name: "crosssignal",
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
   vars: { CROSSSIGNAL_PUBLIC_REPLAY: "1" },
 };
 
 const localBindingConfig = {
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
   d1_databases: d1
     ? [
         {
