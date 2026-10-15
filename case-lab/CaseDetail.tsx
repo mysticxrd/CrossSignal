@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EvidenceList, Citations } from './Evidence';
 import { type CaseView, type Session, type Plan, label, percent, time } from './types';
 function PlanView({ plan }: { plan: Plan }) {
@@ -8,6 +8,12 @@ function PlanView({ plan }: { plan: Plan }) {
 }
 export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; session: Session; busy: boolean; onAction: (action: string, reason?: string) => Promise<void> }) {
   const [reason, setReason] = useState('');
+  const [clock, setClock] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setClock(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const expired = data.proposal !== null && !(clock < Date.parse(data.proposal.expiresAt));
   const signal = data.snapshot.signal, inFlight = ['queued', 'running'].includes(data.investigation), open = data.status === 'open';
   const disabled = busy || data.paused || inFlight, remaining = session.attemptCap - session.attemptsUsed;
   // Each stage is reached by its own record, never implied by a later one. Deferring or observing without acting records a decision without a finding.
@@ -21,7 +27,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
     <ol className="journey">{['Signal', 'Investigation', 'Decision', 'Simulation', 'Outcome', 'Closure'].map((name, i) => <li className={reached[i] ? 'reached' : ''} key={name}>
       <span>{String(i + 1).padStart(2, '0')}</span>{name}</li>)}</ol>
     <section className="signal-card" aria-labelledby="signal-title"><div className="section-top"><h2 id="signal-title">{signal.detected ? 'A conversion drop needs a decision' : signal.sufficient ? 'No conversion incident detected' : 'The signal is not yet reliable'}</h2>
-      <span className="pill">{signal.detected ? 'Needs investigation' : signal.sufficient ? 'Stable' : 'Incomplete data'}</span></div>
+      <span className="pill">{signal.detected ? 'Drop observed' : signal.sufficient ? 'Stable' : 'Incomplete data'}</span></div>
       <p>New self-serve subscriptions · two comparable 15-minute windows per period</p><div className="metrics">
         <div><span>BASELINE</span><strong>{percent(signal.baseline.conversionPercent)}</strong><small>{signal.baseline.successes} / {signal.baseline.intents} intents</small></div>
         <div><span>INCIDENT PERIOD</span><strong className={signal.detected ? 'negative' : ''}>{percent(signal.incident.conversionPercent)}</strong><small>{signal.incident.successes} / {signal.incident.intents} intents</small></div>
@@ -40,13 +46,15 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
       <div className="investigate-footer"><button className="primary" disabled={disabled || !open || !session.modelReady || remaining <= 0 || data.decision === 'approved'} onClick={() => onAction('investigate')}>
         {inFlight ? 'Investigation in progress…' : data.attempts.length ? 'Run another investigation' : 'Investigate this Case'}</button>
         <p className="muted">{session.source === 'fixture_surrogate' ? 'OFFLINE FIXTURE SURROGATE' : `${session.model} · ${session.profile} · free tier`}<br />
-          {remaining} of {session.attemptCap} development attempts remain. {session.unavailableReason && label(session.unavailableReason)}</p></div>
+          {remaining} of {session.attemptCap} development attempts remain. {session.unavailableReason && label(session.unavailableReason)}</p>
+        {remaining <= 0 && <p className="muted">The investigation budget is exhausted. Existing findings, proposal refresh, observations and closure remain available without another model call.</p>}</div>
     </section>
     <section className="panel decision"><p className="eyebrow">02 / DECIDE</p><h2>Your decision</h2>
-      {data.proposal && data.decision === 'proposed' ? <><span className="status eligible">Eligible for your review</span><h3>Roll back billing in simulation</h3>
+      {data.proposal && data.decision === 'proposed' ? <><span className={expired ? "status" : "status eligible"}>{expired ? "Proposal expired" : "Eligible for your review"}</span><h3>Roll back billing in simulation</h3>
         <p>{data.proposal.action.from} → {data.proposal.action.to}</p><p>One execution. $0 spend. No external writes. Eligibility checks support this test; they do not establish causality.</p>
-        <PlanView plan={data.proposal.measurementPlan} /><p className="muted">Approval expires {time(data.proposal.expiresAt)}.</p>
-        <button className="primary approve" disabled={disabled || !open} onClick={() => onAction('approve')}>Approve and run this simulation</button>
+        <PlanView plan={data.proposal.measurementPlan} /><p className="muted">Approval {expired ? "expired" : "expires"} {time(data.proposal.expiresAt)}.</p>
+        {expired && <p role="status" className="notice">Refresh this proposal to review a new approval window. This reuses the saved investigation and costs no model attempts.</p>}
+        <button className="primary approve" disabled={disabled || !open || expired} onClick={() => onAction('approve')}>Approve and run this simulation</button>
         <button className="text-button" disabled={disabled || !open} onClick={() => onAction('refresh_proposal')}>Refresh proposal for review</button><details><summary>Exact approval binding</summary><code className="hash">{data.proposal.hash}</code><p>Bound to this finding, evidence snapshot, service version and measurement plan.</p></details></>
         : data.receipt ? <><span className="status eligible">Simulation executed once</span><p>{data.receipt.action.from} → {data.receipt.action.to}</p>
           <p>Receipt recorded {time(data.receipt.executedAt)}. This proves the action ran; follow-up observations determine what happened next.</p>
@@ -78,7 +86,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
       <label htmlFor="decision-reason">Decision or closure reason</label><textarea id="decision-reason" value={reason} maxLength={1000} onChange={event => setReason(event.target.value)} placeholder="What does the evidence justify, and what is still unresolved?" />
       <div className="button-row"><button disabled={disabled || !open || data.outcome?.state !== 'criterion_met'} onClick={() => onAction('close_recovered', reason)}>Close: recovery observed</button>
         <button disabled={disabled || !open || !reason.trim() || data.decision === 'approved'} onClick={() => onAction('close_unresolved', reason)}>Close unresolved</button>
-        <button disabled={disabled || data.decision === 'approved'} onClick={() => onAction('continue', reason)}>Continue investigation</button></div></section>
+        <button disabled={disabled || remaining <= 0 || data.decision === 'approved'} onClick={() => onAction('continue', reason)}>Continue investigation</button></div></section>
     <details className="audit"><summary>Case history · {data.history.length} durable events · {data.attempts.length} attempts</summary>
       <p className="muted">Current synthetic service: {data.serviceVersion}. Simulation clock: {time(data.simulationClock)}.</p>
       {data.attempts.map(attempt => <details key={attempt.id}><summary>{attempt.id.slice(-8)} · {attempt.source} · {label(attempt.result?.terminalStatus ?? attempt.status)}</summary><pre>{JSON.stringify(attempt.result, null, 2)}</pre></details>)}
