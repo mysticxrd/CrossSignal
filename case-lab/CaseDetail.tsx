@@ -54,8 +54,9 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
         <p>{data.proposal.action.from} → {data.proposal.action.to}</p><p>One execution. $0 spend. No external writes. Eligibility checks support this test; they do not establish causality.</p>
         <PlanView plan={data.proposal.measurementPlan} /><p className="muted">Approval {expired ? "expired" : "expires"} {time(data.proposal.expiresAt)}.</p>
         {expired && <p role="status" className="notice">Refresh this proposal to review a new approval window. This reuses the saved investigation and costs no model attempts.</p>}
+        <button className={expired ? 'primary refresh-proposal' : 'refresh-proposal'} disabled={disabled || !open} onClick={() => onAction('refresh_proposal')}>Refresh proposal for review</button>
         <button className="primary approve" disabled={disabled || !open || expired} onClick={() => onAction('approve')}>Approve and run this simulation</button>
-        <button className="text-button" disabled={disabled || !open} onClick={() => onAction('refresh_proposal')}>Refresh proposal for review</button><details><summary>Exact approval binding</summary><code className="hash">{data.proposal.hash}</code><p>Bound to this finding, evidence snapshot, service version and measurement plan.</p></details></>
+        <details><summary>Exact approval binding</summary><code className="hash">{data.proposal.hash}</code><p>Bound to this finding, evidence snapshot, service version and measurement plan.</p></details></>
         : data.receipt ? <><span className="status eligible">Simulation executed once</span><p>{data.receipt.action.from} → {data.receipt.action.to}</p>
           <p>Receipt recorded {time(data.receipt.executedAt)}. This proves the action ran; follow-up observations determine what happened next.</p>
           <p className="muted">Approval: {label(data.grant?.provenance ?? 'unknown')} · {data.grant?.actorId}</p></>

@@ -10,3 +10,5 @@
 button.brand{border:0;background:transparent;color:inherit;padding:0;text-align:left}button.brand:hover:not(:disabled){background:transparent}
 
 .sidebar button.primary:hover:not(:disabled){background:#c5d7b9;color:#214330}
+
+.decision .refresh-proposal{width:100%;min-height:44px;margin-top:14px}
