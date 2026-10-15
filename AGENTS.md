@@ -40,9 +40,9 @@ Codex: `/name` means `.claude/skills/name/SKILL.md`.
 
 A slice is done when:
 - `npm test` and `npm run lint` pass;
-- the PR states my decision and the proof: test results always, before and
-  after screenshots for UI, and B01 against the baseline for prompt, tool or
-  schema changes;
+- the PR states my decision and the proof: test results always, and B01
+  against the baseline for prompt, tool or schema changes (UI screenshots,
+  before and after, come in the walkthrough, since `gh` can't attach images);
 - the reviewer has nothing open, or three rounds are used and every remaining
   finding has an answer;
 - for a product change, I've had the walkthrough and run the manual test;
