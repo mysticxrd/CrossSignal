@@ -7,6 +7,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const legacyReasons = new Map([
   ["tests/icm-workspace-legacy.test.mjs", "Retired Flight Recorder stage outputs and Result Spec fixture; snapshot assertions at tests/icm-workspace.test.mjs@62787d1:88-209."],
   ["tests/flight-recorder-ship.test.mjs", "Retired completed Flight Recorder release expects old Verify/Ship outputs and accepted Verify gate: assertions at lines 11-12, 33-53, 56-57 and 85-96."],
+  ["factory/_lib/budgets.test.mjs", "Real-root budget assertions at lines 21-30 hold the ship lane's AGENTS.md and CONTEXT.md to the frozen factory's 60-line and 2,500-word cold-load limits; retired when the ship lane took over both files (2026-10-15)."],
 ]);
 const excludedReasons = new Map([
   ["tests/rendered-html-build.test.mjs", "Packaging assertions need dist from the network-dependent Google-font build; unchanged block from tests/rendered-html.test.mjs@62787d1:183-210."],
