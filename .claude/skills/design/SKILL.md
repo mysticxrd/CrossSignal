@@ -1,6 +1,6 @@
 ---
 name: design
-description: Design a meaningful CrossSignal change before writing code, starting from the owner's own prediction. Use when the owner asks for new behaviour or a change to a prompt, tool, state, retries, idempotency or authority, or types /design.
+description: Brainstorm and design a meaningful CrossSignal change with the owner before writing code. Use when the owner asks for new behaviour or a change to a prompt, tool, state, retries, idempotency or authority, or types /design.
 argument-hint: <feature or slice>
 ---
 
@@ -12,22 +12,19 @@ The owner must be able to explain this design at whiteboard level without you.
 Your job is to correct and deepen their mental model, not to replace it. Make no
 edits until they reply "build". Plan mode suits this skill.
 
-## 1. Get the prediction first
+## 1. Read the code first
 
-Look for a prediction in the request or in the newest `docs/owner/*.md` note.
-If there is none, ask for one in a single short message and stop:
+Read the files on the path from trigger to stored result, and cite `file:line`.
+If a recent `docs/owner/` note covers this area, read it too: it shows how the
+owner pictures it now.
 
-- Problem: what hurts, for whom?
-- My mental model: how do you think it works?
-- Components: which parts are involved?
-- Data flow: what moves where, in what order?
-- Unknowns: what are you unsure about?
+## 2. Brainstorm
 
-Rough answers are fine. Never show your own design before you have theirs.
-
-## 2. Read only what the change touches
-
-Read the files on the path from trigger to stored result. Cite `file:line`.
+Ask the questions whose answers would change the design, one at a time,
+usually three to five. Start each with what the code does now. When an answer
+conflicts with the code or an earlier answer, say so with `file:line` and push
+back once. Stop when the open questions would no longer change the design. The
+conversation is the spec; the owner may talk as long as they like.
 
 ## 3. Give the design, short, in this order
 
@@ -43,13 +40,18 @@ Read the files on the path from trigger to stored result. Cite `file:line`.
    - 100, then 1,000, concurrent investigations: what breaks first.
 5. One rejected alternative and the trade-off that rejected it. Never answer
    "why" with "best practice".
-6. The slice: the smallest one reviewable in one sitting, under about 300
-   changed lines of product code (frozen data excluded), and the test that
+6. The slices, in order. Each is one PR, reviewable in one sitting, under about
+   300 changed lines of product code (frozen data excluded), with the test that
    proves it. Split anything bigger.
-7. Where the prediction was wrong or incomplete, quoting the owner's words.
-8. The owner's decision: the one real design choice (a stopping rule, retry
+7. The owner's decision: the one real design choice (a stopping rule, retry
    rule, failure state, eval case or grader), with two or three alternatives,
    their trade-offs, the one you will build unless overruled, and the tests
    that will check it. The owner picks or overrules; you write the code.
 
 End with: "Reply build when this makes sense." Then wait.
+
+## 4. After "build"
+
+With more than one slice, or work that won't finish in this session, write
+`work/tasks/<slug>/plan.md`: the design, then each slice with its inputs,
+outputs and test. Then build the first slice.

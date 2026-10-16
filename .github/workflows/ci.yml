@@ -1,5 +1,8 @@
 name: Offline factory checks
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
 permissions:
   contents: read
 jobs:
@@ -18,4 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm test
-      - run: node factory/status.mjs --strict
+      - run: node factory/status.mjs
+      - name: Keep the frozen factory unchanged
+        if: github.event_name == 'pull_request'
+        run: git diff --exit-code --stat origin/${{ github.base_ref }}...HEAD -- factory/

@@ -1,15 +1,16 @@
 ---
 name: walkthrough
-description: Teach the owner a built CrossSignal slice file by file before it is committed. Use after building a meaningful slice, before committing, or when the owner types /walkthrough.
+description: Teach the owner a CrossSignal pull request file by file before they merge it, ending with the manual test. Use after /pr on a product change, before merging, or when the owner types /walkthrough.
 argument-hint: "[base ref]"
 ---
 
 # Walk through the diff
 
-Base: $ARGUMENTS (default: the commit the slice started from, else `HEAD`).
+Base: $ARGUMENTS (default: `origin/main`).
 
-1. Run `git diff --stat <base>` and `git diff <base>`; include untracked files
-   from `git status --short`.
+1. Run `git fetch origin`, then `git diff --stat <base>...HEAD` and
+   `git diff <base>...HEAD`; include uncommitted and untracked files from
+   `git status --short`.
 2. Order the files the way a request travels: entry point first, then each
    call in turn, tests last. For each file give a `file:line` link, what it
    does in one sentence and why it changed.
@@ -27,6 +28,9 @@ Base: $ARGUMENTS (default: the commit the slice started from, else `HEAD`).
 5. Ask the owner to trace one request end to end in their own words. Check
    their answer against the code, correct it with `file:line` references, and
    ask a follow-up on the weakest part.
+6. End with the manual test: what to open or run, the input to use, and what
+   the owner should see when it works and when it fails. Show any UI
+   screenshots from the build here.
 
 The owner's explain-back goes in `docs/owner/` in their own words. Never write
 it for them, and don't paste a ready-made summary they could copy.

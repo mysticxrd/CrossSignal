@@ -1,36 +1,57 @@
-# CrossSignal task router
+# CrossSignal folder map
 
-One job: route work in the authoritative checkout
-`C:/Users/hisha/ChatGPT/CrossSignal/work/crosssignal-phase1`.
-The parent repository is historical. Preserve existing work; check Git status/HEAD
-and run `node factory/status.mjs` before continuing.
+Where things live, so a task starts from the right files. `AGENTS.md` says how
+to work. The frozen factory's task router, which this file replaced, is kept at
+tag `factory-freeze-2026-10-03`.
 
-## Routes
+## Product
 
-| Work | Read | Mode |
-|---|---|---|
-| Feature, schema, security, authority, external effect or public behavior | `factory/CONTEXT.md`, then the derived active stage | Governed ICM/MWP |
-| Factory tooling, incident or cross-cutting refactor | Affected code and nearest tests | Direct engineering; back-port recurring lessons |
-| Tiny single-file correction without schema, security, authority or public-contract effect | Target and nearest test | Express lane: edit, targeted test, stop |
-| Product or architecture question | `docs/api-benchmark-charter.md`, `docs/benchmark-planning-reconciliation.md`, `factory/_shared/BENCHMARK_DIRECTION.md` | Read-only |
-| Status | `node factory/status.mjs` | Derived, never stored |
-| Historical comparison | Exact explicitly requested historical paths | Read-only |
+| Path | Holds |
+|---|---|
+| `app/` | UI, server actions and the public replay page (`app/runs/[runId]/`) |
+| `db/` | Cases from investigation to outcome, the schema and database runtimes |
+| `db/a01/` | The A01 investigator, its tools and store |
+| `db/benchmark/` | Gemini request, transport, budget and schemas |
+| `db/replays/` | Committed replays, their timestamp proofs and `stamps.json` |
+| `worker/` | The Cloudflare Worker, including the read-only replay gate |
+| `supabase/`, `drizzle/` | Database functions, migrations, queries and scenarios |
+| `data/ga4-merch/` | The GA4 merch-store daily data |
+| `build/`, `public/` | The build plugin and static assets |
 
-## Loading rule
+## Running and proving
 
-For governed work, read only the active contract, its declared inputs and named
-shared references. Do not load later stages, `_archive/`, generated directories,
-dependencies or the whole source vault.
+| Path | Holds |
+|---|---|
+| `scripts/` | Entry points: A01, B01, replays, deploy and SQL generators |
+| `tests/` | `npm test` suites; `scripts/test-offline.mjs` lists the retired ones |
+| `tests/evaluator/` | Grader, rubrics and the batch comparison |
+| `reports/` | Committed benchmark and replay results |
+| `docs/` | Phase notes and decisions |
+| `docs/owner/` | The owner's own notes |
 
-Execution decisions and conditions: see D-01–D-05 in `factory/DECISIONS.md`.
-Historical direction, reconciliation and preservation evidence:
-`CONTEXT.md@62787d1:18-52`; `factory/TRANSITION.md@62787d1:1-48`.
+## Workflow
 
-## Ownership
+| Path | Holds |
+|---|---|
+| `.claude/skills/` | `/design`, `/pr`, `/walkthrough`, `/handoff`, `/grill`, `/drill` |
+| `.claude/hooks/` | The hook that keeps Claude's tools out of `docs/owner/` |
+| `.github/workflows/ci.yml` | Lint, tests and the factory freeze check |
 
-Accepted outputs, gates and hash-bound freshness inputs remain immutable.
-Propose source/binding corrections through review; never regenerate accepted
-artifacts to hide drift. Durable product code owns runtime persistence,
-concurrency, authorization and effects. Stage outputs are human-editable
-handoffs; stop for the person's gate. Stage acceptance never grants runtime
-intervention authority. See D-05 for the preserved intervention conditions.
+## Local only (gitignored)
+
+| Path | Holds |
+|---|---|
+| `work/tasks/<slug>/` | A long or hard task: `plan.md`, `handoff.md` (newest first), `notes.md` |
+| `work/drills/<slug>/` | `/drill` exercises |
+| `outputs/` | Local A01 and B01 runs |
+
+## History
+
+| Path | Holds |
+|---|---|
+| `factory/` | The frozen spec → data → build → verify → ship pipeline and its evidence |
+| `_archive/` | Superseded phases |
+| `examples/` | Starter-template examples, not product code |
+
+Load `_archive/`, the whole Obsidian vault or every factory stage only when the
+task asks for a historical comparison.

@@ -105,4 +105,5 @@ Then open `http://localhost:3000/runs/r_c72728d0a839`. Other commands:
 Until October 2026 this repository was built through a staged spec → data → build → verify → ship "factory", which
 shipped an onboarding-rescue approval demo and a local replay of the A01 investigation mechanics. The factory is
 frozen at tag `factory-freeze-2026-10-03`. Its evidence stays in `factory/` and `_archive/`, and
-[CONTEXT.md](CONTEXT.md) is the way in. [AGENTS.md](AGENTS.md) describes how agents work here now.
+[factory/CONTEXT.md](factory/CONTEXT.md) is the way in. [AGENTS.md](AGENTS.md) describes how agents work here now,
+and [CONTEXT.md](CONTEXT.md) maps the folders.
