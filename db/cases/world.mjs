@@ -1,7 +1,7 @@
 // Trusted simulator only. This module and its state are never in the model worker's file allowlist or packet.
 import { POLICY, addMinutes } from './measurement.mjs';
 import { requireThat as check } from '../benchmark/contracts.mjs';
-export const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous'];
+const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous'];
 const START = '2026-10-01T08:00:00.000Z';
 export const initialWindows = [0, 15, 60, 75].map((minute, i) => ({ start: addMinutes(START, minute),
   end: addMinutes(START, minute + 15), period: i < 2 ? 'baseline' : 'incident' }));

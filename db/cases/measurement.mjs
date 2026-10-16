@@ -8,7 +8,7 @@ export const addMinutes = (time, minutes) => new Date(Date.parse(time) + minutes
 export const rate = (successes, intents) => intents ? successes / intents * 100 : null;
 export const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
 
-export function uniqueEvents(events) {
+function uniqueEvents(events) {
   const rows = new Map();
   for (const event of events) {
     check(typeof event.id === 'string' && event.id.length > 0 && typeof event.intentId === 'string', 'invalid_event_identity');
