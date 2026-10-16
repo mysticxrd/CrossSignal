@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Open the pull request for a built CrossSignal slice, or work one round of reviewer findings on it. Use when a slice passes npm test and npm run lint, after CodeRabbit reviews the PR, or when the owner types /pr.
+description: Open the pull request for a built CrossSignal slice, or work one round of reviewer findings on it. Use when a slice passes npm test and npm run lint, after Codex reviews the PR, or when the owner types /pr.
 argument-hint: "[PR number]"
 ---
 
@@ -9,7 +9,9 @@ argument-hint: "[PR number]"
 PR: $ARGUMENTS (default: the open PR for this branch, from `gh pr view`).
 
 Each run does one step and stops. Never wait or poll for a review or for CI;
-the owner runs `/pr` again once CodeRabbit has reviewed.
+the owner runs `/pr` again once Codex has reviewed. Codex
+(`chatgpt-codex-connector`) reviews a PR when it opens and when someone
+comments `@codex review`, not on every push.
 
 ## No PR yet: open it
 
@@ -30,7 +32,17 @@ the owner runs `/pr` again once CodeRabbit has reviewed.
 
 ## PR open: one review round
 
-1. List the unresolved review threads:
+1. Check that Codex has finished with the head commit:
+
+   ```bash
+   gh pr view <PR> --json headRefOid,comments --jq '.headRefOid, (.comments[] | [.author.login, .body])'
+   ```
+
+   The first line is the head commit. Codex keeps one summary comment showing
+   its latest review, with status and commit. If that review isn't Completed
+   for the head commit, say so and stop. If there is no summary comment, Codex
+   isn't set up here: say so and offer `/code-review` as this round.
+2. List the unresolved review threads:
 
    ```bash
    gh api graphql -F owner='{owner}' -F repo='{repo}' -F number=<PR> -f query='
@@ -41,7 +53,7 @@ the owner runs `/pr` again once CodeRabbit has reviewed.
            nodes {
              id isResolved path line
              finding: comments(first: 1) { nodes { author { login } body url } }
-             latest: comments(last: 1) { nodes { author { login } } }
+             latest: comments(last: 1) { nodes { author { login } body url } }
            }
          }
        }
@@ -50,11 +62,13 @@ the owner runs `/pr` again once CodeRabbit has reviewed.
    ```
 
    A finding is open while its thread is unresolved and the reviewer wrote the
-   latest comment.
-2. Fix each open finding, or decide to answer it with a one-line reason.
+   latest comment. Work from that latest comment: when it isn't the first, the
+   reviewer has answered a reply.
+3. Fix each open finding, or decide to answer it with a one-line reason.
    Answer instead of fixing when a finding contradicts the owner's decision.
-3. Run `npm test` and `npm run lint`, commit and push.
-4. Reply on each thread. For a fixed finding, reply and resolve:
+4. If anything was fixed, run `npm test` and `npm run lint`, then commit and
+   push. A round that only answers has nothing to commit.
+5. Reply on each thread. For a fixed finding, reply and resolve:
 
    ```bash
    gh api graphql -f id=<thread id> -f body='Fixed in <sha>: <what changed>' -f query='
@@ -67,15 +81,19 @@ the owner runs `/pr` again once CodeRabbit has reviewed.
    For an answered finding, send the reply without `resolveReviewThread` and
    leave the thread open for the owner. Keep each reply to one line with no
    quotes or apostrophes, so it survives both Bash and PowerShell.
-5. List the review authors, one line per review, and count CodeRabbit's:
+6. List the review authors, one line per review, and count Codex's:
 
    ```bash
    gh pr view <PR> --json reviews --jq '.reviews[].author.login'
    ```
 
-   Stop when nothing is open or after three CodeRabbit reviews. Report what
-   was fixed, what was answered and what is still open. For a product change,
-   run `/walkthrough` next. The owner merges with "Squash and merge".
+   If this round pushed fixes and Codex has reviewed fewer than three times,
+   ask for the next round:
 
-If CodeRabbit hasn't reviewed yet, say so and stop. If it isn't installed on
-the repository, offer `/code-review` as this round.
+   ```bash
+   gh pr comment <PR> --body '@codex review'
+   ```
+
+   Stop when nothing is open or after three Codex reviews. Report what was
+   fixed, what was answered and what is still open. For a product change, run
+   `/walkthrough` next. The owner merges with "Squash and merge".

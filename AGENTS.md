@@ -23,8 +23,8 @@ Design and Teach.
 2. Design: run `/design`; wait for "build".
 3. Build: one slice, under about 300 changed lines plus its nearest test, as
    one focused commit; `npm test` and `npm run lint` pass.
-4. Review: run `/pr` to open the PR, then once per CodeRabbit review, for at
-   most three rounds.
+4. Review: run `/pr` to open the PR, then once per Codex review, for at most
+   three rounds.
 5. Teach: run `/walkthrough` on the PR; it ends with my manual test.
 6. Merge: I squash-merge. Remove the worktree; the next slice starts from the
    updated `origin/main`.
@@ -58,7 +58,7 @@ A slice is done when:
 | `/handoff` | Context past about half, or a session ending mid-task |
 | `/grill` | Weekly, on the week's biggest change; the gaps feed the post |
 | `/drill` | When I want to rebuild something by hand |
-| CodeRabbit | Reviews every PR on GitHub |
+| Codex review | Reviews each PR on GitHub when it opens and on `@codex review` |
 | B01 | Prompt, tool or schema changes; see Model calls |
 | A01 | One live investigation; see Model calls |
 
