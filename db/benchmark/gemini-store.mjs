@@ -14,37 +14,39 @@ export class GeminiStore {
       const fd = openSync(path, 'wx'); closeSync(fd); // Existing files can never be replaced.
     }
     this.db = new DatabaseSync(path);
-    this.db.exec('PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=1000;');
-    if (metadata) {
-      this.db.exec(`
-        CREATE TABLE benchmark_runs(workspace TEXT, case_id TEXT, run_id TEXT, metadata TEXT NOT NULL, hash TEXT NOT NULL,
-          PRIMARY KEY(workspace,case_id,run_id)) STRICT;
-        CREATE TABLE benchmark_evidence(workspace TEXT, case_id TEXT, run_id TEXT, evidence_id TEXT, payload TEXT NOT NULL,
-          PRIMARY KEY(workspace,case_id,run_id,evidence_id),
-          FOREIGN KEY(workspace,case_id,run_id) REFERENCES benchmark_runs(workspace,case_id,run_id)) STRICT;
-        CREATE TABLE benchmark_timeline(workspace TEXT,case_id TEXT,run_id TEXT,sequence INTEGER,kind TEXT NOT NULL,
-          payload TEXT NOT NULL,previous_hash TEXT NOT NULL,hash TEXT NOT NULL,
-          PRIMARY KEY(workspace,case_id,run_id,sequence),
-          FOREIGN KEY(workspace,case_id,run_id) REFERENCES benchmark_runs(workspace,case_id,run_id)) STRICT;
-        CREATE VIEW benchmark_transcripts AS SELECT * FROM benchmark_timeline WHERE kind IN ('request','response','tool_attempt','tool_result');
-        CREATE VIEW benchmark_findings AS SELECT * FROM benchmark_timeline WHERE kind='terminal';
-      `);
-      for (const table of ['benchmark_runs', 'benchmark_evidence', 'benchmark_timeline'])
-        for (const op of ['UPDATE', 'DELETE']) this.db.exec(`CREATE TRIGGER ${table}_${op} BEFORE ${op} ON ${table} BEGIN SELECT RAISE(ABORT,'append_only'); END;`);
-      const scope = metadata.scope;
-      this.db.exec('BEGIN IMMEDIATE');
-      try {
-        this.db.prepare('INSERT INTO benchmark_runs VALUES(?,?,?,?,?)').run(scope.workspaceId, scope.caseId, scope.runId, canonical(metadata), digest(metadata));
-        const insert = this.db.prepare('INSERT INTO benchmark_evidence VALUES(?,?,?,?,?)');
-        for (const event of observable.events) insert.run(scope.workspaceId, scope.caseId, scope.runId, event.id, canonical(event));
-        this.db.exec('COMMIT');
-      } catch (e) { this.db.exec('ROLLBACK'); this.db.close(); throw e; }
-    }
-    const rows = this.db.prepare('SELECT * FROM benchmark_runs').all();
-    requireThat(rows.length === 1 && digest(JSON.parse(rows[0].metadata)) === rows[0].hash, 'run_metadata_corrupt');
-    this.metadata = JSON.parse(rows[0].metadata);
-    this.format = formatOf(storedObservable(this.metadata, [])); this.format.validateScope(this.metadata.scope);
-    this.validate();
+    try {
+      this.db.exec('PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL; PRAGMA journal_mode=WAL; PRAGMA busy_timeout=1000;');
+      if (metadata) {
+        this.db.exec(`
+          CREATE TABLE benchmark_runs(workspace TEXT, case_id TEXT, run_id TEXT, metadata TEXT NOT NULL, hash TEXT NOT NULL,
+            PRIMARY KEY(workspace,case_id,run_id)) STRICT;
+          CREATE TABLE benchmark_evidence(workspace TEXT, case_id TEXT, run_id TEXT, evidence_id TEXT, payload TEXT NOT NULL,
+            PRIMARY KEY(workspace,case_id,run_id,evidence_id),
+            FOREIGN KEY(workspace,case_id,run_id) REFERENCES benchmark_runs(workspace,case_id,run_id)) STRICT;
+          CREATE TABLE benchmark_timeline(workspace TEXT,case_id TEXT,run_id TEXT,sequence INTEGER,kind TEXT NOT NULL,
+            payload TEXT NOT NULL,previous_hash TEXT NOT NULL,hash TEXT NOT NULL,
+            PRIMARY KEY(workspace,case_id,run_id,sequence),
+            FOREIGN KEY(workspace,case_id,run_id) REFERENCES benchmark_runs(workspace,case_id,run_id)) STRICT;
+          CREATE VIEW benchmark_transcripts AS SELECT * FROM benchmark_timeline WHERE kind IN ('request','response','tool_attempt','tool_result');
+          CREATE VIEW benchmark_findings AS SELECT * FROM benchmark_timeline WHERE kind='terminal';
+        `);
+        for (const table of ['benchmark_runs', 'benchmark_evidence', 'benchmark_timeline'])
+          for (const op of ['UPDATE', 'DELETE']) this.db.exec(`CREATE TRIGGER ${table}_${op} BEFORE ${op} ON ${table} BEGIN SELECT RAISE(ABORT,'append_only'); END;`);
+        const scope = metadata.scope;
+        this.db.exec('BEGIN IMMEDIATE');
+        try {
+          this.db.prepare('INSERT INTO benchmark_runs VALUES(?,?,?,?,?)').run(scope.workspaceId, scope.caseId, scope.runId, canonical(metadata), digest(metadata));
+          const insert = this.db.prepare('INSERT INTO benchmark_evidence VALUES(?,?,?,?,?)');
+          for (const event of observable.events) insert.run(scope.workspaceId, scope.caseId, scope.runId, event.id, canonical(event));
+          this.db.exec('COMMIT');
+        } catch (e) { this.db.exec('ROLLBACK'); throw e; }
+      }
+      const rows = this.db.prepare('SELECT * FROM benchmark_runs').all();
+      requireThat(rows.length === 1 && digest(JSON.parse(rows[0].metadata)) === rows[0].hash, 'run_metadata_corrupt');
+      this.metadata = JSON.parse(rows[0].metadata);
+      this.format = formatOf(storedObservable(this.metadata, [])); this.format.validateScope(this.metadata.scope);
+      this.validate();
+    } catch (error) { this.db.close(); throw error; }
   }
   validate() {
     const { scope } = this.metadata;
