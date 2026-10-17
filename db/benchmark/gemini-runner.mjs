@@ -15,7 +15,9 @@ export async function runGeminiInvestigation({ observable, scope, method, store,
   // The transport refuses any other profile's requests, so a mismatch stops here, before the run is used up.
   requireThat((transport.profile ?? 'minimal') === profile, 'transport_profile_mismatch');
   // A daily case's turns are checked against its own segments and services.
-  const { truthMode } = formatOf(observable), frame = observable.frame ?? null;
+  const { truthMode, toolSchemas } = formatOf(observable), frame = observable.frame ?? null;
+  // A format without tools, such as the SaaS Case packet, runs single-shot only.
+  requireThat(method === 'single-shot-model' || toolSchemas.length > 0, 'method_not_supported_by_format');
   store.claim(); // Atomic and durable: repeated execution of this run is prohibited.
   const started = performance.now(), deadline = started + GEMINI.investigationTimeoutMs;
   const ledger = createGeminiBudget({ method, profile }), queries = [];

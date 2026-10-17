@@ -3,7 +3,7 @@ import { digest, requireThat as check } from '../benchmark/contracts.mjs';
 // Synthetic demonstration parameters, frozen before any investigation. Not a real-world detector calibration.
 export const POLICY = Object.freeze({ version: 'saas-conversion-v1', windowMinutes: 15, completionMinutes: 10,
   arrivalMinutes: 5, minimumIntents: 80, dropPoints: 20, controlTolerancePoints: 5, recoveryTolerancePoints: 5,
-  cohorts: ['new-self-serve', 'new-assisted'], sources: ['intent', 'payment', 'subscription'] });
+  cohorts: Object.freeze(['new-self-serve', 'new-assisted']), sources: Object.freeze(['intent', 'payment', 'subscription']) });
 export const addMinutes = (time, minutes) => new Date(Date.parse(time) + minutes * 60000).toISOString();
 export const rate = (successes, intents) => intents ? successes / intents * 100 : null;
 export const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
@@ -42,11 +42,11 @@ export function measure({ events, coverage, asOf }, { start, end, cohort }) {
   let successes = 0;
   for (const intent of intents) {
     const deadline = addMinutes(intent.occurredAt, POLICY.completionMinutes);
-    const payments = all.filter(e => e.kind === 'payment' && e.intentId === intent.intentId && e.status === 'succeeded'
-      && e.occurredAt <= deadline).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt));
-    const first = payments[0];
-    if (first && all.some(e => e.kind === 'subscription' && e.intentId === intent.intentId && e.paymentId === first.paymentId
-      && e.occurredAt >= first.occurredAt && e.occurredAt <= deadline)) successes++;
+    // The earliest payment decides, so a successful retry after a failed first payment is not a conversion.
+    const first = all.filter(e => e.kind === 'payment' && e.intentId === intent.intentId)
+      .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id))[0];
+    if (first?.status === 'succeeded' && first.occurredAt <= deadline && all.some(e => e.kind === 'subscription'
+      && e.intentId === intent.intentId && e.paymentId === first.paymentId && e.occurredAt >= first.occurredAt && e.occurredAt <= deadline)) successes++;
   }
   const mature = asOf >= addMinutes(completionEnd, POLICY.arrivalMinutes);
   const sufficient = complete && mature && intents.length >= POLICY.minimumIntents;
@@ -82,22 +82,27 @@ export function snapshotOf(caseId, capture, windows, observations) {
 }
 
 export function measurementPlan(snapshot) {
-  return { version: POLICY.version, policyHash: digest(POLICY), affected: POLICY.cohorts[0], control: POLICY.cohorts[1],
+  const { hash, ...body } = snapshot, { signal } = body;
+  check(digest(body) === hash, 'snapshot_hash_mismatch');
+  check(body.version === POLICY.version && body.policyHash === digest(POLICY), 'measurement_policy_mismatch');
+  // Recovery is measured against a detected drop; without one there is no incident rate to recover from.
+  check(signal.detected, 'incident_not_detected');
+  return { version: POLICY.version, policyHash: digest(POLICY), snapshotHash: hash, affected: POLICY.cohorts[0], control: POLICY.cohorts[1],
     windows: 2, windowMinutes: POLICY.windowMinutes, completionMinutes: POLICY.completionMinutes, arrivalMinutes: POLICY.arrivalMinutes,
-    minimumIntentsPerWindow: POLICY.minimumIntents, baselinePercent: snapshot.signal.baseline.conversionPercent,
-    incidentPercent: snapshot.signal.incident.conversionPercent,
-    targetPercent: snapshot.signal.baseline.conversionPercent === null ? null : snapshot.signal.baseline.conversionPercent - POLICY.recoveryTolerancePoints,
-    controlBaselinePercent: snapshot.signal.controlBaseline.conversionPercent,
+    minimumIntentsPerWindow: POLICY.minimumIntents, baselinePercent: signal.baseline.conversionPercent,
+    incidentPercent: signal.incident.conversionPercent, targetPercent: signal.baseline.conversionPercent - POLICY.recoveryTolerancePoints,
+    controlBaselinePercent: signal.controlBaseline.conversionPercent,
     controlTolerancePoints: POLICY.controlTolerancePoints, anchor: 'actual_execution_or_explicit_no_action' };
 }
 
-export function assessOutcome(capture, plan, anchor, periodStart = anchor) {
-  check(plan.version === POLICY.version && plan.policyHash === digest(POLICY), 'measurement_policy_mismatch');
+// snapshot: the one the decision was made on. The plan is rebuilt from it, so a stored plan that has changed is refused.
+export function assessOutcome(capture, plan, snapshot, anchor, periodStart = anchor) {
+  check(digest(plan) === digest(measurementPlan(snapshot)), 'measurement_plan_mismatch');
   const windows = Array.from({ length: plan.windows }, (_, i) => ({ start: addMinutes(periodStart, i * plan.windowMinutes),
     end: addMinutes(periodStart, (i + 1) * plan.windowMinutes) }));
   const rows = windows.flatMap(window => POLICY.cohorts.map(cohort => measure(capture, { ...window, cohort })));
   const end = windows.at(-1).end;
-  const complete = rows.every(r => r.sufficient) && plan.targetPercent !== null;
+  const complete = rows.every(r => r.sufficient);
   const affected = rows.filter(r => r.cohort === plan.affected), controls = rows.filter(r => r.cohort === plan.control);
   const total = (records, key) => records.reduce((n, r) => n + r[key], 0);
   const observedPercent = complete ? rate(total(affected, 'successes'), total(affected, 'intents')) : null;

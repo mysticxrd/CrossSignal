@@ -13,6 +13,12 @@ test('conversion joins first payment to activation, counts intents once, and det
   const paid = capture.events.find(e => e.kind === 'payment' && e.status === 'succeeded');
   capture.events.push({ ...paid, id: 'retry', paymentId: 'retry-payment' });
   assert.equal(measure(capture, window).conversionPercent, 80);
+  // The earliest payment decides, so a successful retry after a failed first payment does not convert.
+  const failed = capture.events.find(e => e.kind === 'payment' && e.status === 'failed' && e.cohort === window.cohort);
+  const later = minutes => ({ occurredAt: addMinutes(failed.occurredAt, minutes), availableAt: addMinutes(failed.occurredAt, minutes + 1) });
+  const retried = { ...failed, id: 'payment:retried', paymentId: 'pay:retried', status: 'succeeded', ...later(1) };
+  capture.events.push(retried, { ...retried, id: 'subscription:retried', kind: 'subscription', status: 'activated', ...later(2) });
+  assert.equal(measure(capture, window).successes, 80);
   const activation = capture.events.find(e => e.kind === 'subscription'); activation.paymentId = 'wrong-payment';
   assert.equal(measure(capture, window).successes, 79);
   capture.events.push({ ...capture.events[0], eligible: false });
@@ -34,22 +40,38 @@ test('normal, missing coverage, maturity and availability remain distinct', () =
 test('fixed follow-up plan distinguishes recovery, partial improvement, failure and no-action recovery', () => {
   for (const [scenario, expected, direction] of [['incident', 'criterion_met', 'improved'], ['partial', 'criterion_not_met', 'improved'],
     ['ineffective', 'criterion_not_met', 'unchanged'], ['spontaneous', 'criterion_met', 'improved']]) {
-    let world = createWorld(scenario); const plan = measurementPlan(snapshot(world)), anchor = world.clock;
+    let world = createWorld(scenario); const decided = snapshot(world), plan = measurementPlan(decided), anchor = world.clock;
     if (scenario !== 'spontaneous') world = applyRollback(world, { service: 'billing', from: 'billing-v2', to: 'billing-v1' });
     world = advanceWorld(world, anchor, 1);
-    const outcome = assessOutcome(captureWorld(world), plan, anchor);
+    const outcome = assessOutcome(captureWorld(world), plan, decided, anchor);
     assert.equal(outcome.state, expected); assert.equal(outcome.direction, direction); assert.equal(outcome.causalClaim, false);
   }
 });
 
 test('delayed data reassesses the original interval; later regression is a separate interval', () => {
-  let world = createWorld('incident'); const plan = measurementPlan(snapshot(world)), anchor = world.clock;
+  let world = createWorld('incident'); const decided = snapshot(world), plan = measurementPlan(decided), anchor = world.clock;
   world.scenario = 'incomplete'; world = applyRollback(world, { service: 'billing', from: 'billing-v2', to: 'billing-v1' });
   world = advanceWorld(world, anchor, 1);
-  const first = assessOutcome(captureWorld(world), plan, anchor); assert.equal(first.state, 'inconclusive');
+  const first = assessOutcome(captureWorld(world), plan, decided, anchor); assert.equal(first.state, 'inconclusive');
   world = advanceWorld(world, anchor, 2);
-  const second = assessOutcome(captureWorld(world), plan, anchor); assert.equal(second.state, 'criterion_met');
+  const second = assessOutcome(captureWorld(world), plan, decided, anchor); assert.equal(second.state, 'criterion_met');
   assert.equal(first.end, second.end); assert.equal(first.planHash, second.planHash);
   world = advanceWorld(world, anchor, 3);
-  assert.equal(assessOutcome(captureWorld(world), plan, anchor, addMinutes(anchor, 30)).state, 'criterion_not_met');
+  assert.equal(assessOutcome(captureWorld(world), plan, decided, anchor, addMinutes(anchor, 30)).state, 'criterion_not_met');
+});
+
+test('the plan is fixed by the decision snapshot and needs a measured incident', () => {
+  assert.throws(() => POLICY.cohorts.push('new-enterprise'), TypeError);
+  // Missing incident coverage leaves no incident rate to recover from, so no plan is issued.
+  const unmeasured = createWorld('incident');
+  unmeasured.coverage = unmeasured.coverage.filter(c => c.source !== 'subscription' || c.from < initialWindows[2].start);
+  assert.equal(snapshot(unmeasured).signal.baseline.sufficient, true);
+  assert.throws(() => measurementPlan(snapshot(unmeasured)), /incident_not_detected/);
+  assert.throws(() => measurementPlan(snapshot(createWorld('normal'))), /incident_not_detected/);
+  const world = createWorld('ineffective'), decided = snapshot(world), plan = measurementPlan(decided), anchor = world.clock;
+  const capture = captureWorld(advanceWorld(applyRollback(world, { service: 'billing', from: 'billing-v2', to: 'billing-v1' }), anchor, 1));
+  assert.equal(assessOutcome(capture, plan, decided, anchor).state, 'criterion_not_met');
+  assert.throws(() => assessOutcome(capture, { ...plan, targetPercent: 0 }, decided, anchor), /measurement_plan_mismatch/);
+  const forged = { ...decided, signal: { ...decided.signal, incident: { ...decided.signal.incident, conversionPercent: 0 } } };
+  assert.throws(() => assessOutcome(capture, plan, forged, anchor), /snapshot_hash_mismatch/);
 });

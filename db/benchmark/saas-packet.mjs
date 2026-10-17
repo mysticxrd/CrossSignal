@@ -7,6 +7,22 @@ const keys = {
   health: ['id', 'kind', 'service', 'cohort', 'failures', 'detail', 'occurredAt', 'availableAt'],
   support: ['id', 'kind', 'cohort', 'detail', 'occurredAt', 'availableAt'],
 };
+const COHORTS = ['new-self-serve', 'new-assisted'];
+const iso = value => typeof value === 'string' && Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
+const count = value => Number.isSafeInteger(value) && value >= 0;
+const name = value => typeof value === 'string' && /^[a-z][a-z0-9-]{0,39}$/.test(value);
+const text = value => typeof value === 'string' && value.length > 0 && value.length <= 500;
+const observed = e => iso(e.occurredAt) && iso(e.availableAt) && e.occurredAt <= e.availableAt;
+// Every value is checked, because a sender can recompute the evidence hash over impossible numbers.
+const valid = {
+  conversion: e => ['baseline', 'incident'].includes(e.period) && COHORTS.includes(e.cohort) && iso(e.start) && iso(e.end) && e.start < e.end
+    && count(e.intents) && count(e.successes) && e.successes <= e.intents && [e.complete, e.mature, e.sufficient].every(v => typeof v === 'boolean')
+    && (!e.sufficient || (e.complete && e.mature)) && e.conversionPercent === (e.sufficient ? e.successes / e.intents * 100 : null)
+    && (e.sufficient ? e.limitation === null : text(e.limitation)),
+  deployment: e => name(e.service) && name(e.from) && name(e.to) && e.from !== e.to && observed(e),
+  health: e => name(e.service) && [...COHORTS, 'all'].includes(e.cohort) && count(e.failures) && text(e.detail) && observed(e),
+  support: e => [...COHORTS, 'all'].includes(e.cohort) && text(e.detail) && observed(e),
+};
 const hashEvents = events => digest([...events].sort((a, b) => a.id.localeCompare(b.id)));
 export function packetFromSnapshot(snapshot) {
   return { version: VERSION, truthMode: 'SIMULATED', caseRef: snapshot.caseId, asOf: snapshot.asOf,
@@ -16,7 +32,7 @@ export function packetFromSnapshot(snapshot) {
 export function validateScope(scope) {
   exact(scope, ['workspaceId', 'caseId', 'runId', 'actorId', 'start', 'clock'], 'saas scope');
   for (const key of ['workspaceId', 'caseId', 'runId', 'actorId']) check(/^[a-zA-Z0-9_-]{1,100}$/.test(scope[key]), 'invalid_scope_id');
-  check(scope.start < scope.clock && Number.isFinite(Date.parse(scope.clock)), 'invalid_scope_clock');
+  check(iso(scope.start) && iso(scope.clock) && scope.start < scope.clock, 'invalid_scope_clock');
 }
 export function validateObservable(input, scope) {
   validateScope(scope);
@@ -28,8 +44,9 @@ export function validateObservable(input, scope) {
   check(Array.isArray(input.events) && input.events.length <= 40 && new Set(input.events.map(e => e.id)).size === input.events.length, 'invalid_packet_size');
   for (const event of input.events) {
     check(Object.hasOwn(keys, event.kind), 'unknown_evidence_kind'); exact(event, keys[event.kind], 'evidence');
-    check(event.id.startsWith(`${scope.caseId}:`) && canonical(event).length < 2000, 'evidence_scope_mismatch');
-    check(event.kind === 'conversion' ? event.end <= scope.clock : event.availableAt <= scope.clock && event.occurredAt <= event.availableAt, 'future_evidence');
+    check(typeof event.id === 'string' && event.id.startsWith(`${scope.caseId}:`) && canonical(event).length < 2000, 'evidence_scope_mismatch');
+    check(valid[event.kind](event), 'invalid_evidence_value');
+    check((event.kind === 'conversion' ? event.end : event.availableAt) <= scope.clock, 'future_evidence');
   }
   check(hashEvents(input.events) === input.frame.evidenceHash, 'evidence_hash_mismatch');
   return input;
