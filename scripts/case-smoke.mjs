@@ -1,6 +1,6 @@
 // Explicit, bounded development verification. It never approves or executes an action.
-// Requires the local Case host; all records stay in its durable database.
-const origin = 'http://127.0.0.1:4317';
+// Requires the local Case host, on the launcher's port; all records stay in its durable database.
+const origin = `http://127.0.0.1:${Number(process.env.CROSSSIGNAL_CASE_PORT ?? 4317)}`;
 const read = async path => { const response = await fetch(`${origin}${path}`); if (!response.ok) throw new Error('local_host_unavailable'); return response.json(); };
 const session = await read('/api/session');
 if (!session.modelReady) throw new Error(session.unavailableReason);
