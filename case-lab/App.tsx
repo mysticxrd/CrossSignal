@@ -38,7 +38,7 @@ export default function App() {
     const follow = () => { setSelected(location.hash.slice(1)); setError(''); };
     addEventListener('hashchange', follow); return () => removeEventListener('hashchange', follow);
   }, []);
-  const select = (id: string) => { setSelected(id); setDetail(null); location.hash = id; setError(''); };
+  const select = (id: string) => { setSelected(id); location.hash = id; setError(''); };
   async function post(path: string, body: unknown) {
     if (!session) return null;
     const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Case-Token': session.token }, body: JSON.stringify(body) });
