@@ -25,13 +25,19 @@ export default function App() {
       } catch (failure) {
         if (!active) return;
         const message = failure instanceof Error ? failure.message : 'Connection interrupted';
-        if (message === 'case_not_found') { setSelected(''); location.hash = ''; }
+        // Replace the missing Case's history entry, so Back can't return to it (and no hashchange clears the banner).
+        if (message === 'case_not_found') { setSelected(''); history.replaceState(null, '', location.pathname + location.search); }
         setError(message);
       }
     };
     void refresh(); const timer = setInterval(refresh, 2500);
     return () => { active = false; clearInterval(timer); };
   }, [selected]);
+  useEffect(() => {
+    // Back, Forward and an edited address change the hash without a click, so the selection follows the hash.
+    const follow = () => { setSelected(location.hash.slice(1)); setError(''); };
+    addEventListener('hashchange', follow); return () => removeEventListener('hashchange', follow);
+  }, []);
   const select = (id: string) => { setSelected(id); setDetail(null); location.hash = id; setError(''); };
   async function post(path: string, body: unknown) {
     if (!session) return null;
@@ -60,6 +66,8 @@ export default function App() {
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not create Case'); }
     finally { setBusy(false); }
   }
+  // Until the Case the hash names has loaded, the previous one is neither shown nor open to actions.
+  const shown = detail?.id === selected ? detail : null;
   return <div className="shell">
     <aside className="sidebar">
       <button onClick={() => select('')} className="brand"><span className="brand-mark">×</span> CrossSignal<span className="brand-dot">●</span></button>
@@ -75,7 +83,7 @@ export default function App() {
     </aside>
     <main className="workspace"><header className="topbar"><span>WORKSPACE / INVESTIGATIONS</span><span className="badge">SIMULATED</span></header>
       {error && <div className="error" role="alert"><strong>Request needs attention</strong><p>{label(error)}</p><button onClick={() => setError('')}>Dismiss</button></div>}
-      {detail && session ? <CaseDetail data={detail} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
+      {shown && session ? <CaseDetail data={shown} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
         <span className="eyebrow">FROM SIGNAL TO OUTCOME</span><h1>A decision you can<br />trace back to evidence.</h1>
         <p>Open a Case to investigate a SaaS paid-conversion incident. Review competing explanations, decide whether to run a simulation, then observe what happened.</p>
         <div className="empty-steps"><span>01 / Investigate</span><span>02 / Decide</span><span>03 / Observe</span></div>
