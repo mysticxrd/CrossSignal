@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CaseDetail } from './CaseDetail';
 import { type CaseSummary, type CaseView, type Session, label } from './types';
 async function read<T>(path: string): Promise<T> {
@@ -12,6 +12,7 @@ export default function App() {
   const [session, setSession] = useState<Session | null>(null), [cases, setCases] = useState<CaseSummary[]>([]);
   const [selected, setSelected] = useState(() => location.hash.slice(1)), [detail, setDetail] = useState<CaseView | null>(null);
   const [scenario, setScenario] = useState('incident'), [busy, setBusy] = useState(false), [error, setError] = useState('');
+  const pending = useRef<{ scenario: string; key: string } | null>(null);
   useEffect(() => {
     let active = true;
     const refresh = async () => {
@@ -51,8 +52,11 @@ export default function App() {
   }
   async function create() {
     setBusy(true); setError('');
-    try { const result = await post('/api/cases', { key: crypto.randomUUID(), scenario });
-      if (result) { select(result.id); setCases(await read('/api/cases')); } }
+    // Reuse the key until a response arrives: if the Case was created but its response was lost, the retry returns that Case.
+    if (pending.current?.scenario !== scenario) pending.current = { scenario, key: crypto.randomUUID() };
+    const { key } = pending.current;
+    try { const result = await post('/api/cases', { key, scenario });
+      if (result) { pending.current = null; select(result.id); setCases(await read('/api/cases')); } }
     catch (failure) { setError(failure instanceof Error ? failure.message : 'Could not create Case'); }
     finally { setBusy(false); }
   }
