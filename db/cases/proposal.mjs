@@ -3,7 +3,7 @@ import { validateFinding } from '../benchmark/schemas.mjs';
 import { measurementPlan, POLICY } from './measurement.mjs';
 import { worldContext } from './world.mjs';
 export const OWNER = 'local_owner';
-export const policyHash = digest({ version: 'case-approval-v1', measurement: POLICY, service: 'billing', transition: ['billing-v2', 'billing-v1'] });
+const policyHash = digest({ version: 'case-approval-v1', measurement: POLICY, service: 'billing', transition: ['billing-v2', 'billing-v1'] });
 export function eligibility(snapshot, finding, world) {
   const reasons = [], need = (condition, reason) => { if (!condition) reasons.push(reason); };
   try { validateFinding(finding); } catch { return { eligible: false, reasons: ['Finding is malformed'], reviewedEvidence: [] }; }
