@@ -1,12 +1,12 @@
 export type Evidence = { id: string; kind: string; period?: string; start?: string; end?: string; cohort?: string;
   intents?: number; successes?: number; conversionPercent?: number | null; sufficient?: boolean; limitation?: string | null;
   service?: string; from?: string; to?: string; failures?: number; detail?: string; occurredAt?: string; availableAt?: string };
-export type Metric = { intents: number; successes: number; conversionPercent: number | null; sufficient: boolean };
-export type Finding = { signalSummary: string; affectedSegment: string | null; relatedChangeId: string | null;
+type Metric = { intents: number; successes: number; conversionPercent: number | null; sufficient: boolean };
+type Finding = { signalSummary: string; affectedSegment: string | null; relatedChangeId: string | null;
   hypotheses: { rank: number; diagnosis: string; summary: string; supportIds: string[]; contradictionIds: string[] }[];
   recommendation: { kind: string; target: string | null; summary: string }; unresolvedAlternatives: string[];
   claims: { text: string; evidenceIds: string[] }[] };
-export type Outcome = { id: string; state: string; observedPercent: number | null; changePoints: number | null; direction: string;
+type Outcome = { id: string; state: string; observedPercent: number | null; changePoints: number | null; direction: string;
   start: string; end: string; asOf: string; step: number; decision: string; receiptId: string | null; caveat: string; rows: Evidence[] };
 export type Plan = { targetPercent: number | null; minimumIntentsPerWindow: number; windowMinutes: number; windows: number;
   completionMinutes: number; arrivalMinutes: number; controlTolerancePoints: number };
