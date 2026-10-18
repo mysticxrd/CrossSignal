@@ -1,20 +1,11 @@
-import { openSync, writeFileSync, readFileSync, closeSync, unlinkSync } from 'node:fs';
-import { requireThat as check } from '../benchmark/contracts.mjs';
-// A second local host must not recover the first host's in-flight model request.
+import { DatabaseSync } from 'node:sqlite';
+// A second local host must not recover the first host's in-flight model request. An open exclusive SQLite
+// transaction is an operating-system file lock: another host is refused, and a host that dies releases it,
+// so there is no stale lock to remove and no takeover to race.
 export function lockHost(path) {
-  let fd;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    try { fd = openSync(path, 'wx'); break; }
-    catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      const pid = Number(readFileSync(path, 'utf8'));
-      check(Number.isSafeInteger(pid) && pid > 0, 'host_lock_invalid');
-      try { process.kill(pid, 0); throw new Error('case_host_already_running'); }
-      catch (probe) { if (probe.code !== 'ESRCH') throw probe; }
-      unlinkSync(path);
-    }
-  }
-  check(fd !== undefined, 'host_lock_failed'); writeFileSync(fd, String(process.pid)); closeSync(fd);
+  const db = new DatabaseSync(path);
+  try { db.exec('BEGIN EXCLUSIVE'); }
+  catch (error) { db.close(); throw error.errcode === 5 ? new Error('case_host_already_running') : error; } // 5 is SQLITE_BUSY
   let released = false;
-  return () => { if (!released) { released = true; unlinkSync(path); } };
+  return () => { if (!released) { released = true; db.close(); } };
 }

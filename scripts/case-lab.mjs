@@ -8,7 +8,7 @@ import { caseServer } from '../db/cases/http.mjs';
 import { lockHost } from '../db/cases/host-lock.mjs';
 const root = fileURLToPath(new URL('..', import.meta.url)), directory = resolve(root, 'outputs/case-lab');
 mkdirSync(directory, { recursive: true });
-const unlock = lockHost(resolve(directory, 'host.lock'));
+const unlock = lockHost(resolve(directory, 'host-lock.sqlite'));
 if (!process.env.GEMINI_API_KEY && existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
 const store = new CaseStore(resolve(directory, 'cases.sqlite'));
 const cases = new Cases(store, { recordings: resolve(directory, 'recordings') });

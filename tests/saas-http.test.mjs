@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { once } from 'node:events';
 import { request } from 'node:http';
+import { spawn } from 'node:child_process';
 import { CaseStore } from '../db/cases/store.mjs';
 import { Cases } from '../db/cases/service.mjs';
 import { ModelJobs } from '../db/cases/model-jobs.mjs';
@@ -57,9 +58,15 @@ test('local API rejects foreign origins, missing tokens, forged identity and unb
   assert.equal(deferStatus, 200); assert.match(JSON.stringify(store.view(deferred).history), /Wait for café data/);
 });
 
-test('exclusive local host ownership prevents recovery of a live process', t => {
-  const directory = mkdtempSync(join(tmpdir(), 'case-lock-')), path = join(directory, 'host.lock');
+test('exclusive local host ownership prevents recovery of a live process', { timeout: 15000 }, async t => {
+  const directory = mkdtempSync(join(tmpdir(), 'case-lock-')), path = join(directory, 'host-lock.sqlite');
   t.after(() => rmSync(directory, { recursive: true, force: true }));
   const release = lockHost(path); assert.throws(() => lockHost(path), /already_running/); release();
+  // Another process holds the lock until it dies, and being killed without cleanup leaves nothing stale behind.
+  const child = spawn(process.execPath, ['--no-warnings', '--input-type=module', '-e',
+    `import { lockHost } from ${JSON.stringify(import.meta.resolve('../db/cases/host-lock.mjs'))}; lockHost(${JSON.stringify(path)}); console.log('locked'); setInterval(() => {}, 1000);`]);
+  t.after(() => child.kill());
+  await once(child.stdout, 'data'); assert.throws(() => lockHost(path), /already_running/);
+  child.kill(); await once(child, 'exit');
   const again = lockHost(path); again();
 });
