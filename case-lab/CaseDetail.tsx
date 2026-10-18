@@ -53,7 +53,9 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
           : <><p>{data.finding?.recommendation.summary ?? 'Review the investigation before choosing an intervention.'}</p>
             {data.gate && !data.gate.eligible && <div className="gate-reasons"><h3>No executable proposal</h3><ul>{data.gate.reasons.map(item => <li key={item}>{item}</li>)}</ul></div>}
             <span className="pill">{label(data.decision)}</span>{data.finding && !data.anchor && open && <button disabled={disabled} onClick={() => onAction('refresh_proposal')}>Recheck proposal eligibility</button>}</>}
-      {!data.anchor && open && data.decision !== 'approved' && <div className="decision-alternatives"><button disabled={disabled} onClick={() => onAction('observe_without_action')}>Observe without acting</button>
+      {!data.anchor && open && data.decision !== 'approved' && <div className="decision-alternatives">{signal.detected
+        ? <button disabled={disabled} onClick={() => onAction('observe_without_action')}>Observe without acting</button>
+        : <p className="muted">There is no detected drop to measure recovery against, so there is nothing to observe without acting. Defer, or close unresolved with a reason.</p>}
         <button disabled={disabled || !reason.trim()} onClick={() => onAction('defer', reason)}>Defer with reason</button></div>}
     </section></div>
     <section className="panel"><div className="section-top"><div><p className="eyebrow">SOURCE RECORDS</p><h2>Evidence you can inspect</h2></div><span className="muted">Available by {time(data.snapshot.asOf)}</span></div>
