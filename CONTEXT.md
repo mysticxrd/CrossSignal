@@ -12,6 +12,7 @@ tag `factory-freeze-2026-10-03`.
 | `db/` | Cases from investigation to outcome, the schema and database runtimes |
 | `db/a01/` | The A01 investigator, its tools and store |
 | `db/benchmark/` | Gemini request, transport, budget and schemas |
+| `db/cases/` | The SaaS Case lab: simulated world, conversion measurement, Case store, approval, execution and outcome |
 | `db/replays/` | Committed replays, their timestamp proofs and `stamps.json` |
 | `worker/` | The Cloudflare Worker, including the read-only replay gate |
 | `supabase/`, `drizzle/` | Database functions, migrations, queries and scenarios |
