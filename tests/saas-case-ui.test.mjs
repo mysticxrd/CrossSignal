@@ -29,3 +29,21 @@ test('observe without acting is offered exactly when the service accepts it', t 
     assert.match(html, />Defer with reason<\/button>/, scenario);
   }
 });
+
+test('the journey marks a stage reached only when its own record exists', t => {
+  const store = new CaseStore(':memory:'); t.after(() => store.close());
+  const cases = new Cases(store, { recordings: '.', source: 'fixture_surrogate' });
+  const reached = id => [...render(store.view(id)).matchAll(/<li class="reached"><span>\d+<\/span>(\w+)<\/li>/g)].map(match => match[1]);
+  const closed = cases.create('ui-journey-closed', 'incident');
+  assert.deepEqual(reached(closed), ['Signal']);
+  cases.command(closed, store.view(closed).revision, 'close_unresolved', 'Closed before any investigation');
+  assert.deepEqual(reached(closed), ['Signal', 'Closure']);
+  const observed = cases.create('ui-journey-observed', 'incident');
+  cases.command(observed, store.view(observed).revision, 'observe_without_action');
+  assert.deepEqual(reached(observed), ['Signal', 'Decision', 'Simulation']);
+  cases.command(observed, store.view(observed).revision, 'observe');
+  assert.deepEqual(reached(observed), ['Signal', 'Decision', 'Simulation', 'Outcome']);
+  const investigated = cases.create('ui-journey-investigated', 'incident');
+  cases.requestInvestigation(investigated, store.view(investigated).revision);
+  assert.deepEqual(reached(investigated), ['Signal', 'Investigation']);
+});

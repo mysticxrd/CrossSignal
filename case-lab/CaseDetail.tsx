@@ -10,14 +10,15 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
   const [reason, setReason] = useState('');
   const signal = data.snapshot.signal, inFlight = ['queued', 'running'].includes(data.investigation), open = data.status === 'open';
   const disabled = busy || data.paused || inFlight, remaining = session.attemptCap - session.attemptsUsed;
-  const latest = data.attempts.at(-1), progress = data.status === 'closed' ? 5 : data.outcome ? 4 : data.receipt || data.anchor ? 3 : data.finding ? 2 : inFlight ? 1 : 0;
+  // Each stage is reached by its own record, never implied by a later one. Deferring or observing without acting records a decision without a finding.
+  const latest = data.attempts.at(-1), reached = [true, data.investigation !== 'idle', !!data.finding || data.decision !== 'review', !!(data.receipt || data.anchor), !!data.outcome, !open];
   return <div className="case-content">
     <div className="case-heading"><div><p className="eyebrow">CASE / {data.id.slice(-8).toUpperCase()}</p><h1>New-subscription<br className="mobile-break" /> paid conversion</h1>
       <p className="subtitle">Investigate the drop. Make a bounded decision. Check the outcome.</p></div>
       <div className="heading-status"><span className={`status ${open ? 'open' : 'closed'}`}>{open ? 'Open Case' : 'Closed Case'}</span>
         <button className="text-button" disabled={busy} onClick={() => onAction(data.paused ? 'resume' : 'pause')}>{data.paused ? 'Resume actions' : 'Pause actions'}</button></div></div>
     {data.paused && <p role="status" className="notice">Actions are paused. A model request already sent may still finish; it cannot execute an action.</p>}
-    <ol className="journey">{['Signal', 'Investigation', 'Decision', 'Simulation', 'Outcome', 'Closure'].map((name, i) => <li className={i <= progress ? 'reached' : ''} key={name}>
+    <ol className="journey">{['Signal', 'Investigation', 'Decision', 'Simulation', 'Outcome', 'Closure'].map((name, i) => <li className={reached[i] ? 'reached' : ''} key={name}>
       <span>{String(i + 1).padStart(2, '0')}</span>{name}</li>)}</ol>
     <section className="signal-card" aria-labelledby="signal-title"><div className="section-top"><h2 id="signal-title">{signal.detected ? 'A conversion drop needs a decision' : signal.sufficient ? 'No conversion incident detected' : 'The signal is not yet reliable'}</h2>
       <span className="pill">{signal.detected ? 'Needs investigation' : signal.sufficient ? 'Stable' : 'Incomplete data'}</span></div>
