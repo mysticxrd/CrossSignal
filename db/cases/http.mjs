@@ -29,7 +29,8 @@ export function caseServer({ cases, jobs, staticDirectory, modelReady = () => {}
           return send(404, { error: 'not_found' });
         }
         check(request.method === 'POST' && equal(request.headers['x-case-token']) && request.headers['content-type'] === 'application/json', 'mutation_denied');
-        let text = ''; for await (const chunk of request) { text += chunk; check(Buffer.byteLength(text) <= 8192, 'body_too_large'); }
+        // A streaming decoder keeps a multibyte character intact when the body splits it across chunks.
+        request.setEncoding('utf8'); let text = ''; for await (const chunk of request) { text += chunk; check(Buffer.byteLength(text) <= 8192, 'body_too_large'); }
         const body = JSON.parse(text);
         if (url.pathname === '/api/cases') { exact(body, ['key', 'scenario'], 'create'); return send(201, { id: cases.create(body.key, body.scenario) }); }
         check(segments.length === 4 && segments[1] === 'cases', 'unknown_endpoint');

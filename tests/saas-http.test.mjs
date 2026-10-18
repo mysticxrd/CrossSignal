@@ -46,6 +46,15 @@ test('local API rejects foreign origins, missing tokens, forged identity and unb
   assert(!JSON.stringify(accepted).includes('scenario'));
   const failures = logged.length, favicon = await fetch(`${base}/favicon.ico`);
   assert.equal(favicon.status, 404); assert.deepEqual(await favicon.json(), { error: 'asset_not_found' }); assert.equal(logged.length, failures);
+
+  // The two bytes of é arrive in separate body chunks.
+  const { id: deferred } = await (await post('/api/cases', { key: 'utf8-http-case', scenario: 'normal' })).json();
+  const bytes = Buffer.from(JSON.stringify({ revision: store.get(deferred).revision, command: 'defer', reason: 'Wait for café data' })), cut = bytes.indexOf(0xa9);
+  const deferStatus = await new Promise((accept, reject) => {
+    const req = request(`${base}/api/cases/${deferred}/command`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Case-Token': session.token } }, res => { res.resume(); accept(res.statusCode); });
+    req.on('error', reject); req.write(bytes.subarray(0, cut)); setTimeout(() => req.end(bytes.subarray(cut)), 50);
+  });
+  assert.equal(deferStatus, 200); assert.match(JSON.stringify(store.view(deferred).history), /Wait for café data/);
 });
 
 test('exclusive local host ownership prevents recovery of a live process', t => {
