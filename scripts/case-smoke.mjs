@@ -3,7 +3,6 @@
 const origin = `http://127.0.0.1:${Number(process.env.CROSSSIGNAL_CASE_PORT ?? 4317)}`;
 const read = async path => { const response = await fetch(`${origin}${path}`); if (!response.ok) throw new Error('local_host_unavailable'); return response.json(); };
 const session = await read('/api/session');
-if (!session.modelReady) throw new Error(session.unavailableReason);
 const post = async (path, body) => {
   const response = await fetch(`${origin}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Case-Token': session.token }, body: JSON.stringify(body) });
   const value = await response.json(); if (!response.ok) throw new Error(value.error); return value;
@@ -13,6 +12,8 @@ for (const scenario of ['incident', 'limited']) {
   const { id } = await post('/api/cases', { key: `development-smoke-v1-${scenario}`, scenario });
   let state = await read(`/api/cases/${id}`);
   if (state.attempts.length === 0) {
+    // Only a new request needs the model; a rerun reads its saved attempts back without a key.
+    if (!session.modelReady) throw new Error(session.unavailableReason);
     state = await post(`/api/cases/${id}/investigate`, { revision: state.revision });
     console.log(`${scenario}: requested ${id} (single-shot Gemini, low profile, free tier)`);
   }
