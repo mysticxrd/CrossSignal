@@ -150,6 +150,7 @@ test('continuing after observations creates a new snapshot and keeps the old fin
   assert.notEqual(next.snapshot.hash, oldHash); assert.equal(next.snapshot.signal.incident.conversionPercent, 80);
   assert.equal(next.finding, null); assert.equal(s.store.attempts(s.id)[0].result.finding.signalSummary, ready.finding.signalSummary);
   assert(s.store.getSnapshot(oldHash));
+  command(s, 'observe'); assert.equal(s.store.get(s.id).outcome.planHash, ready.proposal.measurementPlanHash);
 });
 
 

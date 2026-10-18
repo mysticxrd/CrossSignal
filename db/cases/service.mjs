@@ -125,9 +125,10 @@ export class Cases {
       } else if (command === 'observe') {
         check(state.anchor && state.plan && state.world.observationStep < 3, 'observation_not_available');
         const step = state.world.observationStep + 1; state.world = advanceWorld(state.world, state.anchor, step);
-        const outcome = { id: newId('outcome'), ...assessOutcome(captureWorld(state.world), state.plan, state.anchor,
-          step === 3 ? addMinutes(state.anchor, 30) : state.anchor), at: this.now(), step, decision: state.decision,
-          receiptId: state.receipt?.id ?? null, sourceHash: digest(captureWorld(state.world)) };
+        // Grade against the snapshot the plan was made from: continuing a Case replaces state.snapshot with a newer one.
+        const outcome = { id: newId('outcome'), ...assessOutcome(captureWorld(state.world), state.plan,
+          this.store.getSnapshot(state.plan.snapshotHash), state.anchor, step === 3 ? addMinutes(state.anchor, 30) : state.anchor),
+          at: this.now(), step, decision: state.decision, receiptId: state.receipt?.id ?? null, sourceHash: digest(captureWorld(state.world)) };
         this.store.db.prepare('INSERT INTO outcomes VALUES(?,?,?)').run(outcome.id, id, canonical(outcome));
         const previous = state.outcome; state.outcome = outcome;
         if (previous?.state === 'criterion_met' && outcome.state !== 'criterion_met') {
