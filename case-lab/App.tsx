@@ -16,10 +16,17 @@ export default function App() {
     let active = true;
     const refresh = async () => {
       try {
-        const [nextSession, nextCases, nextDetail] = await Promise.all([read<Session>('/api/session'), read<CaseSummary[]>('/api/cases'),
-          selected ? read<CaseView>(`/api/cases/${selected}`) : Promise.resolve(null)]);
-        if (active) { setSession(nextSession); setCases(nextCases); setDetail(current => current && nextDetail && current.id === nextDetail.id && current.revision > nextDetail.revision ? current : nextDetail); }
-      } catch (failure) { if (active) setError(failure instanceof Error ? failure.message : 'Connection interrupted'); }
+        // The session and list load first, so a saved Case that no longer exists cannot hide them.
+        const [nextSession, nextCases] = await Promise.all([read<Session>('/api/session'), read<CaseSummary[]>('/api/cases')]);
+        if (active) { setSession(nextSession); setCases(nextCases); }
+        const nextDetail = selected ? await read<CaseView>(`/api/cases/${selected}`) : null;
+        if (active) setDetail(current => current && nextDetail && current.id === nextDetail.id && current.revision > nextDetail.revision ? current : nextDetail);
+      } catch (failure) {
+        if (!active) return;
+        const message = failure instanceof Error ? failure.message : 'Connection interrupted';
+        if (message === 'case_not_found') { setSelected(''); location.hash = ''; }
+        setError(message);
+      }
     };
     void refresh(); const timer = setInterval(refresh, 2500);
     return () => { active = false; clearInterval(timer); };
