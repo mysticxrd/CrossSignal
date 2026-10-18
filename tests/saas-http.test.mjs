@@ -16,7 +16,7 @@ test('local API rejects foreign origins, missing tokens, forged identity and unb
   const directory = mkdtempSync(join(tmpdir(), 'case-http-')), store = new CaseStore(join(directory, 'cases.sqlite'));
   const cases = new Cases(store, { recordings: directory, source: 'fixture_surrogate' });
   const jobs = new ModelJobs(cases, { transportFactory: () => { throw new Error('not_needed'); } });
-  const server = caseServer({ cases, jobs, staticDirectory: resolve('dist/case-lab'), errorLog: () => {} });
+  const logged = [], server = caseServer({ cases, jobs, staticDirectory: resolve('dist/case-lab'), errorLog: line => logged.push(line) });
   server.listen(0, '127.0.0.1'); await once(server, 'listening');
   t.after(async () => { server.close(); await once(server, 'close'); store.close(); rmSync(directory, { recursive: true, force: true }); });
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -44,6 +44,8 @@ test('local API rejects foreign origins, missing tokens, forged identity and unb
   });
   assert.equal(hostStatus, 409);
   assert(!JSON.stringify(accepted).includes('scenario'));
+  const failures = logged.length, favicon = await fetch(`${base}/favicon.ico`);
+  assert.equal(favicon.status, 404); assert.deepEqual(await favicon.json(), { error: 'asset_not_found' }); assert.equal(logged.length, failures);
 });
 
 test('exclusive local host ownership prevents recovery of a live process', t => {

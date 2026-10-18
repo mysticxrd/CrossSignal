@@ -54,7 +54,8 @@ export function caseServer({ cases, jobs, staticDirectory, modelReady = () => {}
       const bytes = await readFile(file); response.writeHead(200, { 'Content-Type': types[extname(file)], 'Cache-Control': 'no-store' });
       response.end(request.method === 'HEAD' ? undefined : bytes);
     } catch (error) {
-      const message = /^[a-z][a-z0-9_]{0,100}$/.test(error.message) ? error.message : 'request_failed';
+      // A missing static file (the browser's automatic /favicon.ico) is a plain 404, not a host failure worth logging.
+      const message = error.code === 'ENOENT' ? 'asset_not_found' : /^[a-z][a-z0-9_]{0,100}$/.test(error.message) ? error.message : 'request_failed';
       if (message === 'request_failed') errorLog('Case request failed');
       if (!response.headersSent) send(error.message === 'case_not_found' || error.code === 'ENOENT' ? 404 : 409, { error: message });
       else response.destroy();
