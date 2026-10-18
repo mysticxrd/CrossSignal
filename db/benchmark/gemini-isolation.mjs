@@ -8,7 +8,7 @@ export const geminiReadAllowlist = Object.freeze([
   'db/benchmark/gemini-worker.mjs', 'db/benchmark/gemini-context.mjs', 'db/benchmark/gemini-inspect.mjs',
   'db/benchmark/gemini.mjs', 'db/benchmark/gemini-config.mjs', 'db/benchmark/contracts.mjs',
   'db/benchmark/tools.mjs', 'db/benchmark/exposure.mjs', 'db/benchmark/schemas.mjs', 'db/benchmark/task.md',
-  'db/benchmark/formats.mjs', 'db/benchmark/daily.mjs', 'db/benchmark/task-daily.md',
+  'db/benchmark/formats.mjs', 'db/benchmark/daily.mjs', 'db/benchmark/task-daily.md', 'db/benchmark/saas-packet.mjs',
 ].map(p => resolve(root, p)));
 
 export function isolatedGemini(command, { deadline = performance.now() + 15000 } = {}) {

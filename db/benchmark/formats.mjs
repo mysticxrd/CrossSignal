@@ -1,10 +1,11 @@
-// The two case formats behind one interface. incident-data-v2 is the SIMULATED one-hour format of B01-B15, frozen with
+// Historical benchmark formats plus the local SaaS Case packet behind one interface. incident-data-v2 is the SIMULATED one-hour format of B01-B15, frozen with
 // the factory (contracts.mjs, tools.mjs, exposure.mjs, schemas.mjs, task.md). incident-data-v3 is the daily format from
 // B16 on (daily.mjs, task-daily.md). The model worker, the run store and the batch runner take everything that depends
 // on the format from formatOf, so a v2 case still produces exactly the requests it always did.
 import { readFileSync } from 'node:fs';
 import * as v2 from './contracts.mjs';
 import * as v3 from './daily.mjs';
+import * as saas from './saas-packet.mjs';
 import { commonDefinitions, exposePacket, exposeQuery } from './exposure.mjs';
 import { toolSchemas } from './schemas.mjs';
 import { queryObservable } from './tools.mjs';
@@ -31,8 +32,9 @@ const V2 = Object.freeze({
 });
 const dailyTask = task('./task-daily.md');
 
-// Anything that is not a daily case is held to the v2 contract, which refuses what it does not know.
+// Explicit SaaS and daily formats; all remaining input is held to the strict historical v2 contract.
 export function formatOf(input) {
+  if (input?.version === saas.VERSION) return saas.format;
   if (input?.version !== v3.VERSION) return V2;
   const frame = v3.validateFrame(input.frame);
   return Object.freeze({
@@ -46,6 +48,7 @@ export function formatOf(input) {
 export const toolsFor = (frame = null) => frame === null ? toolSchemas : formatOf({ version: v3.VERSION, frame }).toolSchemas;
 // A run store keeps a daily case's frame in its metadata and its events row by row; this puts the observable back together.
 export function storedObservable({ scope, frame }, events) {
+  if (frame?.format === saas.VERSION) return { version: saas.VERSION, truthMode: 'SIMULATED', caseRef: scope.caseId, asOf: scope.clock, frame, events };
   return frame === undefined
     ? { version: v2.VERSION, truthMode: 'SIMULATED', caseRef: scope.caseId, asOf: scope.clock, events }
     : { version: v3.VERSION, truthMode: v3.TRUTH, caseRef: scope.caseId, asOf: scope.clock, frame, events };
