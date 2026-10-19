@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Keep the compatibility date used by the existing Vite build.
+  // Resource bindings remain in vite.config.ts; the public replay has no DB.
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"]
+}

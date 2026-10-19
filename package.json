@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.15.0"
   },
   "scripts": {
     "dev": "vinext dev",
@@ -36,7 +36,11 @@
     "case:build": "vite build --config vite.case.config.ts",
     "case:start": "node scripts/case-lab.mjs",
     "case:lab": "npm run case:build && npm run case:start",
-    "case:typecheck": "tsc --project tsconfig.case.json"
+    "case:typecheck": "tsc --project tsconfig.case.json",
+    "cf:typegen": "wrangler types --config wrangler.jsonc --include-env=false",
+    "typecheck:web": "npm run cf:typegen && tsc --noEmit --incremental false",
+    "typecheck:functions": "deno check --frozen --config supabase/functions/deno.json supabase/functions/cfr-trace-reader/index.ts",
+    "typecheck": "npm run typecheck:web && npm run case:typecheck && npm run typecheck:functions"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -53,6 +57,7 @@
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
+    "deno": "2.9.6",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
