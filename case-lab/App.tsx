@@ -51,7 +51,9 @@ export default function App() {
       const suffix = action === 'investigate' || action === 'approve' ? action : 'command';
       const body = action === 'approve' ? { proposalHash: detail.proposal?.hash } : action === 'investigate'
         ? { revision: detail.revision } : { revision: detail.revision, command: action, reason };
-      setDetail(await post(`/api/cases/${detail.id}/${suffix}`, body));
+      const next = await post(`/api/cases/${detail.id}/${suffix}`, body);
+      // Apply the answer only if its Case is still selected (the hash names it), so switching Cases mid-action keeps the new Case on screen.
+      if (next.id === location.hash.slice(1)) setDetail(next);
       setCases(await read('/api/cases')); setSession(await read('/api/session'));
     } catch (failure) { setError(failure instanceof Error ? failure.message : 'Request failed'); }
     finally { setBusy(false); }
