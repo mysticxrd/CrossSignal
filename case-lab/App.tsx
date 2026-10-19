@@ -67,6 +67,7 @@ export default function App() {
     finally { setBusy(false); }
   }
   // Until the Case the hash names has loaded, the previous one is neither shown nor open to actions.
+  // CaseDetail is keyed by Case id, so an unsent reason never carries over to another Case.
   const shown = detail?.id === selected ? detail : null;
   return <div className="shell">
     <aside className="sidebar">
@@ -83,7 +84,7 @@ export default function App() {
     </aside>
     <main className="workspace"><header className="topbar"><span>WORKSPACE / INVESTIGATIONS</span><span className="badge">SIMULATED</span></header>
       {error && <div className="error" role="alert"><strong>Request needs attention</strong><p>{label(error)}</p><button onClick={() => setError('')}>Dismiss</button></div>}
-      {shown && session ? <CaseDetail data={shown} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
+      {shown && session ? <CaseDetail key={shown.id} data={shown} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
         <span className="eyebrow">FROM SIGNAL TO OUTCOME</span><h1>A decision you can<br />trace back to evidence.</h1>
         <p>Open a Case to investigate a SaaS paid-conversion incident. Review competing explanations, decide whether to run a simulation, then observe what happened.</p>
         <div className="empty-steps"><span>01 / Investigate</span><span>02 / Decide</span><span>03 / Observe</span></div>
