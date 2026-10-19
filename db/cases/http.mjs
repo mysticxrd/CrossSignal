@@ -11,7 +11,8 @@ export function caseServer({ cases, jobs, staticDirectory, modelReady = () => {}
     response.setHeader('X-Content-Type-Options', 'nosniff'); response.setHeader('Referrer-Policy', 'no-referrer');
     response.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
     try {
-      const origin = `http://127.0.0.1:${server.address().port}`;
+      // URL serializes the origin as a browser does, without the default port: port 80 is http://127.0.0.1.
+      const origin = new URL(`http://127.0.0.1:${server.address().port}`).origin;
       check(request.headers.host === new URL(origin).host, 'invalid_host');
       check(!request.headers.origin || request.headers.origin === origin, 'foreign_origin');
       check(!request.headers['sec-fetch-site'] || ['same-origin', 'none'].includes(request.headers['sec-fetch-site']), 'cross_site_request');

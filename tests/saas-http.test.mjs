@@ -58,6 +58,27 @@ test('local API rejects foreign origins, missing tokens, forged identity and unb
   assert.equal(deferStatus, 200); assert.match(JSON.stringify(store.view(deferred).history), /Wait for café data/);
 });
 
+test('a page served on port 80 sends Host and Origin without the port, and the local API accepts both', async t => {
+  const store = new CaseStore(':memory:'), cases = new Cases(store, { recordings: '.', source: 'fixture_surrogate' });
+  const jobs = new ModelJobs(cases, { transportFactory: () => { throw new Error('not_needed'); } });
+  const server = caseServer({ cases, jobs, staticDirectory: resolve('dist/case-lab') });
+  server.listen(0, '127.0.0.1'); await once(server, 'listening');
+  t.after(async () => { server.close(); await once(server, 'close'); store.close(); });
+  // Binding port 80 needs privileges in CI, so the server reports port 80 while it listens on a free port.
+  const { port } = server.address(); server.address = () => ({ address: '127.0.0.1', family: 'IPv4', port: 80 });
+  const browser = { Host: '127.0.0.1', Origin: 'http://127.0.0.1', 'Sec-Fetch-Site': 'same-origin' };
+  const send = (method, path, headers, body) => new Promise((accept, reject) => {
+    const req = request(`http://127.0.0.1:${port}${path}`, { method, headers: { ...browser, ...headers } }, res => {
+      let text = ''; res.setEncoding('utf8'); res.on('data', chunk => { text += chunk; }); res.on('end', () => accept({ status: res.statusCode, body: JSON.parse(text) }));
+    });
+    req.on('error', reject); req.end(body);
+  });
+  const session = await send('GET', '/api/session', {});
+  assert.equal(session.status, 200, JSON.stringify(session.body));
+  const created = await send('POST', '/api/cases', { 'Content-Type': 'application/json', 'X-Case-Token': session.body.token }, JSON.stringify({ key: 'port-80-case', scenario: 'incident' }));
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+});
+
 test('exclusive local host ownership prevents recovery of a live process', { timeout: 15000 }, async t => {
   const directory = mkdtempSync(join(tmpdir(), 'case-lock-')), path = join(directory, 'host-lock.sqlite');
   t.after(() => rmSync(directory, { recursive: true, force: true }));
