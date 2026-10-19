@@ -72,7 +72,7 @@ from Gemini, because Google does not sign them.
 
 ## Run it locally
 
-Requires Node.js 22.13 or later.
+Requires Node.js 22.15 or later.
 
 ```bash
 npm install
