@@ -38,7 +38,8 @@ const OUTAGE_WORDS = Object.freeze(['outage', 'disruption', 'failure', 'decline'
 // These say so only beside a word of the hidden cause: "provider regression" does, a bare "provider" or "ingestion issue" doesn't.
 const FAULT_WORDS = Object.freeze(['incident', 'regression', 'degradation', 'issue', 'problem', 'fault', 'error', 'deployment', 'deploy']);
 // A clause holding one of these explains the outage away: "the provider is healthy", "the decline is only an artifact".
-const EXPLAINED_AWAY = /\b(?:only|merely|just(?! as)|healthy|artifact|perceived|nothing|unlikely)\b|(?<!not )\b(?:ruled|rules) out\b/;
+// A negated rule-out does the opposite: "cannot be ruled out" and "nothing yet rules out" keep the outage open.
+const EXPLAINED_AWAY = /\b(?:only|merely|just(?! as)|healthy|artifact|perceived|nothing(?!\s+(?:\w+\s+)?rules out)|unlikely)\b|(?<!\b(?:not|cannot|never|nothing|\w+n['’]t)(?:\s+\w+){0,2}\s+)\b(?:ruled|rules) out\b/;
 // On the no-incident case, any of these in the top-ranked diagnosis is the right answer: nothing is wrong.
 export const NO_INCIDENT_WORDS = Object.freeze(['no incident', 'no issue', 'no problem', 'no anomaly', 'no regression', 'no outage',
   'no drop', 'no decline', 'no change', 'no impact', 'stable', 'unchanged', 'flat', 'steady', 'normal']);

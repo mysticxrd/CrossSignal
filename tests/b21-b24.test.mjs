@@ -106,8 +106,14 @@ test('on the twins, abstaining is not enough: the outage stays open and somethin
     for (const text of ['Downstream provider connectivity issue affecting transmission', 'Upstream payment provider transient declines',
       'External payment provider degradation not captured in service changes', 'Unlogged client-side or downstream payment issues',
       'Whether actual revenue dropped or data ingestion is simply incomplete.', 'Late ingestion only, or a real provider outage',
-      'A provider outage is not ruled out'])
+      'A provider outage is not ruled out', 'A provider outage cannot be ruled out', 'A provider outage has not been ruled out',
+      'A provider outage has not yet been ruled out', 'A provider outage can\'t be ruled out', 'A provider outage hasn’t been ruled out',
+      'Nothing yet rules out a provider outage'])
       assert.equal(cause(label, { unresolvedAlternatives: [text] }).pass, true, text);
+    // An outage that really was ruled out stays closed, with or without a negation elsewhere in the text.
+    for (const text of ['The logs have ruled out a provider outage', 'Monitoring rules out a provider outage',
+      'Not late data alone; the logs ruled out a provider outage'])
+      assert.equal(cause(label, { unresolvedAlternatives: [text] }).pass, false, text);
     // Naming a cause outright is still wrong here.
     assert.equal(cause(label, { terminalStatus: 'completed', hypotheses: [hypothesis('Payment provider outage')] }).got, 'named a cause');
   }
