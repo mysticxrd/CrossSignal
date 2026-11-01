@@ -7,7 +7,9 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PROFILES } from '../../db/benchmark/gemini-config.mjs';
+import { renderConstants } from './constant-policies.mjs';
 import { CHECKS, METHODS, TRUTH_MODES, gradeBatch } from './grade-b01.mjs';
+import { renderTwins } from './twin-report.mjs';
 
 const MODELS = METHODS.filter(method => method !== 'rules');
 const NAMES = { 'single-shot-model': 'Single-shot', 'tool-using-model': 'Tool-using' };
@@ -26,7 +28,7 @@ function tally(batches) {
   const runs = batches.flat(), endings = {};
   for (const run of runs) endings[ending(run)] = (endings[ending(run)] ?? 0) + 1;
   return { runs: runs.length, score: sum(runs, r => r.score), maxScore: sum(runs, r => r.maxScore),
-    perBatch: batches.map(list => sum(list, r => r.score)),
+    perBatch: batches.map(list => sum(list, r => r.score)), causePerBatch: batches.map(list => list.filter(r => r.checks.cause.pass).length),
     checks: Object.fromEntries(CHECKS.map(name => [name, runs.filter(r => r.checks[name].pass).length])), endings,
     mean: Object.fromEntries(MEANS.map(([key]) => [key, runs.length ? sum(runs, r => r.metrics[key]) / runs.length : 0])) };
 }
@@ -62,6 +64,8 @@ export function compareBatches(directories, grade = gradeBatch) {
     batches: batches.map(b => ({ batch: b.batch, arm: armName(b.commit, b.profile), commit: b.commit, profile: b.profile,
       startedAtUtc: b.startedAtUtc })),
     graderSha256: first.graderSha256, rubrics: first.rubrics, howGraded: first.howGraded,
+    // The batches hold the same cases under one grader, so a do-nothing policy scores the same in each.
+    constants: first.constants, twins: first.twins ? batches.map(b => b.twins) : null,
     cases: first.cases.map(c => ({ label: c.label, caseRef: c.caseRef, split: c.split, ...group([c.label]) })),
     totals: Object.fromEntries(Object.keys(SPLITS).filter(split => inSplit(split).length).map(split => [split, group(inSplit(split))])
       .concat([['all', group(first.cases.map(c => c.label))]])),
@@ -109,8 +113,11 @@ export function renderComparison(comparison) {
     `Scores count checks passed: 5 a run (status, cause, change, segment, rollback)${counts.length === 1
       ? `, so ${counts[0]} batch${counts[0] === 1 ? '' : 'es'} of ${cases.length} cases make ${counts[0] * cases.length * 5}` : ''}. `
       + `Rules, the no-model baseline in \`${mode.rules}\`, scored ${steady(all.rules)}; its rules target this `
-      + 'benchmark\'s incident families, so read it as a reference point.',
-    '', '## By case', '', 'Each cell: checks passed over all runs, then each batch\'s score in start order.', '',
+      + 'benchmark\'s incident families, so read it as a reference point.', '',
+    ...renderConstants(comparison.constants, [{ name: 'Rules', scores: all.rules.perBatch, causes: all.rules.causePerBatch },
+      ...columns.map(column => ({ name: column.title, scores: cell(all, column).perBatch, causes: cell(all, column).causePerBatch }))]),
+    ...(comparison.twins ? renderTwins(comparison.twins) : []),
+    '## By case', '', 'Each cell: checks passed over all runs, then each batch\'s score in start order.', '',
     ...table(['Case', 'Split'], ['Rules'], [
       ...cases.map(c => [[c.label, SPLITS[c.split] ?? c.split], column => scores(cell(c.cells, column)), [steady(c.cells.rules)]]),
       ...Object.entries(totals).filter(([name]) => name !== 'all').map(([name, group]) =>
