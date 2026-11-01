@@ -1,0 +1,7 @@
+interface:
+  display_name: "Grill"
+  short_description: "Quiz the owner on a CrossSignal area, one question at a time"
+  default_prompt: "Use $grill on the changes in this branch."
+
+policy:
+  allow_implicit_invocation: false
