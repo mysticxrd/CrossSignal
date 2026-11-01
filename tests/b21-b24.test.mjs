@@ -96,6 +96,18 @@ test('on the twins, abstaining is not enough: the outage stays open and somethin
       assert.equal(cause(label, { unresolvedAlternatives: [text] }).pass, false, text);
     // "Cannot rule it out" does.
     assert.equal(cause(label, { unresolvedAlternatives: ['Not enough rows to rule out a provider outage'] }).pass, true, label);
+    // Mentioning the provider or a decline while explaining it away keeps nothing open. Some of this wording is from stored runs.
+    for (const text of ['No outage; the provider is healthy, only ingestion is delayed', 'The provider is fine',
+      'The revenue decline is only an artifact of delayed ingestion; nothing is wrong', 'Provider outage ruled out',
+      'Unexplained revenue variation without confirmed service failure', 'Incomplete ingestion or missing windows causing perceived revenue drop.',
+      'Telemetry collection worker backlog or partition lag', 'Normal traffic fluctuation across segments'])
+      assert.equal(cause(label, { unresolvedAlternatives: [text] }).pass, false, text);
+    // A clause that still asserts the outage keeps it open, whatever the clause beside it says. Some of this is stored wording too.
+    for (const text of ['Downstream provider connectivity issue affecting transmission', 'Upstream payment provider transient declines',
+      'External payment provider degradation not captured in service changes', 'Unlogged client-side or downstream payment issues',
+      'Whether actual revenue dropped or data ingestion is simply incomplete.', 'Late ingestion only, or a real provider outage',
+      'A provider outage is not ruled out'])
+      assert.equal(cause(label, { unresolvedAlternatives: [text] }).pass, true, text);
     // Naming a cause outright is still wrong here.
     assert.equal(cause(label, { terminalStatus: 'completed', hypotheses: [hypothesis('Payment provider outage')] }).got, 'named a cause');
   }

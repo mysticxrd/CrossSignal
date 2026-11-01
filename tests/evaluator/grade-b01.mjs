@@ -33,8 +33,12 @@ export const CAUSE_WORDS = Object.freeze({
   acquisition_composition_shift: ['acquisition', 'composition', 'mix', 'traffic', 'channel', 'share', 'distribution'],
   notifications_deployment: ['notification', 'email'],
 });
-// On a twin abstain case, any of these, or a word of the hidden cause, says a real outage is still possible.
-const OUTAGE_WORDS = Object.freeze(['outage', 'disruption', 'failure', 'decline']);
+// On a twin abstain case, any of these says a real outage is still possible.
+const OUTAGE_WORDS = Object.freeze(['outage', 'disruption', 'failure', 'decline', 'drop', 'dropped']);
+// These say so only beside a word of the hidden cause: "provider regression" does, a bare "provider" or "ingestion issue" doesn't.
+const FAULT_WORDS = Object.freeze(['incident', 'regression', 'degradation', 'issue', 'problem', 'fault', 'error', 'deployment', 'deploy']);
+// A clause holding one of these explains the outage away: "the provider is healthy", "the decline is only an artifact".
+const EXPLAINED_AWAY = /\b(?:only|merely|just(?! as)|healthy|artifact|perceived|nothing|unlikely)\b|(?<!not )\b(?:ruled|rules) out\b/;
 // On the no-incident case, any of these in the top-ranked diagnosis is the right answer: nothing is wrong.
 export const NO_INCIDENT_WORDS = Object.freeze(['no incident', 'no issue', 'no problem', 'no anomaly', 'no regression', 'no outage',
   'no drop', 'no decline', 'no change', 'no impact', 'stable', 'unchanged', 'flat', 'steady', 'normal']);
@@ -50,6 +54,7 @@ export const HOW_GRADED = Object.freeze({
     + 'price/pricing, acquisition/composition/mix/traffic/channel/share/distribution, or notification/email (never right here). '
     + 'On the abstain cases the run must abstain. On the twin abstain cases, where the same evidence hides an outage in one world, '
     + 'it must also keep the outage among its hypotheses or unresolved alternatives and recommend something other than `none`. '
+    + 'A bare mention of the provider, or an outage denied or explained away, does not keep it open. '
     + 'On the no-incident case it must blame no change, and its top-ranked diagnosis '
     + 'must say nothing is wrong (no incident, no drop, stable, unchanged, normal and the like) or name no cause at all.',
   change: '`relatedChangeId` must be the rubric\'s change, or empty when the rubric has none.',
@@ -98,13 +103,19 @@ function describeEvent(id, events) {
 
 // A twin abstain case: the same evidence hides an outage in one world, so "late data, nothing to do" is the wrong kind of
 // abstention. The run must keep the outage among its hypotheses or alternatives and recommend something. "No outage" closes it.
+function keepsOpen(text, cause) {
+  const culprit = [...CAUSE_WORDS[cause], 'payment'], word = list => `(?:${list.join('|')})s?\\b`;
+  const denied = new RegExp(`\\b(?:no|not an?|without)\\s+(?:\\w+\\s+){0,2}${word([...culprit, ...OUTAGE_WORDS, ...FAULT_WORDS])}`, 'g');
+  const has = (list, clause) => new RegExp(`\\b${word(list)}`).test(clause);
+  return words(text).replace(denied, '').split(/[.;,:?]|\b(?:or|but)\b/).some(clause => !EXPLAINED_AWAY.test(clause)
+    && (has(OUTAGE_WORDS, clause) || (has(culprit, clause) && has(FAULT_WORDS, clause))));
+}
+
 function gradeKeepOpen(finding, cause, abstained) {
   const want = 'abstain, outage kept open';
   if (!abstained) return { pass: false, got: 'named a cause', want };
-  const list = [...CAUSE_WORDS[cause], ...OUTAGE_WORDS].join('|');
-  const denied = new RegExp(`\\b(?:no|not an?|without an?)\\s+(?:\\w+\\s+){0,2}(?:${list})s?\\b`, 'g'), named = new RegExp(`\\b(?:${list})s?\\b`);
   const texts = [...finding.hypotheses.map(h => h.diagnosis), ...finding.unresolvedAlternatives];
-  if (!texts.some(text => named.test(words(text).replace(denied, '')))) return { pass: false, got: 'abstained, outage not kept open', want };
+  if (!texts.some(text => keepsOpen(text, cause))) return { pass: false, got: 'abstained, outage not kept open', want };
   if (finding.recommendation.kind === 'none') return { pass: false, got: 'abstained, recommended nothing', want };
   return { pass: true, got: want, want };
 }
