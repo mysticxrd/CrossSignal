@@ -11,14 +11,14 @@ import { dailyCoverage } from './daily-predicates.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 // Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05,
-// and B16-B20 from the real-baseline cases frozen on 2026-10-06.
+// B16-B20 from the real-baseline cases frozen on 2026-10-06, and B21-B24 from the matched twins frozen on 2026-11-01.
 export const RUBRICS = Object.freeze(['factory/02_data/benchmark/private/rubric.json', 'tests/evaluator/b06-b10/rubric.json',
-  'tests/evaluator/b11-b15/rubric.json', 'tests/evaluator/b16-b20/rubric.json']);
+  'tests/evaluator/b11-b15/rubric.json', 'tests/evaluator/b16-b20/rubric.json', 'tests/evaluator/b21-b24/rubric.json']);
 export const METHODS = ['rules', 'single-shot-model', 'tool-using-model'];
 export const CHECKS = ['status', 'cause', 'change', 'segment', 'rollback'];
 const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot model', 'tool-using-model': 'Tool-using model' };
-const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh', fresh_holdout_2: 'fresh2', real_baseline: 'real' };
-const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout', fresh2: 'Fresh holdout 2', real: 'Real baseline' };
+const SPLITS = { development: 'dev', frozen_transfer: 'holdout', fresh_holdout: 'fresh', fresh_holdout_2: 'fresh2', real_baseline: 'real', twin_holdout: 'twin' };
+const SPLIT_NAMES = { dev: 'Dev', holdout: 'Holdout', fresh: 'Fresh holdout', fresh2: 'Fresh holdout 2', real: 'Real baseline', twin: 'Twin holdout' };
 const CHANGE_TYPES = ['deployment', 'pricing_configuration'];
 const fail = message => { throw new Error(message); };
 const words = text => String(text ?? '').toLowerCase().replace(/[_-]+/g, ' ');
@@ -33,6 +33,13 @@ export const CAUSE_WORDS = Object.freeze({
   acquisition_composition_shift: ['acquisition', 'composition', 'mix', 'traffic', 'channel', 'share', 'distribution'],
   notifications_deployment: ['notification', 'email'],
 });
+// On a twin abstain case, any of these says a real outage is still possible.
+const OUTAGE_WORDS = Object.freeze(['outage', 'disruption', 'failure', 'decline', 'drop', 'dropped']);
+// These say so only beside a word of the hidden cause: "provider regression" does, a bare "provider" or "ingestion issue" doesn't.
+const FAULT_WORDS = Object.freeze(['incident', 'regression', 'degradation', 'issue', 'problem', 'fault', 'error', 'deployment', 'deploy']);
+// A clause holding one of these explains the outage away: "the provider is healthy", "the decline is only an artifact".
+// A negated rule-out does the opposite: "cannot be ruled out" and "nothing yet rules out" keep the outage open.
+const EXPLAINED_AWAY = /\b(?:only|merely|just(?! as)|healthy|artifact|perceived|nothing(?!\s+(?:\w+\s+)?rules out)|unlikely)\b|(?<!\b(?:not|cannot|never|nothing|\w+n['’]t)(?:\s+\w+){0,2}\s+)\b(?:ruled|rules) out\b/;
 // On the no-incident case, any of these in the top-ranked diagnosis is the right answer: nothing is wrong.
 export const NO_INCIDENT_WORDS = Object.freeze(['no incident', 'no issue', 'no problem', 'no anomaly', 'no regression', 'no outage',
   'no drop', 'no decline', 'no change', 'no impact', 'stable', 'unchanged', 'flat', 'steady', 'normal']);
@@ -46,7 +53,10 @@ export const HOW_GRADED = Object.freeze({
   cause: 'Graded on meaning, not wording. If `relatedChangeId` names a deploy or pricing change, it must be the rubric\'s change. '
     + 'Otherwise the first cause word in the top-ranked diagnosis decides: checkout/validation, provider/gateway/processor, '
     + 'price/pricing, acquisition/composition/mix/traffic/channel/share/distribution, or notification/email (never right here). '
-    + 'On the abstain cases the run must abstain. On the no-incident case it must blame no change, and its top-ranked diagnosis '
+    + 'On the abstain cases the run must abstain. On the twin abstain cases, where the same evidence hides an outage in one world, '
+    + 'it must also keep the outage among its hypotheses or unresolved alternatives and recommend something other than `none`. '
+    + 'A bare mention of the provider, or an outage denied or explained away, does not keep it open. '
+    + 'On the no-incident case it must blame no change, and its top-ranked diagnosis '
     + 'must say nothing is wrong (no incident, no drop, stable, unchanged, normal and the like) or name no cause at all.',
   change: '`relatedChangeId` must be the rubric\'s change, or empty when the rubric has none.',
   segment: '`affectedSegment` must name the rubric\'s segment (case, word order and separators ignored), or be empty when the rubric has none.',
@@ -92,8 +102,28 @@ function describeEvent(id, events) {
   return `${id} (${event.type.replaceAll('_', ' ')} row)`;
 }
 
+// A twin abstain case: the same evidence hides an outage in one world, so "late data, nothing to do" is the wrong kind of
+// abstention. The run must keep the outage among its hypotheses or alternatives and recommend something. "No outage" closes it.
+function keepsOpen(text, cause) {
+  const culprit = [...CAUSE_WORDS[cause], 'payment'], word = list => `(?:${list.join('|')})s?\\b`;
+  const denied = new RegExp(`\\b(?:no|not an?|without)\\s+(?:\\w+\\s+){0,2}${word([...culprit, ...OUTAGE_WORDS, ...FAULT_WORDS])}`, 'g');
+  const has = (list, clause) => new RegExp(`\\b${word(list)}`).test(clause);
+  return words(text).replace(denied, '').split(/[.;,:?]|\b(?:or|but)\b/).some(clause => !EXPLAINED_AWAY.test(clause)
+    && (has(OUTAGE_WORDS, clause) || (has(culprit, clause) && has(FAULT_WORDS, clause))));
+}
+
+function gradeKeepOpen(finding, cause, abstained) {
+  const want = 'abstain, outage kept open';
+  if (!abstained) return { pass: false, got: 'named a cause', want };
+  const texts = [...finding.hypotheses.map(h => h.diagnosis), ...finding.unresolvedAlternatives];
+  if (!texts.some(text => keepsOpen(text, cause))) return { pass: false, got: 'abstained, outage not kept open', want };
+  if (finding.recommendation.kind === 'none') return { pass: false, got: 'abstained, recommended nothing', want };
+  return { pass: true, got: want, want };
+}
+
 export function gradeCause(finding, rubricCase, events, calmWords = NO_INCIDENT_WORDS) {
   const want = rubricCase.expectedDiagnosis, abstained = finding.terminalStatus === 'epistemic_abstention';
+  if (rubricCase.keepOpen) return gradeKeepOpen(finding, rubricCase.keepOpen, abstained);
   if (rubricCase.action.kind === 'abstain') return { pass: abstained, got: abstained ? 'abstained' : 'named a cause', want: 'abstain' };
   if (abstained) return { pass: false, got: 'abstained', want };
   const change = events.find(e => e.id === finding.relatedChangeId && CHANGE_TYPES.includes(e.type));
