@@ -29,7 +29,7 @@ const timing = label => { const change = sourceOf(label).events.find(e => e.type
   return finding({ status: 'completed', diagnosis: 'Payment provider regression', change, segment: 'IN/debit', kind: 'simulated_rollback', target: 'payment-provider', approval: true, support: [change] }); };
 
 // One finished batch. `answers` maps `label` or `label-method` to a finding, or to { ending } for a run with no finding.
-function batch(name, { started = '2026-11-02T01:00:00.000Z', answers = {}, steps = {}, stopped = [], sha = {} } = {}) {
+function batch(name, { started = '2026-11-02T01:00:00.000Z', answers = {}, steps = {}, stopped = [], interrupted = [], sha = {} } = {}) {
   const directory = join(parent, name), slots = [];
   for (const c of rubric) for (const method of METHODS) {
     const slot = `${c.caseRef}-${method}`, source = sourceOf(c.label);
@@ -46,6 +46,7 @@ function batch(name, { started = '2026-11-02T01:00:00.000Z', answers = {}, steps
       mkdirSync(join(directory, 'runs', slot, 'earlier'), { recursive: true });
       writeFileSync(join(directory, 'runs', slot, 'earlier', 'RESULT.json'), JSON.stringify({ ...run, saved: false, result: { ...run.result, failureReason: 'http_failure' } }));
     }
+    if (interrupted.includes(`${c.label}-${method}`)) mkdirSync(join(directory, 'runs', slot, 'killed'), { recursive: true });
     slots.push(slot);
   }
   writeFileSync(join(directory, 'BATCH.json'), JSON.stringify({ version: 'b01-batch-v1', truthMode: 'SIMULATED', date: '2026-11-02', startedAtUtc: started,
@@ -148,9 +149,12 @@ test('first difference names the step, the query and the evidence ids, and ignor
 
 test('invalid runs are reported apart and never count as model failures', () => {
   const results = gradeBatch(batch('validity', { answers: { 'B22-tool-using-model': { ending: 'usage_unknown' }, 'B21-single-shot-model': { ending: 'invalid_output' } },
-    stopped: ['B21-tool-using-model'] }));
+    stopped: ['B21-tool-using-model'], interrupted: ['B23-tool-using-model'] }));
   const { twins } = results;
   assert.deepEqual(twins.validity.stopped, [{ label: 'B21', method: 'tool-using-model', reason: 'http_failure' }]);
+  // A killed attempt leaves a folder and no result: it is listed, and the slot's saved run still counts.
+  assert.deepEqual(twins.validity.interrupted, [{ label: 'B23', method: 'tool-using-model' }]);
+  assert.equal(row(twins, 'B23').answer, 'closed');
   assert.deepEqual(twins.validity.outsideModel, [{ label: 'B22', method: 'tool-using-model', ending: 'usage_unknown' }]);
   assert.equal(row(twins, 'B22').answer, 'invalid');
   assert.equal(twins.firstDifferences[1].where, 'not comparable: a run was invalid');
@@ -159,10 +163,12 @@ test('invalid runs are reported apart and never count as model failures', () => 
   const markdown = renderResults(results);
   assert.match(markdown, /\| B22 \| outage, T1 \| Tool-using \| invalid \| 0\/0 \| 1× invalid run \|/);
   assert.match(markdown, /1 attempt stopped by the provider, kept unscored \(B21 Tool-using: http_failure\)/);
+  assert.match(markdown, /1 attempt interrupted with no result and rerun \(B23 Tool-using\)/);
   assert.match(markdown, /1 run ended outside the model and left out above \(B22 Tool-using: usage_unknown\)/);
   // Different evidence from what the run saw makes the batch's pair say nothing.
   const changed = gradeBatch(batch('changed', { sha: { B22: 'not-the-frozen-hash' } })).twins;
   assert.deepEqual(changed.validity.changedFiles, [fileOf(rubric.find(c => c.label === 'B22'))]);
+  assert.deepEqual(changed.validity.interrupted, []);
   assert(changed.noise.every(n => !n.comparable));
   assert.match(renderTwinsOf(changed), /\*\*case files changed since the run: /);
 });

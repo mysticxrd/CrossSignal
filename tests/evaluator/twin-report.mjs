@@ -12,7 +12,7 @@ const NAMES = { rules: 'Rules', 'single-shot-model': 'Single-shot', 'tool-using-
 const WORLDS = ['harmless', 'outage'];
 const STILL_WAITING = 'still waiting, though the data has landed';
 // Where an answer leads, by hidden world and pull.
-export const CONSEQUENCES = Object.freeze({
+const CONSEQUENCES = Object.freeze({
   harmless: {
     T1: { rollback: 'needless rollback put to a person', open: 'waits, then closes when the data lands', closed: 'closed, right only by luck' },
     T2: { rollback: 'needless rollback put to a person', open: STILL_WAITING, closed: 'closed, rightly' } },
@@ -45,10 +45,12 @@ function separatingIds(events, other) {
   }).map(e => e.id);
 }
 
-function attempts(directory, slot) {
+function folders(directory, slot) {
   const folder = join(directory, 'runs', slot);
-  if (!existsSync(folder)) return [];
-  return readdirSync(folder).sort().map(name => join(folder, name)).filter(path => existsSync(join(path, 'RESULT.json')))
+  return existsSync(folder) ? readdirSync(folder).sort().map(name => join(folder, name)) : [];
+}
+function attempts(directory, slot) {
+  return folders(directory, slot).filter(path => existsSync(join(path, 'RESULT.json')))
     .map(path => ({ path, run: JSON.parse(readFileSync(join(path, 'RESULT.json'), 'utf8')) }));
 }
 
@@ -117,7 +119,10 @@ export function twinReport({ directory, batch, runs, graded, sources, rubricCase
     }),
     validity: { changedFiles, t1Match, outsideModel: rows.filter(r => r.answer === 'invalid').map(r => ({ label: r.label, method: r.method, ending: r.status })),
       stopped: cases.flatMap(c => methods.flatMap(method => attempts(directory, `${c.caseRef}-${method}`).filter(a => a.run.saved !== true)
-        .map(a => ({ label: c.label, method, reason: a.run.result.failureReason })))) },
+        .map(a => ({ label: c.label, method, reason: a.run.result.failureReason })))),
+      // A process killed mid-run leaves a folder and no result. Nobody saw an answer, but the slot did run twice, so it is listed.
+      interrupted: cases.flatMap(c => methods.flatMap(method => folders(directory, `${c.caseRef}-${method}`)
+        .filter(path => !existsSync(join(path, 'RESULT.json'))).map(() => ({ label: c.label, method })))) },
   };
 }
 
@@ -125,11 +130,13 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const said = ({ status, answer }) => `${status === 'epistemic_abstention' ? 'abstained' : status}, ${answer}`;
 const leads = rows => [...new Set(rows.map(r => r.consequence))].map(text => `${rows.filter(r => r.consequence === text).length}× ${text}`).join('; ');
 function validityLine(t, i) {
-  const { changedFiles, t1Match, stopped, outsideModel } = t.validity;
+  const { changedFiles, t1Match, stopped, interrupted, outsideModel } = t.validity;
   const parts = [changedFiles.length ? `**case files changed since the run: ${changedFiles.join(', ')}**` : 'case files match the batch manifest',
     t1Match ? 'the T1 twins show the same rows' : '**the T1 twins show different rows, so the pair says nothing**',
     stopped.length ? `${plural(stopped.length, 'attempt')} stopped by the provider, kept unscored (${stopped.map(s => `${s.label} ${NAMES[s.method]}: ${s.reason}`).join(', ')})`
       : 'no attempt stopped by the provider',
+    interrupted.length ? `${plural(interrupted.length, 'attempt')} interrupted with no result and rerun (${interrupted.map(s => `${s.label} ${NAMES[s.method]}`).join(', ')})`
+      : 'no attempt interrupted',
     outsideModel.length ? `${plural(outsideModel.length, 'run')} ended outside the model and left out above (${outsideModel.map(r => `${r.label} ${NAMES[r.method]}: ${r.ending}`).join(', ')})`
       : 'no run ended outside the model'];
   return `- Batch ${i + 1}: ${parts.join('; ')}.`;
