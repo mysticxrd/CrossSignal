@@ -30,7 +30,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
       <span className="pill">{signal.detected ? 'Drop observed' : signal.sufficient ? 'Stable' : 'Incomplete data'}</span></div>
       <p>New self-serve subscriptions · two comparable 15-minute windows per period</p><div className="metrics">
         <div><span>BASELINE</span><strong>{percent(signal.baseline.conversionPercent)}</strong><small>{signal.baseline.successes} / {signal.baseline.intents} intents</small></div>
-        <div><span>INCIDENT PERIOD</span><strong className={signal.detected ? 'negative' : ''}>{percent(signal.incident.conversionPercent)}</strong><small>{signal.incident.successes} / {signal.incident.intents} intents</small></div>
+        <div><span>INCIDENT PERIOD</span><strong className={signal.detected ? 'negative' : ''}>{percent(signal.incident.conversionPercent)}</strong><small>{signal.incident.sufficient ? `${signal.incident.successes} / ${signal.incident.intents} intents` : `${signal.incident.intents} intents · activations not yet reliable`}</small></div>
         <div><span>CHANGE</span><strong>{signal.dropPoints === null ? 'Unknown' : `${(-signal.dropPoints).toFixed(1)} pp`}</strong><small>Percentage points</small></div>
         <div><span>ASSISTED CONTROL</span><strong>{percent(signal.controlIncident.conversionPercent)}</strong><small>Baseline {percent(signal.controlBaseline.conversionPercent)}</small></div></div>
       <p className="metric-note">One eligible purchase intent counts once. Conversion requires first payment and subscription activation. Missing sources are never counted as zero.</p>
@@ -65,7 +65,9 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
             <span className="pill">{label(data.decision)}</span>{data.finding && !data.anchor && open && <button disabled={disabled} onClick={() => onAction('refresh_proposal')}>Recheck proposal eligibility</button>}</>}
       {!data.anchor && open && data.decision !== 'approved' && <div className="decision-alternatives">{signal.detected
         ? <button disabled={disabled} onClick={() => onAction('observe_without_action')}>Observe without acting</button>
-        : <p className="muted">There is no detected drop to measure recovery against, so there is nothing to observe without acting. Defer, or close unresolved with a reason.</p>}
+        : <p className="muted">There is no detected drop to measure recovery against, so there is nothing to observe without acting. {signal.sufficient ? 'The data is complete and stable, so you can close this as no incident.' : 'Wait for late data, defer, or close unresolved with a reason.'}</p>}
+        {!signal.sufficient && <button disabled={disabled || data.waits >= 2} onClick={() => onAction('wait_for_data')}>Wait for late data</button>}
+        {!signal.sufficient && data.waits >= 2 && <p className="muted">Both waits are used and the data is still incomplete. Waiting cannot settle this Case.</p>}
         <button disabled={disabled || !reason.trim()} onClick={() => onAction('defer', reason)}>Defer with reason</button></div>}
     </section></div>
     <section className="panel"><div className="section-top"><div><p className="eyebrow">SOURCE RECORDS</p><h2>Evidence you can inspect</h2></div><span className="muted">Available by {time(data.snapshot.asOf)}</span></div>
@@ -83,9 +85,10 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
       <p className="muted">Simulation time advances only when you choose to observe. Reloading this page has no effect.</p>
     </section>
     <section className="panel closure"><p className="eyebrow">04 / CLOSE THE LOOP</p><h2>{open ? 'Record your conclusion' : 'Case closed by the owner'}</h2>
-      {data.closure && <p>Previous closure: {label(data.closure.kind)} · {data.closure.reason || 'Recovery observed with uncertainty retained.'}</p>}
+      {data.closure && <p>Previous closure: {label(data.closure.kind)} · {data.closure.reason || (data.closure.kind === 'close_no_incident' ? 'Complete data showed stable conversion. No cause was claimed.' : 'Recovery observed with uncertainty retained.')}</p>}
       <label htmlFor="decision-reason">Decision or closure reason</label><textarea id="decision-reason" value={reason} maxLength={1000} onChange={event => setReason(event.target.value)} placeholder="What does the evidence justify, and what is still unresolved?" />
       <div className="button-row"><button disabled={disabled || !open || data.outcome?.state !== 'criterion_met'} onClick={() => onAction('close_recovered', reason)}>Close: recovery observed</button>
+        <button disabled={disabled || !open || !signal.sufficient || signal.detected || !!data.anchor || data.decision === 'approved'} onClick={() => onAction('close_no_incident', reason)}>Close: no incident</button>
         <button disabled={disabled || !open || !reason.trim() || data.decision === 'approved'} onClick={() => onAction('close_unresolved', reason)}>Close unresolved</button>
         <button disabled={disabled || remaining <= 0 || data.decision === 'approved'} onClick={() => onAction('continue', reason)}>Continue investigation</button></div></section>
     <details className="audit"><summary>Case history · {data.history.length} durable events · {data.attempts.length} attempts</summary>

@@ -51,7 +51,7 @@ export class CaseStore {
     .map(row => ({ id: row.id, snapshotHash: row.snapshot_hash, status: row.status, source: row.source, result: row.result ? JSON.parse(row.result) : null })); }
   view(id) {
     const state = this.get(id), { world, ...visible } = state;
-    return { ...visible, simulationClock: world.clock, serviceVersion: world.serviceVersion, observationStep: world.observationStep,
+    return { ...visible, simulationClock: world.clock, serviceVersion: world.serviceVersion, observationStep: world.observationStep, waits: world.waits ?? 0,
       attempts: this.attempts(id), history: this.history(id),
       outcomes: this.db.prepare('SELECT payload FROM outcomes WHERE case_id=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload)) };
   }

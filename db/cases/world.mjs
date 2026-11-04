@@ -1,22 +1,24 @@
 // Trusted simulator only. This module and its state are never in the model worker's file allowlist or packet.
 import { POLICY, addMinutes } from './measurement.mjs';
 import { requireThat as check } from '../benchmark/contracts.mjs';
-const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous'];
-const START = '2026-10-01T08:00:00.000Z';
+const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked'];
+const START = '2026-10-01T08:00:00.000Z', MAX_WAITS = 2, WAIT_MINUTES = 15;
 export const initialWindows = [0, 15, 60, 75].map((minute, i) => ({ start: addMinutes(START, minute),
   end: addMinutes(START, minute + 15), period: i < 2 ? 'baseline' : 'incident' }));
 const at = minute => addMinutes(START, minute);
 
 export function createWorld(scenario) {
   check(SCENARIOS.includes(scenario), 'unknown_scenario');
+  const stable = scenario === 'normal' || scenario === 'delayed';
   const world = { version: 'synthetic-saas-v1', scenario, serviceVersion: 'billing-v2', revision: 0,
-    clock: at(105), events: [], coverage: [], observations: [], generatedThrough: at(90), observationStep: 0 };
-  for (const [i, window] of initialWindows.entries()) emitWindow(world, window.start, i < 2 || scenario === 'normal' ? 80 : 40);
+    clock: at(105), events: [], coverage: [], observations: [], generatedThrough: at(90), observationStep: 0, waits: 0 };
+  for (const [i, window] of initialWindows.entries()) emitWindow(world, window.start, i < 2 || stable ? 80 : 40);
   world.observations = [
     { id: 'deploy-billing', kind: 'deployment', service: 'billing', from: 'billing-v1', to: 'billing-v2', occurredAt: at(50), availableAt: at(51) },
     { id: 'deploy-notifications', kind: 'deployment', service: 'notifications', from: 'notifications-v3', to: 'notifications-v4', occurredAt: at(55), availableAt: at(56) },
-    { id: 'health-billing', kind: 'health', service: 'billing', cohort: POLICY.cohorts[0], failures: scenario === 'normal' ? 0 : 80,
-      detail: 'Subscription activation request rejected after a successful first payment.', occurredAt: at(75), availableAt: at(76) },
+    { id: 'health-billing', kind: 'health', service: 'billing', cohort: POLICY.cohorts[0], failures: stable ? 0 : 80,
+      detail: scenario === 'delayed' ? 'No elevated activation failures relative to baseline.' : 'Subscription activation request rejected after a successful first payment.',
+      occurredAt: at(75), availableAt: at(76) },
     { id: 'health-provider', kind: 'health', service: 'payment-provider', cohort: 'all', failures: 0,
       detail: 'No elevated first-payment failures relative to baseline.', occurredAt: at(75), availableAt: at(76) },
     { id: 'health-notifications', kind: 'health', service: 'notifications', cohort: 'all', failures: 0,
@@ -27,7 +29,19 @@ export function createWorld(scenario) {
   ];
   if (scenario === 'limited') world.observations = world.observations.filter(e => e.kind !== 'health');
   if (scenario === 'incomplete') world.coverage = world.coverage.filter(c => c.source !== 'subscription');
+  if (scenario === 'delayed' || scenario === 'masked') holdLateRows(world);
   return world;
+}
+
+// Matched twins: the incident activations, their coverage and the billing reading land at 09:50, so both worlds
+// give one identical snapshot until then. Only the masked world has the complaint, and it lands a minute later.
+function holdLateRows(world) {
+  const late = at(110), incidentStart = initialWindows[2].start;
+  for (const event of world.events) if (event.kind === 'subscription' && event.occurredAt >= incidentStart) event.availableAt = late;
+  for (const row of world.coverage) if (row.source === 'subscription' && row.from >= incidentStart) row.availableAt = late;
+  world.observations.find(e => e.id === 'health-billing').availableAt = late;
+  if (world.scenario === 'masked') world.observations.find(e => e.id === 'support-1').availableAt = at(111);
+  else world.observations = world.observations.filter(e => e.id !== 'support-1');
 }
 
 function emitWindow(world, start, successes) {
@@ -57,12 +71,19 @@ export function applyRollback(world, action) {
   return next;
 }
 
+// Only the clock moves: late rows already carry their arrival times, and waiting can't hurry or create them.
+export function waitWorld(world) {
+  const waits = world.waits ?? 0; check(waits < MAX_WAITS, 'wait_limit_reached');
+  const next = structuredClone(world); next.clock = addMinutes(world.clock, WAIT_MINUTES); next.waits = waits + 1;
+  return next;
+}
+
 export function advanceWorld(world, anchor, step) {
   check(Number.isSafeInteger(step) && step === world.observationStep + 1 && step <= 3, 'invalid_observation_step');
   const next = structuredClone(world), start = step === 3 ? addMinutes(anchor, 30) : anchor;
   // Step two supplies delayed coverage for the SAME period. Only step three starts a declared later review period.
   if (step !== 2) {
-    const successes = step === 3 ? 40 : world.scenario === 'normal' || world.scenario === 'spontaneous' ? 80
+    const successes = step === 3 ? 40 : ['normal', 'spontaneous', 'delayed'].includes(world.scenario) ? 80
       : world.serviceVersion !== 'billing-v1' || world.scenario === 'ineffective' ? 40 : world.scenario === 'partial' ? 60 : 80;
     for (let i = 0; i < 2; i++) emitWindow(next, addMinutes(start, i * 15), successes);
     next.generatedThrough = addMinutes(start, 30);
