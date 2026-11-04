@@ -32,7 +32,7 @@ function buttonDisabled(html, label) {
 test('observe without acting is offered exactly when the service accepts it', t => {
   const store = new CaseStore(':memory:'); t.after(() => store.close());
   const cases = new Cases(store, { recordings: '.', source: 'fixture_surrogate' });
-  for (const scenario of ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked']) {
+  for (const scenario of ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked', 'absorbed']) {
     const id = cases.create(`ui-${scenario}-case`, scenario), data = store.view(id), html = render(data);
     const offered = html.includes('>Observe without acting</button>');
     let accepted = true;

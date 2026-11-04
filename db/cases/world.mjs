@@ -1,7 +1,7 @@
 // Trusted simulator only. This module and its state are never in the model worker's file allowlist or packet.
 import { POLICY, addMinutes } from './measurement.mjs';
 import { requireThat as check } from '../benchmark/contracts.mjs';
-const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked'];
+const SCENARIOS = ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked', 'absorbed'];
 const START = '2026-10-01T08:00:00.000Z', MAX_WAITS = 2, WAIT_MINUTES = 15;
 export const initialWindows = [0, 15, 60, 75].map((minute, i) => ({ start: addMinutes(START, minute),
   end: addMinutes(START, minute + 15), period: i < 2 ? 'baseline' : 'incident' }));
@@ -9,15 +9,17 @@ const at = minute => addMinutes(START, minute);
 
 export function createWorld(scenario) {
   check(SCENARIOS.includes(scenario), 'unknown_scenario');
-  const stable = scenario === 'normal' || scenario === 'delayed';
+  // Conversion and billing are separate facts. The story of `absorbed`: activations are rejected on the first try and retries finish inside
+  // the completion window (no retry rows are simulated), so the rate holds while billing shows failures. It pairs with `normal`: one signal, different evidence.
+  const billingClean = scenario === 'normal' || scenario === 'delayed', stable = billingClean || scenario === 'absorbed';
   const world = { version: 'synthetic-saas-v1', scenario, serviceVersion: 'billing-v2', revision: 0,
     clock: at(105), events: [], coverage: [], observations: [], generatedThrough: at(90), observationStep: 0, waits: 0 };
   for (const [i, window] of initialWindows.entries()) emitWindow(world, window.start, i < 2 || stable ? 80 : 40);
   world.observations = [
     { id: 'deploy-billing', kind: 'deployment', service: 'billing', from: 'billing-v1', to: 'billing-v2', occurredAt: at(50), availableAt: at(51) },
     { id: 'deploy-notifications', kind: 'deployment', service: 'notifications', from: 'notifications-v3', to: 'notifications-v4', occurredAt: at(55), availableAt: at(56) },
-    { id: 'health-billing', kind: 'health', service: 'billing', cohort: POLICY.cohorts[0], failures: stable ? 0 : 80,
-      detail: stable ? 'No elevated activation failures relative to baseline.' : 'Subscription activation request rejected after a successful first payment.',
+    { id: 'health-billing', kind: 'health', service: 'billing', cohort: POLICY.cohorts[0], failures: billingClean ? 0 : 80,
+      detail: billingClean ? 'No elevated activation failures relative to baseline.' : 'Subscription activation request rejected after a successful first payment.',
       occurredAt: at(75), availableAt: at(76) },
     { id: 'health-provider', kind: 'health', service: 'payment-provider', cohort: 'all', failures: 0,
       detail: 'No elevated first-payment failures relative to baseline.', occurredAt: at(75), availableAt: at(76) },
@@ -83,7 +85,7 @@ export function advanceWorld(world, anchor, step) {
   const next = structuredClone(world), start = step === 3 ? addMinutes(anchor, 30) : anchor;
   // Step two supplies delayed coverage for the SAME period. Only step three starts a declared later review period.
   if (step !== 2) {
-    const successes = step === 3 ? 40 : ['normal', 'spontaneous', 'delayed'].includes(world.scenario) ? 80
+    const successes = step === 3 ? 40 : ['normal', 'spontaneous', 'delayed', 'absorbed'].includes(world.scenario) ? 80
       : world.serviceVersion !== 'billing-v1' || world.scenario === 'ineffective' ? 40 : world.scenario === 'partial' ? 60 : 80;
     for (let i = 0; i < 2; i++) emitWindow(next, addMinutes(start, i * 15), successes);
     next.generatedThrough = addMinutes(start, 30);

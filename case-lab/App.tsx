@@ -8,7 +8,7 @@ async function read<T>(path: string): Promise<T> {
 const scenarios = [['incident', 'Paid-conversion incident'], ['limited', 'Incident with missing health evidence'],
   ['normal', 'Normal conversion'], ['partial', 'Partial recovery'], ['ineffective', 'Unchanged after action'],
   ['incomplete', 'Incomplete source coverage'], ['spontaneous', 'Recovery without an intervention'],
-  ['delayed', 'Late data, harmless twin'], ['masked', 'Late data, outage twin']];
+  ['delayed', 'Late data, harmless twin'], ['masked', 'Late data, outage twin'], ['absorbed', 'Stable conversion, billing failures']];
 export default function App() {
   const [session, setSession] = useState<Session | null>(null), [cases, setCases] = useState<CaseSummary[]>([]);
   const [selected, setSelected] = useState(() => location.hash.slice(1)), [detail, setDetail] = useState<CaseView | null>(null);

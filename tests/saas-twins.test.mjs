@@ -67,7 +67,7 @@ test('delayed: waits once, then closes as no incident on the measurement with no
   assert.equal(state.world.clock, '2026-10-01T10:00:00.000Z'); assert.equal(state.world.waits, 1);
   assert.equal(state.snapshot.signal.sufficient, true);
   assert.throws(() => command(s, 'wait_for_data'), /wait_not_available/);
-  command(s, 'close_no_incident');
+  command(s, 'close_no_incident', 'Late rows landed and conversion held.');
   const closed = s.store.view(s.id);
   assert.equal(closed.status, 'closed'); assert.equal(closed.closure.kind, 'close_no_incident');
   assert.equal(closed.closure.causalClaim, false); assert.equal(closed.closure.outcomeId, null);
@@ -119,7 +119,7 @@ test('waiting has a limit, and only an insufficient signal can wait or a stable 
 
   const normal = setup(t, 'normal');
   assert.throws(() => command(normal, 'wait_for_data'), /wait_not_available/);
-  command(normal, 'close_no_incident'); assert.equal(normal.store.get(normal.id).status, 'closed');
+  command(normal, 'close_no_incident', 'Complete data held steady.'); assert.equal(normal.store.get(normal.id).status, 'closed');
 
   const paused = setup(t, 'masked'); command(paused, 'pause');
   assert.throws(() => command(paused, 'wait_for_data'), /case_busy_or_paused/);
@@ -164,8 +164,8 @@ test('no alarm is not stable: a smaller drop or both cohorts falling cannot clos
 
   const wobble = setup(t, 'normal'); incidentAt(wobble, 75, 75);
   assert.equal(wobble.store.view(wobble.id).stable, true);
-  assert.equal(disabled(html(wobble), 'Close: no incident'), false);
-  command(wobble, 'close_no_incident'); assert.equal(wobble.store.get(wobble.id).status, 'closed');
+  assert.equal(wobble.store.view(wobble.id).noIncident.refusal, null);
+  command(wobble, 'close_no_incident', 'A wobble inside the tolerance.'); assert.equal(wobble.store.get(wobble.id).status, 'closed');
 
   const control = setup(t, 'normal'), { controlBaseline, controlIncident } = control.store.get(control.id).snapshot.signal;
   assert.equal(isStable({ sufficient: true, dropPoints: -10, controlBaseline, controlIncident }), false, 'A jump is not stable either.');
@@ -177,10 +177,10 @@ test('the buttons offer exactly what the service accepts at each stage', t => {
   assert.match(t1, /200 intents · activations not yet reliable/);
   command(s, 'wait_for_data');
   const t2 = html(s);
-  assert.doesNotMatch(t2, /Wait for late data<\/button>/); assert.equal(disabled(t2, 'Close: no incident'), false);
+  assert.doesNotMatch(t2, /Wait for late data<\/button>/); assert.equal(s.store.view(s.id).noIncident.refusal, null);
   assert.match(t2, /160 \/ 200 intents/);
   for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/]) assert.match(t2, prompt);
-  command(s, 'close_no_incident');
+  command(s, 'close_no_incident', 'Late rows landed and conversion held.');
   const closed = html(s);
   assert.equal(disabled(closed, 'Close: no incident'), true);
   assert.match(closed, /No cause was claimed/); assert.doesNotMatch(closed, /Recovery observed with uncertainty/);
