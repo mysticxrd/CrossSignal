@@ -7,7 +7,9 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { citationExistence, criticalCoverage } from '../../factory/02_data/benchmark/predicates.mjs';
+import { CONSTANT_POLICIES, renderConstants } from './constant-policies.mjs';
 import { dailyCoverage } from './daily-predicates.mjs';
+import { renderTwins, twinReport } from './twin-report.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 // Hidden answers: B01-B05 from the frozen factory data, B06-B10 and B11-B15 from the fresh holdouts frozen on 2026-10-04 and -05,
@@ -121,6 +123,13 @@ function gradeKeepOpen(finding, cause, abstained) {
   return { pass: true, got: want, want };
 }
 
+// What a run told the person, on a twin case in either world. Shown beside the score, never part of it.
+export function answerClass(finding, cause) {
+  if (finding.recommendation.kind === 'simulated_rollback') return 'rollback';
+  const texts = [...finding.hypotheses.map(h => h.diagnosis), ...finding.unresolvedAlternatives];
+  return finding.recommendation.kind !== 'none' && texts.some(text => keepsOpen(text, cause)) ? 'open' : 'closed';
+}
+
 export function gradeCause(finding, rubricCase, events, calmWords = NO_INCIDENT_WORDS) {
   const want = rubricCase.expectedDiagnosis, abstained = finding.terminalStatus === 'epistemic_abstention';
   if (rubricCase.keepOpen) return gradeKeepOpen(finding, rubricCase.keepOpen, abstained);
@@ -194,6 +203,21 @@ function cell(rows) {
 }
 const byMethod = rows => Object.fromEntries(METHODS.map(m => [m, cell(rows.filter(r => r.method === m))]));
 
+// What this grader gives answers that never read the data, case by case.
+export function constantScores(sources, rubricCases, mode) {
+  const metrics = { exposedEvidenceIds: [], tokens: { total: 0, input: 0, output: 0 }, turns: 0, toolCalls: 0, elapsedMs: 0, requests: { total: 0 } };
+  return Object.entries(CONSTANT_POLICIES).map(([name, answer]) => {
+    const rows = sources.map(source => {
+      const finding = answer(source.events);
+      return gradeRun({ caseRef: source.caseRef, method: 'constant', model: null, scope: { runId: 'constant' }, metrics,
+        result: { finding, terminalStatus: finding.terminalStatus } },
+      rubricCases.find(c => c.caseRef === source.caseRef), source.events, { mode, frame: source.frame ?? null });
+    }).sort((a, b) => a.label.localeCompare(b.label));
+    return { name, score: sum(rows, r => r.score), maxScore: sum(rows, r => r.maxScore), runs: rows.length,
+      cause: rows.filter(r => r.checks.cause.pass).length, byCase: Object.fromEntries(rows.map(r => [r.label, r.score])) };
+  });
+}
+
 export function gradeBatch(directory, rubricFiles = RUBRICS) {
   const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8'));
   const mode = Object.hasOwn(TRUTH_MODES, batch.truthMode) ? TRUTH_MODES[batch.truthMode] : fail(`unknown truth mode ${batch.truthMode}`);
@@ -201,10 +225,12 @@ export function gradeBatch(directory, rubricFiles = RUBRICS) {
   if (!runs.every(run => run.commit === batch.commit)) fail('runs came from more than one commit');
   if (!runs.every(run => run.result.truthMode === batch.truthMode)) fail(`runs disagree with the batch's truth mode ${batch.truthMode}`);
   const rubrics = rubricFiles.map(file => ({ file, cases: JSON.parse(readFileSync(resolve(root, file), 'utf8')).cases })), used = new Set();
+  const rubricCases = rubrics.flatMap(r => r.cases), sources = new Map();
   const graded = runs.map(run => {
     const rubric = rubrics.find(r => r.cases.some(c => c.caseRef === run.caseRef)) ?? fail(`no rubric case for ${run.caseRef}`);
     used.add(rubric.file);
     const source = JSON.parse(readFileSync(resolve(root, run.case), 'utf8'));
+    sources.set(run.caseRef, source);
     return gradeRun(run, rubric.cases.find(c => c.caseRef === run.caseRef), source.events, { mode, frame: source.frame ?? null });
   }).sort((a, b) => a.label.localeCompare(b.label) || METHODS.indexOf(a.method) - METHODS.indexOf(b.method));
   const cases = [...new Set(graded.map(r => r.label))].map(label => {
@@ -219,6 +245,8 @@ export function gradeBatch(directory, rubricFiles = RUBRICS) {
     profile: batch.profile ?? 'minimal', tokenLimits: batch.tokenLimits ?? null, requestGapMs: batch.requestGapMs ?? null,
     rubrics: rubricFiles.filter(file => used.has(file)).map(file => ({ file, sha256: hash(resolve(root, file)) })),
     graderSha256: hash(fileURLToPath(import.meta.url)), howGraded: mode.howGraded, cases,
+    constants: constantScores([...sources.values()], rubricCases, mode),
+    twins: twinReport({ directory, batch, runs, graded, sources, rubricCases, answerClass }),
     totals: Object.fromEntries(Object.entries(SPLITS).filter(([split]) => graded.some(r => r.split === split))
       .map(([split, name]) => [name, byMethod(graded.filter(r => r.split === split))]).concat([['all', byMethod(graded)]])), runs: graded };
 }
@@ -255,8 +283,11 @@ export function renderResults(results) {
       + `wall time${gap ? ` (Gemini requests start at least ${gap / 1000} s apart to stay inside the free tier)` : ''} · `
       + 'Gemini API requests (generate and token-count calls, retries included). '
       + `Rules is the no-model baseline in \`${mode.rules}\`; its rules target this benchmark's incident families, `
-      + 'so read its score as a reference point.',
-    '', '## Verdicts', '',
+      + 'so read its score as a reference point.', '',
+    ...renderConstants(results.constants, METHODS.map(m => ({ name: NAMES[m], scores: [results.totals.all[m].score],
+      causes: [results.runs.filter(r => r.method === m && r.checks.cause.pass).length] }))),
+    ...(results.twins ? renderTwins([results.twins]) : []),
+    '## Verdicts', '',
     '| Case | Method | Score | Status | Raw diagnosis (top-ranked) | Cause | Change | Segment | Rollback | Key evidence | Citations seen |',
     '|---|---|---|---|---|---|---|---|---|---|---|',
     ...results.runs.map(r => `| ${r.label} | ${NAMES[r.method]} | ${r.score}/${r.maxScore} | ${mark(r, 'status')} | `

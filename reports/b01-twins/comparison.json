@@ -1,0 +1,1619 @@
+{
+  "version": "b01-comparison-v2",
+  "truthMode": "SIMULATED",
+  "comparedAtUtc": "2026-11-02T07:39:09.105Z",
+  "commits": [
+    "97e1bff8c05c25ef3e6f711961001e93aac33965"
+  ],
+  "model": "gemini-3.5-flash-lite",
+  "modelVersions": [
+    "gemini-3.5-flash-lite"
+  ],
+  "requestGapMs": 4500,
+  "arms": [
+    {
+      "name": "minimal",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "profile": "minimal",
+      "tokenLimits": {
+        "name": "original-accepted-b01-token-limits",
+        "thinkingLevel": "MINIMAL",
+        "maxOutputTokens": 1024,
+        "contextTokens": 8192,
+        "generatedTokens": 6144
+      },
+      "batches": 3
+    }
+  ],
+  "batches": [
+    {
+      "batch": "outputs/b01/2026-11-02",
+      "arm": "minimal",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "profile": "minimal",
+      "startedAtUtc": "2026-11-01T21:05:13.242Z"
+    },
+    {
+      "batch": "outputs/b01/2026-11-02-2",
+      "arm": "minimal",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "profile": "minimal",
+      "startedAtUtc": "2026-11-01T21:13:17.860Z"
+    },
+    {
+      "batch": "outputs/b01/2026-11-02-3",
+      "arm": "minimal",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "profile": "minimal",
+      "startedAtUtc": "2026-11-02T07:28:49.963Z"
+    }
+  ],
+  "graderSha256": "e9c28f4d8c33104306dc7cfe1c443222e8932dde7855b3bbefac36b08a5c6302",
+  "rubrics": [
+    {
+      "file": "tests/evaluator/b21-b24/rubric.json",
+      "sha256": "97b73a06823f4911e32061bfa31f907911cea458397c38ffaeabd37dac5bb5ea"
+    }
+  ],
+  "howGraded": {
+    "status": "The finding must end `completed`, or `epistemic_abstention` on the cases where the rubric says to abstain. On the no-incident case the data is complete and flat, so abstaining fails.",
+    "cause": "Graded on meaning, not wording. If `relatedChangeId` names a deploy or pricing change, it must be the rubric's change. Otherwise the first cause word in the top-ranked diagnosis decides: checkout/validation, provider/gateway/processor, price/pricing, acquisition/composition/mix/traffic/channel/share/distribution, or notification/email (never right here). On the abstain cases the run must abstain. On the twin abstain cases, where the same evidence hides an outage in one world, it must also keep the outage among its hypotheses or unresolved alternatives and recommend something other than `none`. A bare mention of the provider, or an outage denied or explained away, does not keep it open. On the no-incident case it must blame no change, and its top-ranked diagnosis must say nothing is wrong (no incident, no drop, stable, unchanged, normal and the like) or name no cause at all.",
+    "change": "`relatedChangeId` must be the rubric's change, or empty when the rubric has none.",
+    "segment": "`affectedSegment` must name the rubric's segment (case, word order and separators ignored), or be empty when the rubric has none.",
+    "rollback": "Where the rubric wants a rollback, the run must recommend rolling back that service (by name or change id) with `approvalRequired: true`. Everywhere else it must not recommend a rollback.",
+    "keyEvidence": "Shown, not scored: rubric evidence groups whose rows the run both saw and cited, with the group's typed fact holding on them.",
+    "citations": "Shown, not scored: cited ids the run had actually seen, out of all ids it cited."
+  },
+  "constants": [
+    {
+      "name": "Always \"no incident\"",
+      "score": 12,
+      "maxScore": 20,
+      "runs": 4,
+      "cause": 1,
+      "byCase": {
+        "B21": 3,
+        "B22": 3,
+        "B23": 5,
+        "B24": 1
+      }
+    },
+    {
+      "name": "Always abstain",
+      "score": 11,
+      "maxScore": 20,
+      "runs": 4,
+      "cause": 0,
+      "byCase": {
+        "B21": 4,
+        "B22": 4,
+        "B23": 3,
+        "B24": 0
+      }
+    },
+    {
+      "name": "Always abstain, keeping an outage open",
+      "score": 13,
+      "maxScore": 20,
+      "runs": 4,
+      "cause": 2,
+      "byCase": {
+        "B21": 5,
+        "B22": 5,
+        "B23": 3,
+        "B24": 0
+      }
+    },
+    {
+      "name": "Always blame the newest change and roll back",
+      "score": 8,
+      "maxScore": 20,
+      "runs": 4,
+      "cause": 1,
+      "byCase": {
+        "B21": 1,
+        "B22": 1,
+        "B23": 2,
+        "B24": 4
+      }
+    }
+  ],
+  "twins": [
+    {
+      "batch": "2026-11-01T21:05:13.242Z",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "runs": [
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, right only by luck",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 0,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "needless rollback put to a person",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 1,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "waits, then closes when the data lands",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 0,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person on a guess",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 1
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "still waiting, though the data has landed",
+          "available": 3,
+          "read": 3,
+          "cited": 3
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 0,
+          "maxScore": 5,
+          "cause": false,
+          "status": "invalid_output",
+          "answer": "no answer",
+          "consequence": "no answer given",
+          "available": 3,
+          "read": 3,
+          "cited": 0
+        }
+      ],
+      "noise": [
+        {
+          "method": "rules",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            },
+            {
+              "label": "B22",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        },
+        {
+          "method": "single-shot-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "rollback"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "rollback"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        },
+        {
+          "method": "tool-using-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "open"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": true
+        }
+      ],
+      "firstDifferences": [
+        {
+          "world": "harmless",
+          "from": "B21",
+          "to": "B23",
+          "answers": [
+            "open",
+            "closed"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_c628cdd738b3`, only T2 saw `e_6c3f89c999b9`, `e_1071efe6dc01`, `e_dbb9a9e96d2c`"
+        },
+        {
+          "world": "outage",
+          "from": "B22",
+          "to": "B24",
+          "answers": [
+            "closed",
+            "no answer"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_4a7769ee97ee`, only T2 saw `e_808aa1c4653b`, `e_e6d6f2f7c550`, `e_e9e7055e4a22`"
+        }
+      ],
+      "validity": {
+        "changedFiles": [],
+        "t1Match": true,
+        "outsideModel": [],
+        "stopped": [],
+        "interrupted": []
+      }
+    },
+    {
+      "batch": "2026-11-01T21:13:17.860Z",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "runs": [
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, right only by luck",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 0,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "needless rollback put to a person",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, right only by luck",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "waits, then catches it when the data lands",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 3,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 1
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "still waiting, though the data has landed",
+          "available": 3,
+          "read": 3,
+          "cited": 3
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person",
+          "available": 3,
+          "read": 3,
+          "cited": 3
+        }
+      ],
+      "noise": [
+        {
+          "method": "rules",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            },
+            {
+              "label": "B22",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        },
+        {
+          "method": "single-shot-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "rollback"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "open"
+            }
+          ],
+          "comparable": true,
+          "different": true
+        },
+        {
+          "method": "tool-using-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "closed"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        }
+      ],
+      "firstDifferences": [
+        {
+          "world": "harmless",
+          "from": "B21",
+          "to": "B23",
+          "answers": [
+            "closed",
+            "closed"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_c628cdd738b3`, only T2 saw `e_6c3f89c999b9`, `e_1071efe6dc01`, `e_dbb9a9e96d2c`"
+        },
+        {
+          "world": "outage",
+          "from": "B22",
+          "to": "B24",
+          "answers": [
+            "closed",
+            "rollback"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_4a7769ee97ee`, only T2 saw `e_808aa1c4653b`, `e_e6d6f2f7c550`, `e_e9e7055e4a22`"
+        }
+      ],
+      "validity": {
+        "changedFiles": [],
+        "t1Match": true,
+        "outsideModel": [],
+        "stopped": [],
+        "interrupted": [
+          {
+            "label": "B22",
+            "method": "tool-using-model"
+          }
+        ]
+      }
+    },
+    {
+      "batch": "2026-11-02T07:28:49.963Z",
+      "commit": "97e1bff8c05c25ef3e6f711961001e93aac33965",
+      "runs": [
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, right only by luck",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 1,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "waits, then closes when the data lands",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B21",
+          "world": "harmless",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, right only by luck",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "rules",
+          "score": 4,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "single-shot-model",
+          "score": 0,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person on a guess",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B22",
+          "world": "outage",
+          "pull": "T1",
+          "method": "tool-using-model",
+          "score": 2,
+          "maxScore": 5,
+          "cause": false,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "outage left running",
+          "available": 0,
+          "read": 0,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": false,
+          "status": "epistemic_abstention",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 0
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B23",
+          "world": "harmless",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "closed",
+          "consequence": "closed, rightly",
+          "available": 3,
+          "read": 2,
+          "cited": 2
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "rules",
+          "score": 3,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "open",
+          "consequence": "still waiting, though the data has landed",
+          "available": 3,
+          "read": 3,
+          "cited": 3
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "single-shot-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person",
+          "available": 3,
+          "read": 3,
+          "cited": 2
+        },
+        {
+          "label": "B24",
+          "world": "outage",
+          "pull": "T2",
+          "method": "tool-using-model",
+          "score": 5,
+          "maxScore": 5,
+          "cause": true,
+          "status": "completed",
+          "answer": "rollback",
+          "consequence": "rollback put to a person",
+          "available": 3,
+          "read": 3,
+          "cited": 3
+        }
+      ],
+      "noise": [
+        {
+          "method": "rules",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            },
+            {
+              "label": "B22",
+              "status": "epistemic_abstention",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        },
+        {
+          "method": "single-shot-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "open"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "rollback"
+            }
+          ],
+          "comparable": true,
+          "different": true
+        },
+        {
+          "method": "tool-using-model",
+          "answers": [
+            {
+              "label": "B21",
+              "status": "completed",
+              "answer": "closed"
+            },
+            {
+              "label": "B22",
+              "status": "completed",
+              "answer": "closed"
+            }
+          ],
+          "comparable": true,
+          "different": false
+        }
+      ],
+      "firstDifferences": [
+        {
+          "world": "harmless",
+          "from": "B21",
+          "to": "B23",
+          "answers": [
+            "closed",
+            "closed"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_c628cdd738b3`, only T2 saw `e_6c3f89c999b9`, `e_1071efe6dc01`, `e_dbb9a9e96d2c`"
+        },
+        {
+          "world": "outage",
+          "from": "B22",
+          "to": "B24",
+          "answers": [
+            "closed",
+            "rollback"
+          ],
+          "where": "step 1: both asked `revenue.inspect {\"end\":\"2026-09-01T10:00:00.000Z\",\"limit\":50,\"start\":\"2026-09-01T09:00:00.000Z\"}`; only T1 saw `e_4a7769ee97ee`, only T2 saw `e_808aa1c4653b`, `e_e6d6f2f7c550`, `e_e9e7055e4a22`"
+        }
+      ],
+      "validity": {
+        "changedFiles": [],
+        "t1Match": true,
+        "outsideModel": [],
+        "stopped": [],
+        "interrupted": []
+      }
+    }
+  ],
+  "cases": [
+    {
+      "label": "B21",
+      "caseRef": "c_efc81038d436",
+      "split": "twin_holdout",
+      "labels": [
+        "B21"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 12,
+          "maxScore": 15,
+          "perBatch": [
+            4,
+            4,
+            4
+          ],
+          "causePerBatch": [
+            0,
+            0,
+            0
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 0,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 7.109833333340551
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 1,
+            "maxScore": 15,
+            "perBatch": [
+              0,
+              0,
+              1
+            ],
+            "causePerBatch": [
+              0,
+              0,
+              0
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 0,
+              "segment": 0,
+              "rollback": 1
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 2158.6666666666665,
+              "outputTokens": 607,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 12188.139266666665
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 5,
+            "maxScore": 15,
+            "perBatch": [
+              1,
+              2,
+              2
+            ],
+            "causePerBatch": [
+              0,
+              0,
+              0
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 2,
+              "segment": 0,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 21133,
+              "outputTokens": 1450.3333333333333,
+              "turns": 8,
+              "toolCalls": 7,
+              "requests": 24,
+              "elapsedMs": 107769.41859999998
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B22",
+      "caseRef": "c_377e7cb9c0cc",
+      "split": "twin_holdout",
+      "labels": [
+        "B22"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 12,
+          "maxScore": 15,
+          "perBatch": [
+            4,
+            4,
+            4
+          ],
+          "causePerBatch": [
+            0,
+            0,
+            0
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 0,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 2.8308333333333358
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 2,
+            "maxScore": 15,
+            "perBatch": [
+              0,
+              2,
+              0
+            ],
+            "causePerBatch": [
+              0,
+              0,
+              0
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 1,
+              "segment": 0,
+              "rollback": 1
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 2179.3333333333335,
+              "outputTokens": 630,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 11984.666500000001
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 6,
+            "maxScore": 15,
+            "perBatch": [
+              2,
+              2,
+              2
+            ],
+            "causePerBatch": [
+              0,
+              0,
+              0
+            ],
+            "checks": {
+              "status": 0,
+              "cause": 0,
+              "change": 3,
+              "segment": 0,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 16767,
+              "outputTokens": 1212.3333333333333,
+              "turns": 7,
+              "toolCalls": 6,
+              "requests": 21,
+              "elapsedMs": 95414.01983333334
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B23",
+      "caseRef": "c_5f405c844d2a",
+      "split": "twin_holdout",
+      "labels": [
+        "B23"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 9,
+          "maxScore": 15,
+          "perBatch": [
+            3,
+            3,
+            3
+          ],
+          "causePerBatch": [
+            0,
+            0,
+            0
+          ],
+          "checks": {
+            "status": 0,
+            "cause": 0,
+            "change": 3,
+            "segment": 3,
+            "rollback": 3
+          },
+          "endings": {
+            "epistemic_abstention": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 6.620266666674676
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 15,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              5,
+              5
+            ],
+            "causePerBatch": [
+              1,
+              1,
+              1
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 3,
+              "change": 3,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 2480.6666666666665,
+              "outputTokens": 758.3333333333334,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 13792.546166666676
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 13,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              3,
+              5
+            ],
+            "causePerBatch": [
+              1,
+              0,
+              1
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 2,
+              "change": 2,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 14854,
+              "outputTokens": 1258.3333333333333,
+              "turns": 5.333333333333333,
+              "toolCalls": 4.333333333333333,
+              "requests": 16,
+              "elapsedMs": 74365.35230000001
+            }
+          }
+        }
+      }
+    },
+    {
+      "label": "B24",
+      "caseRef": "c_4b1832f166af",
+      "split": "twin_holdout",
+      "labels": [
+        "B24"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 3,
+          "score": 9,
+          "maxScore": 15,
+          "perBatch": [
+            3,
+            3,
+            3
+          ],
+          "causePerBatch": [
+            1,
+            1,
+            1
+          ],
+          "checks": {
+            "status": 3,
+            "cause": 3,
+            "change": 0,
+            "segment": 3,
+            "rollback": 0
+          },
+          "endings": {
+            "completed": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 6.09163333333466
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 15,
+            "maxScore": 15,
+            "perBatch": [
+              5,
+              5,
+              5
+            ],
+            "causePerBatch": [
+              1,
+              1,
+              1
+            ],
+            "checks": {
+              "status": 3,
+              "cause": 3,
+              "change": 3,
+              "segment": 3,
+              "rollback": 3
+            },
+            "endings": {
+              "completed": 3
+            },
+            "mean": {
+              "tokens": 2375.6666666666665,
+              "outputTokens": 655.6666666666666,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 13499.64903333333
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 3,
+            "score": 10,
+            "maxScore": 15,
+            "perBatch": [
+              0,
+              5,
+              5
+            ],
+            "causePerBatch": [
+              0,
+              1,
+              1
+            ],
+            "checks": {
+              "status": 2,
+              "cause": 2,
+              "change": 2,
+              "segment": 2,
+              "rollback": 2
+            },
+            "endings": {
+              "invalid_output (invalid_json_or_schema)": 1,
+              "completed": 2
+            },
+            "mean": {
+              "tokens": 12423.666666666666,
+              "outputTokens": 1271.6666666666667,
+              "turns": 5.333333333333333,
+              "toolCalls": 4.333333333333333,
+              "requests": 16,
+              "elapsedMs": 71814.47370000002
+            }
+          }
+        }
+      }
+    }
+  ],
+  "totals": {
+    "twin_holdout": {
+      "labels": [
+        "B21",
+        "B22",
+        "B23",
+        "B24"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 12,
+          "score": 42,
+          "maxScore": 60,
+          "perBatch": [
+            14,
+            14,
+            14
+          ],
+          "causePerBatch": [
+            1,
+            1,
+            1
+          ],
+          "checks": {
+            "status": 9,
+            "cause": 3,
+            "change": 9,
+            "segment": 12,
+            "rollback": 9
+          },
+          "endings": {
+            "epistemic_abstention": 9,
+            "completed": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 5.663141666670806
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 12,
+            "score": 33,
+            "maxScore": 60,
+            "perBatch": [
+              10,
+              12,
+              11
+            ],
+            "causePerBatch": [
+              2,
+              2,
+              2
+            ],
+            "checks": {
+              "status": 6,
+              "cause": 6,
+              "change": 7,
+              "segment": 6,
+              "rollback": 8
+            },
+            "endings": {
+              "completed": 12
+            },
+            "mean": {
+              "tokens": 2298.5833333333335,
+              "outputTokens": 662.75,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 12866.250241666667
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 12,
+            "score": 34,
+            "maxScore": 60,
+            "perBatch": [
+              8,
+              12,
+              14
+            ],
+            "causePerBatch": [
+              1,
+              1,
+              2
+            ],
+            "checks": {
+              "status": 5,
+              "cause": 4,
+              "change": 9,
+              "segment": 5,
+              "rollback": 11
+            },
+            "endings": {
+              "completed": 11,
+              "invalid_output (invalid_json_or_schema)": 1
+            },
+            "mean": {
+              "tokens": 16294.416666666666,
+              "outputTokens": 1298.1666666666667,
+              "turns": 6.416666666666667,
+              "toolCalls": 5.416666666666667,
+              "requests": 19.25,
+              "elapsedMs": 87340.81610833331
+            }
+          }
+        }
+      }
+    },
+    "all": {
+      "labels": [
+        "B21",
+        "B22",
+        "B23",
+        "B24"
+      ],
+      "cells": {
+        "rules": {
+          "runs": 12,
+          "score": 42,
+          "maxScore": 60,
+          "perBatch": [
+            14,
+            14,
+            14
+          ],
+          "causePerBatch": [
+            1,
+            1,
+            1
+          ],
+          "checks": {
+            "status": 9,
+            "cause": 3,
+            "change": 9,
+            "segment": 12,
+            "rollback": 9
+          },
+          "endings": {
+            "epistemic_abstention": 9,
+            "completed": 3
+          },
+          "mean": {
+            "tokens": 0,
+            "outputTokens": 0,
+            "turns": 0,
+            "toolCalls": 0,
+            "requests": 0,
+            "elapsedMs": 5.663141666670806
+          }
+        },
+        "single-shot-model": {
+          "minimal": {
+            "runs": 12,
+            "score": 33,
+            "maxScore": 60,
+            "perBatch": [
+              10,
+              12,
+              11
+            ],
+            "causePerBatch": [
+              2,
+              2,
+              2
+            ],
+            "checks": {
+              "status": 6,
+              "cause": 6,
+              "change": 7,
+              "segment": 6,
+              "rollback": 8
+            },
+            "endings": {
+              "completed": 12
+            },
+            "mean": {
+              "tokens": 2298.5833333333335,
+              "outputTokens": 662.75,
+              "turns": 1,
+              "toolCalls": 0,
+              "requests": 3,
+              "elapsedMs": 12866.250241666667
+            }
+          }
+        },
+        "tool-using-model": {
+          "minimal": {
+            "runs": 12,
+            "score": 34,
+            "maxScore": 60,
+            "perBatch": [
+              8,
+              12,
+              14
+            ],
+            "causePerBatch": [
+              1,
+              1,
+              2
+            ],
+            "checks": {
+              "status": 5,
+              "cause": 4,
+              "change": 9,
+              "segment": 5,
+              "rollback": 11
+            },
+            "endings": {
+              "completed": 11,
+              "invalid_output (invalid_json_or_schema)": 1
+            },
+            "mean": {
+              "tokens": 16294.416666666666,
+              "outputTokens": 1298.1666666666667,
+              "turns": 6.416666666666667,
+              "toolCalls": 5.416666666666667,
+              "requests": 19.25,
+              "elapsedMs": 87340.81610833331
+            }
+          }
+        }
+      }
+    }
+  }
+}

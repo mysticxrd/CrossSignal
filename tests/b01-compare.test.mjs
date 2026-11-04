@@ -68,6 +68,10 @@ test('a comparison adds up each profile\'s repeated batches, case by case and in
   assert.equal(comparison.truthMode, 'SIMULATED');
   const markdown = renderComparison(comparison);
   assert.match(markdown, /^# Benchmark: `minimal` vs `low` on 15 simulated cases$/m);
+  // Every batch gets the do-nothing rows; only one holding a twin pair gets its section.
+  assert.match(markdown, /^## Do-nothing policies$/m);
+  assert.equal(comparison.twins, null);
+  assert.doesNotMatch(markdown, /^## Twin pairs$/m);
   assert.match(markdown, /^\*\*SIMULATED incidents, not production data\.\*\* A batch is one fresh run of every case with every method\. /m);
   assert.match(markdown, /This compares 4 batches: 2 with `minimal` and 2 with `low`, started in the order listed under Provenance\./);
   assert.match(markdown, /^\| Method \| `minimal`: MINIMAL thinking, up to 1,024 output tokens a response \| `low`: LOW thinking, up to 4,096 /m);
