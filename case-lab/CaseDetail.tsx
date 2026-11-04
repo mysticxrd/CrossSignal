@@ -16,11 +16,12 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
   const expired = data.proposal !== null && !(clock < Date.parse(data.proposal.expiresAt));
   const signal = data.snapshot.signal, inFlight = ['queued', 'running'].includes(data.investigation), open = data.status === 'open';
   const disabled = busy || data.paused || inFlight, remaining = session.attemptCap - session.attemptsUsed;
+  const noDecision = !open && ['review', 'proposed'].includes(data.decision);
   // Each stage is reached by its own record, never implied by a later one. Deferring or observing without acting records a decision without a finding.
   const latest = data.attempts.at(-1), reached = [true, data.investigation !== 'idle', !!data.finding || data.decision !== 'review', !!(data.receipt || data.anchor), !!data.outcome, !open];
   return <div className="case-content">
     <div className="case-heading"><div><p className="eyebrow">CASE / {data.id.slice(-8).toUpperCase()}</p><h1>New-subscription<br className="mobile-break" /> paid conversion</h1>
-      <p className="subtitle">Investigate the drop. Make a bounded decision. Check the outcome.</p></div>
+      <p className="subtitle">Read the signal. Make a bounded decision. Check the outcome.</p></div>
       <div className="heading-status"><span className={`status ${open ? 'open' : 'closed'}`}>{open ? 'Open Case' : 'Closed Case'}</span>
         <button className="text-button" disabled={busy} onClick={() => onAction(data.paused ? 'resume' : 'pause')}>{data.paused ? 'Resume actions' : 'Pause actions'}</button></div></div>
     {data.paused && <p role="status" className="notice">Actions are paused. A model request already sent may still finish; it cannot execute an action.</p>}
@@ -37,7 +38,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
     </section>
     <div className="investigation-grid"><section className="panel investigation"><div className="section-top"><div><p className="eyebrow">01 / INVESTIGATE</p><h2>Competing explanations</h2></div><span className="pill">{label(data.investigation)}</span></div>
       {!data.finding && <p className="muted">{inFlight ? 'The investigator is reading the frozen evidence packet. You can reload; this attempt is durably recorded.'
-        : latest ? `The attempt ended: ${label(latest.result?.terminalStatus ?? latest.status)}. Its record is retained.` : 'Ask the investigator to explain the evidence, compare alternatives and name what remains unknown.'}</p>}
+        : latest ? `The attempt ended: ${label(latest.result?.terminalStatus ?? latest.status)}. Its record is retained.` : open ? 'Ask the investigator to explain the evidence, compare alternatives and name what remains unknown.' : 'No investigation ran on this Case.'}</p>}
       {data.finding && <><p className="muted">Model interpretation · attribution remains unverified</p><p className="finding-summary">{data.finding.signalSummary}</p>{data.finding.hypotheses.map(hypothesis => <article className="hypothesis" key={hypothesis.rank}>
         <h3><span>{hypothesis.rank}</span>{hypothesis.diagnosis}</h3><p>{hypothesis.summary}</p><span className="small-label">SUPPORTING EVIDENCE</span>
         <Citations ids={hypothesis.supportIds} evidence={data.snapshot.evidence} />{hypothesis.contradictionIds.length > 0 && <><span className="small-label">CONTRADICTING EVIDENCE</span><Citations ids={hypothesis.contradictionIds} evidence={data.snapshot.evidence} /></>}
@@ -60,9 +61,9 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
         : data.receipt ? <><span className="status eligible">Simulation executed once</span><p>{data.receipt.action.from} → {data.receipt.action.to}</p>
           <p>Receipt recorded {time(data.receipt.executedAt)}. This proves the action ran; follow-up observations determine what happened next.</p>
           <p className="muted">Approval: {label(data.grant?.provenance ?? 'unknown')} · {data.grant?.actorId}</p></>
-          : <><p>{data.finding?.recommendation.summary ?? 'Review the investigation before choosing an intervention.'}</p>
+          : <><p>{data.finding?.recommendation.summary ?? (noDecision ? 'This Case closed without a decision to intervene.' : 'Review the investigation before choosing an intervention.')}</p>
             {data.gate && !data.gate.eligible && <div className="gate-reasons"><h3>No executable proposal</h3><ul>{data.gate.reasons.map(item => <li key={item}>{item}</li>)}</ul></div>}
-            <span className="pill">{label(data.decision)}</span>{data.finding && !data.anchor && open && <button disabled={disabled} onClick={() => onAction('refresh_proposal')}>Recheck proposal eligibility</button>}</>}
+            <span className="pill">{noDecision ? 'No decision' : label(data.decision)}</span>{data.finding && !data.anchor && open &&<button disabled={disabled} onClick={() => onAction('refresh_proposal')}>Recheck proposal eligibility</button>}</>}
       {!data.anchor && open && data.decision !== 'approved' && <div className="decision-alternatives">{signal.detected
         ? <button disabled={disabled} onClick={() => onAction('observe_without_action')}>Observe without acting</button>
         : <p className="muted">There is no detected drop to measure recovery against, so there is nothing to observe without acting. {data.stable ? 'The data is complete and stable, so you can close this as no incident.' : signal.sufficient ? 'The data is complete but conversion moved, so this cannot close as no incident. Defer, or close unresolved with a reason.' : 'Wait for late data, defer, or close unresolved with a reason.'}</p>}
@@ -73,8 +74,8 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
     <section className="panel"><div className="section-top"><div><p className="eyebrow">SOURCE RECORDS</p><h2>Evidence you can inspect</h2></div><span className="muted">Available by {time(data.snapshot.asOf)}</span></div>
       <EvidenceList evidence={data.snapshot.evidence} /></section>
     <section className="panel outcome"><div className="section-top"><div><p className="eyebrow">03 / OBSERVE</p><h2>What happened after the decision?</h2></div>
-      <span className="pill">{data.outcome ? label(data.outcome.state) : data.anchor ? 'Collecting' : 'Awaiting decision'}</span></div>
-      {data.plan ? <PlanView plan={data.plan} /> : <p className="muted">A fixed measurement plan is attached to an approved action or an explicit decision to observe without acting.</p>}
+      <span className="pill">{data.outcome ? label(data.outcome.state) : !open ? 'Not observed' : data.anchor ? 'Collecting' : 'Awaiting decision'}</span></div>
+      {data.plan ? <PlanView plan={data.plan} /> : <p className="muted">{open ? 'A fixed measurement plan is attached to an approved action or an explicit decision to observe without acting.' : 'No measurement ran, because this Case closed before any action or decision to observe.'}</p>}
       {data.outcome && <><div className="outcome-result"><strong>{percent(data.outcome.observedPercent)}</strong><div><b>{label(data.outcome.state)}</b><p>{label(data.outcome.direction)}{data.outcome.changePoints !== null && ` · ${data.outcome.changePoints > 0 ? '+' : ''}${data.outcome.changePoints.toFixed(1)} percentage points from the incident`}</p></div></div>
         <p>{data.outcome.caveat}</p>{!data.receipt && <p className="notice">No intervention was executed. Any recovery cannot be credited to an action.</p>}
         <details><summary>Measurement windows and retained assessments ({data.outcomes.length})</summary>{data.outcomes.map(outcome => <div key={outcome.id} className="assessment">

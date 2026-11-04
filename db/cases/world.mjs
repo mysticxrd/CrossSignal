@@ -17,7 +17,7 @@ export function createWorld(scenario) {
     { id: 'deploy-billing', kind: 'deployment', service: 'billing', from: 'billing-v1', to: 'billing-v2', occurredAt: at(50), availableAt: at(51) },
     { id: 'deploy-notifications', kind: 'deployment', service: 'notifications', from: 'notifications-v3', to: 'notifications-v4', occurredAt: at(55), availableAt: at(56) },
     { id: 'health-billing', kind: 'health', service: 'billing', cohort: POLICY.cohorts[0], failures: stable ? 0 : 80,
-      detail: scenario === 'delayed' ? 'No elevated activation failures relative to baseline.' : 'Subscription activation request rejected after a successful first payment.',
+      detail: stable ? 'No elevated activation failures relative to baseline.' : 'Subscription activation request rejected after a successful first payment.',
       occurredAt: at(75), availableAt: at(76) },
     { id: 'health-provider', kind: 'health', service: 'payment-provider', cohort: 'all', failures: 0,
       detail: 'No elevated first-payment failures relative to baseline.', occurredAt: at(75), availableAt: at(76) },

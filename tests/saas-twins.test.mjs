@@ -127,6 +127,14 @@ test('waiting has a limit, and only an insufficient signal can wait or a stable 
   assert.throws(() => command(busy, 'wait_for_data'), /case_busy_or_paused/);
 });
 
+test('a billing row with no failures never describes rejected activations', () => {
+  const billing = scenario => createWorld(scenario).observations.find(e => e.id === 'health-billing');
+  for (const scenario of ['normal', 'delayed']) {
+    assert.equal(billing(scenario).failures, 0); assert.doesNotMatch(billing(scenario).detail, /rejected/);
+  }
+  assert.equal(billing('masked').failures, 80); assert.match(billing('masked').detail, /rejected/);
+});
+
 test('no alarm is not stable: a smaller drop or both cohorts falling cannot close as no incident', t => {
   // Removes activations from the incident windows, so the measurement itself produces each signal. Per window, of 100 intents.
   const incidentAt = (s, selfServe, assisted) => {
@@ -171,13 +179,25 @@ test('the buttons offer exactly what the service accepts at each stage', t => {
   const t2 = html(s);
   assert.doesNotMatch(t2, /Wait for late data<\/button>/); assert.equal(disabled(t2, 'Close: no incident'), false);
   assert.match(t2, /160 \/ 200 intents/);
+  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/]) assert.match(t2, prompt);
   command(s, 'close_no_incident');
   const closed = html(s);
   assert.equal(disabled(closed, 'Close: no incident'), true);
   assert.match(closed, /No cause was claimed/); assert.doesNotMatch(closed, /Recovery observed with uncertainty/);
+  // A closed Case reads as closed: nothing still asks for a decision, and nothing refers to a drop the data ruled out.
+  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/, /A fixed measurement plan/, /Investigate the drop/]) assert.doesNotMatch(closed, prompt);
+  for (const summary of [/No decision/, /Not observed/, /No investigation ran/, /No measurement ran/]) assert.match(closed, summary);
 
   const outage = setup(t, 'masked'); command(outage, 'wait_for_data');
   assert.equal(disabled(html(outage), 'Close: no incident'), true);
+  // The proposal is withdrawn on closing, so its label must not outlive it, and the finding keeps its own wording.
+  investigate(outage); assert.equal(outage.store.get(outage.id).decision, 'proposed');
+  command(outage, 'close_unresolved', 'Closed without acting on the proposal.');
+  assert.match(html(outage), /<span class="pill">No decision<\/span>/);
+  const observed = setup(t, 'masked'); command(observed, 'wait_for_data'); command(observed, 'observe_without_action');
+  assert.match(html(observed), /Collecting/); assert.doesNotMatch(html(observed), /No decision/);
+  command(observed, 'close_unresolved', 'Closed before observing.');
+  assert.match(html(observed), /Not observed/); assert.match(html(observed), /no action/); assert.doesNotMatch(html(observed), /No decision/);
 
   const never = setup(t, 'incomplete'); command(never, 'wait_for_data'); command(never, 'wait_for_data');
   assert.equal(disabled(html(never), 'Wait for late data'), true);
