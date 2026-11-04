@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { digest, canonical, requireThat as check } from '../benchmark/contracts.mjs';
-import { snapshotOf, measurementPlan, assessOutcome, addMinutes } from './measurement.mjs';
-import { createWorld, captureWorld, initialWindows, worldContext, applyRollback, advanceWorld } from './world.mjs';
+import { snapshotOf, measurementPlan, assessOutcome, addMinutes, isStable } from './measurement.mjs';
+import { createWorld, captureWorld, initialWindows, worldContext, applyRollback, advanceWorld, waitWorld } from './world.mjs';
 import { newId } from './store.mjs';
 import { OWNER, makeProposal, authorize } from './proposal.mjs';
 export class Cases {
@@ -33,6 +33,13 @@ export class Cases {
     const windows = state.outcome ? [...initialWindows.slice(0, 2), ...[0, 1].map(i => ({
       start: addMinutes(state.outcome.start, i * 15), end: addMinutes(state.outcome.start, (i + 1) * 15), period: 'incident' }))] : initialWindows;
     return snapshotOf(state.id, captureWorld(state.world), windows, state.world.observations);
+  }
+  freshPacket(state) {
+    state.snapshot = this.currentSnapshot(state);
+    // A previous finding belongs to its old packet. It remains in the attempt history, never relabelled as current evidence.
+    state.finding = null; state.gate = null; state.currentAttemptId = null; state.investigation = 'idle';
+    if (!state.anchor) state.decision = 'review';
+    this.store.snapshot(state.snapshot); state.proposal = null;
   }
   requestInvestigation(id, revision) {
     return this.mutate(id, revision, state => {
@@ -143,11 +150,14 @@ export class Cases {
           outcomeId: state.outcome?.id ?? null, causalClaim: false };
       } else if (command === 'continue') {
         check(state.decision !== 'approved', 'execution_pending'); state.status = 'open';
-        state.snapshot = this.currentSnapshot(state);
-        // A previous finding belongs to its old packet. It remains in the attempt history, never relabelled as current evidence.
-        state.finding = null; state.gate = null; state.currentAttemptId = null; state.investigation = 'idle';
-        if (!state.anchor) state.decision = 'review';
-        this.store.snapshot(state.snapshot); state.proposal = null;
+        this.freshPacket(state);
+      } else if (command === 'wait_for_data') {
+        check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && !state.snapshot.signal.sufficient, 'wait_not_available');
+        state.world = waitWorld(state.world); this.freshPacket(state);
+      } else if (command === 'close_no_incident') {
+        check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && isStable(state.snapshot.signal), 'no_incident_needs_complete_stable_data');
+        state.status = 'closed'; state.proposal = null; state.closure = { kind: command, reason: reason.trim(), at: this.now(), actorId: OWNER,
+          outcomeId: null, causalClaim: false };
       } else throw new Error('unknown_command');
       this.store.event(id, command, { reason: reason.trim(), at: this.now(), actorId: OWNER, snapshotHash: state.snapshot.hash });
     });

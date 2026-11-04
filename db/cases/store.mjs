@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { digest, canonical, requireThat as check } from '../benchmark/contracts.mjs';
+import { isStable } from './measurement.mjs';
 export const newId = prefix => `${prefix}_${randomUUID().replaceAll('-', '')}`;
 export class CaseStore {
   constructor(path) {
@@ -51,7 +52,7 @@ export class CaseStore {
     .map(row => ({ id: row.id, snapshotHash: row.snapshot_hash, status: row.status, source: row.source, result: row.result ? JSON.parse(row.result) : null })); }
   view(id) {
     const state = this.get(id), { world, ...visible } = state;
-    return { ...visible, simulationClock: world.clock, serviceVersion: world.serviceVersion, observationStep: world.observationStep,
+    return { ...visible, simulationClock: world.clock, serviceVersion: world.serviceVersion, observationStep: world.observationStep, waits: world.waits ?? 0, stable: isStable(state.snapshot.signal),
       attempts: this.attempts(id), history: this.history(id),
       outcomes: this.db.prepare('SELECT payload FROM outcomes WHERE case_id=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload)) };
   }

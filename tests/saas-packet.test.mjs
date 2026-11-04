@@ -28,7 +28,7 @@ test('a Case packet gets its own format, and the restricted worker prepares it w
 });
 
 test('packet checks accept every scenario and reject tampered, impossible, foreign, future and extra evidence', () => {
-  for (const name of ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous']) {
+  for (const name of ['incident', 'limited', 'ineffective', 'partial', 'incomplete', 'normal', 'spontaneous', 'delayed', 'masked']) {
     const other = createWorld(name), observable = packetFromSnapshot(snapshotOf('case-test', captureWorld(other), initialWindows, other.observations));
     assert.equal(validateObservable(observable, scope).events.length, observable.events.length);
   }

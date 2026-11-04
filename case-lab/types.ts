@@ -19,7 +19,7 @@ export type CaseView = CaseSummary & { revision: number; truthMode: string; owne
   grant: { id: string; actorId: string; approvedAt: string; provenance: string; proposalHash: string } | null;
   receipt: { id: string; executedAt: string; simulationAt: string; provenance: string; action: { from: string; to: string } } | null;
   anchor: string | null; plan: Plan | null; outcome: Outcome | null; closure: { kind: string; reason: string; at: string } | null;
-  simulationClock: string; serviceVersion: string; observationStep: number;
+  simulationClock: string; serviceVersion: string; observationStep: number; waits: number; stable: boolean;
   attempts: { id: string; status: string; source: string; result: { terminalStatus: string; failureReason?: string; modelVersion?: string; finding?: Finding | null } | null }[];
   history: { sequence: number; kind: string; hash: string; payload: unknown }[]; outcomes: Outcome[] };
 export type Session = { token: string; owner: string; source: string; model: string; profile: string; modelReady: boolean;
