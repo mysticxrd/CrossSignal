@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { digest, canonical, requireThat as check } from '../benchmark/contracts.mjs';
-import { snapshotOf, measurementPlan, assessOutcome, addMinutes } from './measurement.mjs';
+import { snapshotOf, measurementPlan, assessOutcome, addMinutes, isStable } from './measurement.mjs';
 import { createWorld, captureWorld, initialWindows, worldContext, applyRollback, advanceWorld, waitWorld } from './world.mjs';
 import { newId } from './store.mjs';
 import { OWNER, makeProposal, authorize } from './proposal.mjs';
@@ -155,8 +155,7 @@ export class Cases {
         check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && !state.snapshot.signal.sufficient, 'wait_not_available');
         state.world = waitWorld(state.world); this.freshPacket(state);
       } else if (command === 'close_no_incident') {
-        const { sufficient, detected } = state.snapshot.signal;
-        check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && sufficient && !detected, 'no_incident_needs_complete_stable_data');
+        check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && isStable(state.snapshot.signal), 'no_incident_needs_complete_stable_data');
         state.status = 'closed'; state.proposal = null; state.closure = { kind: command, reason: reason.trim(), at: this.now(), actorId: OWNER,
           outcomeId: null, causalClaim: false };
       } else throw new Error('unknown_command');

@@ -8,7 +8,7 @@ const { CaseDetail } = await tsImport('../case-lab/CaseDetail.tsx', { parentURL:
   tsconfig: fileURLToPath(new URL('../tsconfig.case.json', import.meta.url)) });
 import { CaseStore } from '../db/cases/store.mjs';
 import { Cases } from '../db/cases/service.mjs';
-import { snapshotOf, measure } from '../db/cases/measurement.mjs';
+import { snapshotOf, measure, isStable } from '../db/cases/measurement.mjs';
 import { createWorld, captureWorld, initialWindows, waitWorld, advanceWorld } from '../db/cases/world.mjs';
 import { packetFromSnapshot, validateObservable } from '../db/benchmark/saas-packet.mjs';
 import { fixtureFinding } from './helpers/saas-fixture.mjs';
@@ -125,6 +125,42 @@ test('waiting has a limit, and only an insufficient signal can wait or a stable 
   assert.throws(() => command(paused, 'wait_for_data'), /case_busy_or_paused/);
   const busy = setup(t, 'masked'); busy.cases.requestInvestigation(busy.id, busy.store.get(busy.id).revision);
   assert.throws(() => command(busy, 'wait_for_data'), /case_busy_or_paused/);
+});
+
+test('no alarm is not stable: a smaller drop or both cohorts falling cannot close as no incident', t => {
+  // Removes activations from the incident windows, so the measurement itself produces each signal. Per window, of 100 intents.
+  const incidentAt = (s, selfServe, assisted) => {
+    const state = s.store.get(s.id), kept = [selfServe, assisted];
+    state.world.events = state.world.events.filter(e => {
+      if (e.kind !== 'subscription' || e.occurredAt < initialWindows[2].start) return true;
+      const [cohort, n] = e.intentId.split(':').slice(-2).map(Number);
+      return n < kept[cohort];
+    });
+    state.snapshot = s.cases.currentSnapshot(state); s.store.save(state);
+    return state.snapshot.signal;
+  };
+  const refused = (name, selfServe, assisted, dropPoints) => {
+    const s = setup(t, 'normal'), signal = incidentAt(s, selfServe, assisted);
+    assert.equal(signal.sufficient, true, name); assert.equal(signal.detected, false, name); assert.equal(signal.dropPoints, dropPoints, name);
+    assert.equal(s.store.view(s.id).stable, false, name);
+    assert.throws(() => command(s, 'close_no_incident'), /no_incident_needs_complete_stable_data/, name);
+    const markup = html(s);
+    assert.equal(disabled(markup, 'Close: no incident'), true, name);
+    assert.match(markup, /Conversion moved without meeting the incident rule/, name); assert.match(markup, /Unclear/, name);
+    assert.doesNotMatch(markup, /complete and stable/, name);
+    command(s, 'close_unresolved', 'Conversion moved and the rule did not fire.');
+    assert.equal(s.store.get(s.id).status, 'closed', name);
+  };
+  refused('one point under the alarm', 61, 80, 19);
+  refused('both cohorts falling together', 40, 40, 40);
+
+  const wobble = setup(t, 'normal'); incidentAt(wobble, 75, 75);
+  assert.equal(wobble.store.view(wobble.id).stable, true);
+  assert.equal(disabled(html(wobble), 'Close: no incident'), false);
+  command(wobble, 'close_no_incident'); assert.equal(wobble.store.get(wobble.id).status, 'closed');
+
+  const control = setup(t, 'normal'), { controlBaseline, controlIncident } = control.store.get(control.id).snapshot.signal;
+  assert.equal(isStable({ sufficient: true, dropPoints: -10, controlBaseline, controlIncident }), false, 'A jump is not stable either.');
 });
 
 test('the buttons offer exactly what the service accepts at each stage', t => {

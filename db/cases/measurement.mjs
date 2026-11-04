@@ -81,6 +81,11 @@ export function snapshotOf(caseId, capture, windows, observations) {
   return { ...body, hash: digest(body) };
 }
 
+// No alarm is not the same as stable: a smaller drop, or both cohorts moving together, fires no alarm and still isn't "no incident".
+export const isStable = ({ sufficient, dropPoints, controlBaseline, controlIncident }) => sufficient
+  && Math.abs(dropPoints) <= POLICY.controlTolerancePoints
+  && Math.abs(controlBaseline.conversionPercent - controlIncident.conversionPercent) <= POLICY.controlTolerancePoints;
+
 export function measurementPlan(snapshot) {
   const { hash, ...body } = snapshot, { signal } = body;
   check(digest(body) === hash, 'snapshot_hash_mismatch');
