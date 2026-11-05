@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { replayStory } from "../../../db/replay-story.mjs";
 import { loadReplay, SOURCE_URL } from "../../../db/replays/index.mjs";
 
 // Public and read-only: a recorded investigation replayed from db/replays. No sign-in, no database, no model call,
@@ -35,6 +36,9 @@ function stampText({ state, stamp }: Stamped) {
   return state === "changed" ? `Stamped ${stamp!.submittedAtUtc.slice(0, 10)} for other bytes (${stamp!.sha256.slice(0, 12)}…)` : "None";
 }
 
+type Part = string | { strong: string };
+const parts = (answer: Part[]) => answer.map((part, index) => typeof part === "string" ? part : <strong key={index}>{part.strong}</strong>);
+
 function describe(step: Step) {
   const { start, end, cursor, ...rest } = step.arguments ?? {};
   const range = typeof start === "string" && typeof end === "string" ? `${start.slice(0, 10)} → ${end.slice(0, 10)}` : null;
@@ -56,10 +60,15 @@ export async function generateMetadata({ params }: { params: Promise<{ runId: st
   return { title: `Replay ${runId} · CrossSignal` };
 }
 
-export default async function ReplayPage({ params }: { params: Promise<{ runId: string }> }) {
+type Search = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function ReplayPage({ params, searchParams }: { params: Promise<{ runId: string }>; searchParams?: Search }) {
   const { runId } = await params;
   const replay = loadReplay(runId);
   if (!replay) notFound();
+  // The plain layer on top; the exact record below it is today's page, unchanged. ?record=1 renders it open, so the
+  // badge reaches it in one click without client code.
+  const story = replayStory(replay), openRecord = (await searchParams)?.record === "1";
   const { bundle, check, verdict } = replay;
   const steps = replay.steps as Step[], siblings = replay.siblings as Sibling[], checks = replay.grade as Check[] | null;
   const stamped = replay.stamped as Stamped, file = `${SOURCE_URL}${bundle.run.scope.runId}.json`;
@@ -71,15 +80,31 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
   const finding = verdict.finding === "hidden" ? null : end?.finding ?? null;
 
   return <main className="case-page replay-page">
+    {verdict.notice && <p role="alert" className="replay-notice">{verdict.notice}</p>}
+    <header className="replay-story-head">
+      <span className="eyebrow">CROSSSIGNAL · RECORDED INVESTIGATION</span>
+      <h1>{story.title}</h1>
+      <p>{story.lede}</p>
+      {story.test && <p className="replay-test">{story.test}</p>}
+      <div className="replay-labels">
+        <span>Run <code>{story.labels.runId}</code>{story.labels.runVerified ? "" : " · not verified"}</span>
+        <span>Recorded <b>{story.labels.recorded}</b></span>
+        <span>Model <b>{story.labels.model}</b></span>
+        <a className={`replay-seal replay-seal-${story.seal.tone}`} href="?record=1#full-record">{story.seal.text} · see the record</a>
+      </div>
+    </header>
+    <dl className="replay-short">{story.short.map((item) => <div key={item.question}><dt>{item.question}</dt><dd>{parts(item.answer)}</dd></div>)}</dl>
+
+    <details className="replay-record" id="full-record" open={openRecord}>
+    <summary>Full record <small>Every row, hash and check, exactly as recorded</small></summary>
     <header className="case-heading">
       <div><span className="eyebrow">RECORDED INVESTIGATION · READ-ONLY REPLAY</span>
-        <h1>{bundle.grade.label} · {words(bundle.grade.method)}</h1>
+        <h2>{bundle.grade.label} · {words(bundle.grade.method)}</h2>
         <p>A recording of one run of the CrossSignal investigator, replayed exactly as saved. Nothing on this page calls a model or changes anything.</p></div>
       <div className="case-badges"><span className="truth-badge truth-test">{TRUTH_MODES[bundle.batch.truthMode] ?? bundle.batch.truthMode}</span>
         <span className={check.ok ? "case-status" : "case-status replay-broken"}>{check.ok ? `Chain intact · ${check.rows} rows` : `Does not verify at row ${check.brokenAt}`}</span>
         <span className={`case-status replay-stamp-${stamped.state}`}>{stampBadge(stamped)}</span></div>
     </header>
-    {verdict.notice && <p role="alert" className="replay-notice">{verdict.notice}</p>}
 
     <div className="case-layout">
       <div className="case-main-column">
@@ -139,5 +164,6 @@ export default async function ReplayPage({ params }: { params: Promise<{ runId: 
         </section>
       </aside>
     </div>
+    </details>
   </main>;
 }
