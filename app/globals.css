@@ -1464,3 +1464,25 @@ code { font-family: var(--font-geist-mono), monospace; }
 .replay-stamp-pending { background: var(--control-amber-soft); color: var(--control-amber); }
 .replay-stamp-missing, .replay-stamp-changed { background: var(--control-red-soft); color: var(--control-red); }
 .replay-check { margin: 12px 0 0; padding-left: 18px; font-size: 13px; line-height: 1.6; }
+/* The plain layer above the record: what went wrong, what the model concluded, how far to trust it. */
+.replay-story-head { max-width: 860px; margin-bottom: 22px; }
+.replay-story-head h1 { margin: 10px 0 12px; font-size: clamp(30px, 4vw, 46px); line-height: 1.05; letter-spacing: -.045em; }
+.replay-story-head p { max-width: 760px; margin: 0 0 10px; color: var(--control-muted); font-size: 15px; line-height: 1.55; }
+.replay-story-head .replay-test { padding: 10px 12px; border-left: 3px solid var(--control-amber); background: var(--control-amber-soft); color: var(--control-ink); font-size: 14px; }
+.replay-labels { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 14px; font-size: 13px; color: var(--control-muted); }
+.replay-labels b { color: var(--control-ink); }
+.replay-labels code { font: 12px var(--font-geist-mono), monospace; color: var(--control-ink); overflow-wrap: anywhere; }
+.replay-seal { padding: 6px 10px; border-radius: 99px; background: var(--control-green-soft); color: var(--control-green); font-size: 12px; font-weight: 700; text-decoration: none; }
+.replay-seal:hover, .replay-seal:focus-visible { text-decoration: underline; }
+.replay-seal-pending { background: var(--control-amber-soft); color: var(--control-amber); }
+.replay-seal-bad { background: var(--control-red-soft); color: var(--control-red); }
+.replay-short { display: grid; gap: 0; max-width: 860px; margin: 0 0 28px; border: 1px solid var(--control-line); border-radius: 10px; background: var(--control-panel); }
+.replay-short > div { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--control-line); }
+.replay-short > div:last-child { border-bottom: 0; }
+.replay-short dt { font-weight: 750; font-size: 14px; }
+.replay-short dd { margin: 0; font-size: 15px; line-height: 1.6; }
+.replay-record { border-top: 1px solid var(--control-line); padding-top: 14px; }
+.replay-record > summary { cursor: pointer; margin-bottom: 18px; font-size: 18px; font-weight: 750; }
+.replay-record > summary small { margin-left: 8px; color: var(--control-muted); font-size: 13px; font-weight: 500; }
+.replay-record .case-heading h2 { max-width: 850px; margin: 10px 0; font-size: 28px; line-height: 1.1; letter-spacing: -.03em; }
+@media (max-width: 700px) { .replay-short > div { grid-template-columns: 1fr; gap: 6px; } .replay-record > summary small { display: block; margin: 4px 0 0; } }
