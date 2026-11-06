@@ -28,9 +28,10 @@ const investigate = s => {
 };
 const snapshotAt = world => snapshotOf('case-twin', captureWorld(world), initialWindows, world.observations);
 const html = s => renderToStaticMarkup(createElement(CaseDetail, { data: s.store.view(s.id), session, busy: false, onAction: async () => {} }));
-function disabled(markup, label) {
-  const button = [...markup.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)].find(match => match[2] === label);
-  assert.ok(button, `Button exists: ${label}`);
+function disabled(markup, action) {
+  // By action, not label: the main action moves to the next-step card under a plainer label.
+  const button = [...markup.matchAll(/<button\b([^>]*)>/g)].find(match => match[1].includes(`data-action="${action}"`));
+  assert.ok(button, `Button exists: ${action}`);
   return button[1].includes('disabled=');
 }
 
@@ -153,7 +154,7 @@ test('no alarm is not stable: a smaller drop or both cohorts falling cannot clos
     assert.equal(s.store.view(s.id).stable, false, name);
     assert.throws(() => command(s, 'close_no_incident'), /no_incident_needs_complete_stable_data/, name);
     const markup = html(s);
-    assert.equal(disabled(markup, 'Close: no incident'), true, name);
+    assert.equal(disabled(markup, 'close_no_incident'), true, name);
     assert.match(markup, /Conversion moved without meeting the incident rule/, name); assert.match(markup, /Unclear/, name);
     assert.doesNotMatch(markup, /complete and stable/, name);
     command(s, 'close_unresolved', 'Conversion moved and the rule did not fire.');
@@ -173,23 +174,23 @@ test('no alarm is not stable: a smaller drop or both cohorts falling cannot clos
 
 test('the buttons offer exactly what the service accepts at each stage', t => {
   const s = setup(t, 'delayed'), t1 = html(s);
-  assert.equal(disabled(t1, 'Wait for late data'), false); assert.equal(disabled(t1, 'Close: no incident'), true);
+  assert.equal(disabled(t1, 'wait_for_data'), false); assert.equal(disabled(t1, 'close_no_incident'), true);
   assert.match(t1, /200 intents · activations not yet reliable/);
   command(s, 'wait_for_data');
   const t2 = html(s);
-  assert.doesNotMatch(t2, /Wait for late data<\/button>/); assert.equal(s.store.view(s.id).noIncident.refusal, null);
+  assert.doesNotMatch(t2, /data-action="wait_for_data"/); assert.equal(s.store.view(s.id).noIncident.refusal, null);
   assert.match(t2, /160 \/ 200 intents/);
   for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/]) assert.match(t2, prompt);
   command(s, 'close_no_incident', 'Late rows landed and conversion held.');
   const closed = html(s);
-  assert.equal(disabled(closed, 'Close: no incident'), true);
+  assert.equal(disabled(closed, 'close_no_incident'), true);
   assert.match(closed, /No cause was claimed/); assert.doesNotMatch(closed, /Recovery observed with uncertainty/);
   // A closed Case reads as closed: nothing still asks for a decision, and nothing refers to a drop the data ruled out.
   for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/, /A fixed measurement plan/, /Investigate the drop/]) assert.doesNotMatch(closed, prompt);
   for (const summary of [/No decision/, /Not observed/, /No investigation ran/, /No measurement ran/]) assert.match(closed, summary);
 
   const outage = setup(t, 'masked'); command(outage, 'wait_for_data');
-  assert.equal(disabled(html(outage), 'Close: no incident'), true);
+  assert.equal(disabled(html(outage), 'close_no_incident'), true);
   // The proposal is withdrawn on closing, so its label must not outlive it, and the finding keeps its own wording.
   investigate(outage); assert.equal(outage.store.get(outage.id).decision, 'proposed');
   command(outage, 'close_unresolved', 'Closed without acting on the proposal.');
@@ -197,9 +198,9 @@ test('the buttons offer exactly what the service accepts at each stage', t => {
   const observed = setup(t, 'masked'); command(observed, 'wait_for_data'); command(observed, 'observe_without_action');
   assert.match(html(observed), /Collecting/); assert.doesNotMatch(html(observed), /No decision/);
   command(observed, 'close_unresolved', 'Closed before observing.');
-  assert.match(html(observed), /Not observed/); assert.match(html(observed), /no action/); assert.doesNotMatch(html(observed), /No decision/);
+  assert.match(html(observed), /Not observed/); assert.match(html(observed), /<span class="pill">Watching only<\/span>/); assert.doesNotMatch(html(observed), /No decision/);
 
   const never = setup(t, 'incomplete'); command(never, 'wait_for_data'); command(never, 'wait_for_data');
-  assert.equal(disabled(html(never), 'Wait for late data'), true);
+  assert.equal(disabled(html(never), 'wait_for_data'), true);
   assert.match(html(never), /Both waits are used/);
 });

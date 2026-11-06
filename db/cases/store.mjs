@@ -57,6 +57,6 @@ export class CaseStore {
       outcomes: this.db.prepare('SELECT payload FROM outcomes WHERE case_id=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload)) };
   }
   list() { return this.db.prepare('SELECT state FROM cases ORDER BY rowid DESC').all().map(row => {
-    const s = JSON.parse(row.state); return { id: s.id, title: s.title, status: s.status, investigation: s.investigation, decision: s.decision, createdAt: s.createdAt }; }); }
+    const s = JSON.parse(row.state); return { id: s.id, title: s.title, shape: { detected: s.snapshot.signal.detected, sufficient: s.snapshot.signal.sufficient, stable: isStable(s.snapshot.signal) }, status: s.status, investigation: s.investigation, decision: s.decision, createdAt: s.createdAt }; }); }
   close() { this.db.close(); }
 }

@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { CaseDetail } from './CaseDetail';
-import { type CaseSummary, type CaseView, type Session, label } from './types';
+import { type CaseSummary, type CaseView, type Session } from './types';
+import { SITUATIONS, caseName, plain, plainError } from './story';
 async function read<T>(path: string): Promise<T> {
   const response = await fetch(path); const data = await response.json();
   if (!response.ok) throw new Error(data.error); return data;
 }
-const scenarios = [['incident', 'Paid-conversion incident'], ['limited', 'Incident with missing health evidence'],
-  ['normal', 'Normal conversion'], ['partial', 'Partial recovery'], ['ineffective', 'Unchanged after action'],
-  ['incomplete', 'Incomplete source coverage'], ['spontaneous', 'Recovery without an intervention'],
-  ['delayed', 'Late data, harmless twin'], ['masked', 'Late data, outage twin'], ['absorbed', 'Stable conversion, billing failures']];
 export default function App() {
   const [session, setSession] = useState<Session | null>(null), [cases, setCases] = useState<CaseSummary[]>([]);
   const [selected, setSelected] = useState(() => location.hash.slice(1)), [detail, setDetail] = useState<CaseView | null>(null);
@@ -76,21 +73,21 @@ export default function App() {
     <aside className="sidebar">
       <button onClick={() => select('')} className="brand"><span className="brand-mark">×</span> CrossSignal<span className="brand-dot">●</span></button>
       <p className="eyebrow">LOCAL CASE LAB</p><p className="sidebar-intro">Follow the evidence.<br />Keep the decision yours.</p>
-      <div className="create-form"><label htmlFor="scenario">Start with a synthetic situation</label>
-        <select id="scenario" value={scenario} onChange={event => setScenario(event.target.value)}>{scenarios.map(([value, name]) => <option value={value} key={value}>{name}</option>)}</select>
+      <div className="create-form"><label htmlFor="scenario">Pick a simulated situation</label>
+        <select id="scenario" value={scenario} onChange={event => setScenario(event.target.value)}>{Object.entries(SITUATIONS).map(([value, name]) => <option value={value} key={value}>{name}</option>)}</select>
         <button className="primary" disabled={busy || !session} onClick={create}>+ Open a Case</button></div>
       <div className="list-title">YOUR CASES <span>{cases.length}</span></div>
       <nav aria-label="Cases">{cases.map((item, i) => <button key={item.id} className={`case-link ${item.id === selected ? 'selected' : ''}`} onClick={() => select(item.id)}>
-        <span className="case-number">CASE {String(cases.length - i).padStart(2, '0')}</span><strong>{item.title}</strong>
-        <span className="case-link-status"><i className={item.status === 'closed' ? 'closed-dot' : ''} />{label(item.status)} · {label(item.investigation)}</span></button>)}</nav>
+        <span className="case-number">Case {cases.length - i}</span><strong>{caseName(item.shape)}</strong>
+        <span className="case-link-status"><i className={item.status === 'closed' ? 'closed-dot' : ''} />{plain(item.status)} · {plain(item.investigation)}</span></button>)}</nav>
       <div className="sidebar-foot"><span className="live-dot" /> Local owner<br /><small>All business data and actions are simulated.</small></div>
     </aside>
     <main className="workspace"><header className="topbar"><span>WORKSPACE / INVESTIGATIONS</span><span className="badge">SIMULATED</span></header>
-      {error && <div className="error" role="alert"><strong>Request needs attention</strong><p>{label(error)}</p><button onClick={() => setError('')}>Dismiss</button></div>}
+      {error && <div className="error" role="alert"><strong>{"That didn't work"}</strong><p>{plainError(error)}</p><button onClick={() => setError('')}>Dismiss</button></div>}
       {shown && session ? <CaseDetail key={shown.id} data={shown} session={session} busy={busy} onAction={perform} /> : <div className="empty-state">
         <span className="eyebrow">FROM SIGNAL TO OUTCOME</span><h1>A decision you can<br />trace back to evidence.</h1>
-        <p>Open a Case to investigate a SaaS paid-conversion incident. Review competing explanations, decide whether to run a simulation, then observe what happened.</p>
-        <div className="empty-steps"><span>01 / Investigate</span><span>02 / Decide</span><span>03 / Observe</span></div>
+        <p>{"CrossSignal looks into a problem in a company's numbers, suggests a fix, and waits for a person to approve it. Each Case here is a simulation: a made-up subscription business with made-up data, so nothing real changes."}</p>
+        <p>A Case goes through five steps: what happened, why, your decision, whether it worked, and closing it. CrossSignal suggests; you decide.</p>
         <p className="muted">{selected ? 'Loading the saved Case…' : 'Choose a situation in the sidebar to begin.'}</p></div>}
     </main>
   </div>;
