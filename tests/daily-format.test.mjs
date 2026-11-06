@@ -4,9 +4,9 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { canonical, digest } from '../db/benchmark/contracts.mjs';
-import { TRUTH, VERSION, WEEKDAYS, signal, validateObservable } from '../db/benchmark/daily.mjs';
+import { PAGING, TRUTH, VERSION, WEEKDAYS, signal, validateObservable } from '../db/benchmark/daily.mjs';
 import { dailyRulesFinding } from '../db/benchmark/daily-rules.mjs';
-import { formatOf } from '../db/benchmark/formats.mjs';
+import { formatOf, toolsFor } from '../db/benchmark/formats.mjs';
 import { GEMINI } from '../db/benchmark/gemini-config.mjs';
 import { answerQuery, prepareGemini, validateGeminiTurn } from '../db/benchmark/gemini-context.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
@@ -124,6 +124,25 @@ test('daily tool answers come back as compact day rows, and a bad request gets a
   assert.equal(answerQuery(calm, scope, { tool: 'engineering.inspect', arguments: { start: frame.start, end: frame.clock, limit: 5,
     cursor: null, service: 'pricing', kind: 'changes' } }).reason,
   'service must be one of checkout, notifications, payment-provider; kind must be changes or health');
+});
+
+test('daily tools say how to page, and a cursor is served only with the arguments of its first page', () => {
+  const { calm } = cases, first = { tool: 'revenue.inspect', arguments: { start: frame.start, end: frame.clock, limit: 10, cursor: null, segment: null } };
+  for (const tool of toolsFor(frame)) assert(tool.description.endsWith(` ${PAGING}`), tool.name);
+  // The v2 tools and the single-shot request, which carries no tools, are unchanged.
+  for (const tool of toolsFor()) assert(!tool.description.includes(PAGING), tool.name);
+  assert.doesNotMatch(canonical(prepareGemini(calm, scope, { method: 'single-shot-model', profile: 'low' }).body), /nextCursor/);
+  const tools = prepareGemini(calm, scope, { method: 'tool-using-model', profile: 'low', queries: [] }).body.systemInstruction.parts[0].text;
+  assert.equal(tools.split(PAGING).length - 1, 3);
+  // 22 rows: the cursor returns the next 10 only when nothing else changes; a new start needs cursor null.
+  const page = answerQuery(calm, scope, first), at = args => answerQuery(calm, scope, { ...first, arguments: { ...first.arguments, ...args } });
+  assert.deepEqual([page.events.length, page.truncated], [10, true]);
+  const second = at({ cursor: page.nextCursor });
+  assert.equal(second.events.length, 10);
+  assert.equal(second.events[0].id, answerQuery(calm, scope, { ...first, arguments: { ...first.arguments, limit: 20 } }).events[10].id);
+  const moved = { start: '2020-12-05T00:00:00.000Z' };
+  assert.equal(at({ ...moved, cursor: page.nextCursor }).reason, 'cursor must be null or the nextCursor returned for this same query');
+  assert.equal(at(moved).events.length, 10);
 });
 
 test('daily requests carry the daily task and tools, with no SIMULATED label, v2 segment or case label', () => {
