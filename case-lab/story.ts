@@ -55,9 +55,13 @@ export function caseStory(data: CaseView, session: Session, now = Date.now()): S
     if (!outcome) return story(4, acted ? 'The undo has run. Did it help?' : "You're watching without changing anything", `${start} ${clock}`, next('observe', 'Move time forward and check'));
     if (outcome.state === 'criterion_met') return story(5, 'Sign-ups came back', `${per100(outcome.observedPercent)} of every 100 online sign-ups finish again. ${acted
       ? "This fits the explanation but doesn't prove it." : "Nothing was changed, so the recovery can't be credited to an action."} Close the Case with what you concluded.`, next('close_recovered', 'Close: sign-ups came back'));
-    if (data.observationStep < 3) return story(4, outcome.state === 'inconclusive' ? 'Not enough records yet to tell' : "Sign-ups haven't come back yet",
-      `${per100(outcome.observedPercent)} of every 100 online sign-ups finish now. ${clock}`, next('observe', data.observationStep === 1 ? 'Check the late records' : 'Check the next period'));
-    return story(5, "Sign-ups didn't come back", 'Every planned check has run. Close the Case and say what you concluded.', next('close_unresolved', 'Close without a fix', true));
+    // A miss after an earlier recovery is a relapse, not a failure to recover: the summary keeps both results.
+    const relapsed = outcome.state === 'criterion_not_met' && data.outcomes.some(o => o.state === 'criterion_met');
+    const missed = relapsed ? 'Sign-ups came back, then dropped again' : "Sign-ups haven't come back yet";
+    const relapse = relapsed ? `Sign-ups recovered at an earlier check, but now ${per100(outcome.observedPercent)} of every 100 finish, so the recovery didn't last.` : '';
+    if (data.observationStep < 3) return story(4, outcome.state === 'inconclusive' ? 'Not enough records yet to tell' : missed,
+      `${relapse || `${per100(outcome.observedPercent)} of every 100 online sign-ups finish now.`} ${clock}`, next('observe', data.observationStep === 1 ? 'Check the late records' : 'Check the next period'));
+    return story(5, relapsed ? missed : "Sign-ups didn't come back", `${relapse ? `${relapse} ` : ''}Every planned check has run. Close the Case and say what you concluded.`, next('close_unresolved', 'Close without a fix', true));
   }
   // Before a decision. Each choice below is one the service accepts at this point.
   const canInvestigate = session.modelReady && session.attemptCap - session.attemptsUsed > 0;

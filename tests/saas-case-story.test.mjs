@@ -83,3 +83,14 @@ test('every scenario and stage gets one plain next step that the service accepts
   assert.deepEqual([...offered].sort(), ['approve', 'close_no_incident', 'close_recovered', 'close_unresolved', 'investigate', 'observe',
     'observe_without_action', 'refresh_proposal', 'resume', 'wait_for_data']);
 });
+
+test('a miss after an earlier recovery reads as a relapse, not as never recovering', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse(NOW) });
+  const s = setup(t, 'incident');
+  investigate(s); s.cases.execute(approve(s));
+  command(s, 'observe'); command(s, 'close_recovered'); command(s, 'observe'); command(s, 'observe');
+  const data = s.store.view(s.id), story = caseStory(data, session(s));
+  assert.deepEqual(data.outcomes.map(o => o.state), ['criterion_met', 'criterion_met', 'criterion_not_met']);
+  assert.equal(story.headline, 'Sign-ups came back, then dropped again');
+  assert.match(story.explain, /recovered at an earlier check/);
+});
