@@ -10,6 +10,7 @@ tag `factory-freeze-2026-10-03`.
 |---|---|
 | `app/` | UI, server actions and the public replay page (`app/runs/[runId]/`) |
 | `db/` | Cases from investigation to outcome, the schema and database runtimes |
+| `order-recovery/` | v0.2 simulated Razorpay order world, code-only rivals and simulator; grader in `tests/evaluator/order-recovery/`, report in `reports/order-recovery/` |
 | `db/a01/` | The A01 investigator, its tools and store |
 | `db/benchmark/` | Gemini request, transport, budget and schemas |
 | `db/cases/` | The SaaS Case lab: simulated world, conversion measurement, Case store, approval, execution and outcome |

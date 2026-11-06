@@ -1,0 +1,108 @@
+{
+  "privateCanary": "EVALUATOR_ONLY_RZP670_7e5a94",
+  "orders": [
+    {
+      "orderId": "order-1",
+      "story": "Closed tab after authorization; no later activity.",
+      "holder": "Razorpay (simulated)",
+      "tier": "fields",
+      "answer": {
+        "action": "capture",
+        "fulfillment": "to_ship",
+        "evidenceIds": [
+          "payment-1"
+        ]
+      },
+      "expected": {
+        "payment": "captured",
+        "fulfillment": "to_ship"
+      }
+    },
+    {
+      "orderId": "order-2",
+      "story": "Bank actually declined the payment (control).",
+      "holder": "Razorpay (simulated)",
+      "tier": "fields",
+      "answer": {
+        "action": "leave",
+        "evidenceIds": [
+          "payment-2"
+        ]
+      },
+      "expected": {
+        "payment": "failed",
+        "fulfillment": "closed"
+      }
+    },
+    {
+      "orderId": "order-3",
+      "story": "Paid again for the same cart 20 minutes later.",
+      "holder": "Razorpay (simulated)",
+      "tier": "fields",
+      "answer": {
+        "action": "close",
+        "evidenceIds": [
+          "payment-3",
+          "payment-7"
+        ]
+      },
+      "expected": {
+        "payment": "refunded",
+        "fulfillment": "closed"
+      }
+    },
+    {
+      "orderId": "order-4",
+      "story": "Asked Razorpay support to cancel and return the money.",
+      "holder": "Razorpay (simulated)",
+      "tier": "words",
+      "answer": {
+        "action": "close",
+        "evidenceIds": [
+          "payment-4",
+          "message-4"
+        ]
+      },
+      "expected": {
+        "payment": "refunded",
+        "fulfillment": "closed"
+      }
+    },
+    {
+      "orderId": "order-5",
+      "story": "Merchant note says the shop shipped by courier already.",
+      "holder": "merchant; needs consent (simulated)",
+      "tier": "words",
+      "answer": {
+        "action": "capture",
+        "fulfillment": "shipped",
+        "evidenceIds": [
+          "payment-5",
+          "message-5"
+        ]
+      },
+      "expected": {
+        "payment": "captured",
+        "fulfillment": "shipped"
+      }
+    },
+    {
+      "orderId": "order-6",
+      "story": "Told the shop they might try again tonight; no new payment yet.",
+      "holder": "merchant; needs consent (simulated)",
+      "tier": "person",
+      "answer": {
+        "action": "capture",
+        "fulfillment": "to_ship",
+        "evidenceIds": [
+          "payment-6",
+          "message-6"
+        ]
+      },
+      "expected": {
+        "payment": "captured",
+        "fulfillment": "to_ship"
+      }
+    }
+  ]
+}

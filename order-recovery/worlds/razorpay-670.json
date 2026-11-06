@@ -1,0 +1,194 @@
+{
+  "id": "razorpay-670",
+  "mode": "SIMULATED",
+  "pluginVersion": "4.8.8",
+  "payment_action": "authorize",
+  "nowMinute": 60,
+  "records": [
+    {
+      "id": "order-1",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-1",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-1",
+      "status": "authorized",
+      "email": "shopper-1@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-2",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-2",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-2",
+      "status": "failed",
+      "email": "shopper-2@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-3",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-3",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-3",
+      "status": "authorized",
+      "email": "shopper-3@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-4",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-4",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-4",
+      "status": "authorized",
+      "email": "shopper-4@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-5",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-5",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-5",
+      "status": "authorized",
+      "email": "shopper-5@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-6",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "failed"
+    },
+    {
+      "id": "payment-6",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-6",
+      "status": "authorized",
+      "email": "shopper-6@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 0,
+      "deadlineMinute": 4320
+    },
+    {
+      "id": "order-7",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "processing"
+    },
+    {
+      "id": "payment-7",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-7",
+      "status": "captured",
+      "email": "shopper-3@example.invalid",
+      "amountMinor": 250000,
+      "currency": "INR",
+      "items": [
+        "shirt-blue:M:1"
+      ],
+      "createdMinute": 20,
+      "deadlineMinute": 4340
+    },
+    {
+      "id": "message-4",
+      "kind": "message",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-4",
+      "text": "Money deducted, order failed. I don't want it; return my money."
+    },
+    {
+      "id": "message-5",
+      "kind": "message",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-5",
+      "text": "Customer called; we shipped it by courier."
+    },
+    {
+      "id": "message-6",
+      "kind": "message",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-6",
+      "text": "It said failed. I'll try again tonight."
+    }
+  ]
+}
