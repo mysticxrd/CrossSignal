@@ -19,12 +19,17 @@ comments `@codex review`, not on every push.
    dead code, unused exports, debug output, comments that repeat the code and
    changes outside the slice.
 2. Run `npm test` and `npm run lint`; commit any fixes.
-3. Write the PR body to a scratch file, in four sections:
+3. Write the PR body to a scratch file, in five sections:
    - **Why**: the problem, in two or three sentences.
    - **Decision**: the owner's decision and the alternatives they can
      overrule.
    - **Proof**: test and lint results; for prompt, tool or schema changes, B01
-     numbers with run id, date and model; how to see the change.
+     numbers with run id, date and model; what the runs read as well as what
+     they scored; the prediction written before the runs; how to see the
+     change.
+   - **Assumptions**: what the proof depends on, one line each, with the one
+     that no test or run checks marked "untested". Reviewers check these, not
+     only the diff.
    - **Not in this PR**: what was deferred.
 4. Run `git push -u origin HEAD`, then
    `gh pr create --base main --title "<what changes>" --body-file <file>`.
