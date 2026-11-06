@@ -29,6 +29,8 @@ conversation is the spec; the owner may talk as long as they like.
 ## 3. Give the design, short, in this order
 
 1. Control flow: numbered steps from trigger to stored result, with paths.
+   For any loop, name the line that ends it and what that line checks. "It
+   accepts whatever the model returns" is an answer the owner should see.
 2. State: what is stored, where (Postgres table, file, memory), who writes it,
    and what dies with the process.
 3. Model or code: which step needs the model and why; everything else is
@@ -47,6 +49,11 @@ conversation is the spec; the owner may talk as long as they like.
    rule, failure state, eval case or grader), with two or three alternatives,
    their trade-offs, the one you will build unless overruled, and the tests
    that will check it. The owner picks or overrules; you write the code.
+8. The proof bars, set before any run. For each bar, name one other cause
+   that would move the same number, and the measure that tells the two apart.
+   A model run is judged on what it read as well as what it answered: rows
+   read against rows available, data left unread at the end, rows cited. A
+   right answer on thin evidence is not a pass.
 
 End with: "Reply build when this makes sense." Then wait.
 
@@ -55,3 +62,8 @@ End with: "Reply build when this makes sense." Then wait.
 With more than one slice, or work that won't finish in this session, write
 `work/tasks/<slug>/plan.md`: the design, then each slice with its inputs,
 outputs and test. Then build the first slice.
+
+Before the first B01 or A01 batch, write two or three sentences in
+`work/tasks/<slug>/notes.md`: "If this misses the bar, the likeliest reason
+is …". Copy them into the PR unchanged, beside the result, whether or not
+they came true.
