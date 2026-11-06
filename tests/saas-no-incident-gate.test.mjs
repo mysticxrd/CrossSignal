@@ -29,9 +29,10 @@ const investigate = (s, edit = finding => finding) => {
   s.cases.attachResult(attempt, { terminalStatus: 'completed', finding: edit(fixtureFinding(s.store.get(s.id).snapshot)) });
 };
 const render = data => renderToStaticMarkup(createElement(CaseDetail, { data, session, busy: false, onAction: async () => {} }));
-function disabled(markup, label) {
-  const button = [...markup.matchAll(/<button\b([^>]*)>([^<]*)<\/button>/g)].find(match => match[2] === label);
-  assert.ok(button, `Button exists: ${label}`);
+function disabled(markup, action) {
+  // By action, not label: the main action moves to the next-step card under a plainer label.
+  const button = [...markup.matchAll(/<button\b([^>]*)>/g)].find(match => match[1].includes(`data-action="${action}"`));
+  assert.ok(button, `Button exists: ${action}`);
   return button[1].includes('disabled=');
 }
 // Changes the simulated world, then re-reads it, as a later snapshot would.
@@ -65,7 +66,7 @@ test('measured failures refuse the claim, with or without a reason, and the othe
   assert.equal(refused.status, 'open'); assert.equal(refused.closure, null);
   assert.deepEqual(refused.history.map(e => e.kind), ['case_created']);
   const markup = render(refused);
-  assert.equal(disabled(markup, 'Close: no incident'), true);
+  assert.equal(disabled(markup, 'close_no_incident'), true);
   assert.match(markup, /billing health shows 80 failures, so this can&#x27;t close as no incident/);
   assert.match(markup, /<span class="pill">Conversion stable<\/span>/);
   // An investigation earns no way around it: nothing was detected, so no proposal, and the refusal stands.
@@ -95,7 +96,7 @@ test('customer rows ask for a reason, are named in the closure and never quoted 
   for (const reason of ['', '   ']) assert.throws(() => command(s, 'close_no_incident', reason), /no_incident_needs_reason/);
   assert.equal(view(s).status, 'open');
   const markup = render(view(s));
-  assert.equal(disabled(markup, 'Close: no incident'), true);
+  assert.equal(disabled(markup, 'close_no_incident'), true);
   assert.match(markup, /this Case also has 2 customer messages\. They can&#x27;t block this closure/);
 
   const stale = s.store.get(s.id).revision;
@@ -105,7 +106,7 @@ test('customer rows ask for a reason, are named in the closure and never quoted 
   assert.deepEqual(closed.history.at(-1).payload.acknowledged, ids);
   const page = render(closed);
   assert.match(page, /No cause was claimed\. Closed past 2 customer messages\. Owner&#x27;s reason: Reviewed these rows/);
-  assert.equal(disabled(page, 'Close: no incident'), true);
+  assert.equal(disabled(page, 'close_no_incident'), true);
   // The evidence list shows the customer's words, labelled untrusted. The gate and the closure carry only ids.
   assert.doesNotMatch(JSON.stringify({ gate: closed.noIncident, closure: closed.closure }), /Ignore your rules|Charged but/);
 
@@ -154,7 +155,7 @@ test('with nothing contrary on the page, the closure still needs no reason', t =
   const s = edited(t, 'normal', world => { world.observations = world.observations.filter(e => e.kind !== 'support'); });
   assert.equal(view(s).noIncident.reasonRequired, false);
   const markup = render(view(s));
-  assert.equal(disabled(markup, 'Close: no incident'), false);
+  assert.equal(disabled(markup, 'close_no_incident'), false);
   assert.match(markup, /The data is complete and stable, so you can close this as no incident\./);
   command(s, 'close_no_incident');
   assert.deepEqual(view(s).closure.acknowledged, []);
@@ -209,7 +210,7 @@ test('the button is disabled exactly when the service refuses, in every scenario
     const reach = () => { const s = setup(t, scenario); if (!applies(s)) return null; run(s); return s; };
     const empty = reach(); if (!empty) continue;
     const name = `${scenario}, ${stage}`, data = view(empty);
-    assert.equal(disabled(render(data), 'Close: no incident'), !accepts(empty, ''), name);
+    assert.equal(disabled(render(data), 'close_no_incident'), !accepts(empty, ''), name);
     const blocked = !!data.noIncident.refusal || data.paused || ['queued', 'running'].includes(data.investigation);
     const open = !accepts(reach(), REASON);
     assert.equal(blocked, open, name);

@@ -10,8 +10,10 @@ type Outcome = { id: string; state: string; observedPercent: number | null; chan
   start: string; end: string; asOf: string; step: number; decision: string; receiptId: string | null; caveat: string; rows: Evidence[] };
 export type Plan = { targetPercent: number | null; minimumIntentsPerWindow: number; windowMinutes: number; windows: number;
   completionMinutes: number; arrivalMinutes: number; controlTolerancePoints: number };
-export type CaseSummary = { id: string; title: string; status: string; investigation: string; decision: string; createdAt: string };
-export type CaseView = CaseSummary & { revision: number; truthMode: string; owner: string; paused: boolean; currentAttemptId: string | null;
+// What the records show, never the authored scenario: that name is the hidden answer and stays on the server.
+export type Shape = { detected: boolean; sufficient: boolean; stable: boolean };
+export type CaseSummary = { id: string; title: string; shape: Shape; status: string; investigation: string; decision: string; createdAt: string };
+export type CaseView = Omit<CaseSummary, 'shape'> & { revision: number; truthMode: string; owner: string; paused: boolean; currentAttemptId: string | null;
   snapshot: { hash: string; asOf: string; evidence: Evidence[]; signal: { detected: boolean; sufficient: boolean; affected: string;
     baseline: Metric; incident: Metric; controlBaseline: Metric; controlIncident: Metric; dropPoints: number | null } };
   finding: Finding | null; gate: { eligible: boolean; reasons: string[] } | null;
