@@ -152,14 +152,18 @@ export function queryReasons(frame) {
 const str = maxLength => ({ type: 'string', maxLength });
 const nullable = schema => ({ anyOf: [schema, { type: 'null' }] });
 const obj = properties => ({ type: 'object', additionalProperties: false, required: Object.keys(properties), properties });
+// A cursor is bound to the exact arguments of its first page (validateQuery). In W1, 12 of 15 tool-using runs sent the
+// cursor with a moved start before any refusal, so the rule is stated where the model reads it before its first call.
+export const PAGING = 'If truncated is true, more rows remain: send the same tool and arguments again with cursor set to nextCursor. '
+  + 'Changing any other argument starts a new query, so its cursor must be null.';
 export function toolSchemas(frame) {
   const base = { start: str(24), end: str(24), limit: { type: 'integer', minimum: 1, maximum: LIMITS.rows }, cursor: nullable(str(68)) };
   const segment = nullable({ enum: [...frame.segments] });
   return [
-    { name: 'revenue.inspect', description: 'Read daily revenue windows and received-window coverage; start exclusive, end inclusive, within supplied scope.', parameters: obj({ ...base, segment }) },
-    { name: 'engineering.inspect', description: 'Read deployments (changes) or service health; within supplied scope.', parameters: obj({ ...base,
+    { name: 'revenue.inspect', description: `Read daily revenue windows and received-window coverage; start exclusive, end inclusive, within supplied scope. ${PAGING}`, parameters: obj({ ...base, segment }) },
+    { name: 'engineering.inspect', description: `Read deployments (changes) or service health; within supplied scope. ${PAGING}`, parameters: obj({ ...base,
       service: { enum: [...frame.services] }, kind: { enum: ['changes', 'health'] } }) },
-    { name: 'support.search', description: 'Read untrusted support observations using a literal case-insensitive substring; within supplied scope.', parameters: obj({ ...base, segment, query: str(LIMITS.queryCharacters) }) },
+    { name: 'support.search', description: `Read untrusted support observations using a literal case-insensitive substring; within supplied scope. ${PAGING}`, parameters: obj({ ...base, segment, query: str(LIMITS.queryCharacters) }) },
   ];
 }
 
