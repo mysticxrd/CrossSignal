@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { digest, canonical, requireThat as check } from '../benchmark/contracts.mjs';
-import { snapshotOf, measurementPlan, assessOutcome, addMinutes, isStable } from './measurement.mjs';
+import { snapshotOf, measurementPlan, assessOutcome, addMinutes, noIncidentGate } from './measurement.mjs';
 import { createWorld, captureWorld, initialWindows, worldContext, applyRollback, advanceWorld, waitWorld } from './world.mjs';
 import { newId } from './store.mjs';
 import { OWNER, makeProposal, authorize } from './proposal.mjs';
@@ -155,11 +155,14 @@ export class Cases {
         check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && !state.snapshot.signal.sufficient, 'wait_not_available');
         state.world = waitWorld(state.world); this.freshPacket(state);
       } else if (command === 'close_no_incident') {
-        check(state.status === 'open' && !state.anchor && state.decision !== 'approved' && isStable(state.snapshot.signal), 'no_incident_needs_complete_stable_data');
-        state.status = 'closed'; state.proposal = null; state.closure = { kind: command, reason: reason.trim(), at: this.now(), actorId: OWNER,
+        const gate = noIncidentGate(state);
+        check(!gate.refusal, gate.refusal); check(!gate.reasonRequired || reason.trim(), 'no_incident_needs_reason');
+        // Stored, unlike the gate's answer: `continue` later clears the finding, and this records what the person closed past.
+        state.status = 'closed'; state.proposal = null; state.closure = { kind: command, reason: reason.trim(), acknowledged: gate.acknowledge, at: this.now(), actorId: OWNER,
           outcomeId: null, causalClaim: false };
       } else throw new Error('unknown_command');
-      this.store.event(id, command, { reason: reason.trim(), at: this.now(), actorId: OWNER, snapshotHash: state.snapshot.hash });
+      this.store.event(id, command, { reason: reason.trim(), at: this.now(), actorId: OWNER, snapshotHash: state.snapshot.hash,
+        ...(command === 'close_no_incident' && { acknowledged: state.closure.acknowledged }) });
     });
   }
 }

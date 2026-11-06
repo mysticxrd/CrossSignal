@@ -86,6 +86,18 @@ export const isStable = ({ sufficient, dropPoints, controlBaseline, controlIncid
   && Math.abs(dropPoints) <= POLICY.controlTolerancePoints
   && Math.abs(controlBaseline.conversionPercent - controlIncident.conversionPercent) <= POLICY.controlTolerancePoints;
 
+// Stable conversion is not the same as nothing wrong. A measured failure refuses the claim. Customer text and the model's opinion can't:
+// code can't tell a complaint from an injection, and the model can repeat one. They only make the person say why, on the record.
+// Computed on every read and command from rows already hashed in the snapshot, so no snapshot or policy hash changes.
+export function noIncidentGate({ status, anchor, decision, snapshot, finding }) {
+  const refusedBy = snapshot.evidence.filter(e => e.kind === 'health' && e.failures !== 0).map(({ id, service, failures }) => ({ id, service, failures }));
+  const acknowledge = [...snapshot.evidence.filter(e => e.kind === 'support').map(e => e.id),
+    ...(finding?.recommendation?.kind === 'simulated_rollback' ? ['finding'] : [])];
+  const stable = status === 'open' && !anchor && decision !== 'approved' && isStable(snapshot.signal);
+  return { refusal: !stable ? 'no_incident_needs_complete_stable_data' : refusedBy.length ? 'no_incident_contradicted_by_health' : null,
+    refusedBy, acknowledge, reasonRequired: acknowledge.length > 0 };
+}
+
 export function measurementPlan(snapshot) {
   const { hash, ...body } = snapshot, { signal } = body;
   check(digest(body) === hash, 'snapshot_hash_mismatch');
