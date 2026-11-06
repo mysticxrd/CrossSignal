@@ -155,7 +155,7 @@ test('no alarm is not stable: a smaller drop or both cohorts falling cannot clos
     assert.throws(() => command(s, 'close_no_incident'), /no_incident_needs_complete_stable_data/, name);
     const markup = html(s);
     assert.equal(disabled(markup, 'close_no_incident'), true, name);
-    assert.match(markup, /Conversion moved without meeting the incident rule/, name); assert.match(markup, /Unclear/, name);
+    assert.match(markup, /Sign-ups moved a little/, name); assert.match(markup, /Unclear/, name);
     assert.doesNotMatch(markup, /complete and stable/, name);
     command(s, 'close_unresolved', 'Conversion moved and the rule did not fire.');
     assert.equal(s.store.get(s.id).status, 'closed', name);
@@ -175,18 +175,18 @@ test('no alarm is not stable: a smaller drop or both cohorts falling cannot clos
 test('the buttons offer exactly what the service accepts at each stage', t => {
   const s = setup(t, 'delayed'), t1 = html(s);
   assert.equal(disabled(t1, 'wait_for_data'), false); assert.equal(disabled(t1, 'close_no_incident'), true);
-  assert.match(t1, /200 intents · activations not yet reliable/);
+  assert.match(t1, /200 started; some records haven&#x27;t arrived/);
   command(s, 'wait_for_data');
   const t2 = html(s);
   assert.doesNotMatch(t2, /data-action="wait_for_data"/); assert.equal(s.store.view(s.id).noIncident.refusal, null);
-  assert.match(t2, /160 \/ 200 intents/);
-  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/]) assert.match(t2, prompt);
+  assert.match(t2, /160 of 200 finished/);
+  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask CrossSignal to read/]) assert.match(t2, prompt);
   command(s, 'close_no_incident', 'Late rows landed and conversion held.');
   const closed = html(s);
   assert.equal(disabled(closed, 'close_no_incident'), true);
   assert.match(closed, /No cause was claimed/); assert.doesNotMatch(closed, /Recovery observed with uncertainty/);
   // A closed Case reads as closed: nothing still asks for a decision, and nothing refers to a drop the data ruled out.
-  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask the investigator/, /A fixed measurement plan/, /Investigate the drop/]) assert.doesNotMatch(closed, prompt);
+  for (const prompt of [/Awaiting decision/, /Review the investigation/, /Ask CrossSignal to read/, /A fixed measurement plan/, /Investigate the drop/]) assert.doesNotMatch(closed, prompt);
   for (const summary of [/No decision/, /Not observed/, /No investigation ran/, /No measurement ran/]) assert.match(closed, summary);
 
   const outage = setup(t, 'masked'); command(outage, 'wait_for_data');

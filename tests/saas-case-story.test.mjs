@@ -84,6 +84,33 @@ test('every scenario and stage gets one plain next step that the service accepts
     'observe_without_action', 'refresh_proposal', 'resume', 'wait_for_data']);
 });
 
+// Words a newcomer can't be expected to know. "health check" is allowed; a bare "health" is not.
+const JARGON = new RegExp(`\\b(${['pp', 'intents?', 'cohorts?', 'baseline', 'control', 'assisted', 'conversion', 'incident period', 'criterion', 'causality',
+  'attribution', 'hypothes[ie]s', 'eligib\\w*', 'binding', 'hash', 'fixture', 'surrogate', 'frozen', 'packet', 'durabl\\w*', 'synthetic', 'roll ?back',
+  'billing-v\\d', 'health(?! check)', 'telemetry', 'measurement', 'assessments?', 'provenance', 'snapshot', 'regression', 'model interpretation',
+  'attempts?', 'self-serve', 'investigator'].join('|')})\\b`, 'gi');
+// The next-step card and the first two sections, as a reader sees them. The model's own words are quoted, not ours, so they're left out.
+const spoken = markup => markup.split(/(?=<section)/).filter(part => /^<section class="(next-step|signal-card|panel investigation)"/.test(part))
+  .map(part => part.replace(/<q class="model-words">.*?<\/q>/g, '').replace(/<[^>]+>/g, ' ').replace(/&#x27;/g, "'").replace(/&quot;/g, '"')).join(' ');
+
+test('the next step, what happened and why are in plain words, and the bars match the records', t => {
+  t.mock.timers.enable({ apis: ['Date'], now: Date.parse(NOW) });
+  for (const scenario of Object.keys(SITUATIONS)) for (const [stage, applies, run, now = Date.parse(NOW)] of STAGES) {
+    const s = setup(t, scenario); if (!applies(s)) continue; run(s);
+    const name = `${scenario}, ${stage}`, data = s.store.view(s.id);
+    if (now !== Date.parse(NOW)) t.mock.timers.setTime(now);
+    const markup = renderToStaticMarkup(createElement(CaseDetail, { data, session: session(s), busy: false, onAction: async () => {} }));
+    t.mock.timers.setTime(Date.parse(NOW));
+    const text = spoken(markup);
+    assert.deepEqual([...new Set([...text.matchAll(JARGON)].map(m => m[0].toLowerCase()))], [], name);
+    // Each bar reads straight from the snapshot; a period still missing records is "not known yet", never zero.
+    const { baseline, incident, controlBaseline, controlIncident } = data.snapshot.signal;
+    const card = markup.split(/(?=<section)/).find(part => part.startsWith('<section class="signal-card"'));
+    assert.deepEqual([...card.matchAll(/<b>([^<]+)<\/b>/g)].map(m => m[1]), [baseline, incident, controlBaseline, controlIncident]
+      .map(m => m.sufficient && m.conversionPercent !== null ? `${Math.round(m.conversionPercent)} of every 100` : 'Not known yet'), name);
+  }
+});
+
 test('a miss after an earlier recovery reads as a relapse, not as never recovering', t => {
   t.mock.timers.enable({ apis: ['Date'], now: Date.parse(NOW) });
   const s = setup(t, 'incident');

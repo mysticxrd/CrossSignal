@@ -68,7 +68,7 @@ test('measured failures refuse the claim, with or without a reason, and the othe
   const markup = render(refused);
   assert.equal(disabled(markup, 'close_no_incident'), true);
   assert.match(markup, /billing health shows 80 failures, so this can&#x27;t close as no incident/);
-  assert.match(markup, /<span class="pill">Conversion stable<\/span>/);
+  assert.match(markup, /<span class="pill">Steady<\/span>/);
   // An investigation earns no way around it: nothing was detected, so no proposal, and the refusal stands.
   investigate(s);
   assert.equal(view(s).proposal, null); assert.equal(view(s).gate.eligible, false);
@@ -129,9 +129,9 @@ test('only a current rollback finding asks for a reason, and the closure keeps t
   const rollback = setup(t, 'normal'); investigate(rollback);
   assert.ok(view(rollback).noIncident.acknowledge.includes('finding'));
   assert.equal(view(rollback).noIncident.refusal, null, 'A model opinion never refuses.');
-  assert.match(render(view(rollback)), /2 customer messages and a rollback recommendation\. They can&#x27;t block/);
+  assert.match(render(view(rollback)), /2 customer messages and a suggestion to undo an update. They can&#x27;t block/);
   command(rollback, 'close_no_incident', REASON);
-  assert.match(render(view(rollback)), /Closed past 2 customer messages and a rollback recommendation\./);
+  assert.match(render(view(rollback)), /Closed past 2 customer messages and a suggestion to undo an update./);
   command(rollback, 'continue');
   assert.equal(view(rollback).finding, null);
   assert.ok(view(rollback).closure.acknowledged.includes('finding'), 'The record outlives the finding it names.');
