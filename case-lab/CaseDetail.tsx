@@ -13,6 +13,14 @@ function noIncidentNote({ refusedBy, acknowledge }: CaseView['noIncident']) {
   if (acknowledge.length) return `Conversion is complete and stable, but this Case also has ${contrary(acknowledge)}. ${acknowledge.length === 1 ? "It can't block this closure, so say why you're closing past it." : "They can't block this closure, so say why you're closing past them."}`;
   return 'The data is complete and stable, so you can close this as no incident.';
 }
+type Count = CaseView['snapshot']['signal']['baseline'];
+// One bar per period, out of every 100 who started. A period still missing records reads as not known, never as zero.
+function Bar({ when, count }: { when: string; count: Count }) {
+  const known = count.sufficient && count.conversionPercent !== null;
+  return <div className="bar-row"><span>{when}</span><div className="bar">{known && <i style={{ width: `${count.conversionPercent}%` }} />}</div>
+    <b>{known ? `${Math.round(count.conversionPercent!)} of every 100` : 'Not known yet'}</b>
+    <small>{known ? `${count.successes} of ${count.intents} finished` : `${count.intents} started; some records haven't arrived`}</small></div>;
+}
 export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; session: Session; busy: boolean; onAction: (action: string, reason?: string) => Promise<void> }) {
   const [reason, setReason] = useState('');
   const [clock, setClock] = useState(() => Date.now());
@@ -27,6 +35,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
   // The service decides; this only reads its answer, so the button and the command can't disagree.
   const gate = data.noIncident, note = gate.refusal === 'no_incident_needs_complete_stable_data' ? null : noIncidentNote(gate);
   const latest = data.attempts.at(-1), story = caseStory(data, session, clock), primary = story.primary;
+  const canned = [...data.attempts].reverse().find(attempt => attempt.result?.finding)?.source === 'fixture_surrogate';
   // The main action appears once, in the next-step card; every other button stays where it was.
   const elsewhere = (action: string) => action !== primary?.action;
   const reasonBox = <><label htmlFor="decision-reason">{primary?.needsReason ? 'Your reason (required)' : 'Decision or closure reason'}</label><textarea id="decision-reason" value={reason} maxLength={1000} onChange={event => setReason(event.target.value)} placeholder="What does the evidence justify, and what is still unresolved?" /></>;
@@ -44,28 +53,31 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
       {primary?.needsReason && reasonBox}
       {primary && <button className="primary" data-action={primary.action} disabled={busy || (primary.needsReason && !reason.trim())} onClick={() => onAction(primary.action, reason)}>{primary.label}</button>}
       <p className="muted">CrossSignal suggests; you decide. Nothing on this page acts until you click.</p></section>
-    <section className="signal-card" aria-labelledby="signal-title"><p className="eyebrow">1 · WHAT HAPPENED</p><div className="section-top"><h2 id="signal-title">{signal.detected ? 'A conversion drop needs a decision' : data.stable ? 'No conversion incident detected' : signal.sufficient ? 'Conversion moved without meeting the incident rule' : 'The signal is not yet reliable'}</h2>
-      <span className="pill">{signal.detected ? 'Drop observed' : data.stable ? 'Conversion stable' : signal.sufficient ? 'Unclear' : 'Incomplete data'}</span></div>
-      <p>New self-serve subscriptions · two comparable 15-minute windows per period</p><div className="metrics">
-        <div><span>BASELINE</span><strong>{percent(signal.baseline.conversionPercent)}</strong><small>{signal.baseline.successes} / {signal.baseline.intents} intents</small></div>
-        <div><span>INCIDENT PERIOD</span><strong className={signal.detected ? 'negative' : ''}>{percent(signal.incident.conversionPercent)}</strong><small>{signal.incident.sufficient ? `${signal.incident.successes} / ${signal.incident.intents} intents` : `${signal.incident.intents} intents · activations not yet reliable`}</small></div>
-        <div><span>CHANGE</span><strong>{signal.dropPoints === null ? 'Unknown' : `${(-signal.dropPoints).toFixed(1)} pp`}</strong><small>Percentage points</small></div>
-        <div><span>ASSISTED CONTROL</span><strong>{percent(signal.controlIncident.conversionPercent)}</strong><small>Baseline {percent(signal.controlBaseline.conversionPercent)}</small></div></div>
-      <p className="metric-note">One eligible purchase intent counts once. Conversion requires first payment and subscription activation. Missing sources are never counted as zero.</p>
+    <section className="signal-card" aria-labelledby="signal-title"><p className="eyebrow">1 · WHAT HAPPENED</p><div className="section-top"><h2 id="signal-title">{caseName({ ...signal, stable: data.stable })}</h2>
+      <span className="pill">{signal.detected ? 'Drop observed' : data.stable ? 'Steady' : signal.sufficient ? 'Unclear' : 'Records missing'}</span></div>
+      <p>New customers only. Of every 100 who started signing up, how many finished. Each period is two 15-minute stretches.</p>
+      <div className="bars"><div><h3>Online, on their own</h3><Bar when="Before" count={signal.baseline} /><Bar when="Now" count={signal.incident} /></div>
+        <div><h3>With staff help</h3><Bar when="Before" count={signal.controlBaseline} /><Bar when="Now" count={signal.controlIncident} /></div></div>
+      <p className="metric-note">{signal.detected && 'Only the online numbers decide whether sign-ups dropped. The staff-help numbers are there to compare: if they held steady, the problem is likely somewhere only online sign-ups go. '}
+        A sign-up counts as finished once the first payment goes through and the subscription is switched on. Records that haven&apos;t arrived are never counted as zero.</p>
     </section>
-    <div className="investigation-grid"><section className="panel investigation"><div className="section-top"><div><p className="eyebrow">2 · WHY</p><h2>Competing explanations</h2></div><span className="pill">{plain(data.investigation)}</span></div>
-      {!data.finding && <p className="muted">{inFlight ? 'The investigator is reading the frozen evidence packet. You can reload; this attempt is durably recorded.'
-        : latest ? `The attempt ended: ${label(latest.result?.terminalStatus ?? latest.status)}. Its record is retained.` : open ? 'Ask the investigator to explain the evidence, compare alternatives and name what remains unknown.' : 'No investigation ran on this Case.'}</p>}
-      {data.finding && <><p className="muted">Model interpretation · attribution remains unverified</p><p className="finding-summary">{data.finding.signalSummary}</p>{data.finding.hypotheses.map(hypothesis => <article className="hypothesis" key={hypothesis.rank}>
-        <h3><span>{hypothesis.rank}</span>{hypothesis.diagnosis}</h3><p>{hypothesis.summary}</p><span className="small-label">SUPPORTING EVIDENCE</span>
-        <Citations ids={hypothesis.supportIds} evidence={data.snapshot.evidence} />{hypothesis.contradictionIds.length > 0 && <><span className="small-label">CONTRADICTING EVIDENCE</span><Citations ids={hypothesis.contradictionIds} evidence={data.snapshot.evidence} /></>}
-      </article>)}{data.finding.claims.map((claim, i) => <div className="claim" key={i}><p>{claim.text}</p><Citations ids={claim.evidenceIds} evidence={data.snapshot.evidence} /></div>)}
-        <div className="uncertainty"><h3>Still uncertain</h3>{data.finding.unresolvedAlternatives.length ? <ul>{data.finding.unresolvedAlternatives.map(text => <li key={text}>{text}</li>)}</ul> : <p>No alternatives were supplied. This is not proof of causality.</p>}</div></>}
+    <div className="investigation-grid"><section className="panel investigation"><div className="section-top"><div><p className="eyebrow">2 · WHY</p><h2>Possible causes</h2></div><span className="pill">{plain(data.investigation)}</span></div>
+      {!data.finding && <p className="muted">{inFlight ? "CrossSignal is reading this Case's saved records. You can reload; it keeps its place."
+        : latest && data.investigation === 'insufficient' ? "The last investigation found the records weren't enough to name a cause."
+        : latest && data.investigation === 'interrupted' ? 'The last investigation stopped before it finished. What happened is kept in the Case history.'
+        : latest ? 'Earlier investigations read older records, so their answers are kept in the Case history, not shown here.'
+        : open ? "Ask CrossSignal to read the records, list possible causes and say what it can't tell yet." : 'No investigation ran on this Case.'}</p>}
+      {data.finding && <><p className="muted">{canned ? 'A canned test answer: no AI model wrote it.' : "CrossSignal's reading. It hasn't been proven."} Its own words are in quotes.</p>
+        <p className="finding-summary"><q className="model-words">{data.finding.signalSummary}</q></p>{data.finding.hypotheses.map(hypothesis => <article className="hypothesis" key={hypothesis.rank}>
+        <h3><span>{hypothesis.rank}</span><q className="model-words">{hypothesis.diagnosis}</q></h3><p><q className="model-words">{hypothesis.summary}</q></p><span className="small-label">RECORDS THAT FIT</span>
+        <Citations ids={hypothesis.supportIds} evidence={data.snapshot.evidence} />{hypothesis.contradictionIds.length > 0 && <><span className="small-label">RECORDS THAT DON&apos;T FIT</span><Citations ids={hypothesis.contradictionIds} evidence={data.snapshot.evidence} /></>}
+      </article>)}{data.finding.claims.map((claim, i) => <div className="claim" key={i}><span className="small-label">IT ALSO CHECKED</span><p><q className="model-words">{claim.text}</q></p><Citations ids={claim.evidenceIds} evidence={data.snapshot.evidence} /></div>)}
+        <div className="uncertainty"><h3>What it can&apos;t tell yet</h3>{data.finding.unresolvedAlternatives.length ? <ul>{data.finding.unresolvedAlternatives.map(text => <li key={text}><q className="model-words">{text}</q></li>)}</ul> : <p>It named nothing it couldn&apos;t tell. That still doesn&apos;t prove its reading.</p>}</div></>}
       <div className="investigate-footer">{elsewhere('investigate') && <button data-action="investigate" disabled={disabled || !open || !session.modelReady || remaining <= 0 || data.decision === 'approved'} onClick={() => onAction('investigate')}>
         {inFlight ? 'Investigation in progress…' : data.attempts.length ? 'Run another investigation' : 'Investigate this Case'}</button>}
-        <p className="muted">{session.source === 'fixture_surrogate' ? 'OFFLINE FIXTURE SURROGATE' : `${session.model} · ${session.profile} · free tier`}<br />
-          {remaining} of {session.attemptCap} development attempts remain. {session.unavailableReason && label(session.unavailableReason)}</p>
-        {remaining <= 0 && <p className="muted">The investigation budget is exhausted. Existing findings, proposal refresh, observations and closure remain available without another model call.</p>}</div>
+        <p className="muted">{session.source === 'fixture_surrogate' ? 'Investigations here use canned test answers, not an AI model.' : `Investigations use the ${session.model} AI model, on its free tier.`}<br />
+          This lab has {remaining} of {session.attemptCap} investigations left.{session.unavailableReason && ` The AI model can't run here (${label(session.unavailableReason)}).`}</p>
+        {remaining <= 0 && <p className="muted">No investigations are left. You can still decide, check results and close the Case with what&apos;s already here.</p>}</div>
     </section>
     <section className="panel decision"><p className="eyebrow">3 · YOUR DECISION</p><h2>Your decision</h2>
       {data.proposal && data.decision === 'proposed' ? <><span className={expired ? "status" : "status eligible"}>{expired ? "Proposal expired" : "Eligible for your review"}</span><h3>Roll back billing in simulation</h3>

@@ -26,7 +26,7 @@ export const plainError = (code: string) => ERRORS[code] ?? `Something went wron
 // Counts and service names only: a support row's text never appears in what the page says about it.
 export function contrary(ids: string[]) {
   const messages = ids.filter(id => id !== 'finding').length;
-  return [messages > 0 && `${messages} customer ${messages === 1 ? 'message' : 'messages'}`, ids.includes('finding') && 'a rollback recommendation'].filter(Boolean).join(' and ');
+  return [messages > 0 && `${messages} customer ${messages === 1 ? 'message' : 'messages'}`, ids.includes('finding') && 'a suggestion to undo an update'].filter(Boolean).join(' and ');
 }
 export type Next = { action: string; label: string; needsReason: boolean };
 export type Story = { step: number; headline: string; explain: string; primary: Next | null; skipped: number[] };
@@ -71,8 +71,8 @@ export function caseStory(data: CaseView, session: Session, now = Date.now()): S
     || (s.detected ? next('observe_without_action', 'Watch without changing anything') : next('close_unresolved', 'Close without a fix', true));
   const skips = (primary: Next) => primary.action === 'close_no_incident' ? noFix : [];
   if (data.proposal && data.decision === 'proposed') {
-    const { service, from, to } = data.proposal.action, expired = !(now < Date.parse(data.proposal.expiresAt));
-    return story(3, `CrossSignal suggests undoing the ${service} update`, `It would switch ${service} from ${from} back to ${to}, once, in the simulation, so nothing real changes. Nothing runs unless you approve. ${expired
+    const { service } = data.proposal.action, expired = !(now < Date.parse(data.proposal.expiresAt));
+    return story(3, `CrossSignal suggests undoing the ${service} update`, `It would put ${service} back the way it was before its last update, once, in the simulation, so nothing real changes. Nothing runs unless you approve. ${expired
       ? 'This offer has run out. Refreshing it reuses the saved investigation and costs no new one.' : `You can approve until ${time(data.proposal.expiresAt)}.`}`, expired ? next('refresh_proposal', 'Refresh the offer') : next('approve', 'Approve the undo'));
   }
   if (data.finding) {
