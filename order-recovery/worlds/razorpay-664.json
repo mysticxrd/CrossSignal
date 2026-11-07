@@ -1,0 +1,200 @@
+{
+  "id": "razorpay-664",
+  "mode": "SIMULATED",
+  "pluginVersion": "4.8.7",
+  "nowMinute": 10,
+  "records": [
+    {
+      "id": "order-1",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "processing"
+    },
+    {
+      "id": "payment-1",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-1",
+      "status": "refunded",
+      "amountMinor": 49900,
+      "refundedMinor": 49900,
+      "currency": "INR",
+      "observedMinute": 10
+    },
+    {
+      "id": "fulfillment-1",
+      "kind": "fulfillment",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-1",
+      "status": "queued",
+      "observedMinute": 10
+    },
+    {
+      "id": "authorization-1",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-1",
+      "event": "payment.authorized",
+      "occurredMinute": 0,
+      "deliveredMinute": 2
+    },
+    {
+      "id": "refund-1",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-1",
+      "event": "refund.created",
+      "occurredMinute": 1,
+      "deliveredMinute": 1
+    },
+    {
+      "id": "order-2",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "refunded"
+    },
+    {
+      "id": "payment-2",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-2",
+      "status": "refunded",
+      "amountMinor": 49900,
+      "refundedMinor": 49900,
+      "currency": "INR",
+      "observedMinute": 10
+    },
+    {
+      "id": "fulfillment-2",
+      "kind": "fulfillment",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-2",
+      "status": "stopped",
+      "observedMinute": 10
+    },
+    {
+      "id": "authorization-2",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-2",
+      "event": "payment.authorized",
+      "occurredMinute": 0,
+      "deliveredMinute": 0
+    },
+    {
+      "id": "refund-2",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-2",
+      "event": "refund.created",
+      "occurredMinute": 1,
+      "deliveredMinute": 1
+    },
+    {
+      "id": "order-3",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "processing"
+    },
+    {
+      "id": "payment-3",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-3",
+      "status": "refunded",
+      "amountMinor": 49900,
+      "refundedMinor": 49900,
+      "currency": "INR",
+      "observedMinute": 10
+    },
+    {
+      "id": "fulfillment-3",
+      "kind": "fulfillment",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-3",
+      "status": "shipped",
+      "observedMinute": 10
+    },
+    {
+      "id": "authorization-3",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-3",
+      "event": "payment.authorized",
+      "occurredMinute": 0,
+      "deliveredMinute": 2
+    },
+    {
+      "id": "refund-3",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-3",
+      "event": "refund.created",
+      "occurredMinute": 1,
+      "deliveredMinute": 1
+    },
+    {
+      "id": "order-4",
+      "kind": "order",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "status": "processing"
+    },
+    {
+      "id": "payment-4",
+      "kind": "payment",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-4",
+      "status": "refunded",
+      "amountMinor": 49900,
+      "refundedMinor": 49900,
+      "currency": "INR",
+      "observedMinute": 10
+    },
+    {
+      "id": "fulfillment-4",
+      "kind": "fulfillment",
+      "heldBy": "merchant",
+      "access": "needs merchant consent (simulated)",
+      "orderId": "order-4",
+      "status": "unknown",
+      "observedMinute": 10
+    },
+    {
+      "id": "authorization-4",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-4",
+      "event": "payment.authorized",
+      "occurredMinute": 0,
+      "deliveredMinute": 2
+    },
+    {
+      "id": "refund-4",
+      "kind": "webhook",
+      "heldBy": "razorpay",
+      "access": "simulated",
+      "orderId": "order-4",
+      "event": "refund.created",
+      "occurredMinute": 1,
+      "deliveredMinute": 1
+    }
+  ]
+}

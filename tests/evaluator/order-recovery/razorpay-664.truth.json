@@ -1,0 +1,53 @@
+{
+  "privateCanary": "EVALUATOR_ONLY_REFUND_ORDERING_664",
+  "orders": [
+    {
+      "orderId": "order-1",
+      "story": "Refund handled first; order still processing; parcel queued and stoppable.",
+      "needsPerson": false,
+      "merchantAnswer": "queued",
+      "expected": {
+        "payment": "refunded",
+        "orderStatus": "refunded",
+        "fulfillment": "stopped",
+        "followup": "none"
+      }
+    },
+    {
+      "orderId": "order-2",
+      "story": "Authorization handled first; order refunded and shipment stopped already.",
+      "needsPerson": false,
+      "merchantAnswer": "stopped",
+      "expected": {
+        "payment": "refunded",
+        "orderStatus": "refunded",
+        "fulfillment": "stopped",
+        "followup": "none"
+      }
+    },
+    {
+      "orderId": "order-3",
+      "story": "Refund handled first; order still processing; parcel has shipped.",
+      "needsPerson": false,
+      "merchantAnswer": "shipped",
+      "expected": {
+        "payment": "refunded",
+        "orderStatus": "refunded",
+        "fulfillment": "shipped",
+        "followup": "merchant_review"
+      }
+    },
+    {
+      "orderId": "order-4",
+      "story": "Refund handled first; order still processing; shipment status unavailable.",
+      "needsPerson": true,
+      "merchantAnswer": "queued",
+      "expected": {
+        "payment": "refunded",
+        "orderStatus": "refunded",
+        "fulfillment": "stopped",
+        "followup": "none"
+      }
+    }
+  ]
+}
