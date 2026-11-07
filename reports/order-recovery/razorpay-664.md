@@ -27,7 +27,9 @@ sync_refund updates WooCommerce to refunded, stops queued fulfillment, and flags
 
 Cost rule B is unchanged: right 0, ask 1, wrong state 3, wrong capture 10. Capture/refund API actions are not available in this world, so wrong capture cannot occur here. The grader checks payment, WooCommerce status, fulfillment and follow-up together. Asking always costs at least 1; a wrong result costs 3. A person-only case cannot pass by guessing.
 
-The fields script uses current payment and fulfillment records. It repairs a confirmed discrepancy, asks if fulfillment is unknown, and leaves the correct control alone. Do nothing and always ask remain comparators.
+The fields script uses current payment and fulfillment records. It repairs a confirmed discrepancy, asks if fulfillment is unknown, and leaves the correct control alone. Do nothing and always ask remain comparators. This world has no messages, so the #670 words script and fields + ask on text would equal the fields script here.
+
+Process checks are printed beside cost and never added into it. An order's deciding records are its order, payment and fulfillment records: the repair depends on the order status disagreeing with the payment, given the shipment. Extra citations, such as webhook history, are shown, not judged. An unneeded write is a sync_refund the method proposed that was refused or already reconciled. A repair on the already-correct control costs 0 under cost B but would still spend a person's approval. An ask's repair comes from the evaluator's answer, so it is never counted.
 
 ## Do nothing
 
@@ -40,6 +42,8 @@ The fields script uses current payment and fulfillment records. It repairs a con
 
 **Total cost: 9.**
 
+Process checks, not in cost: deciding records cited on 0/4 orders, missing on order-1, order-2, order-3, order-4; extra citations: 0; unneeded writes: 0.
+
 ## Always ask
 
 | Order | Decision | Payment | Woo status | Fulfillment | Follow-up | Result | Cost | Evidence |
@@ -51,6 +55,8 @@ The fields script uses current payment and fulfillment records. It repairs a con
 
 **Total cost: 4.**
 
+Process checks, not in cost: deciding records cited on 0/4 orders, missing on order-1, order-2, order-3, order-4; extra citations: 0; unneeded writes: 0.
+
 ## Fields script
 
 | Order | Decision | Payment | Woo status | Fulfillment | Follow-up | Result | Cost | Evidence |
@@ -61,6 +67,8 @@ The fields script uses current payment and fulfillment records. It repairs a con
 | order-4 | ask | refunded | refunded | stopped | none | reconciled | 1 | order-4, payment-4, fulfillment-4 |
 
 **Total cost: 1.**
+
+Process checks, not in cost: deciding records cited on 4/4 orders; extra citations: 0; unneeded writes: 0.
 
 ## What this establishes
 

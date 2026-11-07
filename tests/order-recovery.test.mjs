@@ -5,10 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
-import { loadWorld, worldPath, queue, validateWorld } from '../order-recovery/world.mjs';
-import { doNothing, alwaysAsk, reconcile, rivals } from '../order-recovery/rivals.mjs';
+import { loadWorld, worldPath, queue, validateWorld, paymentFor } from '../order-recovery/world.mjs';
+import { doNothing, alwaysAsk, reconcile, fieldsThenAsk, wordsScript, rivals } from '../order-recovery/rivals.mjs';
 import { applyDecision, simulate } from '../order-recovery/simulate.mjs';
-import { loadTruth, truthPath, costs, grade } from './evaluator/order-recovery/grade.mjs';
+import { loadTruth, truthPath, costs, grade, processChecks } from './evaluator/order-recovery/grade.mjs';
 import { renderReport, reportPath } from '../scripts/run-order-recovery.mjs';
 
 const world = loadWorld(), truth = loadTruth();
@@ -85,6 +85,52 @@ test('cost B punishes wrong capture more than asking, including a lucky person-o
   assert.equal(total(grade(world, oracle, truth)), costs.ask);
   const wrongPersonState = doNothing(world); wrongPersonState[5] = { orderId: 'order-6', action: 'close', evidenceIds: ['payment-6'] };
   assert.equal(grade(world, wrongPersonState, truth)[5].cost, costs.wrongState);
+});
+
+test('the words script reaches the floor on seen text and moves only live holds with one clear signal', () => {
+  const rows = grade(world, wordsScript(world), truth);
+  assert.deepEqual(rows.map(r => r.cost), [0, 0, 0, 0, 0, costs.ask]);
+  assert.deepEqual(processChecks(rows), { orders: 6, deciding: 6, missing: [], extra: 0, unneeded: [] });
+  const routed = grade(world, fieldsThenAsk(world), truth);
+  assert.deepEqual(routed.map(r => r.action), ['capture', 'leave', 'close', 'ask', 'ask', 'ask']);
+  assert.equal(total(routed), 3); assert.equal(processChecks(routed).deciding, 6);
+  const withText = (texts, extra = []) => {
+    const copy = structuredClone(world);
+    for (const [id, text] of Object.entries(texts)) copy.records.find(r => r.id === id).text = text;
+    copy.records.push(...extra);
+    return wordsScript(validateWorld(copy));
+  };
+  const irrelevant = withText({ 'message-4': 'What colour is the shirt?', 'message-5': 'Hello.', 'message-6': 'Thanks.' });
+  assert.deepEqual(irrelevant.map(d => d.action), reconcile(world).map(d => d.action));
+  assert.deepEqual(irrelevant[3].evidenceIds, ['payment-4', 'message-4']);
+  assert.equal(withText({ 'message-5': 'Shipped by courier, but the customer wants a refund.' })[4].action, 'ask');
+  assert.equal(withText({ 'message-4': 'I don\u2019t want it any more.' })[3].action, 'close');
+  const shipDuplicate = { id: 'message-3', kind: 'message', heldBy: 'razorpay', access: 'simulated', orderId: 'order-3', text: 'Please send it by courier.' };
+  assert.equal(withText({}, [shipDuplicate])[2].action, 'ask');
+  assert.equal(withText({}, [{ ...shipDuplicate, text: 'Cancel this one.' }])[2].action, 'close');
+  const declined = { ...shipDuplicate, id: 'message-2', orderId: 'order-2', text: 'Shipped it already.' };
+  assert.equal(withText({}, [declined])[1].action, 'leave');
+  const expired = validateWorld({ ...structuredClone(world), nowMinute: 4320 });
+  assert.ok(wordsScript(expired).every(d => d.action === 'leave'));
+  const renamed = structuredClone(world);
+  renamed.records.forEach(r => { r.id = `renamed-${r.id}`; if (r.orderId) r.orderId = `renamed-${r.orderId}`; });
+  assert.deepEqual(wordsScript(validateWorld(renamed)).map(d => d.action), wordsScript(world).map(d => d.action));
+});
+
+test('process checks catch what cost B scores as right: thin citations, over-citing and a blind write on the control', () => {
+  const answerKey = truth.orders.map(t => ({ orderId: t.orderId, ...(t.tier === 'person' ? { action: 'ask', evidenceIds: t.answer.evidenceIds } : t.answer) }));
+  assert.deepEqual(processChecks(grade(world, answerKey, truth)), { orders: 6, deciding: 6, missing: [], extra: 0, unneeded: [] });
+  const paymentOnly = grade(world, answerKey.map(d => ({ ...d, evidenceIds: [paymentFor(world, d.orderId).id] })), truth);
+  assert.equal(total(paymentOnly), costs.ask);
+  assert.deepEqual(processChecks(paymentOnly).missing, ['order-3', 'order-4', 'order-5', 'order-6']);
+  const everything = world.records.map(r => r.id);
+  const overCited = processChecks(grade(world, answerKey.map(d => ({ ...d, evidenceIds: everything })), truth));
+  assert.equal(overCited.deciding, 6); assert.equal(overCited.extra, 6 * everything.length - 10); // 10 deciding ids across the six answers
+  const blind = grade(world, answerKey.map(d => d.orderId === 'order-2' ? { orderId: 'order-2', action: 'capture', fulfillment: 'to_ship', evidenceIds: ['payment-2'] } : d), truth);
+  assert.equal(blind[1].result, 'capture_refused'); assert.equal(blind[1].cost, costs.right);
+  assert.deepEqual(processChecks(blind).unneeded, ['order-2']);
+  for (const method of Object.values(rivals)) assert.deepEqual(processChecks(grade(world, method(world), truth)).unneeded, []);
+  assert.deepEqual(processChecks(grade(world, reconcile(world), truth)).missing, ['order-4', 'order-5', 'order-6']);
 });
 
 test('capture only once, before its deadline; expired holds refund and decline stays failed', () => {
