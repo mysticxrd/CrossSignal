@@ -9,6 +9,7 @@ import { loadWorld, worldPath, validateWorld, recordFor } from '../order-recover
 import { doNothing, alwaysAsk, reconcile } from '../order-recovery/refund-ordering/rivals.mjs';
 import { applyDecision, simulate } from '../order-recovery/refund-ordering/simulate.mjs';
 import { loadTruth, truthPath, grade } from './evaluator/order-recovery/refund-ordering.mjs';
+import { processChecks } from './evaluator/order-recovery/grade.mjs';
 import { renderReport, reportPath } from '../scripts/run-refund-ordering.mjs';
 
 const world = loadWorld(), truth = loadTruth();
@@ -70,6 +71,21 @@ test('unknown shipment cannot be guessed or silently changed; asking needs a sep
   const answers = Object.fromEntries(truth.orders.map(t => [t.orderId, t.merchantAnswer])); answers['order-1'] = 'shipped';
   assert.throws(() => simulate(world, alwaysAsk(world), answers), /contradicts snapshot/);
   assert.equal(JSON.stringify(world), before);
+});
+
+test('process checks: a repair on the correct control costs 0 but is an unneeded write; an ask never is', () => {
+  assert.deepEqual(processChecks(grade(world, reconcile(world), truth)), { orders: 4, deciding: 4, missing: [], extra: 0, unneeded: [] });
+  const blind = grade(world, reconcile(world).map(d => d.orderId === 'order-2' ? { ...d, action: 'sync_refund' } : d), truth);
+  assert.equal(blind[1].result, 'already_reconciled'); assert.equal(blind[1].cost, 0);
+  assert.deepEqual(processChecks(blind).unneeded, ['order-2']);
+  const asked = grade(world, alwaysAsk(world), truth);
+  assert.equal(asked[1].result, 'already_reconciled'); assert.deepEqual(processChecks(asked).unneeded, []);
+  const guessed = reconcile(world); guessed[3].action = 'sync_refund';
+  assert.deepEqual(processChecks(grade(world, guessed, truth)).unneeded, ['order-4']);
+  const withHistory = reconcile(world).map(d => ({ ...d, evidenceIds: [...d.evidenceIds, d.orderId.replace('order', 'refund')] }));
+  assert.deepEqual(processChecks(grade(world, withHistory, truth)), { orders: 4, deciding: 4, missing: [], extra: 4, unneeded: [] });
+  const paymentOnly = processChecks(grade(world, reconcile(world).map(d => d.action === 'leave' ? { ...d, evidenceIds: [recordFor(world, d.orderId, 'payment').id] } : d), truth));
+  assert.deepEqual(paymentOnly.missing, ['order-2']);
 });
 
 test('repair is repeatable without moving money or rewriting a shipped fact', () => {
