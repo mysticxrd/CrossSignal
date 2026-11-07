@@ -25,7 +25,8 @@ Design and Teach.
    one focused commit; `npm test` and `npm run lint` pass.
 4. Review: run `/pr` to open the PR, then once per Codex review, for at most
    three rounds.
-5. Teach: run `/walkthrough` on the PR; it ends with my manual test.
+5. Teach: run `/walkthrough` on the PR; it ends with four questions on the
+   principle the build applies.
 6. Merge: I squash-merge. Remove the worktree; the next slice starts from the
    updated `origin/main`.
 7. Deploy: `npm run deploy:replay` publishes only replays, labelled with run
@@ -45,7 +46,7 @@ A slice is done when:
   before and after, come in the walkthrough, since `gh` can't attach images);
 - the reviewer has nothing open, or three rounds are used and every remaining
   finding has an answer;
-- for a product change, I've had the walkthrough and run the manual test;
+- for a product change, I've had the walkthrough;
 - I merged it.
 
 ## Tools
