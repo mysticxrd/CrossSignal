@@ -3,16 +3,17 @@ import { check, queue, validateDecisions } from '../../../order-recovery/world.m
 import { simulate } from '../../../order-recovery/simulate.mjs';
 
 export const truthPath = new URL('./razorpay-670.truth.json', import.meta.url);
-export const loadTruth = () => JSON.parse(readFileSync(truthPath, 'utf8'));
+export const loadTruth = (path = truthPath) => JSON.parse(readFileSync(path, 'utf8'));
 export const costs = Object.freeze({ right: 0, ask: 1, wrongState: 3, wrongCapture: 10 });
 export function grade(world, decisions, truth) {
   validateDecisions(world, decisions);
   check(truth.orders.length === queue(world).length && queue(world).every(o => truth.orders.filter(t => t.orderId === o.id).length === 1), 'truth does not match queue');
+  check(truth.orders.every(t => ['failed', 'pending', 'processing', 'completed', 'cancelled'].includes(t.expected?.orderStatus)), 'missing or invalid expected order status');
   const resolved = decisions.map(d => d.action !== 'ask' ? d : { ...d, ...truth.orders.find(t => t.orderId === d.orderId).answer });
   const outcomes = simulate(world, resolved);
   return outcomes.map(outcome => {
     const d = decisions.find(d => d.orderId === outcome.orderId), t = truth.orders.find(t => t.orderId === outcome.orderId);
-    const matches = outcome.payment === t.expected.payment && outcome.fulfillment === t.expected.fulfillment;
+    const matches = ['payment', 'fulfillment', 'orderStatus'].every(key => outcome[key] === t.expected[key]);
     const asked = d.action === 'ask', needsPerson = t.tier === 'person';
     const wrongCapture = d.action === 'capture' && outcome.result === 'captured' && (needsPerson || t.expected.payment !== 'captured');
     const reason = wrongCapture ? 'wrongCapture' : !matches || (needsPerson && !asked) ? 'wrongState' : asked ? 'ask' : 'right';

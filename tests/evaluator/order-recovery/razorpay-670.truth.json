@@ -15,7 +15,8 @@
       },
       "expected": {
         "payment": "captured",
-        "fulfillment": "to_ship"
+        "fulfillment": "to_ship",
+        "orderStatus": "processing"
       }
     },
     {
@@ -31,7 +32,8 @@
       },
       "expected": {
         "payment": "failed",
-        "fulfillment": "closed"
+        "fulfillment": "closed",
+        "orderStatus": "failed"
       }
     },
     {
@@ -48,7 +50,8 @@
       },
       "expected": {
         "payment": "refunded",
-        "fulfillment": "closed"
+        "fulfillment": "closed",
+        "orderStatus": "cancelled"
       }
     },
     {
@@ -65,7 +68,8 @@
       },
       "expected": {
         "payment": "refunded",
-        "fulfillment": "closed"
+        "fulfillment": "closed",
+        "orderStatus": "cancelled"
       }
     },
     {
@@ -83,7 +87,8 @@
       },
       "expected": {
         "payment": "captured",
-        "fulfillment": "shipped"
+        "fulfillment": "shipped",
+        "orderStatus": "completed"
       }
     },
     {
@@ -101,7 +106,8 @@
       },
       "expected": {
         "payment": "captured",
-        "fulfillment": "to_ship"
+        "fulfillment": "to_ship",
+        "orderStatus": "processing"
       }
     }
   ]

@@ -17,7 +17,7 @@ const digest = path => createHash('sha256').update(readFileSync(path)).digest('h
 
 test('observable world and evaluator truth are separately frozen', () => {
   assert.equal(digest(worldPath), '45c52c0484832596f27f3c1e85b66c69637552f1ea683e847e448eaef5d7b03b');
-  assert.equal(digest(truthPath), '3ef58ac60ee4c34bdc27ddeaf7ac41210c150be71399f8f2f6c27f2dad65df57');
+  assert.equal(digest(truthPath), '0172e45ddb9d6c339e5297fbf7112ed4d152a16e41c22423df2fd614d38ac045');
   assert.equal(queue(world).length, 6);
   assert.throws(() => { world.records[0].status = 'processing'; }, TypeError);
   for (const field of ['truth', 'expected', 'answer', 'tier']) {
@@ -75,7 +75,7 @@ test('the fields rival handles all structured cases without reading words or ids
 test('cost B punishes wrong capture more than asking, including a lucky person-only guess', () => {
   assert.ok(costs.right === 0 && costs.right < costs.ask && costs.ask < costs.wrongState && costs.wrongState < costs.wrongCapture);
   const nothing = grade(world, doNothing(world), truth), asked = grade(world, alwaysAsk(world), truth), script = grade(world, reconcile(world), truth);
-  assert.deepEqual(nothing.map(r => r.cost), [3, 0, 0, 0, 3, 3]);
+  assert.deepEqual(nothing.map(r => r.cost), [3, 0, 3, 3, 3, 3]);
   assert.ok(nothing.every(r => r.cost < costs.wrongCapture));
   assert.equal(total(asked), queue(world).length * costs.ask);
   assert.deepEqual(script.map(r => r.cost), [0, 0, 0, costs.wrongCapture, costs.wrongState, costs.wrongCapture]);
@@ -85,6 +85,18 @@ test('cost B punishes wrong capture more than asking, including a lucky person-o
   assert.equal(total(grade(world, oracle, truth)), costs.ask);
   const wrongPersonState = doNothing(world); wrongPersonState[5] = { orderId: 'order-6', action: 'close', evidenceIds: ['payment-6'] };
   assert.equal(grade(world, wrongPersonState, truth)[5].cost, costs.wrongState);
+});
+
+test('full intended state distinguishes cancellation from eventual refund and refuses incomplete keys', () => {
+  const leave = grade(world, doNothing(world), truth)[3];
+  assert.equal(leave.payment, truth.orders[3].expected.payment);
+  assert.equal(leave.fulfillment, truth.orders[3].expected.fulfillment);
+  assert.equal(leave.orderStatus, 'failed');
+  assert.equal(truth.orders[3].expected.orderStatus, 'cancelled');
+  assert.equal(leave.reason, 'wrongState'); assert.equal(leave.cost, costs.wrongState);
+  assert.equal(grade(world, wordsScript(world), truth)[3].cost, 0);
+  const incomplete = structuredClone(truth); delete incomplete.orders[3].expected.orderStatus;
+  assert.throws(() => grade(world, doNothing(world), incomplete), /expected order status/);
 });
 
 test('the words script reaches the floor on seen text and moves only live holds with one clear signal', () => {
