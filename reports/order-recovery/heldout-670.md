@@ -74,7 +74,13 @@ accepted the existing stories. Original cases and both answer sets were kept.
 The final private artifact check passes; [public hashes](heldout-670.commitment.json)
 are fixed before any held-out comparator scoring or model evaluation.
 
-Build proof: `npm test` passes 434 offline tests; `npm run lint` passes.
+Build proof: `npm test` passes 437 offline tests; `npm run lint` passes.
 The focused suites cover the cancellation regression, unresolved review,
 missing resolution evidence, stale source/review bytes, public commitments,
 schema failures and refusing case storage inside any Git checkout.
+
+Code-review fixes: reject identity fields inside answer objects, preserve
+the asked order's ID during grading, and compare twin values independently
+of JSON property order. Three regression tests failed before these fixes
+and pass after them. Only source-code pins changed; the case commitment
+remains byte-identical to B1's first published manifest.

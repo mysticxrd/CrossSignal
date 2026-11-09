@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual as same } from 'node:util';
 import { check, validateWorld, validateDecisions, queue, paymentFor } from '../../../order-recovery/world.mjs';
 import { grade } from './grade.mjs';
 
 export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const messages = (world, id) => world.records.filter(r => r.kind === 'message' && r.orderId === id);
 // Schema migration records the author's intended status without reading any rival output.
 export function withOrderStatuses(draft) {
@@ -21,12 +21,13 @@ export function checkHeldout({ world, truth, twins, controls }) {
     check(['fields', 'words', 'person'].includes(t.tier), `${t.orderId}: tier`);
     check(typeof t.story === 'string' && t.story.trim().length > 0, `${t.orderId}: story`);
     check(t.answer && ['capture', 'close', 'leave'].includes(t.answer.action), `${t.orderId}: answer`);
+    check(Object.keys(t.answer).every(k => ['action', 'fulfillment', 'evidenceIds'].includes(k)), `${t.orderId}: answer-fields`);
     check(t.expected && ['captured', 'refunded', 'failed'].includes(t.expected.payment) && ['closed', 'to_ship', 'shipped'].includes(t.expected.fulfillment) && ['failed', 'pending', 'processing', 'completed', 'cancelled'].includes(t.expected.orderStatus), `${t.orderId}: expected`);
     const evidence = t.answer.evidenceIds, local = world.records.filter(r => r.id === t.orderId || r.orderId === t.orderId);
     check(Array.isArray(evidence) && evidence.length > 0 && new Set(evidence).size === evidence.length && evidence.every(id => world.records.some(r => r.id === id)) && evidence.some(id => local.some(r => r.id === id)), `${t.orderId}: deciding-records`);
     check(t.tier === 'fields' || messages(world, t.orderId).some(m => evidence.includes(m.id) && m.text.trim()), `${t.orderId}: text-tier`);
   }
-  const answers = truth.orders.map(t => ({ orderId: t.orderId, ...t.answer }));
+  const answers = truth.orders.map(t => ({ ...t.answer, orderId: t.orderId }));
   try { validateDecisions(world, answers); } catch { throw new Error('set: answer-schema'); }
   const resolved = grade(world, answers, { ...truth, orders: truth.orders.map(t => ({ ...t, tier: 'fields' })) });
   check(resolved.every(r => r.cost === 0 && !r.unneeded && r.deciding), 'set: reachable-answers');

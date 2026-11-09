@@ -9,7 +9,7 @@ export function grade(world, decisions, truth) {
   validateDecisions(world, decisions);
   check(truth.orders.length === queue(world).length && queue(world).every(o => truth.orders.filter(t => t.orderId === o.id).length === 1), 'truth does not match queue');
   check(truth.orders.every(t => ['failed', 'pending', 'processing', 'completed', 'cancelled'].includes(t.expected?.orderStatus)), 'missing or invalid expected order status');
-  const resolved = decisions.map(d => d.action !== 'ask' ? d : { ...d, ...truth.orders.find(t => t.orderId === d.orderId).answer });
+  const resolved = decisions.map(d => d.action !== 'ask' ? d : { ...d, ...truth.orders.find(t => t.orderId === d.orderId).answer, orderId: d.orderId });
   const outcomes = simulate(world, resolved);
   return outcomes.map(outcome => {
     const d = decisions.find(d => d.orderId === outcome.orderId), t = truth.orders.find(t => t.orderId === outcome.orderId);

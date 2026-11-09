@@ -69,6 +69,40 @@ test('a synthetic set reaches its floor; loadTruth accepts a separate path', () 
   assert.equal(legacy.truth.orders[0].expected.orderStatus, undefined);
 }));
 
+test('answer keys cannot introduce an order identity, including swapped rows', () => {
+  const draft = fixture();
+  for (const [index, orderId] of [[0, 'o-3'], [2, 'o-1']]) {
+    draft.truth.orders[index].answer.orderId = orderId;
+    draft.truth.orders[index].answer.evidenceIds = ['p-1', 'm-1', 'p-3', 'm-3'];
+  }
+  assert.throws(() => checkHeldout(draft), /answer-fields/);
+  assert.throws(() => acceptReview(draft, answersFor(fixture()), { unresolved: [], resolutions: [], realism: { accepted: true, reason: 'Synthetic test.' } }), /answer-fields/);
+  const redundant = fixture(); redundant.truth.orders[0].answer.orderId = 'o-1';
+  assert.throws(() => checkHeldout(redundant), /answer-fields/);
+});
+
+test('grading an ask preserves its order identity even with an unchecked legacy key', () => {
+  const draft = fixture(), decisions = decisionsFor(draft);
+  for (const [index, orderId] of [[0, 'o-3'], [2, 'o-1']]) {
+    draft.truth.orders[index].answer.orderId = orderId;
+    draft.truth.orders[index].answer.evidenceIds = ['p-1', 'm-1', 'p-3', 'm-3'];
+  }
+  decisions[0] = { orderId: 'o-1', action: 'ask', evidenceIds: draft.truth.orders[0].answer.evidenceIds };
+  const rows = grade(draft.world, decisions, draft.truth);
+  assert.deepEqual(rows.map(r => r.orderId), draft.truth.orders.map(t => t.orderId));
+  assert.equal(rows[0].reason, 'ask');
+  assert.equal(rows.reduce((sum, r) => sum + r.cost, 0), 2);
+});
+
+test('twin matching ignores JSON property order while retaining value checks', () => {
+  const draft = fixture(), index = draft.world.records.findIndex(r => r.id === 'p-2');
+  draft.world.records[index] = Object.fromEntries(Object.entries(draft.world.records[index]).reverse());
+  assert.deepEqual(checkHeldout(draft), { orders: 10, floor: 1 });
+  const mismatched = structuredClone(draft);
+  mismatched.world.records[index].amountMinor += 1;
+  assert.throws(() => checkHeldout(mismatched), /twin-fields/);
+});
+
 test('bad shapes fail with ids and rule names, never case text', () => {
   const mutations = [
     [d => { d.world.records[0].access = 'invalid'; }, 'world-schema'],

@@ -1,9 +1,9 @@
 {
   "order-recovery/world.mjs": "63bcdf9c8978ca598274574711da70b4aba7c1d399bfd5d4ed062eab44d4586f",
-  "tests/evaluator/order-recovery/grade.mjs": "f066111d66c84efbba03105190842329bf0ad1e092823b7f28c15beac47fa38b",
+  "tests/evaluator/order-recovery/grade.mjs": "3cc4f339162fbde492e6ac9b3a8fc0a7f317127ef54b1550ec378a50e58a840a",
   "order-recovery/simulate.mjs": "aba31b52aefd765f8cf714a996e53474b92128002d4414737ce2c17e09eb649e",
   "order-recovery/rivals.mjs": "a7aabd944f85bec26003af9f585933e63cbff2d26a89541ede03dcda9f12ae83",
-  "tests/evaluator/order-recovery/heldout.mjs": "2d415fd7fc6614acda9782f944cce4a33abe390e172d88c9b4fa2fa32f3a9a92",
+  "tests/evaluator/order-recovery/heldout.mjs": "f89dc57e6a260317f1cc14517b71fe37a33954ccee9c30b4bbcc2eebe9bfb6f6",
   "scripts/run-heldout.mjs": "3647256b5a87d94fef734580e7bfe2cee16ddab325d31650124b0ace7e34da12",
   "reports/order-recovery/heldout-670-policy.md": "d226f1e3e158b7229a617680e4d3b710baf60975a1b36836037fabc95d130beb",
   "reports/order-recovery/heldout-670-author.md": "3cff38b2b51f368c549225287f32332f2327592e25fe6a50ef75ce61ec31235a"
