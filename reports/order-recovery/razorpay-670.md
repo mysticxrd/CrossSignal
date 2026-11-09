@@ -27,7 +27,7 @@ All aftermaths below are invented. A second payment after a false failure is a h
 
 Right = 0; asking = 1; wrong final state = 3; wrong capture = 10. These are invented costs, not money estimates. Asking uses an immediate, correct simulated merchant answer; it never earns a zero. On person-only orders, guessing is wrong even when it matches the hidden answer.
 
-The grader compares payment and fulfillment. Closed means no shipment queued: it groups Failed and Cancelled for scoring, but the raw order status is printed below. Refunding a hold does not repair WooCommerce status. Already-shipped notes do not silently update that status.
+The grader compares payment, fulfillment and order status. A refund does not repair a Failed order: when cancellation is required, leaving it Failed is wrong. This corrects the earlier grader, which grouped Failed and Cancelled. Already-shipped notes do not silently update that status.
 
 Do nothing leaves every order. Always ask asks on every order. The fields script matches a later captured payment on email, amount, currency and cart within 24 hours, closes duplicates, and otherwise captures live holds for shipment. It never reads messages. Matching is a baseline heuristic, not safe live authorization.
 
@@ -41,12 +41,12 @@ Process checks are printed beside cost and never added into it. Deciding records
 |---|---|---|---|---|---|---:|---|
 | order-1 | leave | refunded | closed | failed | wrongState | 3 | none |
 | order-2 | leave | failed | closed | failed | right | 0 | none |
-| order-3 | leave | refunded | closed | failed | right | 0 | none |
-| order-4 | leave | refunded | closed | failed | right | 0 | none |
+| order-3 | leave | refunded | closed | failed | wrongState | 3 | none |
+| order-4 | leave | refunded | closed | failed | wrongState | 3 | none |
 | order-5 | leave | refunded | closed | failed | wrongState | 3 | none |
 | order-6 | leave | refunded | closed | failed | wrongState | 3 | none |
 
-Fields: 3; words: 3; person: 3. **Total cost: 9.**
+Fields: 6; words: 6; person: 3. **Total cost: 15.**
 
 Process checks, not in cost: deciding records cited on 0/6 orders, missing on order-1, order-2, order-3, order-4, order-5, order-6; extra citations: 0; unneeded writes: 0.
 

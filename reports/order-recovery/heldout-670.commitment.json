@@ -1,0 +1,13 @@
+{
+  "files": {
+    "attempt-1.input.txt": "a114593b14ce9277def119e899072b3f749db172ffac33712bae9616e17c2919",
+    "attempt-1.json": "d0bca5bd41d8afbbd14d2b90e9e607497496521b592cc26c6de4f62eee820201",
+    "attempt-1.stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "comparison.json": "2928d66d4d64e975cfc78798ee8346468bde63a2ade0d9c06a9de16fcc585799",
+    "draft.json": "65ed02374524925fc666b66a2c03496c91d481056372f0a76407f1dbc68e7f3c",
+    "investigation.json": "f4a4b518e23f9e36966b5d39eb5d3004ed2c0fa0d44b134713a9d06c9a76f1d3",
+    "reviewer-answers.json": "442eae20a8b6ed6dccd11731f27bd9b23e5a42124a7a3e1ee360f51e95bb7b47",
+    "truth.json": "7182dd315ca26afdccf23a752a39ea5e3a0467ab31fe26a0a6cf844f08370365",
+    "world.json": "bde4d6d8e1d63a7154fd34efa626111b78fbe0715a31c671fdefcbd1f86743fb"
+  }
+}
