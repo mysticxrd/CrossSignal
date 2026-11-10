@@ -31,8 +31,9 @@ fewest simple words that preserve the meaning; let visuals carry the lesson.
    result"). Find an earlier CrossSignal build that applied or broke the same
    principle, if there is one.
 5. For the recap, read `CONTEXT.md` and the merged PRs on `origin/main`
-   (`gh pr list --state merged --limit 15`) to see what CrossSignal has built
-   so far and where this build sits.
+   (`gh pr list --state merged --base main --limit 15`; without `--base main`
+   the list includes PRs merged into another branch, which are not on main)
+   to see what CrossSignal has built so far and where this build sits.
 
 ## 2. Write the questionnaire before the lesson
 

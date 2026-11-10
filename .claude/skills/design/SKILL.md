@@ -63,7 +63,8 @@ With more than one slice, or work that won't finish in this session, write
 `work/tasks/<slug>/plan.md`: the design, then each slice with its inputs,
 outputs and test. Then build the first slice.
 
-Before the first B01 or A01 batch, write two or three sentences in
+Before the first model batch or scoring run (B01, A01, or order-recovery cases
+the method has not been scored on), write two or three sentences in
 `work/tasks/<slug>/notes.md`: "If this misses the bar, the likeliest reason
 is …". Copy them into the PR unchanged, beside the result, whether or not
 they came true.
