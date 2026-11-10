@@ -54,6 +54,58 @@ What it says so far:
 The full comparison, with per-check results, how runs ended and how each check is graded, is in
 [reports/b01-w1/COMPARISON.md](reports/b01-w1/COMPARISON.md), written by `tests/evaluator/compare-b01.mjs`.
 
+## Since W1
+
+Two questions came out of W1, and each has a committed report. Everything in this section is simulated.
+
+### Did the model read the evidence, or guess? (twin cases)
+
+B21 to B24 are two pairs of cases that show the same evidence and hide opposite truths, so an answer that never
+reads the deciding rows cannot be right on both. The same grader also scores answers that read nothing at all.
+
+| Who | Checks passed |
+|---|---|
+| Always abstain, keeping an outage open | 13/20 a batch, 39/60 over three |
+| Rules, the no-model baseline | 14/20 a batch, 42/60 over three |
+| Single-shot model | 33/60 |
+| Tool-using model | 34/60 |
+
+`gemini-3.5-flash-lite`, profile `minimal`, commit `97e1bff`, three batches. Neither model beat an answer that
+ignores the data, so a score on these cases is not yet evidence of reading.
+[reports/b01-twins/COMPARISON.md](reports/b01-twins/COMPARISON.md) has the per-case answers.
+
+### Can a model beat a script? (order recovery)
+
+A second world is anchored to two public bug reports against Razorpay's WooCommerce plugin, issues
+[#670](https://github.com/razorpay/razorpay-woocommerce/issues/670) and
+[#664](https://github.com/razorpay/razorpay-woocommerce/issues/664). The reports are real; every order, message
+and merchant answer is invented, and the plugin was never run. Each method decides what to do with a queue of
+stuck orders. Cost, lower is better: right 0, asking a person 1, wrong final state 3, wrong capture 10.
+
+| Method (no model in any of them) | #670, six orders | #664, four orders |
+|---|---|---|
+| Do nothing | 15 | 9 |
+| Always ask a person | 6 | 4 |
+| Fields script | 23 | 1 |
+| Fields script, asking wherever there is a message | 3 | same as fields |
+| Words script: three keyword rules | 1 | same as fields |
+
+Built: the simulator, the scripts and the grader. Planned: the model, approval and a page. The keyword rules were
+written after reading the three messages they score on, and they reach the lowest cost the grader allows. So these
+orders cannot show a model beating a script. A model can only tie.
+
+The fair test is ten further #670 orders that no script and no model has been scored on. Their files are kept
+out of this repository and only their SHA-256 hashes are published, in
+[reports/order-recovery/heldout-670.commitment.json](reports/order-recovery/heldout-670.commitment.json). The
+model's prompt gets committed before the orders do, so git history shows which came first. The win rule was
+written down in advance: the model must cost less than the best script in each of three runs, make no wrong
+capture and cite the records that decide each order. A tie goes to the script and a loss is published.
+
+Limits: a model wrote the ten orders and another model reviewed them; no person labelled them. The hashes show
+the files did not change after sealing. They do not show that nobody read them.
+[reports/order-recovery/heldout-670.md](reports/order-recovery/heldout-670.md) has the full account, beside the
+reports for [#670](reports/order-recovery/razorpay-670.md) and [#664](reports/order-recovery/razorpay-664.md).
+
 ## How a replay is checked
 
 There are two checks, one inside the recording and one outside it.
@@ -97,6 +149,7 @@ Then open `http://localhost:3000/runs/r_c72728d0a839`. Other commands:
 | `db/replays/` | Committed recordings, their timestamp proofs and `stamps.json` |
 | `db/benchmark/` | Gemini request, transport, budget and schemas |
 | `tests/evaluator/` | Grader, rubrics and the batch comparison |
+| `order-recovery/` | The simulated order world and its code-only scripts; grader in `tests/evaluator/order-recovery/` |
 | `worker/` | The Cloudflare Worker, including the read-only gate |
 | `reports/` | Committed results |
 
