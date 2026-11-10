@@ -41,6 +41,9 @@ yarn-error.log*
 /outputs/
 /work/
 
+# Web research saved by search tools; private, never committed.
+/exa-results/
+
 # local workflow builds and durable local workflow state, including archives
 **/.eve/
 **/.output/

@@ -1,9 +1,12 @@
 # CrossSignal ship lane
 
-This checkout builds the CrossSignal hiring demo: an AI incident investigator
-that reads company signals, names the change behind a revenue drop and
-recommends an action a person must approve. The goal is visible, public
-progress before December 2026. `CONTEXT.md` maps the folders.
+This checkout builds the CrossSignal hiring demo. v0.1 is an AI incident
+investigator that reads company signals, names the change behind a revenue
+drop and recommends an action a person must approve. v0.2, the current work,
+tests whether a model can beat a code-only script at putting stuck orders
+right, on simulated orders anchored to two public Razorpay plugin bug reports.
+The goal is visible, public progress before December 2026. `CONTEXT.md` maps
+the folders.
 
 ## Factory frozen
 
@@ -28,7 +31,9 @@ Design and Teach.
 5. Teach: run `/walkthrough` on the PR; it ends with four questions on the
    principle the build applies.
 6. Merge: I squash-merge. Remove the worktree; the next slice starts from the
-   updated `origin/main`.
+   updated `origin/main`. If its `node_modules` is a link to another
+   checkout's, unlink it first (`cmd /c rmdir <worktree>\node_modules`), or
+   deleting the folder empties the shared copy.
 7. Deploy: `npm run deploy:replay` publishes only replays, labelled with run
    id, date and model.
 
@@ -41,9 +46,11 @@ Codex: `/name` means `.claude/skills/name/SKILL.md`.
 
 A slice is done when:
 - `npm test` and `npm run lint` pass;
-- the PR states my decision and the proof: test results always, and B01
-  against the baseline for prompt, tool or schema changes (UI screenshots,
-  before and after, come in the walkthrough, since `gh` can't attach images);
+- the PR states my decision and the proof: test results always, and for
+  prompt, tool or schema changes the benchmark that change touches against
+  its baseline: B01 for the v0.1 investigator, the order-recovery reports for
+  v0.2 (UI screenshots, before and after, come in the walkthrough, since `gh`
+  can't attach images);
 - the reviewer has nothing open, or three rounds are used and every remaining
   finding has an answer;
 - for a product change, I've had the walkthrough;
@@ -60,12 +67,17 @@ A slice is done when:
 | `/grill` | Weekly, on the week's biggest change; the gaps feed the post |
 | `/drill` | When I want to rebuild something by hand |
 | Codex review | Reviews each PR on GitHub when it opens and on `@codex review` |
-| B01 | Prompt, tool or schema changes; see Model calls |
+| B01 | Prompt, tool or schema changes to the investigator; see Model calls |
 | A01 | One live investigation; see Model calls |
+| Order recovery | v0.2 changes; see Order recovery |
+| Case lab | `npm run case:lab`: the SaaS Case lab in a browser |
 
 A task with more than one slice, or one that spans sessions, keeps `plan.md`,
 `handoff.md` and `notes.md` in `work/tasks/<slug>/` (gitignored). Before the
-last merge, move what's worth keeping into code comments or the PR.
+last merge, move what's worth keeping into code comments or the PR. `work/`
+and `outputs/` belong to one worktree and are deleted with it, so copy a plan
+for a later slice, or a batch a report cites, to the home checkout before the
+worktree goes (`CONTEXT.md`, Local only).
 
 ## Model calls
 
@@ -83,6 +95,19 @@ last merge, move what's worth keeping into code comments or the PR.
   `outputs/a01-gemini/` (gitignored).
 - `node scripts/run-b01.mjs [--new] [--profile minimal|low] [--sets ...]` runs the
   benchmark; `minimal` is the B01 baseline, `low` adds LOW thinking with larger caps.
+
+## Order recovery
+
+- `node scripts/run-order-recovery.mjs` (#670) and
+  `node scripts/run-refund-ordering.mjs` (#664) score every code-only script
+  and rewrite its report in `reports/order-recovery/`; add `--check` to
+  compare without writing. No model is called yet.
+- Cost, lower is better: right 0, asking a person 1, wrong final state 3,
+  wrong capture 10.
+- Ten held-out #670 orders stay sealed outside the repository, with only their
+  hashes committed, until they are revealed after the model's prompt is
+  committed. Don't look for, open or summarise them, and don't write their
+  text, labels or location into a file, a PR or agent memory.
 
 ## Choosing work
 

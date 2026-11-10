@@ -23,10 +23,11 @@ comments `@codex review`, not on every push.
    - **Why**: the problem, in two or three sentences.
    - **Decision**: the owner's decision and the alternatives they can
      overrule.
-   - **Proof**: test and lint results; for prompt, tool or schema changes, B01
-     numbers with run id, date and model; what the runs read as well as what
-     they scored; the prediction written before the runs; how to see the
-     change.
+   - **Proof**: test and lint results; for prompt, tool or schema changes, the
+     numbers from the benchmark the change touches (B01, or the
+     order-recovery reports) with run id, date and model; what the runs read
+     as well as what they scored; the prediction written before the runs; how
+     to see the change.
    - **Assumptions**: what the proof depends on, one line each, with the one
      that no test or run checks marked "untested". Reviewers check these, not
      only the diff.
