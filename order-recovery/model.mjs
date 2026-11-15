@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { check, loadWorld, queue, validateDecisions, validateWorld } from './world.mjs';
 import * as refund from './refund-ordering/world.mjs';
 
+// DeepSeek on Nebius is the only order-recovery model (owner decision, 2026-11-15).
 export const ORDER_MODELS = Object.freeze({
-  gemini: 'gemini-3.5-flash-lite',
   nebius: 'deepseek-ai/DeepSeek-V4.1-Flash-1017',
 });
 export const responseByteLimit = 128 * 1024;

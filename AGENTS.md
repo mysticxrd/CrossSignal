@@ -128,7 +128,11 @@ first entry. Name a domain idea with the glossary's word.
 - `node scripts/run-order-recovery.mjs` (#670) and
   `node scripts/run-refund-ordering.mjs` (#664) score every code-only script
   and rewrite its report in `reports/order-recovery/`; add `--check` to
-  compare without writing. No model is called yet.
+  compare without writing.
+- `node scripts/run-order-model.mjs --live --run-id <id> [--world 670|664]`
+  sends the public world to DeepSeek V4.1 Flash on Nebius (`NEBIUS_API_KEY`),
+  saved under `outputs/order-recovery-model/` (gitignored). `--prepare`
+  prints the request without sending it.
 - Cost, lower is better: right 0, asking a person 1, wrong final state 3,
   wrong capture 10.
 - Ten held-out #670 orders stay sealed outside the repository, with only their

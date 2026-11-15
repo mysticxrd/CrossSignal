@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
-import { ORDER_MODELS, prepareOrderRequest, recordOfflineOrderRun, responseByteLimit } from '../order-recovery/model.mjs';
+import { ORDER_MODELS, orderWorld, prepareOrderRequest, recordOfflineOrderRun, responseByteLimit } from '../order-recovery/model.mjs';
 import { loadWorld } from '../order-recovery/world.mjs';
 import { wordsScript } from '../order-recovery/rivals.mjs';
+import { reconcile } from '../order-recovery/refund-ordering/rivals.mjs';
 import { grade, loadTruth, processChecks } from './evaluator/order-recovery/grade.mjs';
 
 const world = loadWorld(), decisions = wordsScript(world), responseText = JSON.stringify({ decisions });
@@ -16,20 +17,17 @@ function directory(t) {
 }
 const readJson = path => JSON.parse(readFileSync(path, 'utf8'));
 
-test('provider selection changes the requested model, never the common public evidence or contract', () => {
-  const gemini = prepareOrderRequest('gemini'), nebius = prepareOrderRequest('nebius');
-  assert.equal(gemini.requestedModel, 'gemini-3.5-flash-lite');
+test('the request names DeepSeek, carries only public evidence and refuses any other provider', () => {
+  const nebius = prepareOrderRequest('nebius');
+  assert.deepEqual(Object.keys(ORDER_MODELS), ['nebius']);
   assert.equal(nebius.requestedModel, 'deepseek-ai/DeepSeek-V4.1-Flash-1017');
-  assert.deepEqual(gemini.common, nebius.common);
-  assert.equal(gemini.commonInputSha256, nebius.commonInputSha256);
-  assert.equal(gemini.worldSha256, nebius.worldSha256);
-  assert.deepEqual(gemini.common.world, world);
-  assert.equal(gemini.common.orderIds.length, 6);
-  assert.doesNotMatch(JSON.stringify(gemini), /EVALUATOR_ONLY_|privateCanary|expectedDiagnosis/);
-  for (const provider of ['openrouter', 'toString', '__proto__', '', undefined]) {
+  assert.deepEqual(nebius.common.world, world);
+  assert.equal(nebius.common.orderIds.length, 6);
+  assert.doesNotMatch(JSON.stringify(nebius), /EVALUATOR_ONLY_|privateCanary|expectedDiagnosis/);
+  for (const provider of ['gemini', 'openrouter', 'toString', '__proto__', '', undefined]) {
     assert.throws(() => prepareOrderRequest(provider), /unknown_order_model_provider/);
   }
-  const input = structuredClone(world), request = prepareOrderRequest('gemini', input);
+  const input = structuredClone(world), request = prepareOrderRequest('nebius', input);
   input.records[0].status = 'cancelled';
   assert.equal(request.common.world.records[0].status, world.records[0].status);
   assert.throws(() => { request.common.instructions = 'capture everything'; }, TypeError);
@@ -82,10 +80,10 @@ test('malformed model-shaped text is recorded as invalid, never repaired into a 
   });
 });
 
-test('completed, rejected and interrupted run claims block overwrites, including a provider change', t => {
+test('completed, rejected and interrupted run claims block overwrites', t => {
   const outputRoot = directory(t);
   for (const [runId, text] of [['completed', responseText], ['rejected', '{}']]) {
-    const run = recordOfflineOrderRun({ provider: 'gemini', runId, outputRoot, responseText: text });
+    const run = recordOfflineOrderRun({ provider: 'nebius', runId, outputRoot, responseText: text });
     const before = readFileSync(join(run.directory, 'result.json'), 'utf8');
     assert.throws(() => recordOfflineOrderRun({ provider: 'nebius', runId, outputRoot, responseText }), /already_claimed/);
     assert.equal(readFileSync(join(run.directory, 'result.json'), 'utf8'), before);
@@ -93,7 +91,7 @@ test('completed, rejected and interrupted run claims block overwrites, including
   }
   const interrupted = join(outputRoot, 'interrupted'); mkdirSync(interrupted);
   writeFileSync(join(interrupted, 'request.json'), 'incomplete request');
-  assert.throws(() => recordOfflineOrderRun({ provider: 'gemini', runId: 'interrupted', outputRoot, responseText }), /already_claimed/);
+  assert.throws(() => recordOfflineOrderRun({ provider: 'nebius', runId: 'interrupted', outputRoot, responseText }), /already_claimed/);
   assert.deepEqual(readdirSync(interrupted), ['request.json']);
   assert.equal(readFileSync(join(interrupted, 'request.json'), 'utf8'), 'incomplete request');
 });
@@ -101,27 +99,29 @@ test('completed, rejected and interrupted run claims block overwrites, including
 test('unsafe IDs and oversized responses fail before creating a claim', t => {
   const outputRoot = directory(t);
   for (const runId of ['../escape', '.', 'a/b', 'a\\b', '', 'a'.repeat(65), undefined]) {
-    assert.throws(() => recordOfflineOrderRun({ provider: 'gemini', runId, outputRoot, responseText }), /invalid_order_model_run_id/);
+    assert.throws(() => recordOfflineOrderRun({ provider: 'nebius', runId, outputRoot, responseText }), /invalid_order_model_run_id/);
   }
   for (const text of ['x'.repeat(responseByteLimit + 1), '\u20ac'.repeat(responseByteLimit / 2), null]) {
-    assert.throws(() => recordOfflineOrderRun({ provider: 'gemini', runId: 'big', outputRoot, responseText: text }), /invalid_order_model_response_size/);
+    assert.throws(() => recordOfflineOrderRun({ provider: 'nebius', runId: 'big', outputRoot, responseText: text }), /invalid_order_model_response_size/);
   }
   assert.deepEqual(readdirSync(outputRoot), []);
 });
 
-test('offline command prepares either provider and requires a supplied response without an explicit live flag', t => {
+test('offline command prepares the Nebius request by default and requires a supplied response without an explicit live flag', t => {
   const path = directory(t), scripts = join(path, 'scripts'), product = join(path, 'order-recovery');
   mkdirSync(scripts); mkdirSync(product); mkdirSync(join(product, 'worlds')); mkdirSync(join(product, 'refund-ordering'));
   const files = ['scripts/run-order-model.mjs', 'order-recovery/model.mjs', 'order-recovery/world.mjs',
     'order-recovery/refund-ordering/world.mjs', 'order-recovery/worlds/razorpay-670.json', 'order-recovery/worlds/razorpay-664.json'];
   for (const file of files) writeFileSync(join(path, file), readFileSync(new URL(`../${file}`, import.meta.url)));
   const cli = args => spawnSync(process.execPath, [join(scripts, 'run-order-model.mjs'), ...args], { cwd: path, encoding: 'utf8',
-    env: { ...process.env, GEMINI_API_KEY: 'fixture-secret-gemini', NEBIUS_API_KEY: 'fixture-secret-nebius' } });
-  for (const provider of ['gemini', 'nebius']) {
-    const result = cli(['--provider', provider, '--prepare']);
+    env: { ...process.env, NEBIUS_API_KEY: 'fixture-secret-nebius' } });
+  for (const args of [['--prepare'], ['--provider', 'nebius', '--prepare']]) {
+    const result = cli(args);
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout), prepareOrderRequest(provider));
+    assert.deepEqual(JSON.parse(result.stdout), prepareOrderRequest('nebius'));
   }
+  const gemini = cli(['--provider', 'gemini', '--prepare']);
+  assert.equal(gemini.status, 1); assert.match(gemini.stderr, /unknown_order_model_provider/);
   const missing = cli(['--provider', 'nebius']);
   assert.equal(missing.status, 1); assert.match(missing.stderr, /run_id_and_response_file_required/);
   const mixed = cli(['--provider', 'nebius', '--prepare', '--run-id', 'mixed']);
@@ -137,6 +137,20 @@ test('offline command prepares either provider and requires a supplied response 
   assert.doesNotMatch(readFileSync(join(summary.directory, 'request.json'), 'utf8'), /fixture-secret/);
   const duplicate = cli(args); assert.equal(duplicate.status, 1); assert.match(duplicate.stderr, /already_claimed/);
   writeFileSync(file, '{}');
-  const bad = cli(['--provider', 'gemini', '--run-id', 'bad-fixture', '--response-file', file]);
+  const bad = cli(['--run-id', 'bad-fixture', '--response-file', file]);
   assert.equal(bad.status, 1); assert.equal(JSON.parse(bad.stdout).status, 'invalid_response');
+});
+
+test('#664 accepts its own decisions and refuses capture actions, extra fulfillment and cross-order citations', t => {
+  const outputRoot = directory(t), refunds = reconcile(orderWorld('664').loadWorld());
+  const status = (runId, value) => recordOfflineOrderRun({ provider: 'nebius', worldId: '664', runId, outputRoot,
+    responseText: JSON.stringify({ decisions: value }) }).result.status;
+  assert.equal(status('refund', refunds), 'validated');
+  const changes = [d => { d[0].action = 'capture'; return d; }, d => { d[0].fulfillment = 'shipped'; return d; },
+    d => { d[0].evidenceIds = [d[1].orderId]; return d; }];
+  changes.forEach((change, i) => assert.equal(status(`refund-${i}`, change(structuredClone(refunds))), 'invalid_response'));
+  for (const limit of [0, 4096, 65536, NaN]) {
+    assert.throws(() => prepareOrderRequest('nebius', undefined, { generationTokenLimit: limit }), /unsupported_generation_limit/);
+  }
+  assert.throws(() => prepareOrderRequest('nebius', undefined, { worldId: 'heldout' }), /unknown_order_world/);
 });
