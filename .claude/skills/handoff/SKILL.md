@@ -18,14 +18,16 @@ Task: $ARGUMENTS (default: the current branch's task).
    Goal: <one sentence>.
    Decided: <each decision so far, with the alternative it beat>.
    Done: <commits and the PR link>.
-   Next: <the next concrete step>.
+   Next: <the next concrete step; for a task with tickets, the ticket's title
+   and its path in .scratch/<slug>/issues/>.
    Open: <questions for the owner, or "none">.
    Read first: <three to six file:line references>.
    Later: <deferred work>.
    ```
 
-3. If `work/tasks/<slug>/` exists, add the prompt to the top of its
-   `handoff.md` under today's date.
+3. If the task has tickets in `.scratch/<slug>/`, or `work/tasks/<slug>/`
+   exists, add the prompt to the top of `work/tasks/<slug>/handoff.md` under
+   today's date, creating the file if it is missing.
 4. Print the prompt in one code block and tell the owner to run `/clear`
    (Codex: open a new chat in the same folder) and paste it.
 

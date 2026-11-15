@@ -59,9 +59,13 @@ End with: "Reply build when this makes sense." Then wait.
 
 ## 4. After "build"
 
-With more than one slice, or work that won't finish in this session, write
-`work/tasks/<slug>/plan.md`: the design, then each slice with its inputs,
-outputs and test. Then build the first slice.
+With more than one slice, write the design to `.scratch/<slug>/spec.md`, then
+follow `.claude/skills/to-tickets/SKILL.md` to write one ticket per slice of
+section 3.6 into `.scratch/<slug>/issues/`. "build" approved that breakdown,
+so skip its quiz and publish. Title each ticket with what its slice delivers,
+and make the slice's test an acceptance criterion. Commit the spec and the
+tickets with the first slice; they don't count toward its 300 lines. Then
+build the first ticket.
 
 Before the first model batch or scoring run (B01, A01, or order-recovery cases
 the method has not been scored on), write two or three sentences in
