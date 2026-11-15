@@ -111,8 +111,9 @@ test('unsafe IDs and oversized responses fail before creating a claim', t => {
 
 test('offline command prepares either provider and requires a supplied response without an explicit live flag', t => {
   const path = directory(t), scripts = join(path, 'scripts'), product = join(path, 'order-recovery');
-  mkdirSync(scripts); mkdirSync(product); mkdirSync(join(product, 'worlds'));
-  const files = ['scripts/run-order-model.mjs', 'order-recovery/model.mjs', 'order-recovery/world.mjs', 'order-recovery/worlds/razorpay-670.json'];
+  mkdirSync(scripts); mkdirSync(product); mkdirSync(join(product, 'worlds')); mkdirSync(join(product, 'refund-ordering'));
+  const files = ['scripts/run-order-model.mjs', 'order-recovery/model.mjs', 'order-recovery/world.mjs',
+    'order-recovery/refund-ordering/world.mjs', 'order-recovery/worlds/razorpay-670.json', 'order-recovery/worlds/razorpay-664.json'];
   for (const file of files) writeFileSync(join(path, file), readFileSync(new URL(`../${file}`, import.meta.url)));
   const cli = args => spawnSync(process.execPath, [join(scripts, 'run-order-model.mjs'), ...args], { cwd: path, encoding: 'utf8',
     env: { ...process.env, GEMINI_API_KEY: 'fixture-secret-gemini', NEBIUS_API_KEY: 'fixture-secret-nebius' } });

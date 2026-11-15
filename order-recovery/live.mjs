@@ -6,8 +6,8 @@ const failures = new Set(['provider_key_unavailable', 'request_timeout', 'free_t
   'provider_http_failure', 'provider_response_size_limit', 'invalid_provider_json', 'invalid_retry_delay', 'provider_candidate_mismatch',
   'incomplete_provider_output', 'invalid_provider_text', 'provider_usage_uncheckable', 'provider_model_mismatch',
   'nebius_catalog_or_price_changed', 'nebius_task_budget_exhausted']);
-export async function runLiveOrder({ provider, runId, outputRoot, root, budget, key, ...transport }) {
-  const run = openOrderRun({ provider, runId, outputRoot,
+export async function runLiveOrder({ provider, runId, outputRoot, root, budget, key, worldId, generationTokenLimit, ...transport }) {
+  const run = openOrderRun({ provider, runId, outputRoot, worldId, generationTokenLimit,
     source: transport.fetchImpl ? 'offline_transport_fixture' : 'live_provider' });
   budget.claim(runId, provider);
   const wire = orderWireRequest(run.request); run.write('wire-request.json', JSON.stringify(wire));
