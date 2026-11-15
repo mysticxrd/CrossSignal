@@ -40,10 +40,8 @@ export function prepareOrderRequest(provider, input = loadWorld()) {
     worldSha256: hash(world), commonInputSha256: hash(common), common });
 }
 
-// This slice accepts supplied fixture text only. It has no credential lookup or network transport.
-export function recordOfflineOrderRun({ provider, runId, outputRoot, responseText }) {
+export function openOrderRun({ provider, runId, outputRoot, source }) {
   check(typeof runId === 'string' && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/.test(runId), 'invalid_order_model_run_id');
-  check(typeof responseText === 'string' && Buffer.byteLength(responseText) <= responseByteLimit, 'invalid_order_model_response_size');
   const request = prepareOrderRequest(provider), directory = join(outputRoot, runId);
   mkdirSync(outputRoot, { recursive: true });
   try { mkdirSync(directory); }
@@ -51,14 +49,23 @@ export function recordOfflineOrderRun({ provider, runId, outputRoot, responseTex
   const write = (name, text) => writeFileSync(join(directory, name), text, { flag: 'wx', flush: true });
   // The claim survives any later write failure. Never resend or overwrite an incomplete run.
   write('request.json', JSON.stringify(request, null, 2) + '\n');
-  write('response.txt', responseText);
+  return { directory, request, write,
+    finish: metadata => finishOrderRun({ directory, request, write, runId, provider, source }, metadata) };
+}
+function finishOrderRun({ directory, request, write, runId, provider, source }, { text: responseText, ...details }) {
+  if (responseText !== null) {
+    check(typeof responseText === 'string' && Buffer.byteLength(responseText) <= responseByteLimit, 'invalid_order_model_response_size');
+    write('response.txt', responseText);
+  }
   const result = { version: 'order-model-result-v1', runId, recordedAt: new Date().toISOString(),
-    truthMode: 'SIMULATED', source: 'offline_fixture', provider, requestedModel: request.requestedModel,
+    truthMode: 'SIMULATED', source, provider, requestedModel: request.requestedModel,
     modelVersion: null, usage: null, chargeUsd: null, unavailableReason: 'offline_fixture_no_model_call',
     worldSha256: request.worldSha256, commonInputSha256: request.commonInputSha256, requestSha256: hash(request),
     exposedEvidenceIds: request.common.world.records.map(r => r.id),
-    status: 'invalid_response', failureReason: 'response_does_not_match_order_contract', decisions: null, citedEvidenceIds: [] };
+    ...details, status: details.failureReason ? 'provider_failure' : 'invalid_response',
+    failureReason: details.failureReason ?? 'response_does_not_match_order_contract', decisions: null, citedEvidenceIds: [] };
   try {
+    check(!details.failureReason, 'provider_failure');
     const parsed = JSON.parse(responseText);
     check(parsed && Object.keys(parsed).length === 1 && Object.hasOwn(parsed, 'decisions'), 'invalid_response_fields');
     validateDecisions(request.common.world, parsed.decisions);
@@ -69,4 +76,9 @@ export function recordOfflineOrderRun({ provider, runId, outputRoot, responseTex
   write('result.pending.json', JSON.stringify(result, null, 2) + '\n');
   renameSync(join(directory, 'result.pending.json'), join(directory, 'result.json'));
   return { directory, result };
+}
+
+export function recordOfflineOrderRun({ provider, runId, outputRoot, responseText }) {
+  check(typeof responseText === 'string' && Buffer.byteLength(responseText) <= responseByteLimit, 'invalid_order_model_response_size');
+  return openOrderRun({ provider, runId, outputRoot, source: 'offline_fixture' }).finish({ text: responseText });
 }

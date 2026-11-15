@@ -109,7 +109,7 @@ test('unsafe IDs and oversized responses fail before creating a claim', t => {
   assert.deepEqual(readdirSync(outputRoot), []);
 });
 
-test('offline command prepares either provider and requires a supplied response; it cannot start a live call', t => {
+test('offline command prepares either provider and requires a supplied response without an explicit live flag', t => {
   const path = directory(t), scripts = join(path, 'scripts'), product = join(path, 'order-recovery');
   mkdirSync(scripts); mkdirSync(product); mkdirSync(join(product, 'worlds'));
   const files = ['scripts/run-order-model.mjs', 'order-recovery/model.mjs', 'order-recovery/world.mjs', 'order-recovery/worlds/razorpay-670.json'];
@@ -125,6 +125,8 @@ test('offline command prepares either provider and requires a supplied response;
   assert.equal(missing.status, 1); assert.match(missing.stderr, /run_id_and_response_file_required/);
   const mixed = cli(['--provider', 'nebius', '--prepare', '--run-id', 'mixed']);
   assert.equal(mixed.status, 1); assert.match(mixed.stderr, /prepare_does_not_record_a_run/);
+  const liveMixed = cli(['--provider', 'nebius', '--live', '--run-id', 'mixed', '--response-file', 'fixture.json']);
+  assert.equal(liveMixed.status, 1); assert.match(liveMixed.stderr, /live_requires_run_id_without_fixture/);
   const file = join(path, 'fixture.json'); writeFileSync(file, responseText);
   const args = ['--provider', 'nebius', '--run-id', 'cli-fixture', '--response-file', file];
   const run = cli(args); assert.equal(run.status, 0, run.stderr);

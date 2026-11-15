@@ -30,6 +30,9 @@ request and response before the terminal result; an incomplete directory
 blocks reruns. Only the active request is in memory. Provider secrets come
 from environment variables, never from prompts or recordings.
 
+The spending ledger lives in the repository's shared Git directory so removing
+a worktree cannot reset it. All task runs and worktrees share its $25 ceiling.
+
 On save failure after a response, keep the claim/reservation and do not resend.
 On malformed output, store an invalid-response result without decisions.
 On timeout, stop without releasing an uncertain spend reservation. At high

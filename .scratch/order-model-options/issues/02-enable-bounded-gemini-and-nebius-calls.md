@@ -6,13 +6,13 @@ enforce the owner's $25 total Nebius task budget with durable reservations.
 
 **Blocked by:** 01: Record provider-selectable #670 decisions.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Verify the exact Nebius model, price and structured-response contract before live dispatch.
-- [ ] Both providers use the accepted shared task and host decision validator.
-- [ ] Every send and retry reserves maximum cost first; restarts and duplicate runs cannot reset the task budget.
-- [ ] Ambiguous timeouts preserve reservations and stop; provider failures never trigger fallback.
-- [ ] Gemini keeps its free-tier checks and request spacing; keys are absent from all saved/logged data, including errors and echoed responses.
-- [ ] Offline fault tests cover malformed responses, persistence failure, timeout, retry and budget exhaustion before a bounded live run.
-- [ ] Report the live run ID, date, model, evidence supplied/cited, usage and matched baseline results without claiming superiority.
-- [ ] npm test, lint and typecheck pass; local diff review is complete.
+- [x] Verify the exact Nebius model, price and structured-response contract before live dispatch.
+- [x] Both providers use the accepted shared task and host decision validator.
+- [x] Every send and retry reserves maximum cost first; restarts and duplicate runs cannot reset the task budget.
+- [x] Ambiguous timeouts preserve reservations and stop; provider failures never trigger fallback.
+- [x] Gemini keeps its free-tier checks and request spacing; keys are absent from all saved/logged data, including errors and echoed responses.
+- [x] Offline fault tests cover malformed responses, persistence failure, timeout, retry and budget exhaustion before a bounded live run.
+- [x] Report the live run ID, date, model, evidence supplied/cited, usage and matched baseline results without claiming superiority.
+- [x] npm test, lint and typecheck pass; local diff review is complete.
