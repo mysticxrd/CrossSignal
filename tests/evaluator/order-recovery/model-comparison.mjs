@@ -100,11 +100,13 @@ export function finalJobs(plan, config, study, committed) {
 }
 export function markdown(report) {
   return ['# Public order-model comparison', '', report.limitations, '',
+    `Report phase: ${report.phase ?? 'study'}. Selection comes only from the three-repeat token-limit study; final runs do not reselect it.`, '',
     `Budget limitation: ${JSON.stringify(report.budgetLimitation ?? null)}.`, '',
     `Selected generation limit: ${report.selection.generationTokenLimit ?? 'none supported'}. Rule: ${report.protocol.rule}.`, '',
     'Correctness includes required escalation; unnecessary asks and unneeded writes are not correct decisions. Failed responses contribute no correct decisions and have no assigned penalty cost. Monetary estimates ignore cache discounts; unknown charges are not zero.', '',
     'Provider outages and sampling variation can change completion or accuracy without the token limit causing the change. Selection describes these public repeats only.', '',
-    ...report.cells.map(c => `- #${c.worldId} ${c.provider}, cap ${c.generationTokenLimit}: completed ${c.completed}/${c.attempted} attempted (${c.missingRuns} unrun); correct ${c.correct}/${c.attemptedExpectedDecisions}; full penalty ${c.penaltyCost ?? 'unassigned'}, completed subtotal ${c.completedPenaltyCost ?? 'none'}, failed runs ${c.failedRuns}; known usage estimate $${c.estimatedKnownCostUsd.toFixed(6)}; unknown usage runs ${c.unknownUsageRuns}.`), '',
+    ...report.cells.map(c => `- #${c.worldId} ${c.provider}, cap ${c.generationTokenLimit}: completed ${c.completed}/${c.attempted} attempted (${c.missingRuns} unrun); correct ${c.correct}/${c.attemptedExpectedDecisions}; full penalty ${c.penaltyCost ?? 'unassigned'}, mean penalty per run ${c.penaltyCost === null ? 'unassigned' : (c.penaltyCost / c.runs).toFixed(3)}, completed subtotal ${c.completedPenaltyCost ?? 'none'}, failed runs ${c.failedRuns}; known usage estimate $${c.estimatedKnownCostUsd.toFixed(6)}; unknown usage runs ${c.unknownUsageRuns}.`), '',
     ...report.runs.map(r => `- ${r.runId} (${r.recordedAt ?? 'not run'}, model ${r.modelVersion ?? 'unavailable'}): ${r.status}; cap ${r.generationTokenLimit}; ${r.elapsedMs ?? 'unknown'} ms; usage ${JSON.stringify(r.usage ?? null)}; evidence supplied ${r.exposedRecords ?? 'unknown'}, cited ${r.citedRecords ?? 'unknown'}; process ${JSON.stringify(r.process ?? null)}; attempts ${JSON.stringify(r.attempts)}.`), '',
-    '## Code-only baselines', '', ...report.baselines.map(b => `- #${b.worldId} ${b.method}: correct ${b.correct}/${b.expectedDecisions}, penalty ${b.penaltyCost}; process ${JSON.stringify(b.process)}.`), ''].join('\n');
+    '## Code-only baselines', '', 'Deterministic results per one public-world run; compare penalty with the model mean per run, not the multi-run total.', '',
+    ...report.baselines.map(b => `- #${b.worldId} ${b.method}: correct ${b.correct}/${b.expectedDecisions}, penalty ${b.penaltyCost}; process ${JSON.stringify(b.process)}.`), ''].join('\n');
 }

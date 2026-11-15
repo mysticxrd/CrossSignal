@@ -2,6 +2,8 @@
 
 The token-limit study has three public repeats per cell; a supported final comparison has two. Observed completion is not a population reliability guarantee. No optimum or superiority claim. Held-out orders remain sealed. Exposure/citations do not prove reading.
 
+Report phase: study. Selection comes only from the three-repeat token-limit study; final runs do not reselect it.
+
 Budget limitation: null.
 
 Selected generation limit: 32768. Rule: 3/3 completions in every provider/world cell; zero observed accuracy regression against every other tested cap in each cell.
@@ -10,18 +12,18 @@ Correctness includes required escalation; unnecessary asks and unneeded writes a
 
 Provider outages and sampling variation can change completion or accuracy without the token limit causing the change. Selection describes these public repeats only.
 
-- #670 gemini, cap 8192: completed 3/3 attempted (0 unrun); correct 7/18; full penalty 54, completed subtotal 54, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
-- #670 gemini, cap 16384: completed 2/3 attempted (0 unrun); correct 5/18; full penalty unassigned, completed subtotal 35, failed runs 1; known usage estimate $0.000000; unknown usage runs 1.
-- #670 gemini, cap 32768: completed 3/3 attempted (0 unrun); correct 7/18; full penalty 55, completed subtotal 55, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
-- #670 nebius, cap 8192: completed 3/3 attempted (0 unrun); correct 11/18; full penalty 21, completed subtotal 21, failed runs 0; known usage estimate $0.018351; unknown usage runs 0.
-- #670 nebius, cap 16384: completed 3/3 attempted (0 unrun); correct 13/18; full penalty 15, completed subtotal 15, failed runs 0; known usage estimate $0.026243; unknown usage runs 0.
-- #670 nebius, cap 32768: completed 3/3 attempted (0 unrun); correct 13/18; full penalty 16, completed subtotal 16, failed runs 0; known usage estimate $0.015055; unknown usage runs 0.
-- #664 gemini, cap 8192: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
-- #664 gemini, cap 16384: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
-- #664 gemini, cap 32768: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
-- #664 nebius, cap 8192: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.005347; unknown usage runs 0.
-- #664 nebius, cap 16384: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.004915; unknown usage runs 0.
-- #664 nebius, cap 32768: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, completed subtotal 3, failed runs 0; known usage estimate $0.004906; unknown usage runs 0.
+- #670 gemini, cap 8192: completed 3/3 attempted (0 unrun); correct 7/18; full penalty 54, mean penalty per run 18.000, completed subtotal 54, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
+- #670 gemini, cap 16384: completed 2/3 attempted (0 unrun); correct 5/18; full penalty unassigned, mean penalty per run unassigned, completed subtotal 35, failed runs 1; known usage estimate $0.000000; unknown usage runs 1.
+- #670 gemini, cap 32768: completed 3/3 attempted (0 unrun); correct 7/18; full penalty 55, mean penalty per run 18.333, completed subtotal 55, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
+- #670 nebius, cap 8192: completed 3/3 attempted (0 unrun); correct 11/18; full penalty 21, mean penalty per run 7.000, completed subtotal 21, failed runs 0; known usage estimate $0.018351; unknown usage runs 0.
+- #670 nebius, cap 16384: completed 3/3 attempted (0 unrun); correct 13/18; full penalty 15, mean penalty per run 5.000, completed subtotal 15, failed runs 0; known usage estimate $0.026243; unknown usage runs 0.
+- #670 nebius, cap 32768: completed 3/3 attempted (0 unrun); correct 13/18; full penalty 16, mean penalty per run 5.333, completed subtotal 16, failed runs 0; known usage estimate $0.015055; unknown usage runs 0.
+- #664 gemini, cap 8192: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
+- #664 gemini, cap 16384: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
+- #664 gemini, cap 32768: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.000000; unknown usage runs 0.
+- #664 nebius, cap 8192: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.005347; unknown usage runs 0.
+- #664 nebius, cap 16384: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.004915; unknown usage runs 0.
+- #664 nebius, cap 32768: completed 3/3 attempted (0 unrun); correct 12/12; full penalty 3, mean penalty per run 1.000, completed subtotal 3, failed runs 0; known usage estimate $0.004906; unknown usage runs 0.
 
 - tokens-20261115-670-8192-r1-gemini (2026-11-15T14:26:40.764Z, model gemini-3.5-flash-lite): validated; cap 8192; 2118.9727000000003 ms; usage {"inputTokens":1514,"outputTokens":302,"reasoningTokens":0}; evidence supplied 17, cited 17; process {"orders":6,"deciding":6,"missing":[],"extra":7,"unneeded":[]}; attempts [{"attempt":1,"generationTokenLimit":8192,"reservedMicros":0,"startedAt":"2026-11-15T14:26:38.649Z","received":{"attempt":1,"generationTokenLimit":8192,"httpStatus":200,"elapsedMs":2071.6075}}].
 - tokens-20261115-670-8192-r1-nebius (2026-11-15T14:27:10.187Z, model deepseek-ai/DeepSeek-V4.1-Flash-1017): validated; cap 8192; 29393.6877 ms; usage {"inputTokens":1598,"outputTokens":3345,"reasoningTokens":3159}; evidence supplied 17, cited 17; process {"orders":6,"deciding":6,"missing":[],"extra":7,"unneeded":[]}; attempts [{"attempt":1,"generationTokenLimit":8192,"reservedMicros":324404,"startedAt":"2026-11-15T14:26:42.593Z","received":{"attempt":1,"generationTokenLimit":8192,"httpStatus":200,"elapsedMs":27552.0663}}].
@@ -61,6 +63,8 @@ Provider outages and sampling variation can change completion or accuracy withou
 - tokens-20261115-664-32768-r3-nebius (2026-11-15T14:35:38.759Z, model deepseek-ai/DeepSeek-V4.1-Flash-1017): validated; cap 32768; 15227.65240000002 ms; usage {"inputTokens":1425,"outputTokens":1330,"reasoningTokens":1194}; evidence supplied 20, cited 12; process {"orders":4,"deciding":4,"missing":[],"extra":0,"unneeded":[]}; attempts [{"attempt":1,"generationTokenLimit":32768,"reservedMicros":353895,"startedAt":"2026-11-15T14:35:24.029Z","received":{"attempt":1,"generationTokenLimit":32768,"httpStatus":200,"elapsedMs":14686.910600000061}}].
 
 ## Code-only baselines
+
+Deterministic results per one public-world run; compare penalty with the model mean per run, not the multi-run total.
 
 - #670 Do nothing: correct 1/6, penalty 15; process {"orders":6,"deciding":0,"missing":["order-1","order-2","order-3","order-4","order-5","order-6"],"extra":0,"unneeded":[]}.
 - #670 Always ask: correct 1/6, penalty 6; process {"orders":6,"deciding":0,"missing":["order-1","order-2","order-3","order-4","order-5","order-6"],"extra":0,"unneeded":[]}.

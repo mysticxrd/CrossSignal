@@ -5,6 +5,8 @@ Approved by the owner on 2026-11-15 with "build" after the design discussion.
 Slice 3 planning amendment, 2026-11-15: add generation-token-limit selection
 before the final comparison. This amendment authorizes planning edits only;
 do not start implementation or model calls under this instruction.
+The owner subsequently authorized implementing the amended slice with
+"continue to the next slice".
 
 ## Decision
 

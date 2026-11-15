@@ -89,6 +89,7 @@ test('selection waits for every planned trial and chooses the smallest reliable 
   const full = report(root, plan); assert.equal(full.selection.generationTokenLimit, 8192);
   assert.ok(full.cells.every(c => c.completed === 3 && c.correct === c.expectedDecisions));
   assert.match(markdown(full), /unnecessary asks/);
+  assert.match(markdown(full), /mean penalty per run 1\.000/);
   assert.equal(full.baselines.length, 8);
 });
 

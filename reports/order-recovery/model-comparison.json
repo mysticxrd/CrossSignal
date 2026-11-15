@@ -1,0 +1,1002 @@
+{
+  "source": "live_provider",
+  "protocol": {
+    "version": 1,
+    "batch": "tokens-20261115",
+    "models": {
+      "gemini": "gemini-3.5-flash-lite",
+      "nebius": "deepseek-ai/DeepSeek-V4.1-Flash-1017"
+    },
+    "repeats": 3,
+    "finalRepeats": 2,
+    "requestedReasoning": "LOW",
+    "rule": "3/3 completions in every provider/world cell; zero observed accuracy regression against every other tested cap in each cell",
+    "jobs": [
+      {
+        "runId": "tokens-20261115-670-8192-r1-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-8192-r1-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r1-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r1-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r1-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r1-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 1,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r1-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r1-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r1-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r1-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r1-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r1-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 1,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-670-8192-r2-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-8192-r2-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r2-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r2-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r2-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r2-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 2,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r2-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r2-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r2-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r2-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r2-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r2-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 2,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-670-8192-r3-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-8192-r3-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r3-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-16384-r3-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r3-gemini",
+        "worldId": "670",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a"
+      },
+      {
+        "runId": "tokens-20261115-670-32768-r3-nebius",
+        "worldId": "670",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 3,
+        "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+        "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r3-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 8192,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-8192-r3-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 8192,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r3-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 16384,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-16384-r3-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 16384,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r3-gemini",
+        "worldId": "664",
+        "provider": "gemini",
+        "generationTokenLimit": 32768,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e"
+      },
+      {
+        "runId": "tokens-20261115-664-32768-r3-nebius",
+        "worldId": "664",
+        "provider": "nebius",
+        "generationTokenLimit": 32768,
+        "repeat": 3,
+        "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+        "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb"
+      }
+    ]
+  },
+  "selection": {
+    "generationTokenLimit": 32768,
+    "status": "selected"
+  },
+  "limitations": "The token-limit study has three public repeats per cell; a supported final comparison has two. Observed completion is not a population reliability guarantee. No optimum or superiority claim. Held-out orders remain sealed. Exposure/citations do not prove reading.",
+  "cells": [
+    {
+      "worldId": "670",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "runs": 2,
+      "completed": 2,
+      "attempted": 2,
+      "missingRuns": 0,
+      "correct": 5,
+      "expectedDecisions": 12,
+      "attemptedExpectedDecisions": 12,
+      "penaltyCost": 36,
+      "completedPenaltyCost": 36,
+      "failedRuns": 0,
+      "unknownUsageRuns": 0,
+      "estimatedKnownCostUsd": 0,
+      "elapsedMs": [
+        2842.8412,
+        2417.9429999999993
+      ],
+      "usage": [
+        {
+          "inputTokens": 1514,
+          "outputTokens": 302,
+          "reasoningTokens": 0
+        },
+        {
+          "inputTokens": 1514,
+          "outputTokens": 302,
+          "reasoningTokens": 0
+        }
+      ]
+    },
+    {
+      "worldId": "670",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "runs": 2,
+      "completed": 2,
+      "attempted": 2,
+      "missingRuns": 0,
+      "correct": 9,
+      "expectedDecisions": 12,
+      "attemptedExpectedDecisions": 12,
+      "penaltyCost": 8,
+      "completedPenaltyCost": 8,
+      "failedRuns": 0,
+      "unknownUsageRuns": 0,
+      "estimatedKnownCostUsd": 0.012575,
+      "elapsedMs": [
+        50639.1221,
+        43381.8532
+      ],
+      "usage": [
+        {
+          "inputTokens": 1598,
+          "outputTokens": 4778,
+          "reasoningTokens": 4592
+        },
+        {
+          "inputTokens": 1598,
+          "outputTokens": 4902,
+          "reasoningTokens": 4716
+        }
+      ]
+    },
+    {
+      "worldId": "664",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "runs": 2,
+      "completed": 2,
+      "attempted": 2,
+      "missingRuns": 0,
+      "correct": 8,
+      "expectedDecisions": 8,
+      "attemptedExpectedDecisions": 8,
+      "penaltyCost": 2,
+      "completedPenaltyCost": 2,
+      "failedRuns": 0,
+      "unknownUsageRuns": 0,
+      "estimatedKnownCostUsd": 0,
+      "elapsedMs": [
+        3034.6278999999995,
+        1805.1416999999929
+      ],
+      "usage": [
+        {
+          "inputTokens": 1298,
+          "outputTokens": 221,
+          "reasoningTokens": 0
+        },
+        {
+          "inputTokens": 1298,
+          "outputTokens": 216,
+          "reasoningTokens": 0
+        }
+      ]
+    },
+    {
+      "worldId": "664",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "runs": 2,
+      "completed": 2,
+      "attempted": 2,
+      "missingRuns": 0,
+      "correct": 8,
+      "expectedDecisions": 8,
+      "attemptedExpectedDecisions": 8,
+      "penaltyCost": 2,
+      "completedPenaltyCost": 2,
+      "failedRuns": 0,
+      "unknownUsageRuns": 0,
+      "estimatedKnownCostUsd": 0.00363,
+      "elapsedMs": [
+        12043.705299999994,
+        10058.060499999992
+      ],
+      "usage": [
+        {
+          "inputTokens": 1425,
+          "outputTokens": 1293,
+          "reasoningTokens": 1157
+        },
+        {
+          "inputTokens": 1425,
+          "outputTokens": 1018,
+          "reasoningTokens": 882
+        }
+      ]
+    }
+  ],
+  "runs": [
+    {
+      "runId": "tokens-20261115-final-670-r1-gemini",
+      "worldId": "670",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "repeat": 1,
+      "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+      "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:40:34.707Z",
+      "modelVersion": "gemini-3.5-flash-lite",
+      "elapsedMs": 2842.8412,
+      "usage": {
+        "inputTokens": 1514,
+        "outputTokens": 302,
+        "reasoningTokens": 0
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 0,
+          "startedAt": "2026-11-15T14:40:31.874Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 2793.3287
+          }
+        }
+      ],
+      "exposedRecords": 17,
+      "citedRecords": 17,
+      "estimatedCostUsd": 0,
+      "correct": 3,
+      "expectedDecisions": 6,
+      "penaltyCost": 17,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 7,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-670-r1-nebius",
+      "worldId": "670",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "repeat": 1,
+      "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+      "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:41:25.375Z",
+      "modelVersion": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "elapsedMs": 50639.1221,
+      "usage": {
+        "inputTokens": 1598,
+        "outputTokens": 4778,
+        "reasoningTokens": 4592
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 353895,
+          "startedAt": "2026-11-15T14:40:35.885Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 49451.8563
+          }
+        }
+      ],
+      "exposedRecords": 17,
+      "citedRecords": 17,
+      "estimatedCostUsd": 0.006213,
+      "correct": 5,
+      "expectedDecisions": 6,
+      "penaltyCost": 4,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 7,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-664-r1-gemini",
+      "worldId": "664",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "repeat": 1,
+      "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+      "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:41:28.445Z",
+      "modelVersion": "gemini-3.5-flash-lite",
+      "elapsedMs": 3034.6278999999995,
+      "usage": {
+        "inputTokens": 1298,
+        "outputTokens": 221,
+        "reasoningTokens": 0
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 0,
+          "startedAt": "2026-11-15T14:41:25.412Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 2988.122900000002
+          }
+        }
+      ],
+      "exposedRecords": 20,
+      "citedRecords": 16,
+      "estimatedCostUsd": 0,
+      "correct": 4,
+      "expectedDecisions": 4,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 4,
+        "deciding": 4,
+        "missing": [],
+        "extra": 4,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-664-r1-nebius",
+      "worldId": "664",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "repeat": 1,
+      "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+      "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:41:40.530Z",
+      "modelVersion": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "elapsedMs": 12043.705299999994,
+      "usage": {
+        "inputTokens": 1425,
+        "outputTokens": 1293,
+        "reasoningTokens": 1157
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 353895,
+          "startedAt": "2026-11-15T14:41:28.948Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 11542.007299999997
+          }
+        }
+      ],
+      "exposedRecords": 20,
+      "citedRecords": 12,
+      "estimatedCostUsd": 0.00198,
+      "correct": 4,
+      "expectedDecisions": 4,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 4,
+        "deciding": 4,
+        "missing": [],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-670-r2-gemini",
+      "worldId": "670",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "repeat": 2,
+      "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+      "wireContractSha256": "d531af40c627eb17ec16cee7e8d57a05329691a093194c185dfc580848abb86a",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:41:42.986Z",
+      "modelVersion": "gemini-3.5-flash-lite",
+      "elapsedMs": 2417.9429999999993,
+      "usage": {
+        "inputTokens": 1514,
+        "outputTokens": 302,
+        "reasoningTokens": 0
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 0,
+          "startedAt": "2026-11-15T14:41:40.574Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 2361.9351000000024
+          }
+        }
+      ],
+      "exposedRecords": 17,
+      "citedRecords": 17,
+      "estimatedCostUsd": 0,
+      "correct": 2,
+      "expectedDecisions": 6,
+      "penaltyCost": 19,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 7,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-670-r2-nebius",
+      "worldId": "670",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "repeat": 2,
+      "commonInputSha256": "74c66da2d297fc5a7f640553ea5ab2920295fee702dbbca8d7f788961e1dabcd",
+      "wireContractSha256": "a4123374e56fe340345010dbed3ec5da1fbab2c4054aeeff4b681a03f0a3a065",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:42:26.400Z",
+      "modelVersion": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "elapsedMs": 43381.8532,
+      "usage": {
+        "inputTokens": 1598,
+        "outputTokens": 4902,
+        "reasoningTokens": 4716
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 353895,
+          "startedAt": "2026-11-15T14:41:43.284Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 43071.9565
+          }
+        }
+      ],
+      "exposedRecords": 17,
+      "citedRecords": 17,
+      "estimatedCostUsd": 0.006362,
+      "correct": 4,
+      "expectedDecisions": 6,
+      "penaltyCost": 4,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 7,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-664-r2-gemini",
+      "worldId": "664",
+      "provider": "gemini",
+      "generationTokenLimit": 32768,
+      "repeat": 2,
+      "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+      "wireContractSha256": "b83e97328d5313993d378c8d70f1e0ca0e949e590f7efc1b65e5477605c1d49e",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:42:28.251Z",
+      "modelVersion": "gemini-3.5-flash-lite",
+      "elapsedMs": 1805.1416999999929,
+      "usage": {
+        "inputTokens": 1298,
+        "outputTokens": 216,
+        "reasoningTokens": 0
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 0,
+          "startedAt": "2026-11-15T14:42:26.442Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 1756.6080999999976
+          }
+        }
+      ],
+      "exposedRecords": 20,
+      "citedRecords": 15,
+      "estimatedCostUsd": 0,
+      "correct": 4,
+      "expectedDecisions": 4,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 4,
+        "deciding": 4,
+        "missing": [],
+        "extra": 3,
+        "unneeded": []
+      }
+    },
+    {
+      "runId": "tokens-20261115-final-664-r2-nebius",
+      "worldId": "664",
+      "provider": "nebius",
+      "generationTokenLimit": 32768,
+      "repeat": 2,
+      "commonInputSha256": "58c0f69f54c612cad2bd8ddd4707f998799280de5d4094811fa003a1d7d7f190",
+      "wireContractSha256": "75ec94ad3ddc10882d0dbaadb9b65209125328319e6501bb81c60a22992940eb",
+      "status": "validated",
+      "failureReason": null,
+      "recordedAt": "2026-11-15T14:42:38.342Z",
+      "modelVersion": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+      "elapsedMs": 10058.060499999992,
+      "usage": {
+        "inputTokens": 1425,
+        "outputTokens": 1018,
+        "reasoningTokens": 882
+      },
+      "attempts": [
+        {
+          "attempt": 1,
+          "generationTokenLimit": 32768,
+          "reservedMicros": 353895,
+          "startedAt": "2026-11-15T14:42:28.624Z",
+          "received": {
+            "attempt": 1,
+            "generationTokenLimit": 32768,
+            "httpStatus": 200,
+            "elapsedMs": 9717.5579
+          }
+        }
+      ],
+      "exposedRecords": 20,
+      "citedRecords": 12,
+      "estimatedCostUsd": 0.00165,
+      "correct": 4,
+      "expectedDecisions": 4,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 4,
+        "deciding": 4,
+        "missing": [],
+        "extra": 0,
+        "unneeded": []
+      }
+    }
+  ],
+  "baselines": [
+    {
+      "worldId": "670",
+      "method": "Do nothing",
+      "source": "code_only",
+      "correct": 1,
+      "expectedDecisions": 6,
+      "penaltyCost": 15,
+      "process": {
+        "orders": 6,
+        "deciding": 0,
+        "missing": [
+          "order-1",
+          "order-2",
+          "order-3",
+          "order-4",
+          "order-5",
+          "order-6"
+        ],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "670",
+      "method": "Always ask",
+      "source": "code_only",
+      "correct": 1,
+      "expectedDecisions": 6,
+      "penaltyCost": 6,
+      "process": {
+        "orders": 6,
+        "deciding": 0,
+        "missing": [
+          "order-1",
+          "order-2",
+          "order-3",
+          "order-4",
+          "order-5",
+          "order-6"
+        ],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "670",
+      "method": "Fields script",
+      "source": "code_only",
+      "correct": 3,
+      "expectedDecisions": 6,
+      "penaltyCost": 23,
+      "process": {
+        "orders": 6,
+        "deciding": 3,
+        "missing": [
+          "order-4",
+          "order-5",
+          "order-6"
+        ],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "670",
+      "method": "Fields + ask on text",
+      "source": "code_only",
+      "correct": 4,
+      "expectedDecisions": 6,
+      "penaltyCost": 3,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "670",
+      "method": "Words script",
+      "source": "code_only",
+      "correct": 6,
+      "expectedDecisions": 6,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 6,
+        "deciding": 6,
+        "missing": [],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "664",
+      "method": "Do nothing",
+      "source": "code_only",
+      "correct": 1,
+      "expectedDecisions": 4,
+      "penaltyCost": 9,
+      "process": {
+        "orders": 4,
+        "deciding": 0,
+        "missing": [
+          "order-1",
+          "order-2",
+          "order-3",
+          "order-4"
+        ],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "664",
+      "method": "Always ask",
+      "source": "code_only",
+      "correct": 1,
+      "expectedDecisions": 4,
+      "penaltyCost": 4,
+      "process": {
+        "orders": 4,
+        "deciding": 0,
+        "missing": [
+          "order-1",
+          "order-2",
+          "order-3",
+          "order-4"
+        ],
+        "extra": 0,
+        "unneeded": []
+      }
+    },
+    {
+      "worldId": "664",
+      "method": "Fields script",
+      "source": "code_only",
+      "correct": 4,
+      "expectedDecisions": 4,
+      "penaltyCost": 1,
+      "process": {
+        "orders": 4,
+        "deciding": 4,
+        "missing": [],
+        "extra": 0,
+        "unneeded": []
+      }
+    }
+  ],
+  "phase": "final",
+  "budgetLimitation": null
+}

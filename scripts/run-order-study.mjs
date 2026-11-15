@@ -40,7 +40,7 @@ export async function main(args) {
           key: process.env[job.provider === 'nebius' ? 'NEBIUS_API_KEY' : 'GEMINI_API_KEY'] });
         console.log(JSON.stringify({ runId: job.runId, status: result.status, failureReason: result.failureReason,
           taskReservedOrAccountedUsd: budget.usedMicros() / 1e6 }));
-        if (result.failureReason === 'nebius_task_budget_exhausted') { budgetLimitation = { status: 'exhausted_during_study', runId: job.runId }; break; }
+        if (result.failureReason === 'nebius_task_budget_exhausted') { budgetLimitation = { status: 'exhausted_during_study', runId: job.runId }; process.exitCode = 1; break; }
       }
     }
     const report = { ...comparison(outputRoot, plan, jobs), phase: phase === 'final' ? 'final' : 'study', budgetLimitation };
