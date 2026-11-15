@@ -3,9 +3,14 @@ import { resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { check } from './world.mjs';
+import { generationLimits } from './model.mjs';
 
 const nebius = 'https://api.tokenfactory.nebius.com/v1';
-const outputCap = 8192, contextCap = 1048576;
+const contextCap = 1048576;
+export function maximumReservation(limit) {
+  check(generationLimits.includes(limit), 'unsupported_generation_limit');
+  return Math.ceil(contextCap * 0.3 + limit * 1.2);
+}
 let nextGeminiStart = 0;
 async function pace(signal) {
   const now = performance.now(), start = Math.max(now, nextGeminiStart); nextGeminiStart = start + 4500;
@@ -18,7 +23,8 @@ function providerSchema(value, provider) {
     : key === 'uniqueItems' || (key === 'maxItems' && provider === 'gemini') ? [] : [[key, providerSchema(item, provider)]]));
 }
 export function orderWireRequest(request) {
-  const text = JSON.stringify(request.common), schema = request.common.responseSchema;
+  const text = JSON.stringify(request.common), schema = request.common.responseSchema, outputCap = request.generationTokenLimit ?? 8192;
+  maximumReservation(outputCap);
   return request.provider === 'nebius' ? { endpoint: `${nebius}/chat/completions`, body: {
     model: request.requestedModel, messages: [{ role: 'user', content: text }], store: false, stream: false, n: 1,
     service_tier: 'default', reasoning_effort: 'low', max_completion_tokens: outputCap,
@@ -30,7 +36,17 @@ export function orderWireRequest(request) {
   } };
 }
 const count = n => Number.isSafeInteger(n) && n >= 0;
-export function inspectOrderResponse(provider, raw, requestedModel) {
+export function inspectOrderUsage(provider, raw, outputCap = 8192) {
+  const g = provider === 'gemini', u = g ? raw.usageMetadata : raw.usage, input = g ? u?.promptTokenCount : u?.prompt_tokens;
+  const reasoning = g ? (u?.thoughtsTokenCount ?? (u?.totalTokenCount === input + u?.candidatesTokenCount ? 0 : null))
+    : (u?.completion_tokens_details?.reasoning_tokens ?? null);
+  const output = g && count(u?.candidatesTokenCount) && count(reasoning) ? u.candidatesTokenCount + reasoning : g ? null : u?.completion_tokens;
+  check(count(input) && count(output) && input > 0 && output > 0 && input <= contextCap && output <= outputCap
+    && (g ? u.totalTokenCount : u.total_tokens) === input + output
+    && (reasoning === null || (count(reasoning) && reasoning <= output)), 'provider_usage_uncheckable');
+  return { inputTokens: input, outputTokens: output, reasoningTokens: reasoning };
+}
+export function inspectOrderResponse(provider, raw, requestedModel, outputCap = 8192) {
   const g = provider === 'gemini', choice = g ? raw.candidates?.[0] : raw.choices?.[0];
   check((g ? raw.candidates : raw.choices)?.length === 1, 'provider_candidate_mismatch');
   check((g ? choice.finishReason === 'STOP' : choice.finish_reason === 'stop') && !choice.message?.tool_calls
@@ -40,19 +56,13 @@ export function inspectOrderResponse(provider, raw, requestedModel) {
     && Object.keys(p).every(k => ['text', 'thought', 'thoughtSignature'].includes(k))))), 'invalid_provider_text');
   const text = g ? parts.filter(p => p.thought !== true).map(p => p.text).join('') : choice.message?.content;
   check(typeof text === 'string', 'invalid_provider_text');
-  const u = g ? raw.usageMetadata : raw.usage, input = g ? u?.promptTokenCount : u?.prompt_tokens;
-  const reasoning = g ? (u?.thoughtsTokenCount ?? (u?.totalTokenCount === input + u?.candidatesTokenCount ? 0 : null))
-    : (u?.completion_tokens_details?.reasoning_tokens ?? null);
-  const output = g && count(u?.candidatesTokenCount) && count(reasoning) ? u.candidatesTokenCount + reasoning : g ? null : u?.completion_tokens;
-  check(count(input) && count(output) && input > 0 && output > 0 && input <= contextCap && output <= outputCap
-    && (g ? u.totalTokenCount : u.total_tokens) === input + output
-    && (reasoning === null || (count(reasoning) && reasoning <= output)), 'provider_usage_uncheckable');
+  const usage = inspectOrderUsage(provider, raw, outputCap);
   const modelVersion = g ? raw.modelVersion : raw.model;
   check(typeof modelVersion === 'string' && modelVersion.length <= 160
     && (modelVersion === requestedModel || (g && modelVersion.startsWith(`${requestedModel}-`))), 'provider_model_mismatch');
   const id = g ? raw.responseId : raw.id;
   return { text, modelVersion, requestId: typeof id === 'string' && /^[a-zA-Z0-9._:/-]{1,160}$/.test(id) ? id : null,
-    usage: { inputTokens: input, outputTokens: output, reasoningTokens: reasoning }, unavailableReason: null };
+    usage, unavailableReason: null };
 }
 function redacted(text, key) {
   try { const normalized = JSON.stringify(JSON.parse(text)); if (normalized.includes(key)) return normalized.replaceAll(key, '[REDACTED_API_KEY]'); } catch { /* Keep non-JSON error bodies. */ }
@@ -62,6 +72,7 @@ export async function generateOrderResponse({ request, wire, root, key, budget, 
   fetchImpl = globalThis.fetch, log = console.error, timeoutMs = 180000, wait = sleep, pacing = pace }) {
   check(typeof key === 'string' && key.length >= 16 && key.length <= 8192 && !/[\r\n]/.test(key), 'provider_key_unavailable');
   const g = request.provider === 'gemini', controller = new AbortController();
+  const outputCap = wire.body.max_completion_tokens ?? wire.body.generationConfig.maxOutputTokens;
   const timer = setTimeout(() => controller.abort(), timeoutMs), signal = controller.signal;
   const aborted = new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('request_timeout')), { once: true }));
   let lastAttempt = null;
@@ -74,7 +85,9 @@ export async function generateOrderResponse({ request, wire, root, key, budget, 
           check(a.model === request.requestedModel && a.freeTier === true && a.billingDisabled === true && a.paidSpendCapUsd === 0 && a.paidFallback === false, 'free_tier_attestation_required');
         }
         signal.throwIfAborted();
-        if (meter) { budget.reserve(runId, attempt, g ? 0 : Math.ceil(contextCap * 0.3 + outputCap * 1.2)); lastAttempt = attempt; }
+        const reservedMicros = g ? 0 : maximumReservation(outputCap), attemptStarted = performance.now();
+        if (meter) { budget.reserve(runId, attempt, reservedMicros); lastAttempt = attempt;
+          write(`generation-attempt-${attempt}.json`, JSON.stringify({ attempt, generationTokenLimit: outputCap, reservedMicros, startedAt: new Date().toISOString() })); }
         const response = await fetchImpl(endpoint, { method: body ? 'POST' : 'GET', redirect: 'error', signal,
           headers: g ? { 'Content-Type': 'application/json', 'x-goog-api-key': key } : { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
           ...(body ? { body: JSON.stringify(body) } : {}) });
@@ -85,6 +98,8 @@ export async function generateOrderResponse({ request, wire, root, key, budget, 
           size += value.byteLength; check(size <= 1000000, 'provider_response_size_limit'); chunks.push(value); signal.throwIfAborted();
         } } finally { signal.removeEventListener('abort', cancel); cancel(); }
         const text = Buffer.concat(chunks).toString('utf8'); signal.throwIfAborted();
+        if (meter) write(`generation-received-${attempt}.json`, JSON.stringify({ attempt, generationTokenLimit: outputCap,
+          httpStatus: response.status, elapsedMs: performance.now() - attemptStarted }));
         if (response.ok) {
           check(!redacted(text, key).includes('[REDACTED_API_KEY]'), 'provider_secret_echo');
           let parsed; try { parsed = JSON.parse(text); } catch { write('malformed-provider.txt', redacted(text, key)); throw new Error('invalid_provider_json'); }
@@ -111,7 +126,7 @@ export async function generateOrderResponse({ request, wire, root, key, budget, 
     const raw = await http(wire.endpoint, wire.body, true);
     write('provider-response.json', JSON.stringify(raw, (key, value) => ['reasoning_content', 'thoughtSignature'].includes(key)
       || value?.thought === true ? undefined : value));
-    const result = inspectOrderResponse(request.provider, raw, request.requestedModel);
+    const result = inspectOrderResponse(request.provider, raw, request.requestedModel, outputCap);
     return { ...result, attempt: lastAttempt, estimatedCostUsd: g ? 0 : Math.ceil(result.usage.inputTokens * 0.3 + result.usage.outputTokens * 1.2) / 1000000 };
   };
   try { return await Promise.race([work(), aborted]); }
