@@ -109,18 +109,18 @@ first entry. Name a domain idea with the glossary's word.
 ## Model calls
 
 - Paid API spend is allowed (owner, 2026-11-15). DeepSeek V4.1 Flash on
-  Nebius Token Factory is CrossSignal's model. Each send first reserves its
-  worst-case cost in a ledger shared by every worktree, and sends stop at the
-  task ceiling.
+  Nebius Token Factory is CrossSignal's model. Each DeepSeek send first
+  reserves its worst-case cost in a ledger shared by every worktree, and sends
+  stop at the lifetime ceiling in `order-recovery/spend.json`
+  (`spend_ceiling_reached`); only I raise it.
 - Keys (`NEBIUS_API_KEY`, `GEMINI_API_KEY`) come from the environment or a
   gitignored `.env`. Never print, log or commit them. Failures print the
   provider's full error with only the key hidden.
 - Retries cover 429/500/503/504 only, bounded and inside the request deadline.
 - The v0.1 investigator (B01, A01, Case lab) still runs on Gemini
   (`gemini-3.5-flash-lite`) until a feature ports it to DeepSeek. Its runner
-  still refuses to send unless the account attestation says billing is off,
-  and starts requests at least 4.5 s apart within one process, so run one
-  batch at a time, in one worktree at a time.
+  starts requests at least 4.5 s apart within one process, so run one batch
+  at a time, in one worktree at a time.
 - `node scripts/run-a01-gemini.mjs` runs one investigation, saved under
   `outputs/a01-gemini/` (gitignored).
 - `node scripts/run-b01.mjs [--new] [--profile minimal|low] [--sets ...]` runs the

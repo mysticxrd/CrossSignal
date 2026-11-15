@@ -136,7 +136,8 @@ Then open `http://localhost:3000/runs/r_c72728d0a839`. Other commands:
 | Command | What it does |
 |---|---|
 | `npm test`, `npm run lint` | Offline test suites and lint |
-| `node scripts/run-b01.mjs --profile low` | Runs the benchmark. Needs a free-tier `GEMINI_API_KEY`; the runner refuses to send unless the account attestation says billing is off with no paid fallback |
+| `node scripts/run-b01.mjs --profile low` | Runs the benchmark. Needs `GEMINI_API_KEY`; requests start at least 4.5 s apart |
+| `node scripts/run-order-model.mjs --live --run-id <id>` | Sends public #670 to DeepSeek V4.1 Flash on Nebius. Needs `NEBIUS_API_KEY`; stops at the lifetime spend ceiling in `order-recovery/spend.json` |
 | `node scripts/export-replay.mjs --batch <batch> --case B17 --method tool-using-model` | Copies a graded run into `db/replays/` |
 | `node scripts/stamp-replays.mjs [--upgrade]` | Timestamps new recordings; `--upgrade` adds the Bitcoin block once the calendars have committed |
 | `npm run deploy:replay` | Publishes the read-only replay to Cloudflare's free Workers plan |
@@ -178,7 +179,7 @@ Run `npm run case:lab`, then open **http://127.0.0.1:4317**. This is a separate 
 The journey is: observed conversion signal -> immutable evidence packet -> Gemini investigation -> trusted proposal eligibility -> **Approve and run this simulation** -> observed outcome -> owner closure. All company data and effects are **SIMULATED**. A real Gemini response is not evidence of real business impact.
 
 - Choose a synthetic situation and open a Case. Source records show unique purchase intents, successful first payments, subscription activations, maturity and coverage.
-- Investigate to run the existing isolated Gemini runner with a SaaS evidence packet. Only `gemini-3.5-flash-lite`, the `low` profile and the existing $0 account attestation are supported. `GEMINI_API_KEY` stays in the host's environment or ignored `.env`.
+- Investigate to run the existing isolated Gemini runner with a SaaS evidence packet. Only `gemini-3.5-flash-lite` and the `low` profile are supported. `GEMINI_API_KEY` stays in the host's environment or ignored `.env`.
 - Review citations, competing explanations and eligibility reasons. Missing health evidence cannot produce an executable proposal even when the model recommends one.
 - Exact approval records a grant and pending job together. Execution rechecks scope, versions, evidence, plan, expiry and pause, then commits the simulated transition and receipt together. Double clicks and restarts do not repeat it.
 - Choose **Advance simulation and observe** to produce subsequent observations. Reloading never advances time. A receipt alone does not satisfy the outcome criterion.

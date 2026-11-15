@@ -10,7 +10,6 @@ export const PROVIDER = Object.freeze({
   temperature: null,
   seed: null,
   seedUnavailableReason: 'subscription_route_support_not_verified_use_replicate_indices',
-  paidSpendCapUsd: 0,
   allowCredits: false,
   allowApiKey: false,
   allowPaidFallback: false,

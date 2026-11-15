@@ -144,5 +144,5 @@ test('no caller flag, stage acceptance, free-tier assertion or network injection
     await assert.rejects(callGemini({ ...options, keySource: () => { inspected++; }, fetch: () => { dispatched++; } }), /model_calls_not_authorized/);
   }
   assert.equal(inspected, 0); assert.equal(dispatched, 0);
-  assert.equal(GEMINI.modelCallsAuthorized, false); assert.equal(GEMINI.paidSpendCapUsd, 0);
+  assert.equal(GEMINI.modelCallsAuthorized, false);
 });

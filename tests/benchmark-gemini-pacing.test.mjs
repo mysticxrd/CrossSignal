@@ -74,17 +74,17 @@ test('a pacing wait counts against the request deadline, and a request that woul
   assert.equal(calls, 1);
 });
 
-test('a free-tier transport cannot run unpaced; offline fixtures wait for nothing', () => {
-  const options = { mode: 'FREE_TIER_BENCHMARK', keySource: () => secret, beforeRequest: async () => {},
+test('a live transport cannot run unpaced; offline fixtures wait for nothing', () => {
+  const options = { mode: 'LIVE', keySource: () => secret, beforeRequest: async () => {},
     fetchImpl: async () => { throw new Error('must not dispatch'); } };
-  for (const pace of [null, 4500, 'slow']) assert.throws(() => createHttpTransport({ ...options, pace }), /free_tier_pacing_required/);
+  for (const pace of [null, 4500, 'slow']) assert.throws(() => createHttpTransport({ ...options, pace }), /request_pacing_required/);
   assert.equal(createHttpTransport(options).counters().pacingWaitMs, 0);
   assert.equal(createHttpTransport({ ...options, mode: 'OFFLINE_FIXTURE' }).counters().pacingWaitMs, 0);
 });
 
-test('free-tier transports share one request clock, so the next run waits for the last run\'s slot', async () => {
+test('live transports share one request clock, so the next run waits for the last run\'s slot', async () => {
   const starts = [];
-  const transport = () => createHttpTransport({ mode: 'FREE_TIER_BENCHMARK', keySource: () => secret, log: () => {},
+  const transport = () => createHttpTransport({ mode: 'LIVE', keySource: () => secret, log: () => {},
     beforeRequest: async () => {}, fetchImpl: async () => { starts.push(performance.now()); return new Response(metadata); } });
   const first = transport(), second = transport();
   await first.modelMetadata(performance.now() + 10_000);

@@ -21,17 +21,17 @@ export function createRequestPacer({ gapMs = GEMINI.requestGapMs, now = () => pe
     return start - asked;
   };
 }
-// One pacer per process: every free-tier transport, so every run in a batch, shares one request clock.
-const freeTierPacer = createRequestPacer();
+// One pacer per process: every live transport, so every run in a batch, shares one request clock.
+const livePacer = createRequestPacer();
 
 // Core HTTP routine is dependency-injected only for explicitly labelled offline tests.
 // Online entrypoint supplies global fetch and a verified host-only key source.
 // Every failure is printed through `log` with the API key redacted and nothing else hidden.
 export function createHttpTransport({ fetchImpl, keySource, mode, beforeRequest = null, profile = 'minimal',
-  pace = mode === 'FREE_TIER_BENCHMARK' ? freeTierPacer : null, log = line => process.stderr.write(`${line}\n`) }) {
-  requireThat(['OFFLINE_FIXTURE', 'FREE_TIER_BENCHMARK'].includes(mode), 'invalid_transport_mode');
-  requireThat(mode !== 'FREE_TIER_BENCHMARK' || typeof beforeRequest === 'function', 'verified_host_gate_required');
-  requireThat(pace === null ? mode !== 'FREE_TIER_BENCHMARK' : typeof pace === 'function', 'free_tier_pacing_required');
+  pace = mode === 'LIVE' ? livePacer : null, log = line => process.stderr.write(`${line}\n`) }) {
+  requireThat(['OFFLINE_FIXTURE', 'LIVE'].includes(mode), 'invalid_transport_mode');
+  requireThat(mode !== 'LIVE' || typeof beforeRequest === 'function', 'verified_host_gate_required');
+  requireThat(pace === null ? mode !== 'LIVE' : typeof pace === 'function', 'request_pacing_required');
   // A transport admits only its own profile's thinking level and caps.
   const limits = tokenProfile(profile);
   let busy = false, generationCalls = 0, generationAttempts = 0, countCalls = 0, metadataCalls = 0, stopped = false, lastFailure = null;

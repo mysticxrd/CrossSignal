@@ -22,14 +22,11 @@ const usage = (generated = 100, thoughts = 25, input = 1000) => ({ counts: {
   promptTokenCount: input, candidatesTokenCount: generated - thoughts, thoughtsTokenCount: thoughts,
   totalTokenCount: input + generated, toolUsePromptTokenCount: 0 } });
 
-test('Gemini is selected without removing the exact historical subscription configuration', () => {
+test('Gemini is selected and the subscription configuration stays blocked', () => {
   assert.equal(PROVIDER.provider, 'gemini'); assert.equal(PROVIDER.model, 'gemini-3.5-flash-lite');
   assert.equal(PROVIDER.executionProfile, 'original-accepted-b01-token-limits');
-  assert.equal(PROVIDER.freeTierRequestsConditionallyAuthorized, true);
   assert.equal(PROVIDER.modelCallsAuthorized, false); assert.equal(PROVIDER.allowPaidFallback, false);
   assert.equal(PROVIDER.subscriptionPreparationSelected, false);
-  assert.deepEqual(readFileSync(new URL('../db/benchmark/subscription-config.mjs', import.meta.url)),
-    readFileSync(new URL('../factory/03_build/output/gemini-resume/prior-current/db/benchmark/provider-config.mjs', import.meta.url)));
 });
 
 test('all five eager bodies retain the original task/schema; token counting covers the complete request', () => {

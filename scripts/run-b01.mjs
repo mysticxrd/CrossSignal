@@ -166,11 +166,7 @@ function headCommit() {
   return head.stdout.trim();
 }
 
-function requireFreeTierKey() {
-  // $0 only: refuse to send anything unless the owner's attestation says billing is off with no paid fallback.
-  const account = JSON.parse(readFileSync(resolve(root, 'factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json'), 'utf8'));
-  requireThat(account.model === GEMINI.model && account.freeTier === true && account.billingDisabled === true
-    && account.paidSpendCapUsd === 0 && account.paidFallback === false, 'free_tier_attestation_required');
+function requireGeminiKey() {
   if (!process.env.GEMINI_API_KEY && existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
   requireThat(typeof process.env.GEMINI_API_KEY === 'string' && process.env.GEMINI_API_KEY.trim().length > 0, 'GEMINI_API_KEY_unset');
 }
@@ -199,13 +195,13 @@ async function main(args) {
   const batch = JSON.parse(readFileSync(join(directory, 'BATCH.json'), 'utf8')), limits = tokenProfile(batch.profile ?? 'minimal');
   console.log(`Profile ${batch.profile ?? 'minimal'}: thinking ${limits.thinkingLevel}, up to ${limits.maxOutputTokens} output tokens `
     + `a response and ${limits.generatedTokens} a run. Gemini requests start at least ${GEMINI.requestGapMs / 1000} s apart.`);
-  if (batch.slots.some(slot => !slot.endsWith('-rules') && !isSaved(directory, slot))) requireFreeTierKey();
-  // Free-tier transports share one request pacer, so the spacing also holds from one run to the next.
-  const outcome = await runBatch({ directory, commit, transportFactory: profile => createHttpTransport({ mode: 'FREE_TIER_BENCHMARK',
+  if (batch.slots.some(slot => !slot.endsWith('-rules') && !isSaved(directory, slot))) requireGeminiKey();
+  // Live transports share one request pacer, so the spacing also holds from one run to the next.
+  const outcome = await runBatch({ directory, commit, transportFactory: profile => createHttpTransport({ mode: 'LIVE',
     fetchImpl: globalThis.fetch, keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {}, profile }) });
   if (!outcome.complete) {
     const quota = dailyQuota(outcome.stopped);
-    console.log(quota ? `Stopped: the Gemini free-tier daily quota is used up (${quota}). That attempt is kept unscored in `
+    console.log(quota ? `Stopped: the Gemini daily quota is used up (${quota}). That attempt is kept unscored in `
       + `${outcome.folder}. Run node scripts/run-b01.mjs again after the quota resets; saved runs are skipped.`
       : `Stopped: ${outcome.stopped.slot} ended with ${outcome.stopped.result.failureReason} (Google's error is printed above). `
       + `That attempt is kept unscored in ${outcome.folder}. If it was a request bug, commit the fix and rerun with --new; `

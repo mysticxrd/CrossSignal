@@ -11,7 +11,6 @@ import { isolatedGemini } from '../db/benchmark/gemini-isolation.mjs';
 import { GeminiStore } from '../db/benchmark/gemini-store.mjs';
 import { createHttpTransport } from '../db/benchmark/gemini-http.mjs';
 import { runGeminiInvestigation } from '../db/benchmark/gemini-runner.mjs';
-import { freeTierTransport } from '../db/benchmark/gemini-execution.mjs';
 import { bindRun, START, CUTOFF, digest } from '../db/benchmark/contracts.mjs';
 
 const cases = readdirSync('factory/02_data/benchmark/observable').sort()
@@ -229,11 +228,6 @@ test('a query past the case clock comes back as a reason, uses one tool call and
   assert.deepEqual(queryResults,[{attempt:1,tool:'engineering.inspect',result:toolResult.result}]);
   assert.match(toolResult.result.reason,/end must be at or before 2026-09-01T10:00:00\.000Z/);
   assert(!JSON.stringify(bodies[1]).includes(late.arguments.end));s.close();
-});
-
-test('the online factory requires fresh verification evidence; caller booleans never authorize requests', async () => {
-  await assert.rejects(freeTierTransport({approved:true,freeTier:true,apiKey:fixtureKey,fetch:()=>{throw new Error('must not dispatch')}}),
-    /caller_options_not_authorized/);
 });
 
 test('transport refuses rehashed native capabilities, extra fields, larger generation or hidden-thought requests', async () => {

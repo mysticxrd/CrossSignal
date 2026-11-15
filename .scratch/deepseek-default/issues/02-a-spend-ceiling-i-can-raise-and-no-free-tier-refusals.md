@@ -9,12 +9,12 @@ CONTEXT.md no longer say paid models are forbidden.
 
 **Blocked by:** 01: Order recovery sends to DeepSeek only.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A send above the ceiling is refused with `spend_ceiling_reached` and no request leaves.
-- [ ] Raising the number in `spend.json` lets the next send through.
-- [ ] A ledger created with the old fixed-cap table keeps its used total.
-- [ ] No code path refuses to send because of the Gemini account attestation.
-- [ ] The Case lab no longer labels a run "free tier".
-- [ ] One live public #670 run is `validated`, with the ledger up by under $0.05.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] A send above the ceiling is refused with `spend_ceiling_reached` and no request leaves.
+- [x] Raising the number in `spend.json` lets the next send through.
+- [x] A ledger created with the old fixed-cap table keeps its used total.
+- [x] No code path refuses to send because of the Gemini account attestation.
+- [x] The Case lab no longer labels a run "free tier".
+- [x] One live public #670 run is `validated`, with the ledger up by under $0.05.
+- [x] `npm test` and `npm run lint` pass.
