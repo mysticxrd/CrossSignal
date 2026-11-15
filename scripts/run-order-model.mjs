@@ -1,18 +1,34 @@
-// Offline only: --prepare prints the request; --response-file records supplied {"decisions":[...]} JSON.
-import { readFileSync, statSync } from 'node:fs';
+// --prepare prints the request; --response-file records fixture JSON; --live explicitly dispatches a provider request.
+import { existsSync, readFileSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { prepareOrderRequest, recordOfflineOrderRun, responseByteLimit } from '../order-recovery/model.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-export function main(args) {
+export async function main(args) {
   const { values } = parseArgs({ args, options: { provider: { type: 'string' }, 'run-id': { type: 'string' },
-    'response-file': { type: 'string' }, prepare: { type: 'boolean' } } });
+    'response-file': { type: 'string' }, prepare: { type: 'boolean' }, live: { type: 'boolean' } } });
   const request = prepareOrderRequest(values.provider);
   if (values.prepare) {
-    if (values['run-id'] || values['response-file']) throw new Error('prepare_does_not_record_a_run');
+    if (values['run-id'] || values['response-file'] || values.live) throw new Error('prepare_does_not_record_a_run');
     console.log(JSON.stringify(request, null, 2)); return;
+  }
+  if (values.live) {
+    if (!values['run-id'] || values['response-file']) throw new Error('live_requires_run_id_without_fixture');
+    if (existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
+    const { OrderBudget } = await import('../order-recovery/budget.mjs');
+    const { runLiveOrder } = await import('../order-recovery/live.mjs');
+    const shared = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' }).trim();
+    const budget = new OrderBudget(resolve(shared, 'crosssignal-order-model-budget.sqlite'));
+    try {
+      const { directory, result } = await runLiveOrder({ provider: values.provider, runId: values['run-id'], root, budget,
+        outputRoot: resolve(root, 'outputs/order-recovery-model'), key: process.env[values.provider === 'nebius' ? 'NEBIUS_API_KEY' : 'GEMINI_API_KEY'] });
+      console.log(JSON.stringify({ source: result.source, status: result.status, directory, taskReservedOrAccountedUsd: budget.usedMicros() / 1000000 }));
+      if (result.status !== 'validated') process.exitCode = 1;
+    } finally { budget.close(); }
+    return;
   }
   if (!values['run-id'] || !values['response-file']) throw new Error('run_id_and_response_file_required');
   const file = resolve(values['response-file']), stat = statSync(file);
@@ -23,6 +39,6 @@ export function main(args) {
   if (result.status !== 'validated') process.exitCode = 1;
 }
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try { main(process.argv.slice(2)); }
+  try { await main(process.argv.slice(2)); }
   catch (error) { console.error(/^[a-z_]+$/.test(error.message) ? error.message : 'order_model_command_failed'); process.exitCode = 1; }
 }
