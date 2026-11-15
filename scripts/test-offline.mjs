@@ -43,7 +43,7 @@ async function main(args) {
   const paths = catalog.filter((suite) => mode === "audit" ? suite.kind !== "excluded" : suite.kind === mode).map((suite) => suite.path);
   if (paths.length === 0) throw new Error(`No ${mode} suites found`);
   // Copy only allowed environment values; never read a real provider credential.
-  const denied = new Set(["GEMINI_API_KEY", "OPENAI_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"]);
+  const denied = new Set(["GEMINI_API_KEY", "NEBIUS_API_KEY", "OPENAI_API_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_SECRET_KEY"]);
   const env = Object.fromEntries(Object.keys(process.env).filter((name) => !denied.has(name.toUpperCase())).map((name) => [name, process.env[name]]));
   const child = spawn(process.execPath, ["--import", "tsx", "--import", "./tests/a01-path-compat.mjs", "--test", "--test-concurrency=4", ...paths], { cwd: root, env, stdio: "inherit" });
   child.on("error", (error) => { process.stderr.write(`${error.message}\n`); process.exitCode = 1; });
