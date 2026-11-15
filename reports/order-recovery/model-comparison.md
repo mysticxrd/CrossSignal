@@ -1,5 +1,7 @@
 # Public order-model comparison
 
+Record, not a live report: written by `scripts/run-order-study.mjs --phase final` at commit `24ccb9b` from batch `outputs/order-recovery-model/tokens-20261115`. Gemini was dropped and the study harness removed afterwards (owner decision, 2026-11-15); nothing regenerates this file.
+
 The token-limit study has three public repeats per cell; a supported final comparison has two. Observed completion is not a population reliability guarantee. No optimum or superiority claim. Held-out orders remain sealed. Exposure/citations do not prove reading.
 
 Report phase: final. Selection comes only from the three-repeat token-limit study; final runs do not reselect it.

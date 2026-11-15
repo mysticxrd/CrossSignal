@@ -108,16 +108,19 @@ first entry. Name a domain idea with the glossary's word.
 
 ## Model calls
 
-- Gemini free tier only (`gemini-3.5-flash-lite`); paid spend is never
-  allowed. The runner refuses to send unless the account attestation says
-  billing is off with no paid fallback.
-- The key comes from `GEMINI_API_KEY` (environment or a gitignored `.env`).
-  Never print, log or commit it. Failures print Google's full error with
-  only the key hidden.
+- Paid API spend is allowed (owner, 2026-11-15). DeepSeek V4.1 Flash on
+  Nebius Token Factory is CrossSignal's model. Each send first reserves its
+  worst-case cost in a ledger shared by every worktree, and sends stop at the
+  task ceiling.
+- Keys (`NEBIUS_API_KEY`, `GEMINI_API_KEY`) come from the environment or a
+  gitignored `.env`. Never print, log or commit them. Failures print the
+  provider's full error with only the key hidden.
 - Retries cover 429/500/503/504 only, bounded and inside the request deadline.
-- Requests, retries included, start at least 4.5 s apart (free tier: 15 a
-  minute). The spacing holds within one process, so run one batch at a time,
-  in one worktree at a time.
+- The v0.1 investigator (B01, A01, Case lab) still runs on Gemini
+  (`gemini-3.5-flash-lite`) until a feature ports it to DeepSeek. Its runner
+  still refuses to send unless the account attestation says billing is off,
+  and starts requests at least 4.5 s apart within one process, so run one
+  batch at a time, in one worktree at a time.
 - `node scripts/run-a01-gemini.mjs` runs one investigation, saved under
   `outputs/a01-gemini/` (gitignored).
 - `node scripts/run-b01.mjs [--new] [--profile minimal|low] [--sets ...]` runs the
@@ -128,7 +131,11 @@ first entry. Name a domain idea with the glossary's word.
 - `node scripts/run-order-recovery.mjs` (#670) and
   `node scripts/run-refund-ordering.mjs` (#664) score every code-only script
   and rewrite its report in `reports/order-recovery/`; add `--check` to
-  compare without writing. No model is called yet.
+  compare without writing.
+- `node scripts/run-order-model.mjs --live --run-id <id> [--world 670|664]`
+  sends the public world to DeepSeek V4.1 Flash on Nebius (`NEBIUS_API_KEY`),
+  saved under `outputs/order-recovery-model/` (gitignored). `--prepare`
+  prints the request without sending it.
 - Cost, lower is better: right 0, asking a person 1, wrong final state 3,
   wrong capture 10.
 - Ten held-out #670 orders stay sealed outside the repository, with only their

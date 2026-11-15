@@ -1,26 +1,24 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { OrderBudget } from '../order-recovery/budget.mjs';
 import { runLiveOrder } from '../order-recovery/live.mjs';
-import { prepareOrderRequest, ORDER_MODELS } from '../order-recovery/model.mjs';
-import { inspectOrderResponse, orderWireRequest } from '../order-recovery/provider.mjs';
+import { generationLimits, orderWorld, prepareOrderRequest, ORDER_MODELS } from '../order-recovery/model.mjs';
+import { inspectOrderResponse, inspectOrderUsage, maximumReservation, orderWireRequest } from '../order-recovery/provider.mjs';
 import { loadWorld } from '../order-recovery/world.mjs';
 import { wordsScript } from '../order-recovery/rivals.mjs';
+import { reconcile } from '../order-recovery/refund-ordering/rivals.mjs';
 
 const key = 'fixture-provider-secret-0123456789', reserved = 324404;
 const decisions = wordsScript(loadWorld()), answer = JSON.stringify({ decisions });
 const catalog = { data: [{ id: ORDER_MODELS.nebius, context_length: 1048576,
   pricing: { prompt: '0.0000003', completion: '0.0000012', request: '0' } }] };
-function payload(provider, text = answer) {
-  return provider === 'nebius' ? { id: 'fixture-request', model: ORDER_MODELS.nebius,
+function payload(text = answer) {
+  return { id: 'fixture-request', model: ORDER_MODELS.nebius,
     choices: [{ finish_reason: 'stop', message: { content: text, reasoning_content: 'hidden thought fixture' } }],
-    usage: { prompt_tokens: 3000, completion_tokens: 800, total_tokens: 3800, completion_tokens_details: { reasoning_tokens: 100 } } }
-    : { responseId: 'fixture-request', modelVersion: ORDER_MODELS.gemini,
-      candidates: [{ finishReason: 'STOP', content: { parts: [{ text }] } }],
-      usageMetadata: { promptTokenCount: 3000, candidatesTokenCount: 700, thoughtsTokenCount: 100, totalTokenCount: 3800 } };
+    usage: { prompt_tokens: 3000, completion_tokens: 800, total_tokens: 3800, completion_tokens_details: { reasoning_tokens: 100 } } };
 }
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
 function setup(t) {
@@ -32,16 +30,15 @@ function setup(t) {
 const base = s => ({ ...s, provider: 'nebius', runId: 'test-run', key, timeoutMs: 1000, log: () => {}, wait: async () => {} });
 const filesText = directory => readdirSync(directory).filter(n => !n.endsWith('.sqlite')).map(n => readFileSync(join(directory, n), 'utf8')).join('\n');
 
-test('native wire formats keep the exact same common input and project Gemini-only schema limitations', () => {
-  const n = orderWireRequest(prepareOrderRequest('nebius')), g = orderWireRequest(prepareOrderRequest('gemini'));
-  assert.equal(n.body.messages[0].content, g.body.contents[0].parts[0].text);
-  assert.equal(n.body.max_completion_tokens, 8192); assert.equal(g.body.generationConfig.maxOutputTokens, 8192);
+test('the Nebius wire request carries the common input unchanged and drops only uniqueItems from the strict schema', () => {
+  const request = prepareOrderRequest('nebius'), n = orderWireRequest(request);
+  assert.equal(n.endpoint, 'https://api.tokenfactory.nebius.com/v1/chat/completions');
+  assert.equal(n.body.messages[0].content, JSON.stringify(request.common));
+  assert.equal(n.body.max_completion_tokens, 8192); assert.equal(n.body.reasoning_effort, 'low');
   assert.equal(n.body.service_tier, 'default'); assert.equal(n.body.store, false);
   assert.equal(n.body.response_format.json_schema.strict, true);
   assert.doesNotMatch(JSON.stringify(n.body.response_format.json_schema.schema), /"uniqueItems":/);
-  const schema = g.body.generationConfig.responseFormat.text.schema;
-  assert.doesNotMatch(JSON.stringify(schema), /"(?:const|maxItems|uniqueItems)":/);
-  assert.deepEqual(schema.properties.decisions.items.anyOf[0].properties.action, { enum: ['capture'], type: 'string' });
+  assert.deepEqual(n.body.response_format.json_schema.schema.properties.decisions.items.anyOf[0].properties.action, { const: 'capture' });
   assert.match(n.body.messages[0].content, /"uniqueItems":true/);
 });
 
@@ -50,7 +47,7 @@ test('ledger shares its ceiling and run claims across connections and restart; s
   try {
     s.budget.claim('first', 'nebius'); s.budget.reserve('first', 1, 24000000);
     assert.equal(other.usedMicros(), 24000000);
-    assert.throws(() => other.claim('first', 'gemini'), /already_claimed/);
+    assert.throws(() => other.claim('first', 'nebius'), /already_claimed/);
     other.claim('second', 'nebius'); other.reserve('second', 1, 1000000);
     assert.throws(() => s.budget.reserve('first', 2, 1), /budget_exhausted/);
     assert.throws(() => other.settle('second', 1, 1000001), /accounting_mismatch/);
@@ -67,7 +64,7 @@ test('Nebius sends reserve before fetch, save actual model/usage and settle only
     if (init.method === 'GET') { assert.match(url, /models\?verbose=true$/); return json(catalog); }
     posts++; assert.equal(s.budget.usedMicros(), reserved);
     assert.equal(init.headers.Authorization, `Bearer ${key}`);
-    return json(payload('nebius'));
+    return json(payload());
   } });
   assert.equal(posts, 1); assert.equal(run.result.status, 'validated');
   assert.equal(run.result.source, 'offline_transport_fixture');
@@ -96,7 +93,7 @@ test('retryable HTTP failures keep their reservations, redact full diagnostics a
     if (init.method === 'GET') return json(catalog);
     posts++;
     assert.equal(s.budget.usedMicros(), reserved * posts);
-    return posts === 1 ? json({ error: { message: `Full provider diagnostic ${key}`, detail: 'preserved' } }, 503) : json(payload('nebius'));
+    return posts === 1 ? json({ error: { message: `Full provider diagnostic ${key}`, detail: 'preserved' } }, 503) : json(payload());
   } });
   assert.equal(posts, 2); assert.equal(run.result.status, 'validated');
   assert.equal(s.budget.usedMicros(), reserved + 1860);
@@ -130,13 +127,13 @@ test('response saving failure keeps the full reservation and never retries', asy
   await assert.rejects(runLiveOrder({ ...base(s), fetchImpl: async (_, init) => {
     if (init.method === 'GET') return json(catalog);
     posts++; mkdirSync(join(s.outputRoot, 'test-run', 'result.pending.json'));
-    return json(payload('nebius'));
+    return json(payload());
   } }));
   assert.equal(posts, 1); assert.equal(s.budget.usedMicros(), reserved);
   assert.equal(readdirSync(join(s.outputRoot, 'test-run')).includes('result.json'), false);
   s.budget.db.exec("CREATE TRIGGER fail_accounting BEFORE UPDATE ON sends BEGIN SELECT RAISE(FAIL, 'injected accounting failure'); END;");
   await assert.rejects(runLiveOrder({ ...base(s), runId: 'ledger-write-failure', fetchImpl: async (_, init) => {
-    if (init.method === 'GET') return json(catalog); posts++; return json(payload('nebius'));
+    if (init.method === 'GET') return json(catalog); posts++; return json(payload());
   } }), /injected accounting failure/);
   assert.equal(posts, 2); assert.equal(s.budget.usedMicros(), reserved * 2);
   const saved = JSON.parse(readFileSync(join(s.outputRoot, 'ledger-write-failure', 'result.json'), 'utf8'));
@@ -148,7 +145,7 @@ test('response saving failure keeps the full reservation and never retries', asy
 
 test('invalid decisions still account known usage, but malformed envelopes and unknown usage retain reservations', async t => {
   const s = setup(t);
-  const cases = [payload('nebius', '{}'), { ...payload('nebius'), usage: {} }, 'not json'];
+  const cases = [payload('{}'), { ...payload(), usage: {} }, 'not json'];
   for (const [i, raw] of cases.entries()) {
     const run = await runLiveOrder({ ...base(s), runId: `invalid-${i}`, fetchImpl: async (_, init) => init.method === 'GET'
       ? json(catalog) : typeof raw === 'string' ? new Response(raw) : json(raw) });
@@ -161,7 +158,7 @@ test('invalid decisions still account known usage, but malformed envelopes and u
 
 test('escaped credential echoes are refused without saving the secret; non-retryable HTTP errors send once', async t => {
   const s = setup(t); let posts = 0;
-  const echoed = JSON.stringify(payload('nebius', key)).replaceAll(key, [...key].map(c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`).join(''));
+  const echoed = JSON.stringify(payload(key)).replaceAll(key, [...key].map(c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`).join(''));
   const run = await runLiveOrder({ ...base(s), fetchImpl: async (_, init) => init.method === 'GET' ? json(catalog) : new Response(echoed) });
   assert.equal(run.result.failureReason, 'provider_secret_echo'); assert.doesNotMatch(filesText(run.directory), /fixture-provider-secret/);
   const rejected = await runLiveOrder({ ...base(s), runId: 'bad-request', fetchImpl: async (_, init) => {
@@ -171,36 +168,11 @@ test('escaped credential echoes are refused without saving the secret; non-retry
   assert.doesNotMatch(filesText(rejected.directory), /fixture-provider-secret/);
 });
 
-test('Gemini attestation is checked before every paced retry and all its spending reservations are zero', async t => {
-  const s = setup(t), accountDirectory = join(s.root, 'factory/03_build/output/gemini-runner-v1'); mkdirSync(accountDirectory, { recursive: true });
-  const account = { model: ORDER_MODELS.gemini, freeTier: true, billingDisabled: true, paidSpendCapUsd: 0, paidFallback: false };
-  const accountPath = join(accountDirectory, 'ACCOUNT_ATTESTATION.json'); writeFileSync(accountPath, JSON.stringify(account));
-  let posts = 0, paced = 0;
-  const run = await runLiveOrder({ ...base(s), provider: 'gemini', pacing: async () => { paced++; }, fetchImpl: async (_, init) => {
-    posts++; assert.equal(init.headers['x-goog-api-key'], key);
-    return posts === 1 ? json({ error: { message: `Gemini diagnostic ${key}` } }, 429) : json(payload('gemini'));
-  } });
-  assert.equal(run.result.status, 'validated'); assert.equal(paced, 2); assert.equal(posts, 2); assert.equal(s.budget.usedMicros(), 0);
-  writeFileSync(accountPath, JSON.stringify({ ...account, paidFallback: true }));
-  const refused = await runLiveOrder({ ...base(s), provider: 'gemini', runId: 'billing-on', fetchImpl: async () => { posts++; } });
-  assert.equal(posts, 2); assert.equal(refused.result.failureReason, 'free_tier_attestation_required');
-  writeFileSync(accountPath, JSON.stringify(account));
-  const changedWhileWaiting = await runLiveOrder({ ...base(s), provider: 'gemini', runId: 'billing-changed-while-waiting',
-    pacing: async () => { writeFileSync(accountPath, JSON.stringify({ ...account, billingDisabled: false })); },
-    fetchImpl: async () => { posts++; } });
-  assert.equal(posts, 2); assert.equal(changedWhileWaiting.result.failureReason, 'free_tier_attestation_required');
-});
-
 test('provider identity, completion caps and reasoning counts fail closed', () => {
-  for (const provider of ['gemini', 'nebius']) {
-    const raw = payload(provider); assert.equal(inspectOrderResponse(provider, raw, ORDER_MODELS[provider]).usage.outputTokens, 800);
-    const wrong = structuredClone(raw); if (provider === 'gemini') wrong.modelVersion = 'other'; else wrong.model = 'other';
-    assert.throws(() => inspectOrderResponse(provider, wrong, ORDER_MODELS[provider]), /model_mismatch/);
-    const oversized = structuredClone(raw);
-    if (provider === 'gemini') { oversized.usageMetadata.candidatesTokenCount = 9000; oversized.usageMetadata.totalTokenCount = 12100; }
-    else { oversized.usage.completion_tokens = 9000; oversized.usage.total_tokens = 12000; }
-    assert.throws(() => inspectOrderResponse(provider, oversized, ORDER_MODELS[provider]), /usage_uncheckable/);
-  }
+  const raw = payload(); assert.equal(inspectOrderResponse(raw, ORDER_MODELS.nebius).usage.outputTokens, 800);
+  assert.throws(() => inspectOrderResponse({ ...raw, model: 'other' }, ORDER_MODELS.nebius), /model_mismatch/);
+  const oversized = structuredClone(raw); oversized.usage.completion_tokens = 9000; oversized.usage.total_tokens = 12000;
+  assert.throws(() => inspectOrderResponse(oversized, ORDER_MODELS.nebius), /usage_uncheckable/);
 });
 
 test('retry count is bounded; a network exception containing the credential is neither retained nor retried', async t => {
@@ -227,4 +199,54 @@ test('retry waiting ends at the request deadline and an oversized response never
     ? json(catalog) : new Response('x'.repeat(1000001)) });
   assert.equal(large.result.failureReason, 'provider_response_size_limit');
   assert.equal(s.budget.usedMicros(), reserved * 2);
+});
+
+test('higher-cap reservations cover every allowed retry and parsing uses the recorded cap', () => {
+  assert.deepEqual(generationLimits.map(maximumReservation), [324404, 334234, 353895]);
+  const raw = { usage: { prompt_tokens: 1000, completion_tokens: 12000, total_tokens: 13000,
+    completion_tokens_details: { reasoning_tokens: 11000 } } };
+  assert.throws(() => inspectOrderUsage(raw, 8192), /usage_uncheckable/);
+  assert.equal(inspectOrderUsage(raw, 16384).outputTokens, 12000);
+});
+
+test('a #664 live transport records and reserves the higher cap on every retry', async t => {
+  const s = setup(t), refunds = reconcile(orderWorld('664').loadWorld()); let posts = 0;
+  const run = await runLiveOrder({ ...base(s), runId: 'higher-cap', worldId: '664', generationTokenLimit: 32768, fetchImpl: async (_, init) => {
+    if (init.method === 'GET') return json(catalog);
+    posts++; assert.equal(s.budget.usedMicros(), 353895 * posts);
+    assert.equal(JSON.parse(init.body).max_completion_tokens, 32768);
+    return posts === 1 ? new Response('busy', { status: 503 }) : json({ model: ORDER_MODELS.nebius,
+      choices: [{ finish_reason: 'stop', message: { content: JSON.stringify({ decisions: refunds }) } }],
+      usage: { prompt_tokens: 1000, completion_tokens: 12000, total_tokens: 13000, completion_tokens_details: { reasoning_tokens: 11000 } } });
+  } });
+  assert.equal(run.result.status, 'validated'); assert.equal(run.result.generationTokenLimit, 32768);
+  assert.equal(s.budget.usedMicros(), 368595); assert.equal(run.result.usage.outputTokens, 12000);
+  for (const attempt of [1, 2]) {
+    assert.equal(JSON.parse(readFileSync(join(run.directory, `generation-attempt-${attempt}.json`))).generationTokenLimit, 32768);
+  }
+});
+
+test('each world sends one public input at every cap, and the cap reaches the wire body', () => {
+  for (const worldId of ['670', '664']) {
+    const hashes = generationLimits.map(generationTokenLimit => {
+      const request = prepareOrderRequest('nebius', undefined, { worldId, generationTokenLimit });
+      assert.equal(orderWireRequest(request).body.max_completion_tokens, generationTokenLimit);
+      assert.doesNotMatch(JSON.stringify(request), /EVALUATOR_ONLY_|privateCanary|merchantAnswer|expectedDiagnosis/);
+      return request.commonInputSha256;
+    });
+    assert.equal(new Set(hashes).size, 1);
+  }
+});
+
+test('a missing key claims nothing, and a long Retry-After cannot hide the HTTP status behind the deadline', async t => {
+  const s = setup(t); let posts = 0;
+  await assert.rejects(runLiveOrder({ ...base(s), key: undefined, fetchImpl: async () => { posts++; } }), /provider_key_unavailable/);
+  assert.equal(posts, 0); assert.equal(readdirSync(s.root).includes('outputs'), false);
+  const delays = [];
+  const run = await runLiveOrder({ ...base(s), wait: async ms => { delays.push(ms); }, fetchImpl: async (_, init) => {
+    if (init.method === 'GET') return json(catalog);
+    posts++; return new Response('slow down', { status: 429, headers: { 'retry-after': '600' } });
+  } });
+  assert.deepEqual(delays, [30000, 30000]); assert.equal(posts, 3);
+  assert.equal(run.result.failureReason, 'provider_http_failure');
 });
