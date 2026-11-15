@@ -109,10 +109,10 @@ first entry. Name a domain idea with the glossary's word.
 ## Model calls
 
 - Paid API spend is allowed (owner, 2026-11-15). DeepSeek V4.1 Flash on
-  Nebius Token Factory is CrossSignal's model. Each send first reserves its
-  worst-case cost in a ledger shared by every worktree, and sends stop at the
-  lifetime ceiling in `order-recovery/spend.json` (`spend_ceiling_reached`);
-  only I raise it.
+  Nebius Token Factory is CrossSignal's model. Each DeepSeek send first
+  reserves its worst-case cost in a ledger shared by every worktree, and sends
+  stop at the lifetime ceiling in `order-recovery/spend.json`
+  (`spend_ceiling_reached`); only I raise it.
 - Keys (`NEBIUS_API_KEY`, `GEMINI_API_KEY`) come from the environment or a
   gitignored `.env`. Never print, log or commit them. Failures print the
   provider's full error with only the key hidden.

@@ -5,9 +5,8 @@ import { GEMINI } from './gemini-config.mjs';
 export const PROVIDER = Object.freeze({
   ...GEMINI,
   credentialKind: 'gemini_api_key',
-  selectionStatus: 'selected_conditional_free_tier_execution_pending',
+  selectionStatus: 'selected_execution_pending',
   executionProfile: 'original-accepted-b01-token-limits',
-  freeTierRequestsConditionallyAuthorized: true,
   allowPaidFallback: false,
   accountQuotaVerified: false,
   modelCallsAuthorized: false,

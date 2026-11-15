@@ -6,7 +6,8 @@ import { check } from './world.mjs';
 // The owner's lifetime ceiling on order-recovery spend, one number in USD; raise it there to let sends through again.
 export const spendFile = fileURLToPath(new URL('./spend.json', import.meta.url));
 export function spendCeilingMicros(file = spendFile) {
-  const { lifetimeCeilingUsd: usd } = JSON.parse(readFileSync(file, 'utf8'));
+  let usd;
+  try { usd = JSON.parse(readFileSync(file, 'utf8'))?.lifetimeCeilingUsd; } catch { usd = undefined; }
   check(typeof usd === 'number' && usd >= 0 && Number.isSafeInteger(Math.round(usd * 1000000)), 'invalid_spend_ceiling');
   return Math.round(usd * 1000000);
 }

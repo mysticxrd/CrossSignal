@@ -128,8 +128,8 @@ test('raising the ceiling in the spend file lets the next send through; a bad fi
     const run = await runLiveOrder({ ...base(s), budget: raised, runId: 'after-raise', fetchImpl });
     assert.equal(posts, 1); assert.equal(run.result.status, 'validated'); assert.equal(raised.usedMicros(), 1860);
   } finally { raised.close(); }
-  for (const bad of ['-1', '"25"', 'null']) {
-    writeFileSync(file, `{"lifetimeCeilingUsd":${bad}}`); assert.throws(() => spendCeilingMicros(file), /invalid_spend_ceiling/);
+  for (const bad of ['{"lifetimeCeilingUsd":-1}', '{"lifetimeCeilingUsd":"25"}', '{"lifetimeCeilingUsd":null}', 'null', '25', '', '{']) {
+    writeFileSync(file, bad); assert.throws(() => spendCeilingMicros(file), /invalid_spend_ceiling/);
   }
   assert.ok(spendCeilingMicros() > 0);
 });

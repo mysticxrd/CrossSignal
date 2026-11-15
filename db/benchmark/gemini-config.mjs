@@ -6,7 +6,6 @@ export const GEMINI = Object.freeze({
   endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
   selectionStatus: 'proposed_model_pending_review',
   modelCallsAuthorized: false,
-  freeAccountVerified: false,
   tokenizerVerified: false,
   reasoningCapDocumented: true,
   apiCompatibilityVerified: false,
