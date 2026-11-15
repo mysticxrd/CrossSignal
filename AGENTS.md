@@ -85,6 +85,10 @@ checkout before the worktree goes (`CONTEXT.md`, Local only).
 
 ## Agent skills
 
+Codex discovers wrappers in `.agents/skills/`; invoke them with `$pr`,
+`$design`, `$walkthrough`, or another skill name. The shared instructions
+stay in `.claude/skills/`. Restart Codex if a new entry does not appear.
+
 `/grill-with-docs`, `/retro` and `to-tickets`, with the references they load,
 come from `mattpocock/skills`, pinned in `skills-lock.json`. They read the two
 conventions below.

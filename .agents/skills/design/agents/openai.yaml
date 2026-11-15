@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design"
+  short_description: "Design a CrossSignal change before building"
+  default_prompt: "Use $design for the current CrossSignal task."

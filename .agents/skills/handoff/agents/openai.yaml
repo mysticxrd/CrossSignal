@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff"
+  short_description: "Prepare a fresh session to resume this task"
+  default_prompt: "Use $handoff for the current CrossSignal task."

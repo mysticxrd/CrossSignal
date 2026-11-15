@@ -1,0 +1,4 @@
+interface:
+  display_name: "PR"
+  short_description: "Review a slice, handle findings, or clean up"
+  default_prompt: "Use $pr for the current CrossSignal task."

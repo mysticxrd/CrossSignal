@@ -1,0 +1,4 @@
+interface:
+  display_name: "Walkthrough"
+  short_description: "Teach the build and check understanding"
+  default_prompt: "Use $walkthrough for the current CrossSignal task."

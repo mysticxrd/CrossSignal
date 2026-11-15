@@ -1,0 +1,7 @@
+interface:
+  display_name: "Drill"
+  short_description: "Rebuild a CrossSignal primitive by hand"
+  default_prompt: "Use $drill for the current CrossSignal task."
+
+policy:
+  allow_implicit_invocation: false
