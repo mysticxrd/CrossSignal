@@ -225,3 +225,28 @@ test('a #664 live transport records and reserves the higher cap on every retry',
     assert.equal(JSON.parse(readFileSync(join(run.directory, `generation-attempt-${attempt}.json`))).generationTokenLimit, 32768);
   }
 });
+
+test('each world sends one public input at every cap, and the cap reaches the wire body', () => {
+  for (const worldId of ['670', '664']) {
+    const hashes = generationLimits.map(generationTokenLimit => {
+      const request = prepareOrderRequest('nebius', undefined, { worldId, generationTokenLimit });
+      assert.equal(orderWireRequest(request).body.max_completion_tokens, generationTokenLimit);
+      assert.doesNotMatch(JSON.stringify(request), /EVALUATOR_ONLY_|privateCanary|merchantAnswer|expectedDiagnosis/);
+      return request.commonInputSha256;
+    });
+    assert.equal(new Set(hashes).size, 1);
+  }
+});
+
+test('a missing key claims nothing, and a long Retry-After cannot hide the HTTP status behind the deadline', async t => {
+  const s = setup(t); let posts = 0;
+  await assert.rejects(runLiveOrder({ ...base(s), key: undefined, fetchImpl: async () => { posts++; } }), /provider_key_unavailable/);
+  assert.equal(posts, 0); assert.equal(readdirSync(s.root).includes('outputs'), false);
+  const delays = [];
+  const run = await runLiveOrder({ ...base(s), wait: async ms => { delays.push(ms); }, fetchImpl: async (_, init) => {
+    if (init.method === 'GET') return json(catalog);
+    posts++; return new Response('slow down', { status: 429, headers: { 'retry-after': '600' } });
+  } });
+  assert.deepEqual(delays, [30000, 30000]); assert.equal(posts, 3);
+  assert.equal(run.result.failureReason, 'provider_http_failure');
+});

@@ -27,6 +27,7 @@ export function orderWireRequest(request) {
       schema: providerSchema(request.common.responseSchema) } },
   } };
 }
+export const validKey = key => typeof key === 'string' && key.length >= 16 && key.length <= 8192 && !/[\r\n]/.test(key);
 const count = n => Number.isSafeInteger(n) && n >= 0;
 export function inspectOrderUsage(raw, outputCap = 8192) {
   const u = raw.usage, input = u?.prompt_tokens, output = u?.completion_tokens;
@@ -56,7 +57,7 @@ function redacted(text, key) {
 }
 export async function generateOrderResponse({ request, wire, key, budget, runId, write,
   fetchImpl = globalThis.fetch, log = console.error, timeoutMs = 180000, wait = sleep }) {
-  check(typeof key === 'string' && key.length >= 16 && key.length <= 8192 && !/[\r\n]/.test(key), 'provider_key_unavailable');
+  check(validKey(key), 'provider_key_unavailable');
   const controller = new AbortController(), outputCap = wire.body.max_completion_tokens;
   const timer = setTimeout(() => controller.abort(), timeoutMs), signal = controller.signal;
   const aborted = new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('request_timeout')), { once: true }));
@@ -96,7 +97,8 @@ export async function generateOrderResponse({ request, wire, key, budget, runId,
         log(`${request.provider} HTTP ${response.status}\n${diagnostic}`);
         // The loop ends here: any status outside 429/500/503/504, or the third attempt.
         if (![429, 500, 503, 504].includes(response.status) || attempt === 3) throw new Error('provider_http_failure');
-        const delay = Number(response.headers.get('retry-after')) * 1000 || 2000 * 2 ** (attempt - 1);
+        // Capped: a longer Retry-After would outlast the deadline and report request_timeout instead of the HTTP status.
+        const delay = Math.min(Number(response.headers.get('retry-after')) * 1000 || 2000 * 2 ** (attempt - 1), 30000);
         check(Number.isFinite(delay) && delay >= 0, 'invalid_retry_delay'); await wait(delay, undefined, { signal });
       }
     }

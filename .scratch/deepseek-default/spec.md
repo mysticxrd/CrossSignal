@@ -51,8 +51,8 @@ wire formats tested, for a model that captured the duplicate payment in 10 of
 
 ## Proof bars
 
-- `npm test`, `npm run lint` and CI green; no "gemini" in `order-recovery/` or
-  the order-model tests. Surviving Nebius tests listed by name in the PR.
+- `npm test`, `npm run lint` and CI green; no "gemini" in `order-recovery/`,
+  and in the order-model tests only where a test checks that it is refused. Surviving Nebius tests listed by name in the PR.
 - At the ceiling, zero requests are sent and the saved reason is
   `spend_ceiling_reached` (a missing key or catalog failure also sends zero).
 - A ledger made with the old fixed-cap table keeps its used total.
