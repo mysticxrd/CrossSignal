@@ -1,5 +1,4 @@
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync } from 'node:fs';
 import { digest, requireThat as check } from '../benchmark/contracts.mjs';
 import { GEMINI } from '../benchmark/gemini-config.mjs';
 import { GeminiStore } from '../benchmark/gemini-store.mjs';
@@ -7,16 +6,13 @@ import { runGeminiInvestigation } from '../benchmark/gemini-runner.mjs';
 import { createHttpTransport } from '../benchmark/gemini-http.mjs';
 import { packetFromSnapshot } from '../benchmark/saas-packet.mjs';
 import { OWNER } from './proposal.mjs';
-export function freeTierReady(root) {
-  const account = JSON.parse(readFileSync(resolve(root, 'factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json'), 'utf8'));
-  check(account.model === GEMINI.model && account.freeTier === true && account.billingDisabled === true
-    && account.paidSpendCapUsd === 0 && account.paidFallback === false, 'free_tier_attestation_required');
+export function geminiReady() {
   check(typeof process.env.GEMINI_API_KEY === 'string' && process.env.GEMINI_API_KEY.trim().length >= 16, 'gemini_key_unavailable');
 }
-export const freeTierTransport = root => {
-  freeTierReady(root);
-  return createHttpTransport({ mode: 'FREE_TIER_BENCHMARK', fetchImpl: globalThis.fetch,
-    keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => freeTierReady(root), profile: 'low' });
+export const geminiTransport = () => {
+  geminiReady();
+  return createHttpTransport({ mode: 'LIVE', fetchImpl: globalThis.fetch,
+    keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => geminiReady(), profile: 'low' });
 };
 export class ModelJobs {
   constructor(cases, { transportFactory, onError = error => process.stderr.write(`Case job: ${error.message}\n`) }) {

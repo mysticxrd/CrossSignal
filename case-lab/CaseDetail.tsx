@@ -59,7 +59,7 @@ export function CaseDetail({ data, session, busy, onAction }: { data: CaseView; 
         <div className="uncertainty"><h3>Still uncertain</h3>{data.finding.unresolvedAlternatives.length ? <ul>{data.finding.unresolvedAlternatives.map(text => <li key={text}>{text}</li>)}</ul> : <p>No alternatives were supplied. This is not proof of causality.</p>}</div></>}
       <div className="investigate-footer"><button className="primary" disabled={disabled || !open || !session.modelReady || remaining <= 0 || data.decision === 'approved'} onClick={() => onAction('investigate')}>
         {inFlight ? 'Investigation in progress…' : data.attempts.length ? 'Run another investigation' : 'Investigate this Case'}</button>
-        <p className="muted">{session.source === 'fixture_surrogate' ? 'OFFLINE FIXTURE SURROGATE' : `${session.model} · ${session.profile} · free tier`}<br />
+        <p className="muted">{session.source === 'fixture_surrogate' ? 'OFFLINE FIXTURE SURROGATE' : `${session.model} · ${session.profile}`}<br />
           {remaining} of {session.attemptCap} development attempts remain. {session.unavailableReason && label(session.unavailableReason)}</p>
         {remaining <= 0 && <p className="muted">The investigation budget is exhausted. Existing findings, proposal refresh, observations and closure remain available without another model call.</p>}</div>
     </section>

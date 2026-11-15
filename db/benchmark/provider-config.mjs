@@ -8,7 +8,6 @@ export const PROVIDER = Object.freeze({
   selectionStatus: 'selected_conditional_free_tier_execution_pending',
   executionProfile: 'original-accepted-b01-token-limits',
   freeTierRequestsConditionallyAuthorized: true,
-  paidSpendCapUsd: 0,
   allowPaidFallback: false,
   accountQuotaVerified: false,
   modelCallsAuthorized: false,
@@ -17,7 +16,6 @@ export const PROVIDER = Object.freeze({
 
 export function executionBlockers() {
   return [
-    'verified_free_tier_project_with_billing_disabled_required',
     'scoped_gemini_api_key_unavailable',
     'account_model_quota_and_actual_route_compatibility_unverified',
     'complete_provider_request_token_count_not_measured',

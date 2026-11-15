@@ -15,7 +15,7 @@ for (const scenario of ['incident', 'limited']) {
     // Only a new request needs the model; a rerun reads its saved attempts back without a key.
     if (!session.modelReady) throw new Error(session.unavailableReason);
     state = await post(`/api/cases/${id}/investigate`, { revision: state.revision });
-    console.log(`${scenario}: requested ${id} (single-shot Gemini, low profile, free tier)`);
+    console.log(`${scenario}: requested ${id} (single-shot Gemini, low profile)`);
   }
   const deadline = Date.now() + 16 * 60 * 1000;
   while (['queued', 'running'].includes(state.investigation) && Date.now() < deadline) {

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { OrderBudget } from '../order-recovery/budget.mjs';
+import { OrderBudget, spendCeilingMicros } from '../order-recovery/budget.mjs';
 import { runLiveOrder } from '../order-recovery/live.mjs';
 import { generationLimits, orderWorld, prepareOrderRequest, ORDER_MODELS } from '../order-recovery/model.mjs';
 import { inspectOrderResponse, inspectOrderUsage, maximumReservation, orderWireRequest } from '../order-recovery/provider.mjs';
@@ -11,7 +12,7 @@ import { loadWorld } from '../order-recovery/world.mjs';
 import { wordsScript } from '../order-recovery/rivals.mjs';
 import { reconcile } from '../order-recovery/refund-ordering/rivals.mjs';
 
-const key = 'fixture-provider-secret-0123456789', reserved = 324404;
+const key = 'fixture-provider-secret-0123456789', reserved = 324404, ceiling = 25000000;
 const decisions = wordsScript(loadWorld()), answer = JSON.stringify({ decisions });
 const catalog = { data: [{ id: ORDER_MODELS.nebius, context_length: 1048576,
   pricing: { prompt: '0.0000003', completion: '0.0000012', request: '0' } }] };
@@ -23,7 +24,7 @@ function payload(text = answer) {
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
 function setup(t) {
   const root = mkdtempSync(join(tmpdir(), 'order-model-live-')), budgetPath = join(root, 'budget.sqlite');
-  const budget = new OrderBudget(budgetPath);
+  const budget = new OrderBudget(budgetPath, ceiling);
   t.after(() => { budget.close(); rmSync(root, { recursive: true, force: true }); });
   return { root, budgetPath, budget, outputRoot: join(root, 'outputs') };
 }
@@ -43,17 +44,17 @@ test('the Nebius wire request carries the common input unchanged and drops only 
 });
 
 test('ledger shares its ceiling and run claims across connections and restart; settled amounts cannot exceed reservations', t => {
-  const s = setup(t), other = new OrderBudget(s.budgetPath);
+  const s = setup(t), other = new OrderBudget(s.budgetPath, ceiling);
   try {
     s.budget.claim('first', 'nebius'); s.budget.reserve('first', 1, 24000000);
     assert.equal(other.usedMicros(), 24000000);
     assert.throws(() => other.claim('first', 'nebius'), /already_claimed/);
     other.claim('second', 'nebius'); other.reserve('second', 1, 1000000);
-    assert.throws(() => s.budget.reserve('first', 2, 1), /budget_exhausted/);
+    assert.throws(() => s.budget.reserve('first', 2, 1), /spend_ceiling_reached/);
     assert.throws(() => other.settle('second', 1, 1000001), /accounting_mismatch/);
     other.settle('second', 1, 10); assert.equal(s.budget.usedMicros(), 24000010);
   } finally { other.close(); }
-  const restarted = new OrderBudget(s.budgetPath);
+  const restarted = new OrderBudget(s.budgetPath, ceiling);
   try { assert.equal(restarted.usedMicros(), 24000010); assert.throws(() => restarted.claim('first', 'nebius'), /already_claimed/); }
   finally { restarted.close(); }
 });
@@ -101,15 +102,57 @@ test('retryable HTTP failures keep their reservations, redact full diagnostics a
   assert.match(logs[0], /preserved/); assert.doesNotMatch(logs.join('') + filesText(run.directory), /fixture-provider-secret/);
 });
 
-test('budget exhaustion stops the next send and cannot reset via a new run or output directory', async t => {
-  const s = setup(t); s.budget.claim('prior', 'nebius'); s.budget.reserve('prior', 1, 25000000);
+test('the spend ceiling stops the next send and cannot reset via a new run or output directory', async t => {
+  const s = setup(t); s.budget.claim('prior', 'nebius'); s.budget.reserve('prior', 1, ceiling);
   let posts = 0;
   const fetchImpl = async (_, init) => { if (init.method === 'POST') posts++; return json(catalog); };
   const run = await runLiveOrder({ ...base(s), fetchImpl });
-  assert.equal(posts, 0); assert.equal(run.result.failureReason, 'nebius_task_budget_exhausted');
+  assert.equal(posts, 0); assert.equal(run.result.failureReason, 'spend_ceiling_reached');
   const next = await runLiveOrder({ ...base(s), runId: 'another-run', outputRoot: join(s.root, 'another-worktree'), fetchImpl });
-  assert.equal(posts, 0); assert.equal(next.result.failureReason, 'nebius_task_budget_exhausted');
-  assert.equal(s.budget.usedMicros(), 25000000);
+  assert.equal(posts, 0); assert.equal(next.result.failureReason, 'spend_ceiling_reached');
+  assert.equal(s.budget.usedMicros(), ceiling);
+});
+
+test('raising the ceiling in the spend file lets the next send through; a bad file is refused', async t => {
+  const s = setup(t), file = join(s.root, 'spend.json'), path = join(s.root, 'raise.sqlite');
+  const spend = usd => { writeFileSync(file, JSON.stringify({ lifetimeCeilingUsd: usd })); return spendCeilingMicros(file); };
+  let posts = 0;
+  const fetchImpl = async (_, init) => { if (init.method === 'GET') return json(catalog); posts++; return json(payload()); };
+  const atCeiling = new OrderBudget(path, spend(0.3));
+  try {
+    const run = await runLiveOrder({ ...base(s), budget: atCeiling, runId: 'blocked', fetchImpl });
+    assert.equal(posts, 0); assert.equal(run.result.failureReason, 'spend_ceiling_reached');
+  } finally { atCeiling.close(); }
+  const raised = new OrderBudget(path, spend(0.33));
+  try {
+    const run = await runLiveOrder({ ...base(s), budget: raised, runId: 'after-raise', fetchImpl });
+    assert.equal(posts, 1); assert.equal(run.result.status, 'validated'); assert.equal(raised.usedMicros(), 1860);
+  } finally { raised.close(); }
+  for (const bad of ['-1', '"25"', 'null']) {
+    writeFileSync(file, `{"lifetimeCeilingUsd":${bad}}`); assert.throws(() => spendCeilingMicros(file), /invalid_spend_ceiling/);
+  }
+  assert.ok(spendCeilingMicros() > 0);
+});
+
+test('a ledger made with the old fixed-cap table keeps its used total and obeys the spend file', t => {
+  const s = setup(t), path = join(s.root, 'old.sqlite'), old = new DatabaseSync(path);
+  old.exec(`CREATE TABLE policy (id INTEGER PRIMARY KEY CHECK(id=1), cap INTEGER NOT NULL CHECK(cap=25000000));
+    INSERT INTO policy VALUES (1,25000000);
+    CREATE TABLE runs (id TEXT PRIMARY KEY, provider TEXT NOT NULL);
+    CREATE TABLE sends (run TEXT REFERENCES runs(id), attempt INTEGER, reserved INTEGER NOT NULL CHECK(reserved>=0),
+      accounted INTEGER CHECK(accounted>=0 AND accounted<=reserved), PRIMARY KEY(run,attempt));
+    INSERT INTO runs VALUES ('old-a','nebius'),('old-b','nebius');
+    INSERT INTO sends VALUES ('old-a',1,24000000,2000),('old-b',1,324404,NULL);`);
+  old.close();
+  const opened = new OrderBudget(path, 324404 + 2000);
+  try {
+    assert.equal(opened.usedMicros(), 326404);
+    assert.throws(() => opened.claim('old-a', 'nebius'), /already_claimed/);
+    opened.claim('new', 'nebius'); assert.throws(() => opened.reserve('new', 1, 1), /spend_ceiling_reached/);
+    assert.equal(opened.db.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE name='policy'").get().n, 0);
+  } finally { opened.close(); }
+  const raised = new OrderBudget(path, 30000000);
+  try { raised.reserve('new', 1, 324404); assert.equal(raised.usedMicros(), 650808); } finally { raised.close(); }
 });
 
 test('ambiguous timeout sends once, keeps its reservation and blocks a restart in another worktree', async t => {

@@ -24,14 +24,15 @@ export async function main(args) {
   if (values.live) {
     if (!values['run-id'] || values['response-file']) throw new Error('live_requires_run_id_without_fixture');
     if (existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
-    const { OrderBudget } = await import('../order-recovery/budget.mjs');
+    const { OrderBudget, spendCeilingMicros } = await import('../order-recovery/budget.mjs');
     const { runLiveOrder } = await import('../order-recovery/live.mjs');
     const shared = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { cwd: root, encoding: 'utf8' }).trim();
-    const budget = new OrderBudget(resolve(shared, 'crosssignal-order-model-budget.sqlite'));
+    const budget = new OrderBudget(resolve(shared, 'crosssignal-order-model-budget.sqlite'), spendCeilingMicros());
     try {
       const { directory, result } = await runLiveOrder({ ...options, provider, runId: values['run-id'], budget,
         outputRoot: resolve(root, 'outputs/order-recovery-model'), key: process.env.NEBIUS_API_KEY });
-      console.log(JSON.stringify({ source: result.source, status: result.status, directory, taskReservedOrAccountedUsd: budget.usedMicros() / 1000000 }));
+      console.log(JSON.stringify({ source: result.source, status: result.status, directory, spentOrReservedUsd: budget.usedMicros() / 1000000,
+        ceilingUsd: budget.ceilingMicros / 1000000 }));
       if (result.status !== 'validated') process.exitCode = 1;
     } finally { budget.close(); }
     return;

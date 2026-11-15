@@ -6,7 +6,6 @@ export const GEMINI = Object.freeze({
   endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent',
   selectionStatus: 'proposed_model_pending_review',
   modelCallsAuthorized: false,
-  paidSpendCapUsd: 0,
   freeAccountVerified: false,
   tokenizerVerified: false,
   reasoningCapDocumented: true,
@@ -22,8 +21,8 @@ export const GEMINI = Object.freeze({
   concurrency: 1,
   // 429/500/503/504 only, inside one request's deadline; a 4xx request error is never retried.
   maxRetries: 4,
-  // The free tier allows 15 requests a minute. Starting every request, retries included, at least 4.5 s
-  // after the one before keeps any 60 s window to 14.
+  // Gemini's free tier allowed 15 requests a minute, and the spacing stays. Starting every request, retries
+  // included, at least 4.5 s after the one before keeps any 60 s window to 14.
   requestGapMs: 4500,
   seed: null,
   seedUnavailableReason: 'model_specific_support_not_verified',

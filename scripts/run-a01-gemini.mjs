@@ -1,4 +1,4 @@
-// Runs the A01 case (an Indian debit-card checkout incident) once on the Gemini free tier.
+// Runs the A01 case (an Indian debit-card checkout incident) once on Gemini.
 // Usage: node scripts/run-a01-gemini.mjs [tool-using-model|single-shot-model] [--profile minimal|low]
 // The key comes from GEMINI_API_KEY or a gitignored .env. Failures print Google's full error
 // with only the key hidden; each run writes a fresh, claim-once store under outputs/a01-gemini/.
@@ -21,10 +21,6 @@ const method = (flag === -1 ? args : args.toSpliced(flag, 2))[0] ?? 'tool-using-
 requireThat(Object.hasOwn(PROFILES, profile), `--profile must be one of: ${Object.keys(PROFILES).join(', ')}`);
 const id = prefix => `${prefix}_${randomBytes(6).toString('hex')}`;
 
-// $0 only: refuse to send anything unless the owner's attestation says billing is off with no paid fallback.
-const account = JSON.parse(await readFile(resolve(root, 'factory/03_build/output/gemini-runner-v1/ACCOUNT_ATTESTATION.json'), 'utf8'));
-requireThat(account.model === GEMINI.model && account.freeTier === true && account.billingDisabled === true
-  && account.paidSpendCapUsd === 0 && account.paidFallback === false, 'free_tier_attestation_required');
 if (!process.env.GEMINI_API_KEY && existsSync(resolve(root, '.env'))) process.loadEnvFile(resolve(root, '.env'));
 requireThat(typeof process.env.GEMINI_API_KEY === 'string' && process.env.GEMINI_API_KEY.trim().length > 0, 'GEMINI_API_KEY_unset');
 
@@ -37,7 +33,7 @@ const directory = resolve(root, 'outputs/a01-gemini', `${new Date().toISOString(
 await mkdir(directory, { recursive: true });
 const store = new GeminiStore(resolve(directory, 'case.sqlite'),
   { metadata: { scope, method, truthMode: 'SIMULATED', configHash: digest(GEMINI) }, observable });
-const transport = createHttpTransport({ mode: 'FREE_TIER_BENCHMARK', fetchImpl: globalThis.fetch,
+const transport = createHttpTransport({ mode: 'LIVE', fetchImpl: globalThis.fetch,
   keySource: () => process.env.GEMINI_API_KEY, beforeRequest: async () => {}, profile });
 
 console.log(`A01 ${A01_CASE} -> ${GEMINI.model} (${method}, ${profile} profile), run ${scope.runId}`);

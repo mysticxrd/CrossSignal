@@ -15,7 +15,7 @@ tag `factory-freeze-2026-10-03`.
 | `db/benchmark/` | Gemini request, transport, budget and schemas |
 | `db/cases/` | The SaaS Case lab: simulated world, conversion measurement, Case store, approval, execution and outcome |
 | `db/replays/` | Committed replays, their timestamp proofs and `stamps.json` |
-| `order-recovery/` | v0.2: the simulated order worlds for Razorpay #670 and #664 (`worlds/`), the code-only rival scripts and the simulators; #664's code is in `refund-ordering/` |
+| `order-recovery/` | v0.2: the simulated order worlds for Razorpay #670 and #664 (`worlds/`), the code-only rival scripts and the simulators; #664's code is in `refund-ordering/`. The DeepSeek runner's lifetime spend ceiling is `spend.json`; its ledger is `crosssignal-order-model-budget.sqlite` in the shared git folder (`git rev-parse --git-common-dir`), so every worktree counts against one total |
 | `worker/` | The Cloudflare Worker, including the read-only replay gate |
 | `supabase/`, `drizzle/` | Database functions, migrations, queries and scenarios |
 | `data/ga4-merch/` | The GA4 merch-store daily data |

@@ -1,12 +1,27 @@
+import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
+import { fileURLToPath } from 'node:url';
 import { check } from './world.mjs';
 
+// The owner's lifetime ceiling on order-recovery spend, one number in USD; raise it there to let sends through again.
+export const spendFile = fileURLToPath(new URL('./spend.json', import.meta.url));
+export function spendCeilingMicros(file = spendFile) {
+  const { lifetimeCeilingUsd: usd } = JSON.parse(readFileSync(file, 'utf8'));
+  check(typeof usd === 'number' && usd >= 0 && Number.isSafeInteger(Math.round(usd * 1000000)), 'invalid_spend_ceiling');
+  return Math.round(usd * 1000000);
+}
+
+// One ledger in the git common folder counts every worktree's sends. Spend is lifetime: a reservation counts in full
+// until it is settled to the provider's reported cost, so a send with an unknown outcome keeps its worst case.
 export class OrderBudget {
-  constructor(path) {
+  constructor(path, ceilingMicros) {
+    check(Number.isSafeInteger(ceilingMicros) && ceilingMicros >= 0, 'invalid_spend_ceiling');
+    this.ceilingMicros = ceilingMicros;
     this.db = new DatabaseSync(path);
+    // Ledgers made before spend.json kept a fixed $25 cap in a `policy` table. Used spend lives only in `sends`,
+    // so dropping that table keeps the used total and leaves spend.json the one ceiling.
     this.db.exec(`PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA synchronous=FULL;
-      CREATE TABLE IF NOT EXISTS policy (id INTEGER PRIMARY KEY CHECK(id=1), cap INTEGER NOT NULL CHECK(cap=25000000));
-      INSERT OR IGNORE INTO policy VALUES (1,25000000);
+      DROP TABLE IF EXISTS policy;
       CREATE TABLE IF NOT EXISTS runs (id TEXT PRIMARY KEY, provider TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS sends (run TEXT REFERENCES runs(id), attempt INTEGER, reserved INTEGER NOT NULL CHECK(reserved>=0),
         accounted INTEGER CHECK(accounted>=0 AND accounted<=reserved), PRIMARY KEY(run,attempt));`);
@@ -26,7 +41,7 @@ export class OrderBudget {
   reserve(runId, attempt, micros) {
     check(Number.isSafeInteger(micros) && micros >= 0, 'invalid_spend_reservation');
     this.transaction(() => {
-      check(micros <= this.db.prepare('SELECT cap FROM policy WHERE id=1').get().cap - this.usedMicros(), 'nebius_task_budget_exhausted');
+      check(micros <= this.ceilingMicros - this.usedMicros(), 'spend_ceiling_reached');
       this.db.prepare('INSERT INTO sends VALUES (?,?,?,NULL)').run(runId, attempt, micros);
     });
   }
