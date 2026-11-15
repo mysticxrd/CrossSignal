@@ -127,5 +127,10 @@ someone comments `@codex review`, not on every push.
 5. From the home checkout, run `git worktree remove <worktree>`, then
    `git branch -D <branch>`; a squash merge leaves the branch looking
    unmerged, so `-d` refuses it.
-6. Report what was removed and, for a task with tickets, the title of the
+6. Bring the home checkout up to main, so the next session started there
+   loads the merged `AGENTS.md` and skills. In it, run `git fetch origin` and
+   `git rev-list --count origin/main..HEAD`. At 0, run
+   `git merge --ff-only origin/main`. Above 0 its branch holds unmerged work:
+   leave it and report how many commits it is behind main.
+7. Report what was removed and, for a task with tickets, the title of the
    next ticket whose blockers are done.

@@ -32,8 +32,9 @@ Design and Teach.
 5. Teach: on a task's last slice, run `/walkthrough` over the whole task
    before I merge it; earlier slices merge without one. It ends with four
    questions on the principle the build applies.
-6. Merge: I squash-merge. Run `/pr` once more to remove the worktree; the next
-   slice starts from the updated `origin/main`.
+6. Merge: I squash-merge. Run `/pr` once more: it removes the worktree and
+   brings the home checkout up to main. The next slice starts from the updated
+   `origin/main`.
 7. Deploy: `npm run deploy:replay` publishes only replays, labelled with run
    id, date and model.
 
@@ -41,7 +42,8 @@ Settle design choices yourself and list the alternatives I can overrule in a
 word; no `TODO(human)`. One agent per task; start a fresh one only for a review
 or a wide search, and when a skill says to dispatch a sub-agent for a fact,
 look the fact up yourself. `docs/owner/` is mine: read it, never write it.
-Codex: `/name` means `.claude/skills/name/SKILL.md`.
+Codex: `/name`, or a skill's "call the Skill tool with `name`", means
+`.claude/skills/name/SKILL.md`.
 
 ## Done
 

@@ -55,7 +55,9 @@ tag `factory-freeze-2026-10-03`.
 
 Each worktree has its own `work/` and `outputs/`, and removing the worktree
 deletes them. One checkout is kept as home and never removed: batches that
-must outlast a task are copied there before its worktree goes.
+must outlast a task are copied there before its worktree goes. Sessions start
+there and load its `AGENTS.md` and skills, so `/pr` brings it up to main after
+each merge.
 
 ## History
 
