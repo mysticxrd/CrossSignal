@@ -23,61 +23,82 @@ Design and Teach.
 
 1. Isolate: one worktree and branch (`claude/<slug>` or `codex/<slug>`) per
    task, from `origin/main`.
-2. Design: run `/design`; wait for "build".
+2. Design: run `/design`; wait for "build". A task with more than one slice
+   then gets one titled ticket per slice (Agent skills, below).
 3. Build: one slice, under about 300 changed lines plus its nearest test, as
    one focused commit; `npm test` and `npm run lint` pass.
-4. Review: run `/pr` to open the PR, then once per Codex review, for at most
-   three rounds.
-5. Teach: run `/walkthrough` on the PR; it ends with four questions on the
-   principle the build applies.
-6. Merge: I squash-merge. Remove the worktree; the next slice starts from the
-   updated `origin/main`. If its `node_modules` is a link to another
-   checkout's, unlink it first (`cmd /c rmdir <worktree>\node_modules`), or
-   deleting the folder empties the shared copy.
+4. Review: run `/pr`. It reviews the diff locally, opens the PR, and after
+   Codex's one review works the findings.
+5. Teach: on a task's last slice, run `/walkthrough` over the whole task
+   before I merge it; earlier slices merge without one. It ends with four
+   questions on the principle the build applies.
+6. Merge: I squash-merge. Run `/pr` once more to remove the worktree; the next
+   slice starts from the updated `origin/main`.
 7. Deploy: `npm run deploy:replay` publishes only replays, labelled with run
    id, date and model.
 
 Settle design choices yourself and list the alternatives I can overrule in a
 word; no `TODO(human)`. One agent per task; start a fresh one only for a review
-or a wide search. `docs/owner/` is mine: read it, never write it.
+or a wide search, and when a skill says to dispatch a sub-agent for a fact,
+look the fact up yourself. `docs/owner/` is mine: read it, never write it.
 Codex: `/name` means `.claude/skills/name/SKILL.md`.
 
 ## Done
 
 A slice is done when:
-- `npm test` and `npm run lint` pass;
+- `npm test` and `npm run lint` pass, and CI, which also typechecks, is green;
 - the PR states my decision and the proof: test results always, and for
   prompt, tool or schema changes the benchmark that change touches against
   its baseline: B01 for the v0.1 investigator, the order-recovery reports for
   v0.2 (UI screenshots, before and after, come in the walkthrough, since `gh`
   can't attach images);
-- the reviewer has nothing open, or three rounds are used and every remaining
+- the local review and Codex's review have nothing open, or every remaining
   finding has an answer;
-- for a product change, I've had the walkthrough;
+- for the last slice of a product task, I've had the walkthrough;
 - I merged it.
 
 ## Tools
 
 | Tool | When |
 |---|---|
-| `/design` | Before a product change: brainstorm, then the design and my decision |
-| `/pr` | When the build passes, then once per review round |
-| `/walkthrough` | After review, before I merge a product change |
+| `/design` | Before a product change: brainstorm, then the design and my decision; on "build" it writes the tickets |
+| `/pr` | When the build passes, again after Codex reviews, and once after I merge |
+| `/walkthrough` | On a task's last slice, after review, before I merge it |
 | `/handoff` | Context past about half, or a session ending mid-task |
 | `/grill` | Weekly, on the week's biggest change; the gaps feed the post |
+| `/grill-with-docs` | When one word means two things or a design trips on names: an interview that writes `GLOSSARY.md` and ADRs |
+| `/retro` | Weekly: what the week's sessions say to change in this workflow |
 | `/drill` | When I want to rebuild something by hand |
-| Codex review | Reviews each PR on GitHub when it opens and on `@codex review` |
+| Codex review | Reviews each PR once on GitHub, when it opens; I can ask again with `@codex review` |
 | B01 | Prompt, tool or schema changes to the investigator; see Model calls |
 | A01 | One live investigation; see Model calls |
 | Order recovery | v0.2 changes; see Order recovery |
 | Case lab | `npm run case:lab`: the SaaS Case lab in a browser |
 
-A task with more than one slice, or one that spans sessions, keeps `plan.md`,
-`handoff.md` and `notes.md` in `work/tasks/<slug>/` (gitignored). Before the
-last merge, move what's worth keeping into code comments or the PR. `work/`
-and `outputs/` belong to one worktree and are deleted with it, so copy a plan
-for a later slice, or a batch a report cites, to the home checkout before the
-worktree goes (`CONTEXT.md`, Local only).
+A task that spans sessions keeps `handoff.md` and `notes.md` in
+`work/tasks/<slug>/` (gitignored). Before the last merge, move what's worth
+keeping into code comments or the PR. `work/` and `outputs/` belong to one
+worktree and are deleted with it, so copy a batch a report cites to the home
+checkout before the worktree goes (`CONTEXT.md`, Local only).
+
+## Agent skills
+
+`/grill-with-docs`, `/retro` and `to-tickets`, with the references they load,
+come from `mattpocock/skills`, pinned in `skills-lock.json`. They read the two
+conventions below.
+
+### Issue tracker
+
+Local markdown, committed: a task's design is `.scratch/<slug>/spec.md` and
+each slice is one ticket, `.scratch/<slug>/issues/<NN>-<title>.md`. A ticket's
+`Status:` is `ready-for-agent` until the PR that builds it sets `done`. Name a
+slice by its ticket title in talk, commits and PRs. No triage labels are used.
+
+### Domain docs
+
+Single context: `GLOSSARY.md` at the root holds the project's words, and
+`docs/adr/` holds decisions that are hard to reverse; each is created with its
+first entry. Name a domain idea with the glossary's word.
 
 ## Model calls
 
@@ -114,4 +135,4 @@ worktree goes (`CONTEXT.md`, Local only).
 Ask: "Will this show up in the demo or in this week's post?" If not, skip it.
 Each week's post explains one thing I couldn't explain before.
 Spend two hours on the simplest fix before writing any doc about a problem.
-Change this workflow only when the same failure happens twice.
+Workflow changes land in one PR a week at most, from that week's `/retro`.

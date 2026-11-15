@@ -34,32 +34,35 @@ tag `factory-freeze-2026-10-03`.
 
 | Path | Holds |
 |---|---|
-| `.claude/skills/` | `/design`, `/pr`, `/walkthrough`, `/handoff`, `/grill`, `/drill` |
+| `.claude/skills/` | The project's own `/design`, `/pr`, `/walkthrough`, `/handoff`, `/grill`, `/drill`; from `mattpocock/skills`, `/grill-with-docs`, `/retro`, `to-tickets` and the three they load (`grilling`, `domain-modeling`, `writing-for-agents`) |
+| `skills-lock.json` | The source and content hash of each `mattpocock/skills` skill |
 | `.agents/skills/` | Codex's entry point to `/grill`; Codex reads the other skills from `.claude/skills/` |
 | `.claude/hooks/` | The hook that keeps Claude's tools out of `docs/owner/` |
 | `.claude/settings.json` | Runs that hook and sets Claude's output style |
-| `.github/workflows/ci.yml` | Lint, tests and the factory freeze check |
+| `.github/workflows/ci.yml` | Lint, typecheck, tests and the factory freeze check |
+| `.scratch/<slug>/` | A task with more than one slice: its design (`spec.md`) and one ticket per slice (`issues/`) |
+| `GLOSSARY.md`, `docs/adr/` | The project's words and its hard-to-reverse decisions; each appears with its first entry |
 | `docs/owner/` | The owner's own notes |
 
 ## Local only (gitignored)
 
 | Path | Holds |
 |---|---|
-| `work/tasks/<slug>/` | A long or hard task: `plan.md`, `handoff.md` (newest first), `notes.md`, `walkthrough.md` |
+| `work/tasks/<slug>/` | A long or hard task: `handoff.md` (newest first), `notes.md`, `walkthrough.md` |
 | `work/drills/<slug>/` | `/drill` exercises |
 | `outputs/` | Local runs: A01, the B01 batches the reports cite (`outputs/b01/<date>`), Case lab state and drafts |
 | `exa-results/` | Web research saved by search tools |
 
 Each worktree has its own `work/` and `outputs/`, and removing the worktree
-deletes them. One checkout is kept as home and never removed: plans and
-batches that must outlast a task are copied there before its worktree goes.
+deletes them. One checkout is kept as home and never removed: batches that
+must outlast a task are copied there before its worktree goes.
 
 ## History
 
 | Path | Holds |
 |---|---|
 | `factory/` | The frozen spec → data → build → verify → ship pipeline and its evidence |
-| `docs/` (all but `owner/`) | Phase notes and decisions from before the freeze; the factory's checks read these files, so they stay where they are |
+| `docs/` (all but `owner/` and `adr/`) | Phase notes and decisions from before the freeze; the factory's checks read these files, so they stay where they are |
 | `_archive/` | Superseded phases |
 | `examples/` | Starter-template examples, not product code |
 

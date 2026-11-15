@@ -1,6 +1,6 @@
 ---
 name: walkthrough
-description: Teach a CrossSignal build, recap first, then plain words, then how it works and the engineering principle it applies; check understanding with four principle questions prepared before the lesson (two rounds at most). Use after /pr on a product change, before merging, or when the owner types /walkthrough.
+description: Teach a CrossSignal build, recap first, then plain words, then how it works and the engineering principle it applies; check understanding with four principle questions prepared before the lesson (two rounds at most). Use on the last slice of a product task, after /pr and before merging, or when the owner types /walkthrough.
 argument-hint: "[base ref]"
 ---
 
@@ -20,6 +20,16 @@ fewest simple words that preserve the meaning; let visuals carry the lesson.
 1. Run `git fetch origin`, `git diff --stat <base>...HEAD`, and
    `git diff <base>...HEAD`. Inspect staged, unstaged, and relevant untracked
    changes from `git status --short`; distinguish them from the PR.
+
+   A task with tickets is taught whole, so read its merged slices too. Each
+   slice's commit touches the task's ticket folder:
+
+   ```bash
+   git log --reverse --format='%h %s' origin/main -- .scratch/<slug>/
+   ```
+
+   Read each with `git show <sha>`, and teach the task from its first slice
+   to the one in hand.
 2. Read the changed code, its callers, and nearest tests. Pick one concrete
    example and follow it through the system. Separate observed behavior, test
    evidence, and anything not yet verified; do not invent missing behavior.
