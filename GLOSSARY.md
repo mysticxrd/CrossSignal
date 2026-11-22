@@ -89,3 +89,44 @@ A payment that turns authorized after the order was already marked failed, with 
 
 **Webhook disablement**:
 Razorpay turning off a merchant's webhook after a day of failed deliveries, leaving new orders stuck.
+
+## Scoring
+
+**Checklist baseline**:
+Code that runs one fixed check per cause, each on a single signal, in a fixed order, and answers with the first match's cause and playbook; what a merchant has without the agent.
+_Avoid_: rule baseline, heuristic, script baseline
+
+**Development case**:
+A case the agent's builder may read, run and tune against.
+_Avoid_: train case, dev example
+
+**Held-out case**:
+A case written by someone other than the agent's builder, sealed by hash and revealed once, after the agent and the checklist baseline are frozen.
+_Avoid_: test case, hidden case, sealed case
+
+**Clean case**:
+A case with a cause and no decoy.
+
+**Run**:
+One attempt by the agent at one case, from its first read to its final proposal.
+_Avoid_: trial, episode
+
+**Run log**:
+Everything a run read, called and proposed, in order; what evals and error analysis read.
+_Avoid_: trace, transcript
+
+**Pass**:
+A run that names the right cause and kind of action, prices recoverable rupees within tolerance, proposes nothing unsafe and loses no rupees by its own waiting.
+_Avoid_: success, correct answer
+
+**pass^3**:
+The share of cases where all three runs pass.
+_Avoid_: consistency score, reliability
+
+**Failure mode**:
+A named way runs go wrong, found by reading run logs rather than imagined beforehand.
+_Avoid_: bug class, error type
+
+**Floor**:
+An answer that never reads the records, such as always no cause, scored by the same grader; a method must beat every floor before its score says it read anything.
+_Avoid_: dummy baseline, trivial baseline
