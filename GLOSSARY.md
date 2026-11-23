@@ -101,7 +101,7 @@ The agent letting the case's clock run forward during a run so records can chang
 _Avoid_: sleep, pause, hold
 
 **Proposal**:
-The agent's final answer in a run: the cause it names, the records it cites and the effects it asks for; nothing in the world changes until a person approves it.
+The agent's final answer in a run: the cause it names, the records it cites and the effects it asks for; nothing in the world changes until it is approved.
 _Avoid_: recommendation, action plan, finding
 
 **Effect**:
@@ -131,6 +131,56 @@ _Avoid_: step (alone), phase, state
 **Forced proposal**:
 The single proposal a run is made to give when it reaches its call cap or spending cap; graded like any other and counted apart.
 _Avoid_: fallback answer, timeout answer
+
+## Approval
+
+**Priced proposal**:
+A proposal together with the rupees code priced for it and the flags code raised on it, exactly as the approver sees it; what an approval agrees to.
+_Avoid_: approval request, card (alone)
+
+**Approval**:
+A single-use yes to one priced proposal as a whole, given by a person in the demo or by the fixed rule in eval runs; it lapses if any record its effects touch changes before execution.
+_Avoid_: grant, sign-off, consent
+
+**Fixed rule**:
+How eval runs approve: every well-formed priced proposal, at once, with the case's clock standing still; never a simulated person.
+_Avoid_: simulated approver, auto-approval, surrogate
+
+**Rejection**:
+A merchant's no to a priced proposal; it closes that proposal and stops automatic re-runs for the same dip.
+_Avoid_: veto, "no is a no" (that phrase belongs to a customer's opt-out)
+
+**Expiry**:
+The moment on the case's clock after which a priced proposal can no longer be approved: its earliest capture deadline, or a day after it was made if it captures nothing.
+_Avoid_: timeout, TTL
+
+**Policy version**:
+One hashed edition of the checks and limits code applies while pricing a proposal; it shapes what the approver sees, never the run, so it sits outside the harness version.
+_Avoid_: rules, guardrail config
+
+**Escalation**:
+A second confirmation a priced proposal needs because it crosses a limit; it never refuses the proposal.
+_Avoid_: double approval, hard cap
+
+**Ask**:
+An order a proposal hands to the merchant to decide instead of acting on it; it changes nothing and is never answered within a run.
+_Avoid_: question, escalation, referral
+
+**Opt-out**:
+A customer's standing no to being contacted; code never sends that customer a notice, whatever a proposal asks.
+_Avoid_: unsubscribe, consent flag
+
+**Stop**:
+A person halting a proposal's execution between operations; what landed stays, and only a fresh approval resumes the rest.
+_Avoid_: kill, abort, cancel
+
+**Partially applied**:
+A proposal whose execution stopped after some of its effects landed and before the rest, with nothing undone.
+_Avoid_: half-applied, rolled back, failed execution
+
+**Guard catch**:
+An unsafe effect a proposal asked for that the executor or a limit stopped; it still counts against the run and is reported beside pass as the safety net's work.
+_Avoid_: blocked action, prevented error
 
 ## Scoring
 

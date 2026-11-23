@@ -12,3 +12,7 @@ The E1 agent reads records and may wait, but it cannot change the world. Its run
 - The executor checks only the world's mechanics. Judgement checks (a write outside the affected set, a wrong capture) belong to the grader, because the executor cannot know the answer key.
 - The kind of action is derived by code from the effects, so the agent never labels its own action.
 - A later Razorpay test-mode run swaps the executor's backend and leaves the agent unchanged.
+
+## Addendum, 2026-11-23: "all or none" means checked together, applied in order
+
+No transaction spans Razorpay, WooCommerce and the notice store, so the executor cannot apply every effect or none once a real backend replaces the simulator. It checks every effect's mechanics before applying any, applies them in a fixed order (plugin and deploy, webhook, then each order's capture followed by its mark-paid, then notices), stops at the first refusal or stop, and undoes nothing, since there is no refund effect to undo with. A stopped proposal is partially applied, and its record lists every operation that landed; pairing capture and mark-paid per order leaves at most one order captured but still failed. The simulator applies each operation separately, never in one transaction, so a lost-acknowledgement fault test behaves as it would against test mode.
