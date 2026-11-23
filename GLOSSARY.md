@@ -69,7 +69,7 @@ A real problem the agent notices that did not cause the dip, reported apart from
 _Avoid_: secondary cause, bonus finding
 
 **Answer key**:
-A case's correct cause, affected orders, rupee impact and kind of action, fixed when the case is made and before any run.
+A case's correct cause, affected orders, rupee impact, kind of action and decisive evidence, fixed when the case is made and before any run.
 _Avoid_: label, ground truth, gold
 
 ## Razorpay mechanics
@@ -89,6 +89,28 @@ A payment that turns authorized after the order was already marked failed, with 
 
 **Webhook disablement**:
 Razorpay turning off a merchant's webhook after a day of failed deliveries, leaving new orders stuck.
+
+## Investigation and action
+
+**Check**:
+One of the checklist baseline's single-signal tests, which the agent may also run and which returns the numbers the test looks at, never its verdict.
+_Avoid_: rule, detector, flag
+
+**Wait**:
+The agent letting the case's clock run forward during a run so records can change; a proposal to wait instead names the time it will check again.
+_Avoid_: sleep, pause, hold
+
+**Proposal**:
+The agent's final answer in a run: the cause it names, the records it cites and the effects it asks for; nothing in the world changes until a person approves it.
+_Avoid_: recommendation, action plan, finding
+
+**Effect**:
+One change to the world a proposal asks for, such as capturing payments or rolling back a deploy, applied by code only after approval.
+_Avoid_: action, write, fix
+
+**Toolset version**:
+One pinned, hashed edition of everything the agent's tools show it (names, descriptions, shapes and limits); changing any part of it is a harness change.
+_Avoid_: tool config, tool schema
 
 ## Scoring
 
@@ -122,6 +144,14 @@ _Avoid_: success, correct answer
 **pass^3**:
 The share of cases where all three runs pass.
 _Avoid_: consistency score, reliability
+
+**Decisive evidence**:
+The few things a person must see to tell a case's cause from its lookalikes and rule out its decoys, named in the answer key when the case is made.
+_Avoid_: key evidence, required reads
+
+**Evidence coverage**:
+The share of a case's decisive evidence a run actually saw, reported beside pass and never part of it, so a miss can be traced to not looking or to misreading.
+_Avoid_: recall, retrieval score
 
 **Failure mode**:
 A named way runs go wrong, found by reading run logs rather than imagined beforehand.
