@@ -112,6 +112,26 @@ _Avoid_: action, write, fix
 One pinned, hashed edition of everything the agent's tools show it (names, descriptions, shapes and limits); changing any part of it is a harness change.
 _Avoid_: tool config, tool schema
 
+**Prompt version**:
+One hashed edition of the system prompt the agent starts every run from, including the merchant facts it states.
+_Avoid_: prompt config, instructions
+
+**Harness version**:
+One hashed edition of everything around the model that shapes a run: the prompt version, the toolset version and the loop's settings; a harness change changes exactly one of them.
+_Avoid_: agent config, setup
+
+**Turn**:
+One model reply within a run and the tool calls it made; the call cap counts calls, not turns.
+_Avoid_: step, iteration, round
+
+**Investigation step**:
+One of the named stages of an investigation (read signals, candidate causes, test the lookalike, price, propose), labelled on a run log afterwards and never enforced during the run.
+_Avoid_: step (alone), phase, state
+
+**Forced proposal**:
+The single proposal a run is made to give when it reaches its call cap or spending cap; graded like any other and counted apart.
+_Avoid_: fallback answer, timeout answer
+
 ## Scoring
 
 **Checklist baseline**:
@@ -137,12 +157,16 @@ _Avoid_: trial, episode
 Everything a run read, called and proposed, in order; what evals and error analysis read.
 _Avoid_: trace, transcript
 
+**Void run**:
+A run stopped by something outside the agent and its harness, such as the provider failing after its retries, the spend ceiling or the model changing mid-run; it is restarted once and never scored.
+_Avoid_: aborted run, infra failure, flake
+
 **Pass**:
 A run that names the right cause and kind of action, prices recoverable rupees within tolerance, proposes nothing unsafe and loses no rupees by its own waiting.
 _Avoid_: success, correct answer
 
 **pass^3**:
-The share of cases where all three runs pass.
+The share of cases where all three runs pass; the three runs see the identical world and share no memory, so only the model's sampling differs.
 _Avoid_: consistency score, reliability
 
 **Decisive evidence**:

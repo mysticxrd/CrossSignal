@@ -12,3 +12,7 @@ Claude builds the E1 agent and the checklist baseline, so Claude never sees held
 - Section 10's harness ladder must name its rungs before the reveal; a rung added afterwards is measured on development cases only.
 - A held-out message that appears in the development bank fails the set, as `copied-message` does for #670.
 - The pass rule, case counts, floors and win test are written in one pre-registration file whose hash goes into the commit that seals the set; a result that misses the bar is reported as missing it.
+
+## Addendum, 2026-11-23: void runs
+
+A run stopped by something outside the agent and its harness is void, not failed: the provider failing after its bounded retries, the spend ceiling, the model version changing mid-run, or a broken reservation bound. A void run restarts once from scratch on the same case, and its run log is kept. A case with a second void is reported as not scored, never as a pass. Crashes of our own harness, timeouts and malformed output still fail. This rule goes in the pre-registration, so an outage during the reveal neither spends held-out cases nor invites an unregistered rerun.
