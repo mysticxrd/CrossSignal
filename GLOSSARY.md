@@ -234,8 +234,24 @@ One attempt by the agent at one case, from its first read to its final proposal.
 _Avoid_: trial, episode
 
 **Run log**:
-Everything a run read, called and proposed, in order; what evals and error analysis read.
+One append-only, hash-chained file per run holding everything it sent, read, called and proposed and everything done with its proposal, in order; never rewritten, with grades, labels and scans kept beside it; what evals, replays and error analysis read.
 _Avoid_: trace, transcript
+
+**Replay**:
+A page that shows one run log as recorded, with everything code derived from it in a separate, labelled pane; published replays are masked copies.
+_Avoid_: playback, trace view
+
+**Determinism check**:
+Re-running every call a run log records against the regenerated world at its logged clock and comparing the results byte for byte, with no model call; a difference means the world version failed to pin something.
+_Avoid_: replay test, re-run
+
+**Stub-model replay**:
+Running the real harness against the regenerated world with a fake provider that returns a run log's recorded replies, to show the harness reproduces the same requests, envelopes and decisions.
+_Avoid_: mock run, dry run
+
+**Price card**:
+One committed, hashed set of the provider's prices and the date they were read, named in every run log's header; settled cost is usage times the price card.
+_Avoid_: pricing, rate sheet
 
 **Void run**:
 A run stopped by something outside the agent and its harness, such as the provider failing after its retries, the spend ceiling or the model changing mid-run; it is restarted once and never scored.
