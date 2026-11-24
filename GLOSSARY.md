@@ -43,8 +43,20 @@ Money Razorpay has paid out to the merchant's bank.
 _Avoid_: payouts, revenue
 
 **Dip**:
-A fall in store revenue that crosses the alert threshold.
+A fall in store revenue that the trigger catches, from the hour it fires until it closes; a store has at most one open dip at a time.
 _Avoid_: drop, incident, anomaly
+
+**Trigger**:
+The internal event when store revenue over the trailing day falls far enough below the same day a week earlier; it starts a run and messages no one.
+_Avoid_: alert, alarm, detector
+
+**Trigger record**:
+The code-made description of a dip that a run starts from, identical to what the checklist baseline starts from; nothing else enters a run.
+_Avoid_: alert, input, prompt
+
+**Case clock**:
+The simulated time a case runs on; it moves only when the agent waits or someone advances it, never with wall time.
+_Avoid_: world clock, simulation time, now (alone)
 
 ## Cases and causes
 
@@ -171,7 +183,7 @@ An order a proposal hands to the merchant to decide instead of acting on it; it 
 _Avoid_: question, escalation, referral
 
 **Opt-out**:
-A customer's standing no to being contacted; code never sends that customer a notice, whatever a proposal asks.
+A customer's standing no to being contacted; code never sends that customer a customer update, whatever a proposal asks.
 _Avoid_: unsubscribe, consent flag
 
 **Stop**:
@@ -181,6 +193,10 @@ _Avoid_: kill, abort, cancel
 **Partially applied**:
 A proposal whose execution stopped after some of its effects landed and before the rest, with nothing undone.
 _Avoid_: half-applied, rolled back, failed execution
+
+**Customer update**:
+A message code sends a customer from a fixed template when an approved proposal asks for one.
+_Avoid_: notice, notification, message (that word is for what customers write)
 
 **Guard catch**:
 An unsafe effect a proposal asked for that the executor or a limit stopped; it still counts against the run and is reported beside pass as the safety net's work.
@@ -296,3 +312,17 @@ _Avoid_: gold answer, perfect run
 **Grader self-test**:
 The oracle proposals, planted bad proposals and boundary-good proposals the grader must sort correctly before its verdicts count, half of the bad ones written by someone other than the grader's builder.
 _Avoid_: grader tests, sanity set
+
+## The merchant's view
+
+**Notice**:
+Any message to the merchant, urgent when they have something to decide or do and quiet when a question has been answered; a trigger alone sends none.
+_Avoid_: alert, notification, customer update
+
+**Re-check**:
+The moment a wait proposal names, when code looks at the trigger again and starts a fresh run only if the dip is still there.
+_Avoid_: follow-up run, poll
+
+**Session log**:
+The append-only record of one demo session around its runs: triggers, dips opening and closing, clock advances and notices.
+_Avoid_: demo log, event log

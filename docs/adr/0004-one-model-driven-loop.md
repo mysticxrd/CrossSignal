@@ -14,3 +14,7 @@ An E1 run is one agent loop. It opens with the alert alone, the same input the c
 - Compaction, a working-state note, a stopping rule and subagents are each one later harness change, measured on development cases. Each is justified only by a failure mode found in run logs (for context: evidence coverage high but runs failing, in long runs).
 - Because the agent cannot write (ADR 0003) and reads a frozen world, a crashed run restarts from scratch. Only the executor needs intent-based recovery.
 - Mid-run questions to a person would reopen this decision. In eval runs there is no simulated person.
+
+## Addendum, 2026-11-25: "alert" is now the trigger record
+
+The run's only input is the **trigger record** (ADR 0008), byte-identical to what the checklist baseline starts from; "alert" is retired, since a trigger messages no one and "notice" now means a message to the merchant. A wait's re-check is code, not a run: when the case clock reaches it, code evaluates the trigger again and starts a fresh run, from a fresh trigger record and with no memory of the wait, only if the dip is still there. A reopened stamp likewise starts a fresh run from a new trigger record.

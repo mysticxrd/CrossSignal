@@ -16,3 +16,7 @@ The E1 agent reads records and may wait, but it cannot change the world. Its run
 ## Addendum, 2026-11-23: "all or none" means checked together, applied in order
 
 No transaction spans Razorpay, WooCommerce and the notice store, so the executor cannot apply every effect or none once a real backend replaces the simulator. It checks every effect's mechanics before applying any, applies them in a fixed order (plugin and deploy, webhook, then each order's capture followed by its mark-paid, then notices), stops at the first refusal or stop, and undoes nothing, since there is no refund effect to undo with. A stopped proposal is partially applied, and its record lists every operation that landed; pairing capture and mark-paid per order leaves at most one order captured but still failed. The simulator applies each operation separately, never in one transaction, so a lost-acknowledgement fault test behaves as it would against test mode.
+
+## Addendum, 2026-11-25: customer updates
+
+What the `notify` effect sends a customer is now a **customer update**, and the notice store is the customer-update store; "notice" means a message to the merchant (section 8).
