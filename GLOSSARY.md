@@ -313,6 +313,28 @@ _Avoid_: gold answer, perfect run
 The oracle proposals, planted bad proposals and boundary-good proposals the grader must sort correctly before its verdicts count, half of the bad ones written by someone other than the grader's builder.
 _Avoid_: grader tests, sanity set
 
+## Model and budget
+
+**Model version**:
+The provider, the model id and the build the provider reports that a run's replies came from; a change in any of them is a different model, and scores are compared only within one model version.
+_Avoid_: model, model name, endpoint
+
+**Practice**:
+The development batches run before the reveal is paid for, ending with the gate batch, the development batch that checks the pass^3 bar on the model the reveal will use.
+_Avoid_: dev phase, tuning runs, warm-up
+
+**Decision point**:
+The moment after practice when measured cost per run, the money left and the reveal's cost are set side by side and the owner decides how the reveal is paid for.
+_Avoid_: checkpoint, budget review
+
+**Planning cost**:
+The cost of a run if the provider caches nothing, used to decide what fits; it is neither a send's reservation, which bounds the worst case, nor the settled cost, which is what was spent.
+_Avoid_: worst case, estimate, budget
+
+**Reveal admission**:
+The check before a reveal that the money left covers every rung's runs at planning cost; a reveal that would not fit does not start.
+_Avoid_: pre-flight, budget gate
+
 ## The merchant's view
 
 **Notice**:
