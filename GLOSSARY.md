@@ -25,6 +25,10 @@ _Avoid_: merchant ledger, shop data
 What Razorpay holds: payments, refunds, webhook deliveries and settlements.
 _Avoid_: gateway ledger, PG data
 
+**Sale week**:
+The days the merchant's own calendar marks as a sale, when store revenue runs far above its normal rhythm.
+_Avoid_: Black Friday, spike, promotion period
+
 ## Revenue
 
 **Store revenue**:
@@ -139,7 +143,7 @@ A proposal together with the rupees code priced for it and the flags code raised
 _Avoid_: approval request, card (alone)
 
 **Approval**:
-A single-use yes to one priced proposal as a whole, given by a person in the demo or by the fixed rule in eval runs; it lapses if any record its effects touch changes before execution.
+A single-use yes to one priced proposal as a whole, given by a person in the demo or by the fixed rule in eval runs; it lapses if any record its effects touch changes before execution, other than by that proposal's own operations that already landed.
 _Avoid_: grant, sign-off, consent
 
 **Fixed rule**:
@@ -155,7 +159,7 @@ The moment on the case's clock after which a priced proposal can no longer be ap
 _Avoid_: timeout, TTL
 
 **Policy version**:
-One hashed edition of the checks and limits code applies while pricing a proposal; it shapes what the approver sees, never the run, so it sits outside the harness version.
+One hashed edition of the checks, limits and mechanics code applies while pricing and executing a proposal; it shapes what the approver sees and what execution may do, never the run, so it sits outside the harness version.
 _Avoid_: rules, guardrail config
 
 **Escalation**:
@@ -181,6 +185,32 @@ _Avoid_: half-applied, rolled back, failed execution
 **Guard catch**:
 An unsafe effect a proposal asked for that the executor or a limit stopped; it still counts against the run and is reported beside pass as the safety net's work.
 _Avoid_: blocked action, prevented error
+
+## Verification
+
+**Verifier**:
+Code apart from the executor that re-reads both sets of records after execution and says whether each approved operation landed, without the answer key.
+_Avoid_: checker, validator, post-check
+
+**Pre-existing disagreement**:
+A payment and its order that already disagreed when execution began; it is tagged and never charged to the run.
+_Avoid_: baseline error, known issue
+
+**Mismatch**:
+A disagreement between records that is new since execution began, or an operation whose re-read state differs from what the executor recorded.
+_Avoid_: verification failure, drift, inconsistency
+
+**Watch**:
+The stretch of case clock after execution, or after a wait's re-check, during which code compares store revenue with its normal rhythm, leaving the sale week out.
+_Avoid_: monitoring, observation period, soak
+
+**Verification stamp**:
+The line that ends every run log, giving one result per meaning of verified (landed, fixed, realised), with "not run" and its reason where a meaning doesn't apply.
+_Avoid_: verification status, badge
+
+**Realised rupees**:
+The value of targeted orders whose intended end state the verifier confirmed, measured in the same unit as the priced recoverable rupees.
+_Avoid_: recovered revenue, actual impact
 
 ## Scoring
 
@@ -234,3 +264,19 @@ _Avoid_: bug class, error type
 **Floor**:
 An answer that never reads the records, such as always no cause, scored by the same grader; a method must beat every floor before its score says it read anything.
 _Avoid_: dummy baseline, trivial baseline
+
+**Grader version**:
+One hashed edition of the grader, the verifier, the answer-key format, each check's mode and the grader self-test; the change a grader judges can never alter it.
+_Avoid_: scorer config, eval version
+
+**Check mode**:
+Whether a grader check is off, observes (logs what it would have flagged) or enforces (changes the result); part of the grader version.
+_Avoid_: dry run, shadow mode, soft check
+
+**Oracle proposal**:
+The proposal built from a case's answer key with no model, which the grader must pass and the verifier must stamp as the key expects.
+_Avoid_: gold answer, perfect run
+
+**Grader self-test**:
+The oracle proposals, planted bad proposals and boundary-good proposals the grader must sort correctly before its verdicts count, half of the bad ones written by someone other than the grader's builder.
+_Avoid_: grader tests, sanity set
