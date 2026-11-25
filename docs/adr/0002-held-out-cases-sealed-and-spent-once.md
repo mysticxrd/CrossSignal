@@ -24,3 +24,7 @@ The ladder spends the held-out set once, so its shape is fixed before sealing:
 - **Each rung above it** is the rung below plus exactly one harness change. A candidate joins only if it is kept on development cases by a rule written before its batch.
 - **The claim rung**, the top rung, is named in the pre-registration and is the only rung section 2's win test runs on. If reveal admission cannot cover every rung, rungs are cut from the top before sealing.
 - **Held-out comparisons** between rungs are two-sided and Holm-corrected, and read as better, worse or inconclusive; no rung is chosen after the reveal.
+
+## Addendum, 2026-11-25: result templates and publishing every held-out run
+
+The pre-registration also fixes the words, not only the numbers. It holds three result templates: **win** ("X vs Y of 28, p = …"), **not a win** ("X vs Y of 28, p = …; 28 cases can't separate this from chance") and **worse** ("the checklist beat the agent: Y vs X of 28"). Each template also says "this bar was set and sealed by hash on <date>, before any held-out run". The numbers choose the template and code writes the result block, so no one picks the wording after seeing the result, and the first screen never swaps in a different metric. After the reveal, every held-out run of every admitted rung is published, masked but otherwise raw, failures included; choosing which held-out runs to show would undo the seal.

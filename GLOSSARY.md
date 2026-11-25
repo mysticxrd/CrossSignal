@@ -239,7 +239,7 @@ A case the agent's builder may read, run and tune against.
 _Avoid_: train case, dev example
 
 **Held-out case**:
-A case written by someone other than the agent's builder, sealed by hash and revealed once, after the agent and the checklist baseline are frozen.
+A case written by someone other than the agent's builder, sealed by hash and revealed once, after the agent and the checklist baseline are frozen. "Sealed by hash" is the public verb for what the sealing commit does; it never names a kind of case.
 _Avoid_: test case, hidden case, sealed case
 
 **Clean case**:
@@ -390,3 +390,21 @@ _Avoid_: demo log, event log
 **Active run**:
 A run that has started and not yet closed; a dip has at most one, and while it does, clock advances and "Investigate again" are refused and due timers are held.
 _Avoid_: running job, open session
+
+## Presentation
+
+**Labels strip**:
+The line on every public screen saying the merchant world is simulated, what is built and what is planned, and that the dip trigger is CrossSignal's own, since Razorpay and WooCommerce send no revenue-dip alerts.
+_Avoid_: banner, disclaimer
+
+**Result block**:
+The first-screen lines of the results page and the README that give the held-out result, its clean/decoy split, the floors, unsafe proposals and measured cost; written by code from the reveal report and the spend ledger, never typed.
+_Avoid_: headline stats, summary box
+
+**Result template**:
+One of three wordings, win, not a win or worse, fixed in the pre-registration before any held-out run; the numbers choose which one the result block uses.
+_Avoid_: framing, messaging, spin
+
+**Results page**:
+The site's E1 page that opens with the result block and lists every published run, each linking to its replay; the page an application links to first.
+_Avoid_: landing page, dashboard, leaderboard
