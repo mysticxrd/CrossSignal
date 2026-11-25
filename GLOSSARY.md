@@ -335,6 +335,44 @@ _Avoid_: worst case, estimate, budget
 The check before a reveal that the money left covers every rung's runs at planning cost; a reveal that would not fit does not start.
 _Avoid_: pre-flight, budget gate
 
+## Harness ladder
+
+**Harness ladder**:
+Rung 0 and the rungs built on it, each one harness change above the one below, named before the reveal and measured together on the held-out cases.
+_Avoid_: maturity ladder (the reactive → always-on → team-router stages), ablation, leaderboard
+
+**Rung**:
+One harness version on the harness ladder: rung 0, or the rung below plus exactly one harness change.
+_Avoid_: level, stage, variant, arm
+
+**Rung 0**:
+The harness practice leaves behind, the orchestration section's loop plus every kept fix, frozen before any candidate is tried.
+_Avoid_: baseline (that is the checklist baseline), control, v0
+
+**Fix**:
+A harness change made in practice to repair a failure mode seen in development run logs, measured on development cases only and folded into rung 0.
+_Avoid_: tweak, patch, rung
+
+**Candidate**:
+A harness change considered for a rung, eligible only once error analysis names the failure mode it targets, and kept or reverted on development cases by a rule written before its batch.
+_Avoid_: experiment, idea, feature
+
+**Claim rung**:
+The top rung of the frozen ladder, named in the pre-registration: the harness v1 ships and the only rung the win test runs on.
+_Avoid_: best rung, headline rung, final harness
+
+**Rung verdict**:
+The held-out reading of one comparison between rungs: better, worse, or inconclusive when the cases can't separate the difference from chance.
+_Avoid_: keep, revert (those decide candidates on development cases), win
+
+**Code check**:
+A check that code applies to a proposal whatever the model has read: validation, pricing, limits, the executor and the run caps; a fix or rung may add one and never weaken one.
+_Avoid_: guardrail, sentinel, safety model
+
+**Cost per pass^3 case**:
+A rung's settled spend divided by the cases it passed three runs out of three, shown beside cost per passing run, which divides by passing runs.
+_Avoid_: cost per success, cost per win
+
 ## The merchant's view
 
 **Notice**:
@@ -348,3 +386,7 @@ _Avoid_: follow-up run, poll
 **Session log**:
 The append-only record of one demo session around its runs: triggers, dips opening and closing, clock advances and notices.
 _Avoid_: demo log, event log
+
+**Active run**:
+A run that has started and not yet closed; a dip has at most one, and while it does, clock advances and "Investigate again" are refused and due timers are held.
+_Avoid_: running job, open session
