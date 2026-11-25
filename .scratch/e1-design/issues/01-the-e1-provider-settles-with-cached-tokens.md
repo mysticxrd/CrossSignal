@@ -4,11 +4,11 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Settled cost = (uncached input x input + cached input x cached + output x output) / M from the price card; a unit test covers a response with `cached_tokens`.
-- [ ] Prefix stability: each send's request body starts with the previous send's request body, byte for byte, across a three-turn fixture.
-- [ ] The catalog check refuses a model whose prices differ from its price card, before any paid request.
-- [ ] The correction settles both 15 Nov sends in one logged entry, refuses a send already settled, and refuses an amount above the reservation.
-- [ ] Reservations still assume nothing is cached.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] Settled cost = (uncached input x input + cached input x cached + output x output) / M from the price card; a unit test covers a response with `cached_tokens`.
+- [x] Prefix stability: each send's request body starts with the previous send's request body, byte for byte, across a three-turn fixture.
+- [x] The catalog check refuses a model whose prices differ from its price card, before any paid request.
+- [x] The correction settles both 15 Nov sends in one logged entry, refuses a send already settled, and refuses an amount above the reservation. (Built and tested; the `--write` run against the real ledger waits on the owner's 15 Nov Usage-tab figure.)
+- [x] Reservations still assume nothing is cached.
+- [x] `npm test` and `npm run lint` pass.

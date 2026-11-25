@@ -9,8 +9,11 @@ export const validKey = key => typeof key === 'string' && key.length >= 16 && ke
 const hidden = (text, key) => text.replaceAll(key, '[REDACTED_API_KEY]');
 
 // The shared ledger keys spend by (run, attempt). E1 makes many sends per run, so its attempt column holds
-// send × 10 + attempt (attempts 1-3).
-export const ledgerAttempt = (send, attempt) => send * 10 + attempt;
+// send × 10 + attempt (sends from 1, attempts 1-3).
+export function ledgerAttempt(send, attempt) {
+  check(Number.isSafeInteger(send) && send >= 1 && [1, 2, 3].includes(attempt), 'invalid_ledger_attempt');
+  return send * 10 + attempt;
+}
 
 // Checked before a run's first paid send: a model or price the card doesn't match stops here, unpaid.
 export async function checkCatalog({ card, key, fetchImpl = globalThis.fetch, timeoutMs = 30000 }) {
@@ -44,6 +47,7 @@ export function inspectE1Response(raw, card, outputCap) {
 // One send. Each attempt reserves the uncached worst case first. The answered attempt is handed to `persist`
 // (the run log) and only then settled, so a crash in between over-counts spend instead of leaving the log short.
 // An attempt with no checkable answer keeps its full reservation until a logged correction settles it.
+// Every thrown error carries `attempts`, each with its HTTP status, the provider's text (key hidden) and backoff.
 export async function sendE1({ body, card, key, budget, runId, send, persist = async () => {},
   fetchImpl = globalThis.fetch, wait = sleep, timeoutMs = 180000 }) {
   check(validKey(key), 'provider_key_unavailable');
@@ -59,14 +63,23 @@ export async function sendE1({ body, card, key, budget, runId, send, persist = a
       attempts.push(record);
       const response = await fetchImpl(`${nebius}/chat/completions`, { method: 'POST', redirect: 'error', signal,
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: payload });
-      const text = await response.text();
       record.httpStatus = response.status;
+      const text = await readCapped(response);
       if (response.ok) {
         check(!text.includes(key), 'provider_secret_echo');
-        let raw;
-        try { raw = JSON.parse(text); } catch { throw new Error('invalid_provider_json'); }
-        const result = { ...inspectE1Response(raw, card, outputCap), raw, attempts };
+        let result;
+        try {
+          const raw = JSON.parse(text);
+          result = { ...inspectE1Response(raw, card, outputCap), raw, attempts };
+        } catch (error) {
+          // A refused answer is kept whole, so the run log shows what the provider said.
+          record.error = text;
+          throw error instanceof SyntaxError ? new Error('invalid_provider_json') : error;
+        }
         record.settledMicros = settleMicros(card, result.usage);
+        // The reservation assumed no more prompt tokens than request bytes. Usage that breaks it is not logged as
+        // a normal send: the caller voids the run with the answer attached, and the reservation stays counted.
+        if (record.settledMicros > record.reservedMicros) throw Object.assign(new Error('reservation_bound_broken'), { result });
         await persist(result);
         budget.settle(runId, ledgerKey, record.settledMicros);
         return result;
@@ -75,12 +88,31 @@ export async function sendE1({ body, card, key, budget, runId, send, persist = a
       record.retryAfter = response.headers.get('retry-after');
       // The retry loop ends here: any status outside 429/500/503/504, or the third attempt.
       if (!retryable.includes(response.status) || attempt === 3) throw new Error('provider_http_failure');
-      // Backoff is recorded per attempt so the agent's time cap can leave it out (spec Fix F6).
-      record.backoffMs = Math.min(Number(record.retryAfter) * 1000 || 1000 * 2 ** (attempt - 1), 30000);
+      // Backoff is recorded per attempt so the agent's time cap can leave it out (spec Fix F6). Retry-After counts
+      // only as whole seconds; anything else falls back to 1 s, then 2 s.
+      const after = /^\d+$/.test(record.retryAfter ?? '') ? Number(record.retryAfter) * 1000 : 1000 * 2 ** (attempt - 1);
+      record.backoffMs = Math.min(after, 30000);
       await wait(record.backoffMs, undefined, { signal });
     }
   } catch (error) {
-    const failure = signal.aborted ? new Error('request_timeout') : error;
-    throw Object.assign(failure, { attempts });
+    const timedOut = signal.aborted && ['AbortError', 'TimeoutError'].includes(error?.name);
+    throw Object.assign(timedOut ? new Error('request_timeout') : error, { attempts });
   }
+}
+
+// At most 1 MB, as order-recovery's provider reads, so a runaway body can't fill memory before the deadline.
+async function readCapped(response) {
+  const reader = response.body?.getReader(), chunks = [];
+  let size = 0;
+  if (!reader) return '';
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      check(size <= 1000000, 'provider_response_size_limit');
+      chunks.push(value);
+    }
+  } finally { reader.cancel().catch(() => {}); }
+  return Buffer.concat(chunks).toString('utf8');
 }

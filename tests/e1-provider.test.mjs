@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { OrderBudget } from '../order-recovery/budget.mjs';
-import { settleCorrection, settledNebiusMicros, unsettled15Nov } from '../e1/correction.mjs';
+import { billedFromAllTime, planCorrection, settleCorrection, unsettled15Nov } from '../e1/correction.mjs';
 import { catalogMatchesCard, loadPriceCard, reserveMicros, settleMicros } from '../e1/price-card.mjs';
 import { checkCatalog, ledgerAttempt, sendE1 } from '../e1/provider.mjs';
 import { e1Request, extendsPrefix } from '../e1/request.mjs';
@@ -105,10 +105,49 @@ test('the 15 Nov correction settles both sends once, in one transaction', async 
   const budget = ledger(t);
   for (const send of unsettled15Nov) { budget.claim(send.run, 'nebius'); budget.reserve(send.run, send.attempt, 319488); }
   budget.claim('earlier', 'nebius'); budget.reserve('earlier', 1, 200000); budget.settle('earlier', 1, 105679);
-  assert.equal(settledNebiusMicros(budget), 105679);
+  assert.equal(billedFromAllTime(budget, 120000), 120000 - 105679);
+  assert.throws(() => planCorrection(budget, -1), /invalid_billed_amount/);
   assert.throws(() => settleCorrection(budget, 700000), /spend_accounting_mismatch/);
   assert.equal(budget.usedMicros(), 105679 + 2 * 319488, 'an amount above the reservations settles nothing');
   assert.deepEqual(settleCorrection(budget, 9001).map(send => send.settledMicros), [4501, 4500]);
   assert.equal(budget.usedMicros(), 105679 + 9001);
   assert.throws(() => settleCorrection(budget, 9001), /spend_accounting_mismatch/);
+});
+
+test('the all-time basis is refused while another Nebius send is unsettled', async t => {
+  const budget = ledger(t);
+  for (const send of unsettled15Nov) { budget.claim(send.run, 'nebius'); budget.reserve(send.run, send.attempt, 319488); }
+  budget.claim('failed-attempt', 'nebius'); budget.reserve('failed-attempt', 1, 100000);
+  assert.throws(() => billedFromAllTime(budget, 120000), /other_nebius_sends_unsettled/);
+});
+
+test('usage above the reservation voids the send before it is logged', async t => {
+  const budget = ledger(t); budget.claim('run-d', 'nebius');
+  let persisted = false;
+  const huge = answer({ prompt_tokens: 900000, completion_tokens: 10, total_tokens: 900010 });
+  const error = await sendE1({ body: body([]), card, key, budget, runId: 'run-d', send: 1,
+    persist: async () => { persisted = true; }, fetchImpl: async () => reply(200, huge) }).catch(caught => caught);
+  assert.equal(error.message, 'reservation_bound_broken');
+  assert.equal(error.result.usage.inputTokens, 900000);
+  assert.ok(!persisted);
+  assert.equal(budget.usedMicros(), error.attempts[0].reservedMicros);
+});
+
+test('a refused answer keeps its text, odd Retry-After values fall back, oversized bodies stop', async t => {
+  const budget = ledger(t); budget.claim('run-e', 'nebius');
+  const filtered = answer(); filtered.choices[0].finish_reason = 'content_filter';
+  const refused = await sendE1({ body: body([]), card, key, budget, runId: 'run-e', send: 1,
+    fetchImpl: async () => reply(200, filtered) }).catch(caught => caught);
+  assert.equal(refused.message, 'incomplete_provider_output');
+  assert.match(refused.attempts[0].error, /content_filter/);
+  const waits = [], statuses = [503, 503, 200];
+  await sendE1({ body: body([]), card, key, budget, runId: 'run-e', send: 2, wait: async ms => { waits.push(ms); },
+    fetchImpl: async () => { const status = statuses.shift();
+      return status === 200 ? reply(200, answer()) : reply(status, '{}', { 'retry-after': status === 503 && waits.length ? 'soon' : '-5' }); } });
+  assert.deepEqual(waits, [1000, 2000]);
+  const big = await sendE1({ body: body([]), card, key, budget, runId: 'run-e', send: 3,
+    fetchImpl: async () => reply(200, 'x'.repeat(1000001)) }).catch(caught => caught);
+  assert.equal(big.message, 'provider_response_size_limit');
+  assert.throws(() => ledgerAttempt(0, 1), /invalid_ledger_attempt/);
+  assert.throws(() => ledgerAttempt(1, 4), /invalid_ledger_attempt/);
 });
