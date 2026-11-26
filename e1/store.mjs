@@ -14,23 +14,31 @@ const byTime = (a, b) => a.at - b.at || a.woo_id - b.woo_id || a.k - b.k;
 const notesOf = order => [{ at: order.created_at, note: `Razorpay OrderId: ${order.payment.order_id}` },
   ...(order.notes ?? []).map(n => ({ at: n.created_at, note: n.note }))].map((n, k) => ({ woo_id: order.woo_id, k, ...n }));
 
-// The order's status as of now. A cause can mark it failed (#670's cron job); else it is processing once paid.
+// The order's status as of now: the latest of its changes so far (paid: processing; a cause's failed_at, as #670's
+// cron job writes it: failed), else pending. A status the store cannot place in time is refused, so a new cause
+// that sets one must add its time here first.
+const TIMED = { processing: 'paid_at', failed: 'failed_at' };
 function stateAt(order, now) {
-  if (order.failed_at !== undefined && order.failed_at <= now) return { status: 'failed', modified_at: order.failed_at };
-  if (order.paid_at !== undefined && order.paid_at <= now) return { status: 'processing', modified_at: order.paid_at };
-  return { status: 'pending', modified_at: order.created_at };
+  if (!Object.hasOwn(TIMED, order.status)) throw new Error(`store: order ${order.woo_id} has status ${order.status}, which has no time`);
+  const changes = Object.entries(TIMED).filter(([, field]) => order[field] !== undefined && order[field] <= now)
+    .map(([status, field]) => ({ status, modified_at: order[field] })).sort((a, b) => a.modified_at - b.modified_at);
+  return changes.at(-1) ?? { status: 'pending', modified_at: order.created_at };
 }
 
-// A cause or decoy that installs a plugin version (#670's 4.8.8) updates the Razorpay plugin when it starts.
-const RAZORPAY_PLUGIN = 'woo-razorpay/woo-razorpay.php';
-const injectedUpdates = injection => [injection?.cause, injection?.decoy]
-  .filter(i => i?.plugin_version !== undefined).map(i => ({ at: i.starts_at, version: i.plugin_version }));
+// The plugin a cause or decoy installs a version of, by its kind; #670's installs Razorpay 4.8.8 when it starts.
+const INSTALLS = { plugin_670: 'woo-razorpay/woo-razorpay.php' };
+function injectedUpdates(injection, plugin) {
+  return [injection?.cause, injection?.decoy].filter(i => i?.plugin_version !== undefined).filter(i => {
+    if (!Object.hasOwn(INSTALLS, i.kind)) throw new Error(`store: ${i.kind} installs a plugin version but names no plugin`);
+    return INSTALLS[i.kind] === plugin;
+  }).map(i => ({ at: i.starts_at, version: i.plugin_version }));
+}
 
 // `orders` are the simulator's own; `version`, `seed` and `injection` the world's.
 export function openStore({ version, seed, orders, injection = null }) {
   const { store, catalog } = version;
-  const plugins = store.plugins.map(p => (p.plugin === RAZORPAY_PLUGIN
-    ? { ...p, updates: [...p.updates, ...injectedUpdates(injection)].sort((a, b) => a.at - b.at) } : p));
+  // An injected update is placed after a version's own update at the same second, so it wins the tie.
+  const plugins = store.plugins.map(p => ({ ...p, updates: [...p.updates, ...injectedUpdates(injection, p.plugin)].sort((a, b) => a.at - b.at) }));
   // WooCommerce numbers line items and notes as they are written, so both follow time order across the store.
   let nextItem = store.first_item_id;
   const items = new Map(orders.map(order => [order.woo_id,

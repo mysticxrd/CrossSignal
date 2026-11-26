@@ -219,6 +219,16 @@ test("a case's cause shows in WooCommerce as of now: #670 marks orders failed, w
   clock.now = start;
   assert.equal(await razorpay(), '4.8.8', 'the cause installs 4.8.8 when it starts');
   sim.close();
+  // The same seed with no cause installs nothing; and an order paid after it failed reads processing.
+  const plain = open(start, buildCase({ seed: 'case-670' }));
+  assert.equal((await plain.call('wc_system_status', {})).result.active_plugins.find(p => p.plugin.startsWith('woo-razorpay')).version, '4.8.6');
+  plain.sim.close();
+  const retried = structuredClone(kase);
+  Object.assign(retried.orders.find(o => o.woo_id === failed.woo_id), { status: 'processing', paid_at: failed.failed_at + 60 });
+  retried.hash = worldHash(retried);
+  const again = open(failed.failed_at + 60, retried);
+  assert.equal((await again.call('wc_get_order', { order_id: failed.woo_id })).result.order.status, 'processing');
+  again.sim.close();
 });
 
 test('the leak scanner reads WooCommerce dates and passes on every response the tests above were shown', () => {
