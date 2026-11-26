@@ -261,8 +261,10 @@ export const orderNotes = (version, outcome, paymentId, at) =>
 
 // Covers everything a case is built from and everything it holds (ADR 0001), so a changed injection is a new hash.
 // `days` holds GA4's daily counts, which ga4_run_report serves; the rest of the world derives from these fields.
-export const worldHash = ({ version, seed, days, injection, orders, messages }) =>
-  sha256(canonicalJson({ version, seed, days, injection, orders, messages })).toString('hex');
+export function worldHash({ version, seed, days, injection, orders, messages }) {
+  requireThat(Array.isArray(days) && Array.isArray(orders) && Array.isArray(messages), 'worldHash: days, orders and messages are required');
+  return sha256(canonicalJson({ version, seed, days, injection, orders, messages })).toString('hex');
+}
 
 // Every hour that can become the frozen "now": the trigger's week-earlier window must lie inside GA4's days, and
 // 7 full GA4 days must follow (F7). The last one is 7 Dec 2026 00:00 IST.
