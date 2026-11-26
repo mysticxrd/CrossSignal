@@ -90,7 +90,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   const orders = structuredClone(world.orders);
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
   const razorpayOrders = new Map(orders.map(order => [order.payment.order_id, order]));
-  const store = openStore({ version, seed, orders });
+  const store = openStore({ version, seed, orders, injection });
   const header = { type: 'header', world_version: version.id, seed, world_hash: hash };
 
   closeSync(openSync(journal, 'a'));

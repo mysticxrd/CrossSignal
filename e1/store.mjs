@@ -9,20 +9,36 @@ const invalid = param => ({ ok: false, http: 400,
 const noOrder = { ok: false, http: 404, error: { code: 'woocommerce_rest_shop_order_invalid_id', message: 'Invalid ID.', data: { status: 404 } } };
 const byTime = (a, b) => a.at - b.at || a.woo_id - b.woo_id || a.k - b.k;
 
-// The notes an order's state implies, with the texts Razorpay's plugin 4.8.10 (woo-razorpay.php) and WooCommerce
-// write: the Razorpay order note at checkout; at payment, payment_complete's status change, then the plugin's line.
-function notesOf(order) {
-  const notes = [{ woo_id: order.woo_id, k: 0, at: order.created_at, note: `Razorpay OrderId: ${order.payment.order_id}` }];
-  if (order.paid_at !== undefined) {
-    notes.push({ woo_id: order.woo_id, k: 1, at: order.paid_at, note: 'Order status changed from Pending payment to Processing.' },
-      { woo_id: order.woo_id, k: 2, at: order.paid_at, note: `Razorpay payment successful <br/>Razorpay Id: ${order.payment.id}` });
-  }
-  return notes;
+// An order's notes: the plugin's Razorpay order note at checkout (woo-razorpay.php createRazorpayOrderId), then
+// the notes the world or a case's cause wrote on it (world.mjs order_notes), each at its own time.
+const notesOf = order => [{ at: order.created_at, note: `Razorpay OrderId: ${order.payment.order_id}` },
+  ...(order.notes ?? []).map(n => ({ at: n.created_at, note: n.note }))].map((n, k) => ({ woo_id: order.woo_id, k, ...n }));
+
+// The order's status as of now: the latest of its changes so far (paid: processing; a cause's failed_at, as #670's
+// cron job writes it: failed), else pending. A status the store cannot place in time is refused, so a new cause
+// that sets one must add its time here first.
+const TIMED = { processing: 'paid_at', failed: 'failed_at' };
+function stateAt(order, now) {
+  if (!Object.hasOwn(TIMED, order.status)) throw new Error(`store: order ${order.woo_id} has status ${order.status}, which has no time`);
+  const changes = Object.entries(TIMED).filter(([, field]) => order[field] !== undefined && order[field] <= now)
+    .map(([status, field]) => ({ status, modified_at: order[field] })).sort((a, b) => a.modified_at - b.modified_at);
+  return changes.at(-1) ?? { status: 'pending', modified_at: order.created_at };
 }
 
-// `orders` are the simulator's own; `version` and `seed` the world's.
-export function openStore({ version, seed, orders }) {
+// The plugin a cause or decoy installs a version of, by its kind; #670's installs Razorpay 4.8.8 when it starts.
+const INSTALLS = { plugin_670: 'woo-razorpay/woo-razorpay.php' };
+function injectedUpdates(injection, plugin) {
+  return [injection?.cause, injection?.decoy].filter(i => i?.plugin_version !== undefined).filter(i => {
+    if (!Object.hasOwn(INSTALLS, i.kind)) throw new Error(`store: ${i.kind} installs a plugin version but names no plugin`);
+    return INSTALLS[i.kind] === plugin;
+  }).map(i => ({ at: i.starts_at, version: i.plugin_version }));
+}
+
+// `orders` are the simulator's own; `version`, `seed` and `injection` the world's.
+export function openStore({ version, seed, orders, injection = null }) {
   const { store, catalog } = version;
+  // An injected update is placed after a version's own update at the same second, so it wins the tie.
+  const plugins = store.plugins.map(p => ({ ...p, updates: [...p.updates, ...injectedUpdates(injection, p.plugin)].sort((a, b) => a.at - b.at) }));
   // WooCommerce numbers line items and notes as they are written, so both follow time order across the store.
   let nextItem = store.first_item_id;
   const items = new Map(orders.map(order => [order.woo_id,
@@ -34,10 +50,10 @@ export function openStore({ version, seed, orders }) {
   const offset = version.utc_offset_s;
 
   const asOf = (order, now) => {
-    const paid = order.paid_at !== undefined && order.paid_at <= now;
+    const { status, modified_at } = stateAt(order, now), paid = status === 'processing';
     return {
-      woo_id: order.woo_id, status: paid ? 'processing' : 'pending', created_at: order.created_at,
-      modified_at: paid ? order.paid_at : order.created_at, ...(paid && { paid_at: order.paid_at, payment_id: order.payment.id }),
+      woo_id: order.woo_id, status, created_at: order.created_at,
+      modified_at, ...(paid && { paid_at: order.paid_at, payment_id: order.payment.id }),
       total_paise: order.total_paise, subtotal_paise: order.subtotal_paise, discount_paise: order.discount_paise,
       items: structuredClone(items.get(order.woo_id)), customer: customerFor(version, seed, order.index),
       payment_method: store.payment_method, payment_method_title: store.payment_method_title,
@@ -71,9 +87,9 @@ export function openStore({ version, seed, orders }) {
     },
     // GET /wc/v3/system_status: each plugin at its last update by now.
     systemStatus(now) {
-      const plugins = store.plugins.map(({ updates, ...plugin }) =>
+      const asOfNow = plugins.map(({ updates, ...plugin }) =>
         ({ ...plugin, version: updates.filter(u => u.at <= now).at(-1)?.version ?? plugin.version }));
-      return { ok: true, http: 200, body: { home_url: store.home_url, wp_version: store.wp_version, currency: store.currency, plugins } };
+      return { ok: true, http: 200, body: { home_url: store.home_url, wp_version: store.wp_version, currency: store.currency, plugins: asOfNow } };
     },
   };
 }
