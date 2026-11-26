@@ -145,3 +145,18 @@ test('the world is never rebuilt from the run log', () => {
     assert.doesNotMatch(source, /run-log|e1-runlogs|Date\.now|new Date|Math\.random|import\(|require\(/, file);
   }
 });
+
+test('a capture is judged as of the case clock, as reads are', async () => {
+  const { world } = authorizedWorld();
+  const [early, late] = [world.orders[1].payment, world.orders.at(-1).payment];
+  const at = early.created_at + 1; // authorized, its capture still ahead in the hidden days
+  const sim = open(fresh(), { clock: () => at });
+  assert.equal((await sim.backend.now()), at);
+  assert.equal((await sim.backend.fetchPayment(early.id)).body.status, 'authorized');
+  const landed = await sim.backend.capturePayment({ payment_id: early.id, amount_paise: early.amount_paise });
+  assert.equal(landed.http, 200, 'the world\'s later capture has not happened yet');
+  assert.equal(landed.body.captured_at, at);
+  const future = await sim.backend.capturePayment({ payment_id: late.id, amount_paise: late.amount_paise });
+  assert.equal(future.error.description, 'The id provided does not exist', 'a payment after now cannot be captured');
+  sim.close();
+});

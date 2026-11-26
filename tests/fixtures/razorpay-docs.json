@@ -1,0 +1,76 @@
+{
+  "checked": "2026-11-26",
+  "about": "Field names and JSON types from Razorpay's public docs, with the docs' own example values where they give one. A tool may leave a field out but may not add one or change its type. 'string|null' means the docs show either. Razorpay publishes no API for the webhook delivery log, and the capture settings page names dashboard labels but no API fields; those two fixtures say so and name the fields this project uses for them.",
+  "collection": {
+    "sources": [
+      "https://razorpay.com/docs/api/payments/fetch-all-payments/",
+      "https://razorpay.com/docs/api/orders/fetch-payments/",
+      "https://razorpay.com/docs/api/refunds/fetch-all/"
+    ],
+    "fields": { "entity": "string", "count": "integer", "items": "array" },
+    "examples": { "entity": "collection", "count": 2 },
+    "notes": "count is the number of items in this response, at most 100 (fetch all payments, fetch all refunds); no response gives a total. Orders' fetch-payments takes no paging parameters."
+  },
+  "payment": {
+    "sources": [
+      "https://razorpay.com/docs/api/payments/fetch-with-id/",
+      "https://razorpay.com/docs/api/payments/fetch-all-payments/"
+    ],
+    "fields": {
+      "id": "string", "entity": "string", "amount": "integer", "currency": "string", "status": "string",
+      "order_id": "string|null", "invoice_id": "string|null", "international": "boolean", "method": "string",
+      "amount_refunded": "integer", "refund_status": "string|null", "captured": "boolean", "description": "string|null",
+      "card_id": "string|null", "bank": "string|null", "wallet": "string|null", "vpa": "string|null",
+      "email": "string", "contact": "string", "notes": "array|object", "fee": "integer|null", "tax": "integer|null",
+      "error_code": "string|null", "error_description": "string|null", "error_source": "string|null",
+      "error_step": "string|null", "error_reason": "string|null", "acquirer_data": "object", "created_at": "integer"
+    },
+    "examples": {
+      "id": "pay_DG4ZdRK8ZnXC3k", "entity": "payment", "amount": 100, "status": "captured",
+      "order_id": "order_GjCr5oKh4AVC51", "method": "card", "captured": true, "notes": [], "fee": 1, "tax": 0,
+      "created_at": 1605871409
+    },
+    "values": {
+      "status": ["created", "authorized", "captured", "refunded", "failed"],
+      "method": ["card", "netbanking", "wallet", "emi", "upi", "paylater"],
+      "refund_status": [null, "partial", "full"]
+    }
+  },
+  "refund": {
+    "sources": ["https://razorpay.com/docs/api/refunds/fetch-all/"],
+    "fields": {
+      "id": "string", "entity": "string", "amount": "integer", "currency": "string", "payment_id": "string",
+      "notes": "array|object", "receipt": "string|null", "acquirer_data": "object", "created_at": "integer",
+      "batch_id": "string|null", "status": "string", "speed_processed": "string", "speed_requested": "string"
+    },
+    "examples": {
+      "id": "rfnd_FFX6AnnIN3puqW", "entity": "refund", "amount": 88800, "payment_id": "pay_FFX5FdEYx8jPwA",
+      "status": "processed", "speed_requested": "optimum", "speed_processed": "optimum", "created_at": 1594982363
+    }
+  },
+  "capture_settings": {
+    "sources": ["https://razorpay.com/docs/payments/payments/capture-settings/"],
+    "dashboard_only": "The page lists dashboard options, not API fields: automatic capture (the default) within 3 days of creation, auto-capture and manual capture timeouts from 12 minutes to 3 days (3 days the default and the maximum), automatic refund of payments not captured in 3 days (mandatory), and refund speed Normal (5-7 working days), the only option. Labels: 'Capture all payments authorised within', 'Capture payments manually authorised within', 'Refund Automatically', 'Refund Speed'.",
+    "fields": {
+      "capture": "string", "auto_capture_timeout_minutes": "integer", "manual_capture_timeout_minutes": "integer",
+      "refund_automatically": "boolean", "refund_speed": "string"
+    },
+    "values": { "capture": ["automatic", "manual"], "refund_speed": ["normal"] },
+    "ranges": { "auto_capture_timeout_minutes": [12, 4320], "manual_capture_timeout_minutes": [12, 4320] }
+  },
+  "webhook_deliveries": {
+    "sources": [
+      "https://razorpay.com/docs/webhooks/",
+      "https://razorpay.com/docs/webhooks/setup-edit-payments/",
+      "https://razorpay.com/docs/webhooks/best-practices/"
+    ],
+    "dashboard_only": "The docs describe no delivery-log API or field list. They give: a webhook's URL, secret, alert email and active events; a delivery fails on any non-2xx answer or no answer within 5 seconds; failures are retried with exponential backoff and the webhook is disabled after 24 hours of failures; each event carries an x-razorpay-event-id. The fields below are this project's names for what the dashboard shows.",
+    "webhook_fields": { "url": "string", "status": "string", "active_events": "array" },
+    "webhook_values": { "status": ["enabled", "disabled"] },
+    "fields": {
+      "event_id": "string", "event": "string", "entity_id": "string", "status": "string", "response_code": "integer",
+      "attempts": "integer", "created_at": "integer", "last_attempt_at": "integer"
+    },
+    "values": { "status": ["delivered", "failed"], "event": ["payment.authorized", "payment.captured", "payment.failed", "order.paid", "refund.created"] }
+  }
+}
