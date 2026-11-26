@@ -42,7 +42,7 @@ export function renderWorldReport(world = buildWorld({ seed: 'baseline' }), swee
     '## Trigger crossings (Fix F2)', '',
     `The trigger crosses when store revenue paid in the trailing 24 h is at least ${v.trigger_drop_pct}% below the same 24 h ${v.trigger_lookback_days - 1} days earlier, checked every hour on the case clock. A window opens at a crossing and ends when the trailing 24 h is back within ${v.trigger_rearm_pct}% of its comparison; a crossing within 24 h of a window's last crossing hour shares its days and rejoins it.`, '',
     `Seed \`${world.seed}\`: ${hours.length} crossing hours in **${windows.length} distinct crossing windows**.`, '',
-    `Across ${sweep.length} seeds (\`${sweep[0]}\`, \`${sweep[1]}\` to \`${sweep.at(-1)}\`): ${fewest} to ${Math.max(...counts)} windows. **Distinct crossing windows: ${fewest}** (the fewest; gate: at least ${MIN_WINDOWS}, ${pass ? 'pass' : 'fail: no-cause cases share windows, and the README must say so'}).`, '',
+    `Across ${sweep.length} seeds (\`${sweep[0]}\`, \`${sweep[1]}\` to \`${sweep.at(-1)}\`): ${fewest === Math.max(...counts) ? fewest : `${fewest} to ${Math.max(...counts)}`} windows. **Distinct crossing windows: ${fewest}** (the fewest; gate: at least ${MIN_WINDOWS}, ${pass ? 'pass' : 'fail: no-cause cases share windows, and the README must say so'}).`, '',
     '| Window | Opens (IST) | Crossing hours | Gap at opening | Re-arms (IST) | Sale week in |',
     '|---|---|---|---|---|---|', ...rows, '', ...censored,
     'The windows are public by construction: anyone with the committed GA4 CSV can recompute them. Development and held-out no-cause cases use disjoint windows (section 8 decision 7). The crossing hours are pinned in `tests/fixtures/e1-trigger/baseline-crossings.json`.', '',

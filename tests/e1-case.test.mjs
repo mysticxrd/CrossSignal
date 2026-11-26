@@ -30,22 +30,26 @@ test('#670 case: no cause, no dip; the trigger freezes "now" 13 h after the caus
 });
 
 test('no decoy, same dip: a decoy that moves store revenue fails the check, a harmless one passes', () => {
-  // Decoys arrive with ticket 05e; these stand-ins exercise the check through its replaceable builder.
-  const plant = moves => ({ decoy, ...rest }) => {
+  // Decoys arrive with ticket 05e; these stand-ins exercise the check through its replaceable builder. Each touches
+  // the orders paid in one span: the dip day (from 17 Nov 23:00) or the hidden days after "now".
+  const plant = (from, move) => ({ decoy, ...rest }) => {
     const built = buildCase({ ...rest, decoy: null });
-    if (decoy) for (const o of built.orders.filter(o => o.paid_at >= START - 10 * HOUR && o.paid_at < START)) {
-      // Inside the dip day, which runs from 17 Nov 23:00.
-      if (moves) o.paid_at += 3 * DAY; else o.notes = [...o.notes, { created_at: o.paid_at, note: 'Customer asked about delivery.' }];
+    if (decoy) for (const o of built.orders.filter(o => o.paid_at >= from && o.paid_at < from + 10 * HOUR)) {
+      if (move) o.paid_at += 3 * DAY; else o.notes = [...o.notes, { created_at: o.paid_at, note: 'Customer asked about delivery.' }];
     }
     return built;
   };
   const decoyed = { ...spec, decoy: { kind: 'stand_in', starts_at: START - 10 * HOUR } };
-  const moved = counterfactualCheck(decoyed, { rows, build: plant(true) });
-  assert.deepEqual(moved.failures, ['decoy_moves_dip']);
+  const moved = counterfactualCheck(decoyed, { rows, build: plant(START - 10 * HOUR, true) });
+  assert.deepEqual(moved.failures, ['decoy_moves_dip', 'decoy_moves_revenue']);
   assert.notEqual(moved.without_decoy.dip_paise, moved.with_both.dip_paise);
-  const harmless = counterfactualCheck(decoyed, { rows, build: plant(false) });
+  const later = counterfactualCheck(decoyed, { rows, build: plant(START + 3 * DAY, true) });
+  assert.deepEqual(later.failures, ['decoy_moves_revenue'], 'the dip is the same, but the hidden days are not');
+  const harmless = counterfactualCheck(decoyed, { rows, build: plant(START - 10 * HOUR, false) });
   assert.deepEqual(harmless.failures, []);
   assert.deepEqual(harmless.without_decoy, harmless.with_both);
+  // A case that never crosses fails; it does not throw.
+  assert.deepEqual(counterfactualCheck(spec, { rows, build: () => ({ ...baseline, orders: [] }) }).failures, ['no_dip']);
 });
 
 test('the world hash covers the injection; the orders before the cause are the baseline\'s', () => {
@@ -53,14 +57,16 @@ test('the world hash covers the injection; the orders before the cause are the b
   assert.notEqual(world.hash, baseline.hash);
   assert.equal(buildCase({ ...spec, rows }).hash, world.hash, 'same spec, same world');
   assert.notEqual(buildCase({ ...spec, cause: { ...spec.cause, starts_at: START + HOUR }, rows }).hash, world.hash);
-  const before = o => o.created_at < START;
+  const before = o => o.payment.created_at < START; // the plugin acts when the payment reaches the store
   assert.deepEqual(world.orders.filter(before), baseline.orders.filter(before));
   const cause = world.injection.cause;
   assert.deepEqual([cause.kind, cause.starts_at, cause.plugin_version, cause.payment_action], ['plugin_670', START, '4.8.8', 'authorize']);
   assert.deepEqual(cause.affected_orders, world.orders.filter(o => o.status === 'failed').map(o => o.woo_id));
   assert.equal(world.injection.decoy, null);
   assert.throws(() => buildCase({ ...spec, cause: { kind: 'plugin_999', starts_at: START }, rows }), /unknown cause plugin_999/);
-  assert.throws(() => buildCase({ ...spec, cause: { ...spec.cause, starts_at: world.ends_at }, rows }), /start inside the world/);
+  for (const late of [world.starts_at, at('2026-12-07T00:00'), world.ends_at]) {
+    assert.throws(() => buildCase({ ...spec, cause: { ...spec.cause, starts_at: late }, rows }), /where the trigger can still fire/);
+  }
 });
 
 test('the #670 symptoms from the public report appear in the records the backend serves', async () => {

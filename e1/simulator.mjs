@@ -33,16 +33,16 @@ const WRITES = {
       const stored = payments.get(payment_id);
       if (!(stored?.created_at <= at)) return refusal('The id provided does not exist', 'payment_id');
       const payment = asOf(stored, at);
-      if (payment.status === 'captured') return refusal('This payment is already either captured or voided');
+      if (payment.captured_at !== undefined) return refusal('This payment is already either captured or voided');
       if (payment.status !== 'authorized') return refusal('Only an authorized payment can be captured');
       if (amount_paise !== payment.amount_paise) return refusal('Capture amount must be equal to the amount authorized', 'amount');
       return null;
     },
-    // A capture lands before any refund (check), so the payment's refunds are the capture window's auto-refund,
-    // still in the future; the capture cancels it, as at Razorpay.
+    // A payment the world never captures can only be refunded by the capture window's auto-refund, still ahead of
+    // `at` (check); the capture cancels it, as at Razorpay. A later capture's refunds are the merchant's and stay.
     apply: (payments, { payment_id, at }) => {
       const payment = payments.get(payment_id);
-      delete payment.refunds;
+      if (payment.captured_at === undefined) delete payment.refunds;
       return Object.assign(payment, { status: 'captured', captured_at: at });
     },
   },

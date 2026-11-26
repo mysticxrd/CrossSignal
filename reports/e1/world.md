@@ -17,7 +17,7 @@ The trigger crosses when store revenue paid in the trailing 24 h is at least 25%
 
 Seed `baseline`: 104 crossing hours in **5 distinct crossing windows**.
 
-Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 to 5 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
+Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
 
 | Window | Opens (IST) | Crossing hours | Gap at opening | Re-arms (IST) | Sale week in |
 |---|---|---|---|---|---|
