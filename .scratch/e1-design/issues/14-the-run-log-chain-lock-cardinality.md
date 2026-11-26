@@ -4,9 +4,9 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The chain verifies and a changed line breaks it.
-- [ ] A torn last line is cut, with its length and hash recorded.
-- [ ] A second writer on the same run id is refused.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] The chain verifies and a changed line breaks it.
+- [x] A torn last line is cut, with its length and hash recorded.
+- [x] A second writer on the same run id is refused.
+- [x] `npm test` and `npm run lint` pass.
