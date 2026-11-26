@@ -24,7 +24,7 @@ const world = buildWorld({ seed: 'wc-tools-test', version: { ...WORLD_VERSION, s
 const lastBefore = world.orders.findLast(o => o.created_at < NOW - 60);
 Object.assign(lastBefore, { created_at: NOW - 60, paid_at: NOW + 60 });
 Object.assign(lastBefore.payment, { created_at: NOW + 50, captured_at: NOW + 60 });
-world.hash = worldHash(world.version, world.seed, world.orders);
+world.hash = worldHash(world);
 
 function open(now = NOW, w = world) {
   const clock = { now };
@@ -184,7 +184,7 @@ test('an order holding all 20 catalog items, every note included, fits the cap',
   order.items = big.catalog.map(c => ({ sku: c.sku, quantity: 99, price_paise: c.price_paise }));
   order.subtotal_paise = order.items.reduce((sum, item) => sum + item.quantity * item.price_paise, 0);
   Object.assign(order, { total_paise: order.subtotal_paise - 9999999, discount_paise: 9999999 });
-  big.hash = worldHash(big.version, big.seed, big.orders);
+  big.hash = worldHash(big);
   const { sim, call } = open(NOW, big);
   const envelope = await call('wc_get_order', { order_id: order.woo_id });
   assert.equal(envelope.result.order.line_items.length, 20);

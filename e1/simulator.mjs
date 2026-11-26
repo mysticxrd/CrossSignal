@@ -34,12 +34,18 @@ const WRITES = {
       const stored = payments.get(payment_id);
       if (!(stored?.created_at <= at)) return refusal('The id provided does not exist', 'payment_id');
       const payment = asOf(stored, at);
-      if (payment.status === 'captured') return refusal('This payment is already either captured or voided');
+      if (payment.captured_at !== undefined) return refusal('This payment is already either captured or voided');
       if (payment.status !== 'authorized') return refusal('Only an authorized payment can be captured');
       if (amount_paise !== payment.amount_paise) return refusal('Capture amount must be equal to the amount authorized', 'amount');
       return null;
     },
-    apply: (payments, { payment_id, at }) => Object.assign(payments.get(payment_id), { status: 'captured', captured_at: at }),
+    // A payment the world never captures can only be refunded by the capture window's auto-refund, still ahead of
+    // `at` (check); the capture cancels it, as at Razorpay. A later capture's refunds are the merchant's and stay.
+    apply: (payments, { payment_id, at }) => {
+      const payment = payments.get(payment_id);
+      if (payment.captured_at === undefined) delete payment.refunds;
+      return Object.assign(payment, { status: 'captured', captured_at: at });
+    },
   },
 };
 
@@ -50,6 +56,7 @@ function asOf(payment, now) {
   if (captured_at !== undefined && captured_at <= now) seen.captured_at = captured_at;
   else if (seen.status === 'captured') seen.status = 'authorized';
   if (refunds) seen.refunds = refunds.filter(refund => refund.created_at <= now);
+  if (seen.refunds?.reduce((sum, refund) => sum + refund.amount_paise, 0) === seen.amount_paise) seen.status = 'refunded';
   return seen;
 }
 // Razorpay's list order is newest first; section 3 item 10 fixes time order, then id, so a page never shifts when
@@ -75,10 +82,11 @@ const mismatch = (journal, seq, reason) =>
 export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   requireThat(JOURNAL.test(journal ?? ''), `simulator: the journal must be a .sim.jsonl file, not ${journal}`);
   requireThat(typeof clock === 'function', 'simulator: a case clock is required');
-  const hash = worldHash(world.version, world.seed, world.orders);
+  const hash = worldHash(world);
   requireThat(hash === world.hash, 'simulator: the world changed after it was built');
   requireThat(!openJournals.has(resolve(journal)), `simulator: ${journal} is already open`);
-  const { version, seed } = structuredClone({ version: world.version, seed: world.seed });
+  const { version, seed, injection, messages } = structuredClone({ version: world.version, seed: world.seed,
+    injection: world.injection, messages: world.messages });
   const orders = structuredClone(world.orders);
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
   const razorpayOrders = new Map(orders.map(order => [order.payment.order_id, order]));
@@ -184,7 +192,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     // The cut tail this open found, or null; the executor copies it into the run log when it resumes.
     torn,
     // The world-state hash the run log records before and after each call (section 3 item 12).
-    stateHash: () => worldHash(version, seed, orders),
+    stateHash: () => worldHash({ version, seed, injection, orders, messages }),
     close: () => { closeSync(out); openJournals.delete(resolve(journal)); },
   };
 }

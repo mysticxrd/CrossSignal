@@ -24,7 +24,7 @@ refunded.forEach((order, i) => {
   p.refunds = [{ id: razorpayId(world.version.id, world.seed, i, 'rfnd'), amount_paise: i % 3 ? Math.floor(p.amount_paise / 2) : p.amount_paise,
     created_at: i === 45 ? NOW + HOUR : p.captured_at + DAY, status: 'processed', speed_requested: 'normal', speed_processed: 'normal' }];
 });
-world.hash = worldHash(world.version, world.seed, world.orders);
+world.hash = worldHash(world);
 
 function open(now = NOW) {
   const clock = { now };
@@ -144,7 +144,7 @@ test('pagination returns every record once, in time order, even when "now" moves
 
 test('reads answer as of now: later payments do not exist and later captures have not happened', async () => {
   const p = refunded[2].payment;
-  const { sim, clock, call } = open(p.created_at); // captures come at least a second after the payment
+  const { sim, clock, call } = open(p.created_at); // its capture comes 1-5 s later
   const byId = await call('fetch_payment', { payment_id: p.id });
   assert.equal(byId.result.status, 'authorized');
   assert.equal(byId.result.captured, false);
