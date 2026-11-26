@@ -52,7 +52,7 @@ test('killed after the journal write and before the reply, the restarted world h
 
   const sim = open(journal);
   assert.equal(sim.torn, null);
-  assert.deepEqual((await sim.backend.fetchPayment(payment.id)), { ...payment, status: 'captured', captured_at: AT });
+  assert.deepEqual((await sim.backend.fetchPayment(payment.id)).body, { ...payment, status: 'captured', captured_at: AT });
   assert.equal((await sim.backend.capturePayment(capture)).http, 400, 'a resume that retries meets Razorpay, not a second capture');
   sim.close();
 });
@@ -68,7 +68,7 @@ test('a torn last journal line is cut and recorded, and that write did not land'
   assert.deepEqual(sim.torn, recorded);
   assert.deepEqual(entries(journal).at(-1), { type: 'torn', seq: 1, ...recorded });
   assert.equal(readFileSync(`${journal}.torn-${readFileSync(journal).indexOf(0x0a) + 1}`, 'utf8'), torn, 'the cut bytes are kept');
-  assert.equal((await sim.backend.fetchPayment(payment.id)).status, 'authorized');
+  assert.equal((await sim.backend.fetchPayment(payment.id)).body.status, 'authorized');
   assert.equal((await sim.backend.capturePayment(capture)).http, 200);
   sim.close();
 
@@ -76,6 +76,28 @@ test('a torn last journal line is cut and recorded, and that write did not land'
   assert.equal(again.torn, null, 'a recorded cut is not recorded twice');
   assert.deepEqual(entries(journal).map(e => e.type), ['header', 'torn', 'op']);
   again.close();
+});
+
+test('a tear in the record of a tear keeps both cuts, and a cut the opener never truncated is not saved twice', () => {
+  const journal = fresh();
+  open(journal).close();
+  const end = readFileSync(journal).length;
+  const first = '{"args":{"amount_paise":', second = '{"bytes":24,"sha';
+  // The opener saved the first cut and truncated, then died partway through its `torn` line.
+  writeFileSync(`${journal}.torn-${end}`, first);
+  appendFileSync(journal, second);
+  const sim = open(journal);
+  assert.deepEqual(sim.torn, { bytes: Buffer.byteLength(first + second), sha256: sha256(first + second) });
+  sim.close();
+
+  // The opener saved the cut and died before the truncate: the same tail is still in the journal.
+  const other = fresh();
+  open(other).close();
+  writeFileSync(`${other}.torn-${end}`, first);
+  appendFileSync(other, first);
+  const reopened = open(other);
+  assert.deepEqual(reopened.torn, { bytes: Buffer.byteLength(first), sha256: sha256(first) });
+  reopened.close();
 });
 
 test('a journal written for another world, or one the world refuses, is refused', async () => {
@@ -94,20 +116,32 @@ test('a journal written for another world, or one the world refuses, is refused'
   assert.throws(() => open(journal), error => error.code === 'journal_mismatch' && /seq 2/.test(error.message));
 });
 
+test('one simulator per journal at a time, and an unknown id is a 400 as at Razorpay', async () => {
+  const journal = fresh();
+  const sim = open(journal);
+  assert.throws(() => open(journal), /already open/);
+  assert.deepEqual(await sim.backend.fetchPayment('pay_00000000000000'),
+    { ok: false, http: 400, error: { code: 'BAD_REQUEST_ERROR', description: 'The id provided does not exist', field: 'id' } });
+  sim.close();
+  open(journal).close();
+});
+
 test('the world is never rebuilt from the run log', () => {
   // A run log's own name is refused; the journal's is derived from it.
   assert.equal(journalPathFor('outputs/e1-runlogs/b0/r_1.jsonl'), 'outputs/e1-runlogs/b0/r_1.sim.jsonl');
+  assert.throws(() => journalPathFor('outputs/e1-runlogs/b0/r_1.sim.jsonl'), /not a run log's name/);
+  assert.throws(() => journalPathFor('outputs/e1-runlogs/b0/r_1'), /not a run log's name/);
   const runLog = fresh().replace(/\.sim\.jsonl$/, '.jsonl');
   assert.throws(() => open(runLog), /must be a \.sim\.jsonl file/);
   assert.ok(!existsSync(runLog));
   // Lint: the simulator and the interface import only these, so neither can reach the run log or its folder, and
   // neither reads the wall clock or Math.random (section 7 decision 4).
   for (const [file, allowed] of [
-    ['e1/simulator.mjs', ['node:fs', '../db/benchmark/contracts.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './world.mjs']],
+    ['e1/simulator.mjs', ['node:fs', 'node:path', '../db/benchmark/contracts.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './world.mjs']],
     ['e1/backend.mjs', ['../db/benchmark/contracts.mjs']],
   ]) {
     const source = readFileSync(file, 'utf8');
-    assert.deepEqual([...source.matchAll(/^import .* from '([^']+)';$/gm)].map(m => m[1]), allowed, file);
-    assert.doesNotMatch(source, /run-log|e1-runlogs|Date\.now|new Date|Math\.random|import\(/, file);
+    assert.deepEqual([...source.matchAll(/^(?:import|export)\s[^;]*?\sfrom\s*'([^']+)'/gm)].map(m => m[1]), allowed, file);
+    assert.doesNotMatch(source, /run-log|e1-runlogs|Date\.now|new Date|Math\.random|import\(|require\(/, file);
   }
 });

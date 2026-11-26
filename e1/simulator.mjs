@@ -4,6 +4,7 @@
 // landed before a crash is still there afterwards, as it would be at Razorpay, and a repeat meets the real
 // backend's answer instead of a second write.
 import { closeSync, openSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { requireThat } from '../db/benchmark/contracts.mjs';
 import { asBackend } from './backend.mjs';
 import { canonicalJson } from './canonical.mjs';
@@ -12,7 +13,12 @@ import { worldHash } from './world.mjs';
 
 const JOURNAL = /\.sim\.jsonl$/;
 // The journal sits beside the run log under its own name, which is the only name openSimulator accepts.
-export const journalPathFor = runLogPath => runLogPath.replace(/\.jsonl$/, '.sim.jsonl');
+export function journalPathFor(runLogPath) {
+  requireThat(/\.jsonl$/.test(runLogPath) && !JOURNAL.test(runLogPath), `simulator: ${runLogPath} is not a run log's name`);
+  return runLogPath.replace(/\.jsonl$/, '.sim.jsonl');
+}
+// One open simulator per journal in this process; the run log's lock already admits one process per run.
+const openJournals = new Set();
 
 const refusal = (description, field) =>
   ({ ok: false, http: 400, error: { code: 'BAD_REQUEST_ERROR', description, ...(field && { field }) } });
@@ -44,9 +50,11 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   requireThat(typeof clock === 'function', 'simulator: a case clock is required');
   const hash = worldHash(world.version, world.seed, world.orders);
   requireThat(hash === world.hash, 'simulator: the world changed after it was built');
+  requireThat(!openJournals.has(resolve(journal)), `simulator: ${journal} is already open`);
+  const { version, seed } = structuredClone({ version: world.version, seed: world.seed });
   const orders = structuredClone(world.orders);
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
-  const header = { type: 'header', world_version: world.version.id, seed: world.seed, world_hash: hash };
+  const header = { type: 'header', world_version: version.id, seed, world_hash: hash };
 
   closeSync(openSync(journal, 'a'));
   const fd = openSync(journal, 'r+');
@@ -61,7 +69,9 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
       if (canonicalJson(entry) !== line || entry.seq !== seq) throw mismatch(journal, seq, 'not canonical or out of order');
       if (seq === 0) {
         if (canonicalJson({ ...header, seq: 0 }) !== line) throw mismatch(journal, 0, 'written for another world');
-      } else if (entry.type === 'op' && Object.hasOwn(WRITES, entry.op) && Number.isInteger(entry.args?.at)) {
+      } else if (entry.type === 'op') {
+        if (!Object.hasOwn(WRITES, entry.op)) throw mismatch(journal, seq, `unknown write ${entry.op}`);
+        if (!Number.isInteger(entry.args?.at)) throw mismatch(journal, seq, 'no whole-second case clock');
         const refused = WRITES[entry.op].check(payments, entry.args);
         if (refused) throw mismatch(journal, seq, `the world refuses it on replay (${refused.error.description})`);
         WRITES[entry.op].apply(payments, entry.args);
@@ -76,6 +86,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   }
 
   const out = openSync(journal, 'a');
+  openJournals.add(resolve(journal));
   let broken = false;
   const append = entry => {
     // A write that fails partway leaves a torn tail; nothing may follow it until a reopen cuts it.
@@ -92,12 +103,15 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     const landed = { ...args, at: clock() };
     requireThat(Number.isInteger(landed.at), 'simulator: the case clock must give whole seconds');
     append({ type: 'op', op, args: landed });
+    // Memory follows the journal at once, so nothing after this line can leave the two apart.
+    const body = structuredClone(WRITES[op].apply(payments, landed));
     onJournaled?.(op, landed);
-    return { ok: true, http: 200, body: structuredClone(WRITES[op].apply(payments, landed)) };
+    return { ok: true, http: 200, body };
   }
 
   const backend = asBackend({
-    fetchPayment: id => (payments.has(id) ? structuredClone(payments.get(id)) : null),
+    fetchPayment: id => (payments.has(id)
+      ? { ok: true, http: 200, body: structuredClone(payments.get(id)) } : refusal('The id provided does not exist', 'id')),
     capturePayment: ({ payment_id, amount_paise } = {}) => write('capture_payment', { payment_id, amount_paise }),
   });
   return {
@@ -105,7 +119,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     // The cut tail this open found, or null; the executor copies it into the run log when it resumes.
     torn,
     // The world-state hash the run log records before and after each call (section 3 item 12).
-    stateHash: () => worldHash(world.version, world.seed, orders),
-    close: () => closeSync(out),
+    stateHash: () => worldHash(version, seed, orders),
+    close: () => { closeSync(out); openJournals.delete(resolve(journal)); },
   };
 }
