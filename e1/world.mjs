@@ -17,7 +17,9 @@ const freeze = value => {
 };
 
 export const WORLD_VERSION = freeze({
-  id: 'e1-world-2', // 2: the trigger's drop and re-arm settings joined the version (ticket 04)
+  // 2: the trigger's drop and re-arm settings joined the version (ticket 04).
+  // 3: Razorpay order ids, capture settings and the webhook (ticket 08).
+  id: 'e1-world-3',
   ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd' },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
@@ -28,6 +30,12 @@ export const WORLD_VERSION = freeze({
   trigger_rearm_pct: 10, // section 8 decision 5: a dip re-arms once the trailing 24 h is back within 10%
   sale: { name: 'Sale week', from: '2026-11-23', to: '2026-11-30' },
   first_order_id: 10001,
+  // Razorpay's capture settings page: auto-capture within 3 days (the default and the maximum), auto-refund after,
+  // at normal speed. The webhook is the one the WooCommerce plugin registers.
+  capture: { automatic: true, auto_capture_timeout_minutes: 4320, manual_capture_timeout_minutes: 4320,
+    refund_automatically: true, refund_speed: 'normal' },
+  webhook: { url: 'https://merch-store.example/wp-admin/admin-post.php?action=rzp_wc_webhook', active: true,
+    events: ['order.paid', 'payment.authorized'] },
   order_spread_sigma: 0.6, // lognormal spread of order sizes within a day
   device: [['mobile', 80], ['desktop', 17], ['tablet', 3]],
   method: [['upi', 70], ['card', 20], ['netbanking', 6], ['wallet', 4]],
@@ -64,11 +72,11 @@ const weighted = (rng, pairs) => {
 const normal = rng => Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng());
 
 const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
-// Razorpay ids are `pay_` + 14 base62 characters (section 3); ours are hash(world version, seed, order index).
-export function razorpayId(versionId, seed, index) {
-  let n = BigInt(`0x${sha256(`${versionId}|${seed}|${index}`).toString('hex')}`), out = '';
+// Razorpay ids are a prefix + 14 base62 characters (section 3); ours are hash(world version, seed, prefix, index).
+export function razorpayId(versionId, seed, index, prefix = 'pay') {
+  let n = BigInt(`0x${sha256(`${versionId}|${seed}|${prefix}|${index}`).toString('hex')}`), out = '';
   for (let i = 0; i < 14; i++) { out += BASE62[Number(n % 62n)]; n /= 62n; }
-  return `pay_${out}`;
+  return `${prefix}_${out}`;
 }
 
 // GA4 date (YYYY-MM-DD) to its 2026 date and the unix second its IST day starts.
@@ -146,8 +154,9 @@ export function buildWorld({ seed, version = WORLD_VERSION, rows } = {}) {
   // The WooCommerce order is placed first; its Razorpay payment follows and is auto-captured seconds later.
   const orders = drafts.map(({ pay_s, capture_s, method, ...o }, index) => ({
     index, woo_id: version.first_order_id + index, ...o, paid_at: o.created_at + pay_s + capture_s,
-    payment: { id: razorpayId(version.id, seed, index), method, amount_paise: o.total_paise, status: 'captured',
-      created_at: o.created_at + pay_s, captured_at: o.created_at + pay_s + capture_s },
+    payment: { id: razorpayId(version.id, seed, index), order_id: razorpayId(version.id, seed, index, 'order'), method,
+      amount_paise: o.total_paise, status: 'captured', created_at: o.created_at + pay_s,
+      captured_at: o.created_at + pay_s + capture_s },
   }));
   const starts_at = days[0].start, ends_at = days.at(-1).start + DAY;
   const saleStart = Date.parse(`${version.sale.from}T00:00:00Z`) / 1000 - version.utc_offset_s;

@@ -4,9 +4,9 @@
 
 **Blocked by:** 07: A simulator that remembers landed writes
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Shapes match the doc fixtures.
-- [ ] Pagination returns every record once.
-- [ ] The leak scanner passes on every response.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] Shapes match the doc fixtures.
+- [x] Pagination returns every record once.
+- [x] The leak scanner passes on every response.
+- [x] `npm test` and `npm run lint` pass.

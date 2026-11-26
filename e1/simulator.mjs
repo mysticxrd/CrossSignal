@@ -9,7 +9,7 @@ import { requireThat } from '../db/benchmark/contracts.mjs';
 import { asBackend } from './backend.mjs';
 import { canonicalJson } from './canonical.mjs';
 import { cutTornTail, readAll, writeAll } from './durable.mjs';
-import { worldHash } from './world.mjs';
+import { razorpayId, worldHash } from './world.mjs';
 
 const JOURNAL = /\.sim\.jsonl$/;
 // The journal sits beside the run log under its own name, which is the only name openSimulator accepts.
@@ -40,6 +40,30 @@ const WRITES = {
   },
 };
 
+// Reads answer as of the case clock, because the world holds 7 hidden future days: a record created after "now"
+// does not exist yet, and a capture or refund after "now" has not happened.
+function asOf(payment, now) {
+  const { captured_at, refunds, ...seen } = structuredClone(payment);
+  if (captured_at !== undefined && captured_at <= now) seen.captured_at = captured_at;
+  else if (seen.status === 'captured') seen.status = 'authorized';
+  if (refunds) seen.refunds = refunds.filter(refund => refund.created_at <= now);
+  return seen;
+}
+// Razorpay's list order is newest first; section 3 item 10 fixes time order, then id, so a page never shifts when
+// "now" moves on between pages: new records sort after every old one.
+const byTime = (a, b) => a.created_at - b.created_at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const unixSeconds = value => value === undefined || (Number.isInteger(value) && value >= 946684800 && value <= 4765046400);
+// Razorpay's collection paging: `count` 1-100 rows from `skip`, no total.
+function collection(records, { from, to, count = 10, skip = 0 } = {}) {
+  if (!unixSeconds(from)) return refusal('from must be a unix timestamp in seconds', 'from');
+  if (!unixSeconds(to)) return refusal('to must be a unix timestamp in seconds', 'to');
+  if (!(Number.isInteger(count) && count >= 1 && count <= 100)) return refusal('count must be between 1 and 100', 'count');
+  if (!(Number.isInteger(skip) && skip >= 0)) return refusal('skip must be at least 0', 'skip');
+  const items = records.filter(r => (from === undefined || r.created_at >= from) && (to === undefined || r.created_at <= to))
+    .sort(byTime).slice(skip, skip + count);
+  return { ok: true, http: 200, body: { entity: 'collection', count: items.length, items } };
+}
+
 const mismatch = (journal, seq, reason) =>
   Object.assign(new Error(`journal_mismatch: ${journal} at seq ${seq}: ${reason}`), { code: 'journal_mismatch' });
 
@@ -54,6 +78,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   const { version, seed } = structuredClone({ version: world.version, seed: world.seed });
   const orders = structuredClone(world.orders);
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
+  const razorpayOrders = new Map(orders.map(order => [order.payment.order_id, order]));
   const header = { type: 'header', world_version: version.id, seed, world_hash: hash };
 
   closeSync(openSync(journal, 'a'));
@@ -109,9 +134,35 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     return { ok: true, http: 200, body };
   }
 
+  const visiblePayments = now => [...payments.values()].filter(p => p.created_at <= now).map(p => asOf(p, now));
+  // The webhook log: one delivery per subscribed event, answered 200 on the first attempt in the baseline world.
+  const deliveries = now => orders.filter(order => order.payment.created_at <= now).flatMap(order => {
+    const payment = asOf(order.payment, now);
+    const events = [['payment.authorized', payment.created_at], ['order.paid', payment.captured_at]];
+    return events.filter(([event, at]) => at !== undefined && version.webhook.events.includes(event)).map(([event, at]) => ({
+      id: razorpayId(version.id, seed, `${order.index}|${event}`, 'evt'), event, entity_id: payment.id, created_at: at,
+      attempts: [{ at, response_code: 200 }],
+    }));
+  });
+  const ok = body => ({ ok: true, http: 200, body: structuredClone(body) });
+
   const backend = asBackend({
-    fetchPayment: id => (payments.has(id)
-      ? { ok: true, http: 200, body: structuredClone(payments.get(id)) } : refusal('The id provided does not exist', 'id')),
+    fetchPayment: id => {
+      const now = clock();
+      return payments.get(id)?.created_at <= now ? ok(asOf(payments.get(id), now)) : refusal('The id provided does not exist', 'id');
+    },
+    fetchAllPayments: query => collection(visiblePayments(clock()), query),
+    // Razorpay's GET /orders/:id/payments takes no paging; an order placed before its payment answers an empty list.
+    fetchOrderPayments: id => {
+      const now = clock();
+      if (!(razorpayOrders.get(id)?.created_at <= now)) return refusal('The id provided does not exist', 'id');
+      return collection(visiblePayments(now).filter(p => p.order_id === id), { count: 100 });
+    },
+    fetchAllRefunds: query => collection(visiblePayments(clock())
+      .flatMap(p => (p.refunds ?? []).map(refund => ({ ...refund, payment_id: p.id }))), query),
+    fetchWebhook: () => ok(version.webhook),
+    fetchWebhookDeliveries: query => collection(deliveries(clock()), query),
+    fetchCaptureSettings: () => ok(version.capture),
     capturePayment: ({ payment_id, amount_paise } = {}) => write('capture_payment', { payment_id, amount_paise }),
   });
   return {
