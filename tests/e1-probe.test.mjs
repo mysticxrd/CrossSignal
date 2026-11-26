@@ -72,15 +72,26 @@ test('the cap is checked while the ledger is write-locked, so a second process c
   }
   const budget = ledger(t, Watched);
   other = new OrderBudget(budget.path, 25000000);
-  other.db.exec('PRAGMA busy_timeout=0');
-  budget.claim('e1-probe-t', 'nebius'); other.claim('other-run', 'nebius');
-  probeBudget(budget, 10000).reserve('e1-probe-t', 11, 6000);
-  assert.throws(() => probeBudget(budget, 10000).reserve('e1-probe-t', 21, 4001), /probe_cap_reached/);
-  // The refused reservation rolled back: only the first is counted, and the other process can write again.
-  assert.equal(seen, 2);
-  assert.equal(probeMicros(budget), 6000);
-  other.reserve('other-run', 1, 1);
-  other.close();
+  // Closed here, not in t.after: the ledger's cleanup runs first and can't delete a file still open on Windows.
+  try {
+    other.db.exec('PRAGMA busy_timeout=0');
+    budget.claim('e1-probe-t', 'nebius'); other.claim('other-run', 'nebius');
+    probeBudget(budget, 10000).reserve('e1-probe-t', 11, 6000);
+    assert.throws(() => probeBudget(budget, 10000).reserve('e1-probe-t', 21, 4001), /probe_cap_reached/);
+    // The refused reservation rolled back: only the first is counted, and the other process can write again.
+    assert.equal(seen, 2);
+    assert.equal(probeMicros(budget), 6000);
+    other.reserve('other-run', 1, 1);
+  } finally { other.close(); }
+});
+
+test('the probe stops at the lifetime ceiling as it does at its own cap', async t => {
+  const budget = ledger(t);
+  budget.ceilingMicros = 0;
+  const fetchImpl = async () => Response.json({ data: [{ id: card.model, context_length: 1048576,
+    pricing: { prompt: '0.0000003', completion: '0.0000012', input_cache_read: '0.000000006' } }] });
+  const run = await runProbe({ card, key, budget, runId: 'e1-probe-c', fetchImpl, save: () => {} });
+  assert.deepEqual(run.outcomes.map(o => o.error), ['spend_ceiling_reached']);
 });
 
 test('a retry that recovers keeps the failed attempt, and its error is printed', async t => {

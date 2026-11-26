@@ -177,7 +177,7 @@ export async function runProbe({ card, key, budget, runId, save, fetchImpl = glo
       Object.assign(outcome, { status: 'refused', error: error.message, attempts: error.attempts ?? [] });
       // A broken reservation bound still carries the answer: keep it, since item 8 is about that bound.
       if (error.result) { save(`${name}.response.json`, error.result.raw); outcome.usage = error.result.usage; }
-      if (error.message === 'probe_cap_reached') break;
+      if (['probe_cap_reached', 'spend_ceiling_reached'].includes(error.message)) break;
       continue;
     }
     // Every attempt is kept, so a retry that recovered still shows the provider's error (key hidden by sendE1).
