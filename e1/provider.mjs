@@ -6,7 +6,15 @@ import { catalogMatchesCard, check, reserveMicros, settleMicros } from './price-
 const nebius = 'https://api.tokenfactory.nebius.com/v1';
 const retryable = [429, 500, 503, 504];
 export const validKey = key => typeof key === 'string' && key.length >= 16 && key.length <= 8192 && !/[\r\n]/.test(key);
-const hidden = (text, key) => text.replaceAll(key, '[REDACTED_API_KEY]');
+// JSON can spell the key with escapes (s...), so a JSON body is decoded before it is searched, as
+// order-recovery's transport does.
+function hidden(text, key) {
+  try {
+    const decoded = JSON.stringify(JSON.parse(text));
+    if (decoded.includes(key)) return decoded.replaceAll(key, '[REDACTED_API_KEY]');
+  } catch { /* Not JSON: search the text as it came. */ }
+  return text.replaceAll(key, '[REDACTED_API_KEY]');
+}
 
 // The shared ledger keys spend by (run, attempt). E1 makes many sends per run, so its attempt column holds
 // send × 10 + attempt (sends from 1, attempts 1-3).
@@ -66,14 +74,15 @@ export async function sendE1({ body, card, key, budget, runId, send, persist = a
       record.httpStatus = response.status;
       const text = await readCapped(response);
       if (response.ok) {
-        check(!text.includes(key), 'provider_secret_echo');
+        // Checked on the decoded body, before anything from it reaches the caller or the run log.
+        check(hidden(text, key) === text, 'provider_secret_echo');
         let result;
         try {
           const raw = JSON.parse(text);
           result = { ...inspectE1Response(raw, card, outputCap), raw, attempts };
         } catch (error) {
           // A refused answer is kept whole, so the run log shows what the provider said.
-          record.error = text;
+          record.error = hidden(text, key);
           throw error instanceof SyntaxError ? new Error('invalid_provider_json') : error;
         }
         record.settledMicros = settleMicros(card, result.usage);

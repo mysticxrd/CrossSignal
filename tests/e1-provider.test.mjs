@@ -151,3 +151,17 @@ test('a refused answer keeps its text, odd Retry-After values fall back, oversiz
   assert.throws(() => ledgerAttempt(0, 1), /invalid_ledger_attempt/);
   assert.throws(() => ledgerAttempt(1, 4), /invalid_ledger_attempt/);
 });
+
+test('a key spelled with JSON escapes is still caught, before the run log sees it', async t => {
+  const budget = ledger(t); budget.claim('run-f', 'nebius');
+  const escaped = `\\u${key.charCodeAt(0).toString(16).padStart(4, '0')}${key.slice(1)}`;
+  const echoed = answer(); echoed.choices[0].message.content = 'KEY';
+  let persisted = false;
+  const error = await sendE1({ body: body([]), card, key, budget, runId: 'run-f', send: 1, persist: async () => { persisted = true; },
+    fetchImpl: async () => reply(200, JSON.stringify(echoed).replace('KEY', escaped)) }).catch(caught => caught);
+  assert.equal(error.message, 'provider_secret_echo');
+  assert.ok(!persisted);
+  const failed = await sendE1({ body: body([]), card, key, budget, runId: 'run-f', send: 2,
+    fetchImpl: async () => reply(400, `{"error":"bad key ${escaped}"}`) }).catch(caught => caught);
+  assert.ok(failed.attempts[0].error.includes('[REDACTED_API_KEY]') && !failed.attempts[0].error.includes(key));
+});
