@@ -17,6 +17,7 @@ const records = Array.from({ length: 57 }, (_, i) => ({
 const sorted = [...records].sort((a, b) => a.created_at - b.created_at || (a.id < b.id ? -1 : 1));
 let fetches = 0;
 const backend = {
+  now: async () => NOW,
   list: ({ from, to, count, skip }) => {
     fetches += 1;
     const items = sorted.filter(r => r.created_at >= from && r.created_at <= to).slice(skip, skip + count);
@@ -34,11 +35,11 @@ const tools = createToolset([
   defineTool({
     name: 'stub_one', description: 'One stub record.', schema: object({ id: { type: 'string', pattern: '^rec_[0-9]{3}$' }, cursor: CURSOR }),
     handler: (args, ctx) => listPage({ tool: 'stub_one', args, now: ctx.now, project: r => r,
-      notFound: { thing: 'record', id: args.id, source: 'stub_list' },
+      notFound: { field: 'id', thing: 'record', id: args.id, source: 'stub_list' },
       fetch: async page => { const reply = ctx.backend.one(args.id); return reply.ok ? { ...reply, body: { entity: 'collection', count: 1, items: [reply.body].slice(page.skip) } } : reply; } }),
   }),
 ]);
-const call = (name, args, now = NOW) => tools.call(name, args, { backend, now });
+const call = (name, args) => tools.call(name, args, { backend });
 
 test('a strict schema closes every object, requires every property, and has no uniqueItems', () => {
   for (const { schema } of tools.definitions) checkStrict(schema);
@@ -66,7 +67,7 @@ test('cursor paging returns every record once, in time order, each page cut at a
   }
   assert.ok(pages.some(p => p.result.count < PAGE_ROWS && p.cursor), 'the cap cut a page short');
   assert.ok(pages.length > Math.ceil(records.length / PAGE_ROWS));
-  assert.match(pages[0].note, /^Window 2026-11-23 14:00 to 2026-11-24 14:00 IST; now is 2026-11-24 14:00 IST\. Records on this page: \d+, oldest first\. More:/);
+  assert.match(pages[0].note, /^Window 2026-11-23 14:00:00 to 2026-11-24 14:00:00 IST; now is 2026-11-24 14:00:00 IST\. Records on this page: \d+, oldest first\. More:/);
   assert.match(pages.at(-1).note, /no more\.$/);
 });
 
@@ -81,11 +82,12 @@ test('a cursor continues only the query that gave it; a window after now returns
   const before = fetches;
   const future = await call('stub_list', { from: NOW + 60, to: NOW + 3600, cursor: null });
   assert.deepEqual(future, { result: { entity: 'collection', count: 0, items: [] }, cursor: null,
-    note: 'Window 2026-11-24 14:01 to 2026-11-24 15:00 IST starts after now (2026-11-24 14:00 IST), so nothing in it has happened yet. Call again with from at or before now.' });
+    note: 'Window 2026-11-24 14:01:00 to 2026-11-24 15:00:00 IST starts after now (2026-11-24 14:00:00 IST), so nothing in it has happened yet. Call again with from at or before now.' });
   assert.equal(fetches, before, 'the backend is not asked');
   const missing = await call('stub_one', { id: 'rec_999', cursor: null });
   assert.equal(missing.error.description, 'The id provided does not exist');
-  assert.equal(missing.note, 'No record rec_999 exists as of now (2026-11-24 14:00 IST). Copy the id from a stub_list result.');
+  assert.deepEqual(missing.error, { code: 'BAD_REQUEST_ERROR', description: 'The id provided does not exist', field: 'id' });
+  assert.equal(missing.note, 'No record rec_999 exists as of now (2026-11-24 14:00:00 IST). Copy the id from a stub_list result.');
 });
 
 test('bad arguments return an error envelope whose note names the fix in the tool\'s own arguments', async () => {
@@ -93,7 +95,7 @@ test('bad arguments return an error envelope whose note names the fix in the too
     ['stub_list', { from: T0, cursor: null }, 'to', 'to is missing. Call stub_list again with every argument, null only where the schema allows it.'],
     ['stub_list', { from: String(T0), to: NOW, cursor: null }, 'from', 'from must be a whole number. Call stub_list again with from as a whole number.'],
     ['stub_list', { from: T0 * 1000, to: NOW, cursor: null }, 'from', 'from must be from 946684800 to 4765046400. Call stub_list again with from in that range.'],
-    ['stub_list', { from: NOW, to: T0, cursor: null }, 'from', 'from (2026-11-24 14:00 IST) is after to (2026-11-23 14:00 IST). Call stub_list again with from at or before to.'],
+    ['stub_list', { from: NOW, to: T0, cursor: null }, 'from', 'from (2026-11-24 14:00:00 IST) is after to (2026-11-23 14:00:00 IST). Call stub_list again with from at or before to.'],
     ['stub_list', { from: T0, to: NOW, cursor: 3 }, 'cursor', 'cursor must be a string or null. Call stub_list again with cursor as a string or null.'],
     ['stub_list', { from: T0, to: NOW, cursor: null, count: 50 }, undefined, 'An argument is not one of stub_list\'s. Its arguments are: from, to, cursor.'],
     ['stub_one', { id: 'rec_1', cursor: null }, 'id', 'id must match ^rec_[0-9]{3}$. Call stub_one again with an id copied from a result.'],
@@ -114,17 +116,18 @@ test('notes come only from the fixed templates, with every slot filled', () => {
   assert.throws(() => note('one', {}), /slots/);
   assert.throws(() => note('one', { now: '2026-11-24 14:00', extra: 1 }), /slots/);
   assert.throws(() => note('one', { now: { text: 'free' } }), /bad now/);
-  assert.equal(note('one', { now: '2026-11-24 14:00' }), 'As of now (2026-11-24 14:00 IST); empty fields are left out.');
+  assert.equal(note('one', { now: '2026-11-24 14:00:00' }), 'As of now (2026-11-24 14:00:00 IST); empty fields are left out.');
 });
 
 test('the leak scanner flags labels, build words, paise fields and the future, and the registry refuses a leak', async () => {
   const findings = scanForLeaks({ result: { truthMode: 'SIMULATED', items: [{ access: 'simulated', amount_paise: 1, created_at: NOW + 1,
     attempts: [{ at: NOW + 5 }] }], text: 'a decoy' } }, { now: NOW });
   assert.equal(findings.length, 8, findings.join('\n'));
-  assert.deepEqual(scanForLeaks({ result: { amount: 100, created_at: NOW, attempts: [{ at: NOW }], note: 'access' } }, { now: NOW }), []);
+  assert.deepEqual(scanForLeaks({ result: { id: 'pay_xxDeCoYxxxxxxx', amount: 100, created_at: NOW, attempts: [{ at: NOW }], note: 'access' } },
+    { now: NOW }), [], 'an id that spells a build word by chance is not text');
   const leaky = defineTool({ name: 'leaky', description: 'x', schema: object({}), handler: async (_, { now }) => ({ result: { created_at: now + 1 }, note: 'x' }) });
-  await assert.rejects(createToolset([leaky]).call('leaky', {}, { backend, now: NOW }), /leak: \$\.result\.created_at/);
+  await assert.rejects(createToolset([leaky]).call('leaky', {}, { backend }), /leak: \$\.result\.created_at/);
   const huge = defineTool({ name: 'huge', description: 'x', schema: object({}), handler: async () => ({ result: 'x'.repeat(RESULT_BYTE_CAP), note: 'x' }) });
-  await assert.rejects(createToolset([huge]).call('huge', {}, { backend, now: NOW }), /over the cap/);
+  await assert.rejects(createToolset([huge]).call('huge', {}, { backend }), /over the cap/);
   assert.throws(() => createToolset([leaky, leaky]), /share a name/);
 });

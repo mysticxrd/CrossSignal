@@ -50,8 +50,8 @@ export function note(key, vars = {}) {
 export const ok = (result, noteText, extra = {}) => ({ result, ...extra, note: noteText });
 export const fail = (error, noteText) => ({ error, note: noteText });
 export const badRequest = (description, field) => ({ code: 'BAD_REQUEST_ERROR', description, ...(field && { field }) });
-// The merchant's clock: "2026-11-24 14:00".
-export const ist = unix => new Date((unix + WORLD_VERSION.utc_offset_s) * 1000).toISOString().slice(0, 16).replace('T', ' ');
+// The merchant's clock, to the second, since the window checks compare seconds: "2026-11-24 14:00:00".
+export const ist = unix => new Date((unix + WORLD_VERSION.utc_offset_s) * 1000).toISOString().slice(0, 19).replace('T', ' ');
 export const pick = (record, fields) => Object.fromEntries(fields.map(field => [field, record[field]]));
 const empty = value => value === null || value === '' || (typeof value === 'object' && Object.keys(value).length === 0);
 export const dropEmpty = record => Object.fromEntries(Object.entries(record).filter(([, value]) => !empty(value)));
@@ -131,6 +131,7 @@ export const WINDOW = {
 // One page of a list tool. `fetch({ count, skip })` answers a backend collection; rows are projected, then the
 // page is cut at a row boundary until the envelope fits the cap, and the cursor resumes at the first row cut.
 // With `args.from`/`args.to` the note echoes the window in IST (ticket 02 saw a model send a window a year early).
+// `notFound` ({ field, thing, id, source }) turns a backend refusal into a not-found envelope naming the tool's field.
 export async function listPage({ tool, args, now, fetch, project, header = {}, notFound }) {
   const skip = readCursor(tool, args);
   if (skip === null) return fail(badRequest('The cursor is not valid for this request', 'cursor'), note('cursor_invalid', { tool }));
@@ -139,7 +140,7 @@ export async function listPage({ tool, args, now, fetch, project, header = {}, n
   if (windowed && args.from > args.to) return fail(badRequest('from must be at or before to', 'from'), note('window_order', { tool, from: span.from, to: span.to }));
   if (windowed && args.from > now) return ok({ ...header, entity: 'collection', count: 0, items: [] }, note('window_future', span), { cursor: null });
   const reply = await fetch({ count: PAGE_ROWS + 1, skip });
-  if (!reply.ok && notFound) return fail(reply.error, note('not_found', { ...notFound, now: ist(now) }));
+  if (!reply.ok && notFound) return notFoundError(reply.error, { ...notFound, now });
   requireThat(reply.ok, `${tool}: the backend refused a validated query: ${reply.error?.description}`);
   const rows = reply.body.items.slice(0, PAGE_ROWS).map(project);
   for (let n = rows.length; ; n -= 1) {
@@ -162,7 +163,11 @@ export function defineTool({ name, description, schema, handler }) {
   return Object.freeze({ name, description, schema: deepFreeze(structuredClone(schema)), handler });
 }
 
-// The in-process registry (section 3 item 12). `call` validates, runs the handler with { backend, now }, and
+// A backend's not-found refusal, its field renamed to the tool's own argument.
+export const notFoundError = (error, { field, now, ...slots }) => fail({ ...error, field }, note('not_found', { ...slots, now: ist(now) }));
+
+// The in-process registry (section 3 item 12). `call` reads "now" from the backend, the one clock that also decides
+// what the backend answers, validates, runs the handler with { backend, now }, and
 // refuses to hand back a result over the cap or one the leak scanner flags: either throws, which the loop
 // (ticket 15) records as harness_error, a fail, so nothing past either check ever reaches the model.
 export function createToolset(tools) {
@@ -170,7 +175,8 @@ export function createToolset(tools) {
   requireThat(byName.size === tools.length, 'toolset: two tools share a name');
   return Object.freeze({
     definitions: tools.map(({ name, description, schema }) => ({ name, description, schema })),
-    async call(name, args, { backend, now }) {
+    async call(name, args, { backend }) {
+      const now = await backend.now();
       requireThat(Number.isInteger(now), 'toolset: now must be whole case-clock seconds');
       const tool = byName.get(name);
       const envelope = !tool ? fail(badRequest('The tool does not exist'), note('unknown_tool'))
