@@ -68,7 +68,8 @@ test('the first crossing freezes "now"; the record is figures from code and sees
   const later = { ...world, orders: world.orders.map(o => (o.paid_at >= now ? { ...o, total_paise: 1 } : o)) };
   assert.equal(triggerRecord(later), triggerRecord(world));
   // An unpaid order counts nowhere.
-  const unpaid = { ...world, orders: world.orders.map(o => (o.paid_at >= now - HOUR && o.paid_at < now ? { ...o, paid_at: undefined } : o)) };
+  const lastPaid = world.orders.findLast(o => o.paid_at < now);
+  const unpaid = { ...world, orders: world.orders.map(o => (o === lastPaid ? { ...o, paid_at: undefined } : o)) };
   assert.ok(JSON.parse(triggerRecord(unpaid)).dip_revenue_paise < record.dip_revenue_paise);
   // An hour with no revenue to compare against neither crosses nor stops the scan.
   const first = possibleNows(world)[0];

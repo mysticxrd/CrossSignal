@@ -19,7 +19,8 @@ const freeze = value => {
 export const WORLD_VERSION = freeze({
   // 2: the trigger's drop and re-arm settings joined the version (ticket 04).
   // 3: Razorpay order ids, capture settings and the webhook (ticket 08).
-  id: 'e1-world-3',
+  // 4: the WooCommerce store: its site, plugins, ids and customers (ticket 09).
+  id: 'e1-world-4',
   ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd' },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
@@ -36,6 +37,27 @@ export const WORLD_VERSION = freeze({
     refund_automatically: true, refund_speed: 'normal' },
   webhook: { url: 'https://merch-store.example/wp-admin/admin-post.php?action=rzp_wc_webhook', active: true,
     events: ['order.paid', 'payment.authorized'] },
+  // The WooCommerce side. Versions are a plausible store's, not a claim about any release; WooCommerce 10.6.2 is
+  // the "WC tested up to" of Razorpay's plugin 4.8.10, whose header names it "1 Razorpay" and whose gateway is
+  // id "razorpay", default title "UPI, Cards, NetBanking". A plugin's `updates` ([{ at, version }], oldest first)
+  // is where a cause installs another version; the baseline has none.
+  store: {
+    home_url: 'https://merch-store.example', wp_version: '6.8.2', currency: 'INR', payment_method: 'razorpay',
+    payment_method_title: 'UPI, Cards, NetBanking', first_item_id: 1, first_note_id: 1,
+    plugins: [
+      { plugin: 'woocommerce/woocommerce.php', name: 'WooCommerce', version: '10.6.2', url: 'https://woocommerce.com/',
+        author_name: 'Automattic', updates: [] },
+      { plugin: 'woo-razorpay/woo-razorpay.php', name: '1 Razorpay', version: '4.8.6', url: 'https://razorpay.com',
+        author_name: 'Team Razorpay', updates: [] },
+    ],
+  },
+  // Guest checkout: each order's billing name, email and phone come from customerFor.
+  customers: {
+    first: ['Aarav', 'Ananya', 'Arjun', 'Diya', 'Ishaan', 'Kavya', 'Rohan', 'Meera', 'Vikram', 'Sneha', 'Aditya', 'Priya',
+      'Karan', 'Neha', 'Rahul', 'Pooja', 'Siddharth', 'Ritika', 'Varun', 'Tanvi'],
+    last: ['Sharma', 'Iyer', 'Patel', 'Reddy', 'Nair', 'Gupta', 'Menon', 'Singh', 'Rao', 'Joshi', 'Das', 'Kulkarni',
+      'Mehta', 'Pillai', 'Chatterjee', 'Bose', 'Verma', 'Shetty', 'Agarwal', 'Kapoor'],
+  },
   order_spread_sigma: 0.6, // lognormal spread of order sizes within a day
   device: [['mobile', 80], ['desktop', 17], ['tablet', 3]],
   method: [['upi', 70], ['card', 20], ['netbanking', 6], ['wallet', 4]],
@@ -77,6 +99,25 @@ export function razorpayId(versionId, seed, index, prefix = 'pay') {
   let n = BigInt(`0x${sha256(`${versionId}|${seed}|${prefix}|${index}`).toString('hex')}`), out = '';
   for (let i = 0; i < 14; i++) { out += BASE62[Number(n % 62n)]; n /= 62n; }
   return `${prefix}_${out}`;
+}
+
+// WooCommerce's dates: ISO 8601 to the second with no offset, in the site's time (IST here) or, for `_gmt`
+// fields, UTC. fromStoreTime reads either back to unix seconds, or NaN for anything that is not that form.
+const STAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+export const storeTime = (unix, offset = WORLD_VERSION.utc_offset_s) => new Date((unix + offset) * 1000).toISOString().slice(0, 19);
+export function fromStoreTime(text, offset = WORLD_VERSION.utc_offset_s) {
+  const t = STAMP.test(text) ? Date.parse(`${text}Z`) / 1000 : NaN;
+  return Number.isInteger(t) && storeTime(t, 0) === text ? t - offset : NaN;
+}
+
+// A guest's billing details, from hash(world version, seed, order index), so ticket 05's messages can write as
+// the same customer. Phones are 10 digits starting 6-9, as Indian mobiles are; emails use example.com.
+export function customerFor(version, seed, index) {
+  const h = sha256(`${version.id}|${seed}|customer|${index}`);
+  const { first, last } = version.customers;
+  const first_name = first[h[0] % first.length], last_name = last[h[1] % last.length];
+  return { first_name, last_name, email: `${first_name}.${last_name}${10 + (h[2] % 90)}@example.com`.toLowerCase(),
+    phone: `${6 + (h[3] % 4)}${String(h.readUInt32LE(4) % 1e9).padStart(9, '0')}` };
 }
 
 // GA4 date (YYYY-MM-DD) to its 2026 date and the unix second its IST day starts.

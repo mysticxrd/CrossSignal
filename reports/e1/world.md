@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| World version | `e1-world-3` |
+| World version | `e1-world-4` |
 | Seed | `baseline` |
-| World hash | `7ee1b36984801c416d3542caa3c4413a7fa16568ab7f3f779b037ef0a55a1200` |
+| World hash | `34e279e5f4ac1d3e50310cef6ac2bd491dd0ae389364a8cedac7e6e35c355553` |
 | Days | 2026-11-02 to 2026-12-13 (GA4 2020-11-02 to 2020-12-13), 42 |
 | Orders | 3051 |
 | Possible "now" hours | 649, 2026-11-10 00:00 to 2026-12-07 00:00 IST |
@@ -15,17 +15,17 @@
 
 The trigger crosses when store revenue paid in the trailing 24 h is at least 25% below the same 24 h 7 days earlier, checked every hour on the case clock. A window opens at a crossing and ends when the trailing 24 h is back within 10% of its comparison; a crossing within 24 h of a window's last crossing hour shares its days and rejoins it.
 
-Seed `baseline`: 89 crossing hours in **5 distinct crossing windows**.
+Seed `baseline`: 104 crossing hours in **5 distinct crossing windows**.
 
-Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 to 6 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
+Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 to 5 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
 
 | Window | Opens (IST) | Crossing hours | Gap at opening | Re-arms (IST) | Sale week in |
 |---|---|---|---|---|---|
-| 1 | 2026-11-10 00:00 | 11 | 54.46% | 2026-11-10 11:00 | no |
-| 2 | 2026-11-15 11:00 | 23 | 34.01% | 2026-11-16 15:00 | no |
-| 3 | 2026-11-26 22:00 | 13 | 25.97% | 2026-11-28 15:00 | dip |
-| 4 | 2026-12-01 20:00 | 40 | 33.14% | 2026-12-04 15:00 | dip, comparison |
-| 5 | 2026-12-06 23:00 | 2 | 35.26% | open at the last "now" | comparison |
+| 1 | 2026-11-10 00:00 | 18 | 54.46% | 2026-11-10 21:00 | no |
+| 2 | 2026-11-15 15:00 | 21 | 31.02% | 2026-11-16 15:00 | no |
+| 3 | 2026-11-26 23:00 | 18 | 29.87% | 2026-11-28 21:00 | dip |
+| 4 | 2026-12-01 22:00 | 42 | 37.27% | 2026-12-03 22:00 | dip, comparison |
+| 5 | 2026-12-06 20:00 | 5 | 29.66% | open at the last "now" | comparison |
 
 Window 1 opens at the first possible "now": the trigger may have crossed earlier, before a week-earlier comparison exists, so its "now" is set by where the data starts.
 

@@ -137,7 +137,8 @@ test('the world is never rebuilt from the run log', () => {
   // Lint: the simulator and the interface import only these, so neither can reach the run log or its folder, and
   // neither reads the wall clock or Math.random (section 7 decision 4).
   for (const [file, allowed] of [
-    ['e1/simulator.mjs', ['node:fs', 'node:path', '../db/benchmark/contracts.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './world.mjs']],
+    ['e1/simulator.mjs', ['node:fs', 'node:path', '../db/benchmark/contracts.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './store.mjs', './world.mjs']],
+    ['e1/store.mjs', ['./world.mjs']],
     ['e1/backend.mjs', ['../db/benchmark/contracts.mjs']],
   ]) {
     const source = readFileSync(file, 'utf8');
@@ -148,7 +149,8 @@ test('the world is never rebuilt from the run log', () => {
 
 test('a capture is judged as of the case clock, as reads are', async () => {
   const { world } = authorizedWorld();
-  const [early, late] = [world.orders[1].payment, world.orders.at(-1).payment];
+  // The first payment whose capture is more than a second after it, whatever the world version's draws.
+  const [early, late] = [world.orders.find(o => o.payment.captured_at > o.payment.created_at + 1).payment, world.orders.at(-1).payment];
   const at = early.created_at + 1; // authorized, its capture still ahead in the hidden days
   const sim = open(fresh(), { clock: () => at });
   assert.equal((await sim.backend.now()), at);

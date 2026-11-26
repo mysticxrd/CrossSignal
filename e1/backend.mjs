@@ -6,10 +6,13 @@
 // Write methods take no idempotency key, because Razorpay capture and WooCommerce order updates have none.
 import { requireThat } from '../db/benchmark/contracts.mjs';
 
-// Reads (ticket 08) answer as of the case clock, which `now` gives in whole seconds; lists take Razorpay's
-// { from, to, count, skip } and answer a collection with no total.
+// Reads (tickets 08 and 09) answer as of the case clock, which `now` gives in whole seconds. Razorpay lists take
+// { from, to, count, skip } and answer a collection with no total; WooCommerce's take { after, before, status,
+// per_page, offset } in site time and answer an array with X-WP-Total and X-WP-TotalPages in `headers`, and
+// WooCommerce errors keep WooCommerce's { code, message, data } shape.
 export const BACKEND_METHODS = Object.freeze(['now', 'fetchPayment', 'fetchAllPayments', 'fetchOrderPayments', 'fetchAllRefunds',
-  'fetchWebhook', 'fetchWebhookDeliveries', 'fetchCaptureSettings', 'capturePayment']);
+  'fetchWebhook', 'fetchWebhookDeliveries', 'fetchCaptureSettings', 'wcListOrders', 'wcGetOrder', 'wcOrderNotes', 'wcSystemStatus',
+  'capturePayment']);
 
 // Only the interface's methods, frozen: whoever holds a backend cannot reach the simulator's state or journal.
 export function asBackend(impl) {

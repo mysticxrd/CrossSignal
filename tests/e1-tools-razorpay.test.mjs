@@ -144,7 +144,7 @@ test('pagination returns every record once, in time order, even when "now" moves
 
 test('reads answer as of now: later payments do not exist and later captures have not happened', async () => {
   const p = refunded[2].payment;
-  const { sim, clock, call } = open(p.created_at + 1);
+  const { sim, clock, call } = open(p.created_at); // captures come at least a second after the payment
   const byId = await call('fetch_payment', { payment_id: p.id });
   assert.equal(byId.result.status, 'authorized');
   assert.equal(byId.result.captured, false);
