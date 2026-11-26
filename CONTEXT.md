@@ -16,7 +16,7 @@ tag `factory-freeze-2026-10-03`.
 | `db/cases/` | The SaaS Case lab: simulated world, conversion measurement, Case store, approval, execution and outcome |
 | `db/replays/` | Committed replays, their timestamp proofs and `stamps.json` |
 | `order-recovery/` | v0.2: the simulated order worlds for Razorpay #670 and #664 (`worlds/`), the code-only rival scripts and the simulators; #664's code is in `refund-ordering/`. The DeepSeek runner's lifetime spend ceiling is `spend.json`; its ledger is `crosssignal-order-model-budget.sqlite` in the shared git folder (`git rev-parse --git-common-dir`), so every worktree counts against one total |
-| `e1/` | E1, the revenue-dip agent (design and tickets in `.scratch/e1-design/`): price cards, the Nebius transport and request layout, and the ledger correction log |
+| `e1/` | E1, the revenue-dip agent (design and tickets in `.scratch/e1-design/`): price cards, the Nebius transport and request layout, the ledger correction log, the GA4 world and its trigger |
 | `worker/` | The Cloudflare Worker, including the read-only replay gate |
 | `supabase/`, `drizzle/` | Database functions, migrations, queries and scenarios |
 | `data/ga4-merch/` | The GA4 merch-store daily data |
@@ -29,7 +29,7 @@ tag `factory-freeze-2026-10-03`.
 | `scripts/` | Entry points: A01, B01, order recovery, the held-out seal check, the Case lab, replays, deploy and SQL generators |
 | `tests/` | `npm test` suites; `scripts/test-offline.mjs` lists the retired ones |
 | `tests/evaluator/` | Graders, rubrics and the batch comparison; `order-recovery/` holds the v0.2 cost grader and its answer keys |
-| `reports/` | Committed results: B01 (`b01-w1/`, `b01-twins/`), order recovery with the held-out commitment (`order-recovery/`), the golden-case replay and the scenario matrix |
+| `reports/` | Committed results: B01 (`b01-w1/`, `b01-twins/`), order recovery with the held-out commitment (`order-recovery/`), the E1 world report (`e1/world.md`), the golden-case replay and the scenario matrix |
 
 ## Workflow
 
