@@ -2,6 +2,7 @@
 // WooCommerce and Razorpay's plugin write on them, and the system status. Answers have the backend interface's form,
 // { ok, http, headers?, body } or { ok: false, http, error }, with WooCommerce's own error shape; bodies are raw
 // records, which e1/tools/woocommerce.mjs gives WooCommerce's REST shapes.
+import { createHash } from 'node:crypto';
 import { customerFor, fromStoreTime } from './world.mjs';
 
 const invalid = param => ({ ok: false, http: 400,
@@ -39,6 +40,15 @@ export function openStore({ version, seed, orders, injection = null }) {
   const { store, catalog } = version;
   // An injected update is placed after a version's own update at the same second, so it wins the tie.
   const plugins = store.plugins.map(p => ({ ...p, updates: [...p.updates, ...injectedUpdates(injection, p.plugin)].sort((a, b) => a.at - b.at) }));
+  // The deploy log: the baseline's code deploys, and one deploy per plugin update from the same `plugins` that
+  // system status reads, so the two cannot disagree. Ids are given in time order after the merge, so an injected
+  // deploy takes its place in the sequence instead of standing out at the end (section 3 item 10).
+  const pluginDeploys = plugins.flatMap(p => p.updates.map((u, i) => ({ at: u.at,
+    description: `Update ${p.plugin.split('/')[0]} from ${i === 0 ? p.version : p.updates[i - 1].version} to ${u.version}` })));
+  const deploys = [...store.deploys.map(d => ({ at: fromStoreTime(d.at, version.utc_offset_s), description: d.description })), ...pluginDeploys]
+    .sort((a, b) => a.at - b.at || (a.description < b.description ? -1 : 1))
+    .map((d, i) => ({ id: store.first_deploy_id + i, ...d,
+      sha: createHash('sha256').update(`${version.id}|${seed}|deploy|${d.at}|${d.description}`).digest('hex').slice(0, 40) }));
   // WooCommerce numbers line items and notes as they are written, so both follow time order across the store.
   let nextItem = store.first_item_id;
   const items = new Map(orders.map(order => [order.woo_id,
@@ -86,6 +96,13 @@ export function openStore({ version, seed, orders, injection = null }) {
       return { ok: true, http: 200, body: notes.get(id).filter(n => n.at <= now).map(({ id: noteId, at, note }) => ({ id: noteId, at, note })) };
     },
     // GET /wc/v3/system_status: each plugin at its last update by now.
+    // GET /repos/{owner}/{repo}/deployments with per_page and an offset in place of page: what has deployed by now,
+    // oldest first (section 3 item 10; GitHub lists newest first).
+    listDeploys({ per_page = 30, offset: skip = 0 } = {}, now) {
+      if (!(Number.isInteger(per_page) && per_page >= 1 && per_page <= 100)) return invalid('per_page');
+      const done = deploys.filter(d => d.at <= now);
+      return { ok: true, http: 200, body: done.slice(skip, skip + per_page).map(d => ({ ...d, creator: store.deployer })) };
+    },
     systemStatus(now) {
       const asOfNow = plugins.map(({ updates, ...plugin }) =>
         ({ ...plugin, version: updates.filter(u => u.at <= now).at(-1)?.version ?? plugin.version }));

@@ -34,6 +34,8 @@ export const NOTES = Object.freeze({
   arg_range: '{field} must be from {min} to {max}. Call {tool} again with {field} in that range.',
   arg_pattern: '{field} must match {pattern}. Call {tool} again with an id copied from a result.',
   arg_date: '{field} must be a real date in store time (IST) as YYYY-MM-DDTHH:MM:SS, for example 2026-11-24T14:00:00. Call {tool} again with {field} in that form.',
+  arg_day: '{field} must be a real date in store time (IST) as YYYY-MM-DD, or today, yesterday or NdaysAgo. Call {tool} again with {field} in that form.',
+  arg_count: '{field} must hold {count} items. Call {tool} again with {count} items in {field}.',
   cursor_invalid: 'This cursor was not issued for these arguments. Call {tool} again with cursor null, or with the arguments that gave it.',
   unknown_tool: 'There is no such tool. Call one of the listed tools.',
 });
@@ -78,6 +80,8 @@ const IS = {
 const A = { string: 'a string', integer: 'a whole number', boolean: 'true or false', null: 'null', array: 'a list', object: 'an object' };
 const expected = schema => (schema.anyOf ? schema.anyOf.map(expected).join(' or ') : A[schema.type]);
 
+const realDay = value => !/^\d{4}-/.test(value) || !Number.isNaN(fromStoreTime(`${value}T00:00:00`));
+
 // The first problem with `value`, as a note key and its slots, or null.
 function problem(schema, value, field) {
   if (schema.anyOf) {
@@ -90,6 +94,7 @@ function problem(schema, value, field) {
     return { key: 'arg_range', field, min: schema.minimum ?? 'any', max: schema.maximum ?? 'any' };
   }
   if (schema.pattern === STORE_TIME.pattern && Number.isNaN(fromStoreTime(value))) return { key: 'arg_date', field };
+  if (schema.pattern === REPORT_DAY.pattern && !(new RegExp(schema.pattern).test(value) && realDay(value))) return { key: 'arg_day', field };
   if (schema.pattern && !new RegExp(schema.pattern).test(value)) return { key: 'arg_pattern', field, pattern: schema.pattern };
   if (schema.type === 'object') {
     const keys = Object.keys(schema.properties);
@@ -107,7 +112,8 @@ function problem(schema, value, field) {
   return null;
 }
 const ARG_ERRORS = { arg_missing: 'The field is required', arg_extra: 'The request has an extra field', arg_type: 'The field has the wrong type',
-  arg_range: 'The field is out of range', arg_pattern: 'The field has the wrong format', arg_date: 'The field has the wrong format' };
+  arg_range: 'The field is out of range', arg_pattern: 'The field has the wrong format', arg_date: 'The field has the wrong format',
+  arg_day: 'The field has the wrong format' };
 function argumentError(tool, args) {
   const found = problem(tool.schema, args, '');
   if (!found) return null;
@@ -129,6 +135,8 @@ const readCursor = (tool, args) => {
 export const CURSOR = { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'null for the first page; then the cursor of the previous result.' };
 // WooCommerce's after/before: ISO 8601 in the site's time; the pattern is checked, then the date itself.
 export const STORE_TIME = Object.freeze({ type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$' });
+// GA4's DateRange startDate/endDate: YYYY-MM-DD, today, yesterday or NdaysAgo, in the property's time zone (IST).
+export const REPORT_DAY = Object.freeze({ type: 'string', pattern: '^(\\d{4}-\\d{2}-\\d{2}|today|yesterday|\\d{1,4}daysAgo)$' });
 export const WINDOW = {
   from: { type: 'integer', minimum: 946684800, maximum: 4765046400, description: 'Window start, unix seconds, inclusive.' },
   to: { type: 'integer', minimum: 946684800, maximum: 4765046400, description: 'Window end, unix seconds, inclusive.' },

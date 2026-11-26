@@ -137,8 +137,9 @@ test('the world is never rebuilt from the run log', () => {
   // Lint: the simulator and the interface import only these, so neither can reach the run log or its folder, and
   // neither reads the wall clock or Math.random (section 7 decision 4).
   for (const [file, allowed] of [
-    ['e1/simulator.mjs', ['node:fs', 'node:path', '../db/benchmark/contracts.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './store.mjs', './world.mjs']],
-    ['e1/store.mjs', ['./world.mjs']],
+    ['e1/simulator.mjs', ['node:fs', 'node:path', '../db/benchmark/contracts.mjs', './analytics.mjs', './backend.mjs', './canonical.mjs', './durable.mjs', './store.mjs', './world.mjs']],
+    ['e1/store.mjs', ['node:crypto', './world.mjs']],
+    ['e1/analytics.mjs', []],
     ['e1/backend.mjs', ['../db/benchmark/contracts.mjs']],
   ]) {
     const source = readFileSync(file, 'utf8');

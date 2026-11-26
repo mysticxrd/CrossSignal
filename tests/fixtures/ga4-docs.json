@@ -1,0 +1,52 @@
+{
+  "checked": "2026-11-27",
+  "about": "Field names and JSON types from the Google Analytics Data API v1beta reference for properties.runReport, its request and response types, and the API schema page's metric and dimension names. A tool may leave a field out but may not add one or change its type. Every row value is a string, typed by its header.",
+  "run_report": {
+    "sources": [
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/properties/runReport",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/RunReportResponse",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/DateRange",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/DimensionHeader",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/MetricHeader",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/MetricType",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/Row",
+      "https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/ResponseMetaData"
+    ],
+    "request_fields": {
+      "dimensions": "array", "metrics": "array", "dateRanges": "array", "dimensionFilter": "object", "metricFilter": "object",
+      "offset": "string", "limit": "string", "metricAggregations": "array", "orderBys": "array", "currencyCode": "string",
+      "cohortSpec": "object", "keepEmptyRows": "boolean", "returnPropertyQuota": "boolean", "comparisons": "array"
+    },
+    "date_range_fields": { "startDate": "string", "endDate": "string", "name": "string" },
+    "date_range_formats": ["YYYY-MM-DD", "NdaysAgo", "yesterday", "today"],
+    "date_range_notes": "Relative dates are 'inferred based on the property's reporting time zone'. 'Requests are allowed up to 4 date ranges.' Unnamed ranges are named date_range_0, date_range_1, and so on, and the dateRange dimension takes that name in the response; with several ranges each row carries its range.",
+    "response_fields": {
+      "dimensionHeaders": "array", "metricHeaders": "array", "rows": "array", "totals": "array", "maximums": "array",
+      "minimums": "array", "rowCount": "integer", "metadata": "object", "propertyQuota": "object", "kind": "string"
+    },
+    "dimension_header_fields": { "name": "string" },
+    "metric_header_fields": { "name": "string", "type": "string" },
+    "metric_types": ["METRIC_TYPE_UNSPECIFIED", "TYPE_INTEGER", "TYPE_FLOAT", "TYPE_SECONDS", "TYPE_MILLISECONDS", "TYPE_MINUTES",
+      "TYPE_HOURS", "TYPE_STANDARD", "TYPE_CURRENCY", "TYPE_FEET", "TYPE_MILES", "TYPE_METERS", "TYPE_KILOMETERS"],
+    "row_fields": { "dimensionValues": "array", "metricValues": "array" },
+    "value_fields": { "value": "string" },
+    "metadata_fields": {
+      "currencyCode": "string", "timeZone": "string", "emptyReason": "string", "subjectToThresholding": "boolean",
+      "dataLossFromOtherRow": "boolean", "samplingMetadatas": "array", "dataTruncationReasons": "array", "schemaRestrictionResponse": "object"
+    },
+    "kind": "analyticsData#runReport",
+    "row_count_notes": "'rowCount is independent of the number of rows returned in the response': a query of 175 rows with limit 50 answers rowCount 175 and 50 rows.",
+    "examples": { "row": { "dimensionValues": [{ "value": "in_app_purchase" }, { "value": "JP" }], "metricValues": [{ "value": "15" }] } }
+  },
+  "api_schema": {
+    "sources": ["https://developers.google.com/analytics/devguides/reporting/data/v1/api-schema"],
+    "dimensions": { "date": "The date of the event, formatted as YYYYMMDD." },
+    "metrics": {
+      "sessions": "The number of sessions that began on your site or app (event triggered: session_start).",
+      "addToCarts": "The number of times users added items to their shopping carts.",
+      "checkouts": "The number of times users started the checkout process.",
+      "ecommercePurchases": "The number of times users completed a purchase.",
+      "purchaseRevenue": "The sum of revenue from purchases minus refunded transaction revenue made in your app or site."
+    }
+  }
+}

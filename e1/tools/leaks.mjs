@@ -4,7 +4,8 @@
 // - words that name the build (simulated, decoy, answer key, held-out, the world version);
 // - internal field names in paise, which no Razorpay or WooCommerce shape has;
 // - any time field after "now", since the world holds 7 hidden future days: unix seconds under a key ending "at",
-//   and WooCommerce's date strings under a key starting "date_", in store time or, ending "_gmt", UTC.
+//   GitHub's UTC date-time strings (2026-11-24T08:30:00Z) under such a key, and WooCommerce's date strings under a
+//   key starting "date_", in store time or, ending "_gmt", UTC.
 // It returns findings rather than throwing, so a sealing check can list them all. It cannot see inside a count or a
 // total, so a tool that gives one must count only what exists as of now, with its own test.
 import { WORLD_VERSION, fromStoreTime } from '../world.mjs';
@@ -13,6 +14,7 @@ const KEYS = new Set(['truthMode', 'access', 'heldBy', 'answer_key', 'cause', 'd
 const WORDS = /simulat|decoy|answer.?key|held.?out|truth.?mode|e1-world|merchant consent/i;
 const TIME = /(^|_)at$/;
 const DATE = /^date_[a-z]+(_gmt)?$/;
+const utcValue = text => (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(text) ? fromStoreTime(text.slice(0, -1), 0) : NaN);
 const dateValue = (key, text) => fromStoreTime(text, key.endsWith('_gmt') ? 0 : WORLD_VERSION.utc_offset_s);
 // A Razorpay-form id is 14 random base62 characters; about 0.4% of seeds would spell "decoy" in one by chance. Ids
 // are cut out before the word check, alone or inside a note, and the text around them is still checked.
@@ -23,6 +25,7 @@ export function scanForLeaks(value, { now }) {
   const walk = (node, path, key) => {
     if (typeof node === 'string' && WORDS.test(node.replace(IDS, ' '))) findings.push(`${path}: text names the build`);
     if (typeof node === 'number' && TIME.test(key) && node > now) findings.push(`${path}: ${node} is after now (${now})`);
+    if (typeof node === 'string' && TIME.test(key) && !(utcValue(node) <= now)) findings.push(`${path}: ${node} is after now or not a date`);
     if (typeof node === 'string' && DATE.test(key) && !(dateValue(key, node) <= now)) findings.push(`${path}: ${node} is after now or not a date`);
     if (!node || typeof node !== 'object') return;
     for (const [k, child] of Object.entries(node)) {
