@@ -166,3 +166,31 @@ test('local review fixes: header failure, failed write, a closer dying after the
   assert.deepEqual(verifyChain('null\n').error, { seq: 0, reason: 'not an object' });
   assert.ok(cardinality([{ seq: 0, prev: ZERO }]).includes('exactly one header, first'));
 });
+
+test('Codex review fixes: stamp already on disk, verification_mismatch, sparse arrays, ledger_unavailable', () => {
+  // The writer dies between `stamp` and `closed`: the closer keeps that stamp and writes no second one.
+  const path = fresh();
+  const log = createRunLog(path, HEADER);
+  log.append('stamp', { landed: 'not_run(run_timeout)', fixed: 'not_run(run_timeout)', realised: 'not_run(run_timeout)' });
+  writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
+  closeCrashed(path);
+  assert.equal(events(path).filter(e => e.type === 'stamp').length, 1);
+  assert.deepEqual(cardinality(events(path)), []);
+
+  // A mismatch after execution keeps the proposed run's events, with landed = mismatch.
+  const run = events(proposedRun(fresh()));
+  const mismatch = run.map(e => (e.type === 'stamp' ? { ...e, landed: 'mismatch' } : e.type === 'closed' ? { ...e, status: 'verification_mismatch' } : e));
+  assert.deepEqual(cardinality(mismatch), []);
+  assert.deepEqual(cardinality(mismatch.filter(e => e.type !== 'verification').map((e, i) => ({ ...e, seq: i }))), ['verification_mismatch: one verification']);
+  assert.ok(cardinality(run.map(e => (e.type === 'stamp' ? { ...e, landed: 'mismatch' } : e))).includes('proposed: stamp landed is not mismatch'));
+
+  // A sparse array never reaches the disk, where `[,]` would break the chain for good.
+  const sparse = createRunLog(fresh(), HEADER);
+  assert.throws(() => sparse.append('notice', { result: Array(2) }), /plain JSON values/);
+  assert.doesNotThrow(() => sparse.append('notice', { result: [null, 1] }));
+
+  // A busy ledger voids the run, unsent (F6).
+  sparse.append('stamp', { landed: 'not_run(ledger_unavailable)', fixed: 'not_run(ledger_unavailable)', realised: 'not_run(ledger_unavailable)' });
+  sparse.close('ledger_unavailable');
+  assert.deepEqual(cardinality(events(sparse.path)), []);
+});
