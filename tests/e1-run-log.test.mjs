@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { hostname, tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { ZERO, cardinality, closeCrashed, createRunLog, reopenRunLog, sha256, verifyChain } from '../e1/run-log.mjs';
 
 const fresh = () => join(mkdtempSync(join(tmpdir(), 'e1-runlog-')), 'r_test.jsonl');
+// No process holds this pid: Windows pids are multiples of 4 well below it, and Linux caps pid_max at 2^22.
+const DEAD_PID = 2 ** 31 - 2;
 const HEADER = { run_id: 'r_test', batch: 'b0', case_id: 'c_000000000000', schema: 1, world: 'simulated' };
 
 // A proposed run with one call, one operation and a verification: the shape every rule below is tested against.
@@ -67,7 +68,7 @@ test('a torn last line is cut, with its length and hash recorded', () => {
   const torn = '{"intent":1,"type":"send_out';
   appendFileSync(path, torn);
   assert.throws(() => closeCrashed(path, { takeStale: false }), /run_locked/);
-  writeFileSync(`${path}.lock`, JSON.stringify({ pid: spawnSync(process.execPath, ['-e', '']).pid, host: hostname() }));
+  writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
 
   const closed = closeCrashed(path);
   const chain = verifyChain(readFileSync(path, 'utf8'));
@@ -98,7 +99,7 @@ test('an executor crash resumes in the same file and reconciles the op it lost',
   const log = createRunLog(path, HEADER);
   for (const type of ['proposal', 'priced_proposal', 'decision']) log.append(type);
   log.append('op_intent', { key: 'k1' });
-  writeFileSync(`${path}.lock`, JSON.stringify({ pid: spawnSync(process.execPath, ['-e', '']).pid, host: hostname() }));
+  writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
 
   const { log: resumed, torn } = reopenRunLog(path, { takeStale: true });
   assert.equal(torn, null);
@@ -134,4 +135,34 @@ test('cardinality names each broken rule', () => {
   assert.deepEqual(cardinality(events(path)), []);
   const failed = events(path).map(e => (e.type === 'closed' ? { ...e, status: 'no_action' } : e));
   assert.ok(cardinality(failed).includes('no_action: stamp landed is not_run(no_action)'));
+});
+
+test('local review fixes: header failure, failed write, a closer dying after the cut, odd lines', () => {
+  // A header the log can't write frees the run id again.
+  const path = fresh();
+  assert.throws(() => createRunLog(path, { ...HEADER, type: 'x' }), /set by the log/);
+  assert.ok(!existsSync(path) && !existsSync(`${path}.lock`));
+
+  // A write that fails partway poisons the writer.
+  const log = createRunLog(path, HEADER);
+  log.append('proposal');
+  closeSync(log.fd);
+  assert.throws(() => log.append('notice'), /EBADF/);
+  assert.throws(() => log.append('notice'), /is closed/);
+
+  // The closer cuts a torn tail and dies before writing `closed`; the next closer still records the cut bytes.
+  appendFileSync(path, '{"half');
+  writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
+  const first = reopenRunLog(path, { takeStale: true });
+  assert.equal(first.torn.bytes, 6);
+  closeSync(first.log.fd);
+  writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
+  closeCrashed(path);
+  const chain = verifyChain(readFileSync(path, 'utf8'));
+  assert.deepEqual(chain.events.at(-1).torn, { bytes: 6, sha256: sha256('{"half') });
+  // A crash after a proposal is a crash, not a harness error.
+  assert.deepEqual(cardinality(chain.events), []);
+
+  assert.deepEqual(verifyChain('null\n').error, { seq: 0, reason: 'not an object' });
+  assert.ok(cardinality([{ seq: 0, prev: ZERO }]).includes('exactly one header, first'));
 });
