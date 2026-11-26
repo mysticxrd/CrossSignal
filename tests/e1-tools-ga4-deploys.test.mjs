@@ -36,7 +36,7 @@ function open(now = NOW, w = world) {
   return { sim, clock, call };
 }
 const metrics = (...names) => names.map(name => ({ name }));
-const ALL = metrics('sessions', 'addToCarts', 'checkouts', 'ecommercePurchases', 'purchaseRevenue');
+const ALL = metrics('sessions', 'checkouts', 'ecommercePurchases', 'purchaseRevenue');
 const report = (call, ranges, { byDate = false, names = ALL, cursor = null } = {}) => call('ga4_run_report', {
   dateRanges: ranges.map(([startDate, endDate]) => ({ startDate, endDate })), dimensions: byDate ? [{ name: 'date' }] : [], metrics: names, cursor });
 const values = row => row.metricValues.map(v => Number(v.value));
@@ -95,19 +95,25 @@ test('ga4_run_report cuts the day that holds now at now', async () => {
   };
   const before = (await read())[today.replaceAll('-', '')];
   const bought = paidIn(world, from, NOW);
-  assert.deepEqual(before.slice(3), [bought.length, bought.reduce((s, o) => s + o.total_paise, 0) / 100], 'purchases paid by now, no later');
+  assert.deepEqual(before.slice(2), [bought.length, bought.reduce((s, o) => s + o.total_paise, 0) / 100], 'purchases paid by now, no later');
   const full = world.days.find(d => d.date === today).funnel;
   assert.ok(before[0] > 0 && before[0] < full.sessions, 'sessions so far, not the whole day');
   clock.now = NOW + 3 * HOUR;
   const later = (await read())[today.replaceAll('-', '')];
-  assert.ok(later.every((n, i) => n >= before[i]) && later[0] > before[0] && later[3] > before[3], 'the day fills as now moves on');
+  assert.ok(later.every((n, i) => n >= before[i]) && later[0] > before[0] && later[2] > before[2], 'the day fills as now moves on');
   clock.now = from + DAY - 1;
-  assert.deepEqual((await read())[today.replaceAll('-', '')].slice(0, 3), [full.sessions, full.addToCarts, full.checkouts], 'the whole day at its last second');
+  assert.deepEqual((await read())[today.replaceAll('-', '')].slice(0, 2), [full.sessions, full.checkouts], 'the whole day at its last second');
   // An order paid at exactly now is counted; one second earlier it is not.
   const order = paidIn(world, from + HOUR, from + DAY).at(-1);
   for (const [now, n] of [[order.paid_at, paidIn(world, from, order.paid_at).length], [order.paid_at - 1, paidIn(world, from, order.paid_at - 1).length]]) {
     clock.now = now;
-    assert.equal((await read())[today.replaceAll('-', '')][3], n);
+    assert.equal((await read())[today.replaceAll('-', '')][2], n);
+  }
+  // Early in a day the hour weights can fall short of the orders paid; no hour shows more purchases than checkouts.
+  for (let h = 0; h < 24; h += 1) {
+    clock.now = from + h * HOUR + 1800;
+    const [sessions, checkouts, purchases] = (await read())[today.replaceAll('-', '')];
+    assert.ok(sessions >= checkouts && checkouts >= purchases, `a real funnel at ${h}:30: ${sessions}, ${checkouts}, ${purchases}`);
   }
   // A range after today has no rows; a range holding today stops at today.
   clock.now = NOW;
@@ -126,11 +132,11 @@ test('GA4 agrees with a #670 case\'s paid orders and store revenue as of now; th
   const [withCause, without] = [await read(kase), await read(plain)];
   const from = dayStart('2026-11-18');
   for (const [rows, w] of [[withCause, kase], [without, plain]]) {
-    assert.equal(rows[0][3], paidIn(w, from, now).length);
-    assert.equal(Math.round(rows[0][4] * 100), storeRevenue(w, from, now + 1), 'purchaseRevenue is store revenue');
+    assert.equal(rows[0][2], paidIn(w, from, now).length);
+    assert.equal(Math.round(rows[0][3] * 100), storeRevenue(w, from, now + 1), 'purchaseRevenue is store revenue');
   }
-  assert.deepEqual(withCause[0].slice(0, 3), without[0].slice(0, 3), 'sessions, add to carts and checkouts are the same');
-  assert.ok(withCause[0][3] < without[0][3] * 0.8, '#670 removes the purchases of orders it marks failed');
+  assert.deepEqual(withCause[0].slice(0, 2), without[0].slice(0, 2), 'sessions and checkouts are the same');
+  assert.ok(withCause[0][2] < without[0][2] * 0.8, '#670 removes the purchases of orders it marks failed');
   assert.deepEqual(withCause[1], without[1], 'the week before the cause is untouched');
 });
 
@@ -141,8 +147,8 @@ test('ga4_run_report\'s argument errors name the fix; relative dates count back 
     [[['2026-11-24', '2026-11-20'], ['today', 'today']], {}, /dateRanges\[0\]\.startDate \(2026-11-24 IST\) is after dateRanges\[0\]\.endDate/],
     [[['2026-02-30', 'today'], ['today', 'today']], {}, /dateRanges\[0\]\.startDate must be a real date in store time \(IST\) as YYYY-MM-DD, or today/],
     [[['tomorrow', 'today'], ['today', 'today']], {}, /must be a real date/],
-    [[['today', 'today'], ['today', 'today']], { names: metrics('sessions', 'sessions') }, /metrics must hold 1 to 5 different items/],
-    [[['today', 'today'], ['today', 'today']], { names: [] }, /metrics must hold 1 to 5 different items/],
+    [[['today', 'today'], ['today', 'today']], { names: metrics('sessions', 'sessions') }, /metrics must hold 1 to 4 different items/],
+    [[['today', 'today'], ['today', 'today']], { names: [] }, /metrics must hold 1 to 4 different items/],
   ];
   for (const [ranges, options, pattern] of cases) {
     const envelope = await report(call, ranges, options);
@@ -159,8 +165,8 @@ test('ga4_run_report\'s argument errors name the fix; relative dates count back 
   sim.close();
 });
 
-test('a long report pages 20 rows at a time with the same rowCount, under the cap', async () => {
-  const { sim, call } = open();
+test('a long report pages 20 rows at a time with the same rowCount, under the cap; a cursor ends with the day', async () => {
+  const { sim, clock, call } = open();
   const ranges = [['21daysAgo', 'today'], ['2026-10-01', '2026-11-02']];
   const pages = [];
   let cursor = null;
@@ -170,6 +176,12 @@ test('a long report pages 20 rows at a time with the same rowCount, under the ca
   assert.ok(pages.length >= 2 && pages.every(p => p.result.rowCount === rows.length && resultBytes(p) <= RESULT_BYTE_CAP));
   assert.equal(new Set(rows.map(r => r.dimensionValues.map(v => v.value).join())).size, rows.length);
   assert.match(pages.at(-1).note, /no more/);
+  // Past midnight today moves and the rows shift, so the first page's cursor no longer continues the report.
+  clock.now = dayStart(storeTime(NOW).slice(0, 10)) + DAY - 1;
+  const keys = page => page.result.rows.map(r => r.dimensionValues.map(v => v.value).join());
+  assert.deepEqual(keys(await report(call, ranges, { byDate: true, cursor: pages[0].cursor })), keys(pages[1]), 'the same rows later the same day');
+  clock.now += 1;
+  assert.match((await report(call, ranges, { byDate: true, cursor: pages[0].cursor })).note, /cursor was not issued/);
   sim.close();
 });
 

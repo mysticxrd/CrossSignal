@@ -46,7 +46,7 @@ export function openStore({ version, seed, orders, injection = null }) {
   const pluginDeploys = plugins.flatMap(p => p.updates.map((u, i) => ({ at: u.at,
     description: `Update ${p.plugin.split('/')[0]} from ${i === 0 ? p.version : p.updates[i - 1].version} to ${u.version}` })));
   const deploys = [...store.deploys.map(d => ({ at: fromStoreTime(d.at, version.utc_offset_s), description: d.description })), ...pluginDeploys]
-    .sort((a, b) => a.at - b.at || (a.description < b.description ? -1 : 1))
+    .sort((a, b) => a.at - b.at || (a.description < b.description ? -1 : a.description > b.description ? 1 : 0))
     .map((d, i) => ({ id: store.first_deploy_id + i, ...d,
       sha: createHash('sha256').update(`${version.id}|${seed}|deploy|${d.at}|${d.description}`).digest('hex').slice(0, 40) }));
   // WooCommerce numbers line items and notes as they are written, so both follow time order across the store.
@@ -95,7 +95,6 @@ export function openStore({ version, seed, orders, injection = null }) {
       if (!visible(id, now)) return noOrder;
       return { ok: true, http: 200, body: notes.get(id).filter(n => n.at <= now).map(({ id: noteId, at, note }) => ({ id: noteId, at, note })) };
     },
-    // GET /wc/v3/system_status: each plugin at its last update by now.
     // GET /repos/{owner}/{repo}/deployments with per_page and an offset in place of page: what has deployed by now,
     // oldest first (section 3 item 10; GitHub lists newest first).
     listDeploys({ per_page = 30, offset: skip = 0 } = {}, now) {
@@ -103,6 +102,7 @@ export function openStore({ version, seed, orders, injection = null }) {
       const done = deploys.filter(d => d.at <= now);
       return { ok: true, http: 200, body: done.slice(skip, skip + per_page).map(d => ({ ...d, creator: store.deployer })) };
     },
+    // GET /wc/v3/system_status: each plugin at its last update by now.
     systemStatus(now) {
       const asOfNow = plugins.map(({ updates, ...plugin }) =>
         ({ ...plugin, version: updates.filter(u => u.at <= now).at(-1)?.version ?? plugin.version }));

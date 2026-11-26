@@ -6,7 +6,7 @@
 |---|---|
 | World version | `e1-world-6` |
 | Seed | `baseline` |
-| World hash | `0d4f13c10885169e9d92102a30024988abfbd559dc2a354e5f1fe448ca0ec55c` |
+| World hash | `16dd418ee20edff44f604b5daf48caa91c5c74f44cbe09504e05616c97862438` |
 | Days | 2026-11-02 to 2026-12-13 (GA4 2020-11-02 to 2020-12-13), 42 |
 | Orders | 3051 |
 | Possible "now" hours | 649, 2026-11-10 00:00 to 2026-12-07 00:00 IST |

@@ -23,10 +23,10 @@ export const WORLD_VERSION = freeze({
   // 5: order statuses, the plugin's order notes and causes, the first being #670 (ticket 05a), on that store.
   // 6: GA4's daily funnel counts and the store's deploy log (ticket 09 part 2).
   id: 'e1-world-6',
-  // `funnel` maps ga4_run_report's metric names to GA4 CSV columns. The CSV counts sessions that added to cart or
-  // began checkout, not events, so addToCarts and checkouts are those session counts.
+  // `funnel` maps ga4_run_report's metric names to GA4 CSV columns. The CSV counts sessions that began checkout, not
+  // events, so checkouts is that session count. Its add-to-cart column is empty on 18 of the 42 days, so it is left out.
   ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd',
-    funnel: { sessions: 'sessions', addToCarts: 'sessions_add_to_cart', checkouts: 'sessions_begin_checkout' } },
+    funnel: { sessions: 'sessions', checkouts: 'sessions_begin_checkout' } },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
   usd_inr_paise: 8800, // one fixed round rate, ₹88.00 a US dollar, not a market quote

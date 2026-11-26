@@ -6,6 +6,8 @@
 //
 // The day that holds "now" is cut at "now": a funnel count by the share of the day's order-weighted hours that have
 // passed, purchases by paid_at. The leak scanner cannot see inside a count, so nothing after "now" may reach one.
+// A funnel count is never below the day's purchases, as every purchase began a session and a checkout; early in a
+// day the hour weights alone can fall short of the orders actually paid.
 const DAY = 86400;
 
 // `orders` are as built. A later mark-paid write (ticket 18) happens in the dashboard, not the customer's browser,
@@ -27,7 +29,7 @@ export function openAnalytics({ version, days, orders }) {
         const bought = paid.filter(o => o.paid_at >= d.start && o.paid_at < cut);
         return {
           date: d.date,
-          ...Object.fromEntries(Object.entries(d.funnel).map(([metric, n]) => [metric, Math.floor(n * part)])),
+          ...Object.fromEntries(Object.entries(d.funnel).map(([metric, n]) => [metric, Math.max(Math.floor(n * part), bought.length)])),
           purchases: bought.length, revenue_paise: bought.reduce((sum, o) => sum + o.total_paise, 0),
         };
       }) };

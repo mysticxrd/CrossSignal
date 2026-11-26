@@ -2,13 +2,14 @@
 // day records (e1/analytics.mjs), the day holding now already cut at now; this gives them runReport's headers, rows
 // of string values, rowCount and metadata. tests/fixtures/ga4-docs.json holds the doc fields it must match.
 import { CURSOR, REPORT_DAY, defineTool, fail, listPage, note } from './core.mjs';
+import { requireThat } from '../../db/benchmark/contracts.mjs';
 import { storeTime } from '../world.mjs';
 
 const object = properties => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
 // The metrics served, with their MetricHeader types and the day record each reads.
 export const GA4_METRICS = Object.freeze({
-  sessions: ['TYPE_INTEGER', d => d.sessions], addToCarts: ['TYPE_INTEGER', d => d.addToCarts],
-  checkouts: ['TYPE_INTEGER', d => d.checkouts], ecommercePurchases: ['TYPE_INTEGER', d => d.purchases],
+  sessions: ['TYPE_INTEGER', d => d.sessions], checkouts: ['TYPE_INTEGER', d => d.checkouts],
+  ecommercePurchases: ['TYPE_INTEGER', d => d.purchases],
   purchaseRevenue: ['TYPE_CURRENCY', d => d.revenue_paise],
 });
 // GA4 sends every value as a string; revenue in the property's currency, rupees here.
@@ -26,18 +27,18 @@ const countError = (field, count, message) => fail(invalid(message), note('arg_c
 export const GA4_TOOLS = Object.freeze([
   defineTool({
     name: 'ga4_run_report',
-    description: 'The store\'s GA4 report for two date ranges in store time (IST), as of now: the chosen metrics per range, or per day and range with the date dimension. A range that holds today counts it up to now. Rows are 20 a page.',
+    description: 'The store\'s GA4 report for two date ranges in store time (IST), as of now: the chosen metrics per range, or per day and range with the date dimension. A range that holds today counts it up to now. Rows are 20 a page; a cursor holds until midnight IST.',
     schema: object({
       dateRanges: { type: 'array', items: object({ startDate: REPORT_DAY, endDate: REPORT_DAY }), description: 'Exactly two: the range to look at, then the one to compare it with.' },
       dimensions: { type: 'array', items: object({ name: { type: 'string', enum: ['date'] } }), description: 'Empty for one row per range, or [{"name":"date"}] for one row per day.' },
-      metrics: { type: 'array', items: object({ name: { type: 'string', enum: Object.keys(GA4_METRICS) } }), description: '1 to 5 different metrics.' },
+      metrics: { type: 'array', items: object({ name: { type: 'string', enum: Object.keys(GA4_METRICS) } }), description: '1 to 4 different metrics.' },
       cursor: CURSOR,
     }),
     handler: async (args, { backend, now }) => {
       const metrics = args.metrics.map(m => m.name), byDate = args.dimensions.length === 1;
       if (args.dateRanges.length !== 2) return countError('dateRanges', 2, 'Exactly two date ranges are required.');
       if (args.dimensions.length > 1) return countError('dimensions', '0 or 1', 'The date dimension may be named once.');
-      if (metrics.length === 0 || new Set(metrics).size !== metrics.length) return countError('metrics', '1 to 5 different', 'Metrics must be named once each.');
+      if (metrics.length === 0 || new Set(metrics).size !== metrics.length) return countError('metrics', '1 to 4 different', 'Metrics must be named once each.');
       const ranges = args.dateRanges.map(r => ({ start: resolveDay(r.startDate, now), end: resolveDay(r.endDate, now) }));
       const backwards = ranges.findIndex(r => r.start > r.end);
       if (backwards >= 0) {
@@ -48,14 +49,19 @@ export const GA4_TOOLS = Object.freeze([
       // leaves out rows whose metrics are all zero.
       const rows = [];
       for (const [i, range] of ranges.entries()) {
-        const { body: days } = await backend.ga4Daily({ start_date: range.start, end_date: range.end });
+        const reply = await backend.ga4Daily({ start_date: range.start, end_date: range.end });
+        requireThat(reply.ok, `ga4_run_report: the backend refused a validated range: ${reply.error?.message}`);
+        const days = reply.body;
         const row = (dimension, records) => ({ dimensionValues: [...dimension, { value: `date_range_${i}` }],
           metricValues: metrics.map(name => metricValue(name, records.reduce((sum, d) => sum + GA4_METRICS[name][1](d), 0))) });
         if (byDate) rows.push(...days.map(d => row([{ value: d.date.replaceAll('-', '') }], [d])));
         else if (days.length) rows.push(row([], days));
       }
+      // Rows are rebuilt on every call, so the cursor is sealed over the resolved ranges and today's date as well:
+      // past midnight a relative date moves and a range can gain a day, and a page would shift, so the cursor fails.
+      const sealed = { ...args, dateRanges: ranges, day: storeTime(now).slice(0, 10) };
       return listPage({
-        tool: 'ga4_run_report', args, now, project: row => row,
+        tool: 'ga4_run_report', args: sealed, now, project: row => row,
         fetch: async ({ count, skip }) => ({ ok: true, body: { items: rows.slice(skip, skip + count) } }),
         wrap: page => ({
           dimensionHeaders: [...(byDate ? ['date'] : []), 'dateRange'].map(name => ({ name })),
