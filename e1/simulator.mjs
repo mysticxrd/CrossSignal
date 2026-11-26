@@ -86,13 +86,13 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   const hash = worldHash(world);
   requireThat(hash === world.hash, 'simulator: the world changed after it was built');
   requireThat(!openJournals.has(resolve(journal)), `simulator: ${journal} is already open`);
-  const { version, seed, injection, messages } = structuredClone({ version: world.version, seed: world.seed,
-    injection: world.injection, messages: world.messages });
+  const { version, seed, days, injection, messages } = structuredClone({ version: world.version, seed: world.seed,
+    days: world.days, injection: world.injection, messages: world.messages });
   const orders = structuredClone(world.orders);
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
   const razorpayOrders = new Map(orders.map(order => [order.payment.order_id, order]));
   const store = openStore({ version, seed, orders, injection });
-  const analytics = openAnalytics({ version, days: structuredClone(world.days), orders: structuredClone(world.orders) });
+  const analytics = openAnalytics({ version, days, orders: structuredClone(world.orders) });
   const header = { type: 'header', world_version: version.id, seed, world_hash: hash };
 
   closeSync(openSync(journal, 'a'));
@@ -196,7 +196,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     // The cut tail this open found, or null; the executor copies it into the run log when it resumes.
     torn,
     // The world-state hash the run log records before and after each call (section 3 item 12).
-    stateHash: () => worldHash({ version, seed, injection, orders, messages }),
+    stateHash: () => worldHash({ version, seed, days, injection, orders, messages }),
     close: () => { closeSync(out); openJournals.delete(resolve(journal)); },
   };
 }

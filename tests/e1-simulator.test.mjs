@@ -109,6 +109,9 @@ test('a journal written for another world, or one the world refuses, is refused'
   const changed = authorizedWorld().world;
   changed.orders[1].total_paise += 1;
   assert.throws(() => openSimulator({ world: changed, journal: fresh(), clock: () => AT }), /changed after it was built/);
+  const busier = authorizedWorld().world;
+  busier.days[0].funnel.sessions += 1;
+  assert.throws(() => openSimulator({ world: busier, journal: fresh(), clock: () => AT }), /changed after it was built/, 'GA4 counts are covered');
 
   // The same capture twice: the second cannot have landed, so the journal is not this world's history.
   const op = { type: 'op', op: 'capture_payment', args: { ...capture, at: AT } };

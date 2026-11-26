@@ -241,16 +241,17 @@ export function buildWorld({ seed, version = WORLD_VERSION, rows } = {}) {
       notes: orderNotes(version, 'processing', payment.id, paid_at), payment };
   });
   const starts_at = days[0].start, ends_at = days.at(-1).start + DAY;
+  const dayRecords = days.map(({ ga4_day, date, start, revenue_paise, orders: n, funnel }) => ({ ga4_day, date, start, revenue_paise, orders: n, funnel }));
   const saleStart = Date.parse(`${version.sale.from}T00:00:00Z`) / 1000 - version.utc_offset_s;
   const saleEnd = Date.parse(`${version.sale.to}T00:00:00Z`) / 1000 - version.utc_offset_s + DAY;
   return {
     version, seed: String(seed), starts_at, ends_at,
-    days: days.map(({ ga4_day, date, start, revenue_paise, orders: n, funnel }) => ({ ga4_day, date, start, revenue_paise, orders: n, funnel })),
+    days: dayRecords,
     orders, catalog: version.catalog,
     calendar: [{ kind: 'sale', name: version.sale.name, starts_at: saleStart, ends_at: saleEnd }],
     // A case's cause and decoy records (e1/case.mjs), and customer messages (ticket 05d); a baseline has neither.
     injection: null, messages: [],
-    hash: worldHash({ version, seed: String(seed), injection: null, orders, messages: [] }),
+    hash: worldHash({ version, seed: String(seed), days: dayRecords, injection: null, orders, messages: [] }),
   };
 }
 
@@ -259,8 +260,9 @@ export const orderNotes = (version, outcome, paymentId, at) =>
   version.order_notes[outcome].map(text => ({ created_at: at, note: text.replace('{payment_id}', paymentId) }));
 
 // Covers everything a case is built from and everything it holds (ADR 0001), so a changed injection is a new hash.
-export const worldHash = ({ version, seed, injection, orders, messages }) =>
-  sha256(canonicalJson({ version, seed, injection, orders, messages })).toString('hex');
+// `days` holds GA4's daily counts, which ga4_run_report serves; the rest of the world derives from these fields.
+export const worldHash = ({ version, seed, days, injection, orders, messages }) =>
+  sha256(canonicalJson({ version, seed, days, injection, orders, messages })).toString('hex');
 
 // Every hour that can become the frozen "now": the trigger's week-earlier window must lie inside GA4's days, and
 // 7 full GA4 days must follow (F7). The last one is 7 Dec 2026 00:00 IST.
