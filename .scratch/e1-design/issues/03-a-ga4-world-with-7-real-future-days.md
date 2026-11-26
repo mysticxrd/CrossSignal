@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Daily store revenue follows GA4's daily revenue.
-- [ ] The same world version and seed give the same world hash.
-- [ ] Every hour that can become "now" has at least 7 GA4 days after it.
-- [ ] Ids are sequential in time order (WooCommerce) and hash-derived (Razorpay).
-- [ ] `npm test` and `npm run lint` pass.
+- [x] Daily store revenue follows GA4's daily revenue.
+- [x] The same world version and seed give the same world hash.
+- [x] Every hour that can become "now" has at least 7 GA4 days after it.
+- [x] Ids are sequential in time order (WooCommerce) and hash-derived (Razorpay).
+- [x] `npm test` and `npm run lint` pass.
