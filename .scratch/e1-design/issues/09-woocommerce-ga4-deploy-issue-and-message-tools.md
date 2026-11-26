@@ -6,7 +6,7 @@
 
 **Status:** ready-for-agent
 
-- [ ] `X-WP-Total` is given; Razorpay totals are not.
+- [x] `X-WP-Total` is given; Razorpay totals are not. (part 1)
 - [ ] Messages page 20 at a time in time order.
 - [ ] The leak scanner passes on every response.
 - [ ] `npm test` and `npm run lint` pass.

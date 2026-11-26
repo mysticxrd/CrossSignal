@@ -4,7 +4,7 @@
 import { createHash } from 'node:crypto';
 import { requireThat } from '../../db/benchmark/contracts.mjs';
 import { canonicalJson } from '../canonical.mjs';
-import { WORLD_VERSION } from '../world.mjs';
+import { WORLD_VERSION, fromStoreTime } from '../world.mjs';
 import { scanForLeaks } from './leaks.mjs';
 
 export const PAGE_ROWS = 20;
@@ -21,8 +21,8 @@ export const resultBytes = envelope => Buffer.byteLength(JSON.stringify(envelope
 export const NOTES = Object.freeze({
   window_more: 'Window {from} to {to} IST; now is {now} IST. Records on this page: {rows}, oldest first. More: call again with the same arguments and this cursor.',
   window_last: 'Window {from} to {to} IST; now is {now} IST. Records on this page: {rows}, oldest first; no more.',
-  window_future: 'Window {from} to {to} IST starts after now ({now} IST), so nothing in it has happened yet. Call again with from at or before now.',
-  window_order: 'from ({from} IST) is after to ({to} IST). Call {tool} again with from at or before to.',
+  window_future: 'Window {from} to {to} IST starts after now ({now} IST), so nothing in it has happened yet. Call again with {start} at or before now.',
+  window_order: '{start} ({from} IST) is after {end} ({to} IST). Call {tool} again with {start} at or before {end}.',
   list_more: 'As of now ({now} IST). Records on this page: {rows}, oldest first. More: call again with the same arguments and this cursor.',
   list_last: 'As of now ({now} IST). Records on this page: {rows}, oldest first; no more.',
   one: 'As of now ({now} IST); empty fields are left out.',
@@ -33,6 +33,7 @@ export const NOTES = Object.freeze({
   arg_type: '{field} must be {expected}. Call {tool} again with {field} as {expected}.',
   arg_range: '{field} must be from {min} to {max}. Call {tool} again with {field} in that range.',
   arg_pattern: '{field} must match {pattern}. Call {tool} again with an id copied from a result.',
+  arg_date: '{field} must be a real date in store time (IST) as YYYY-MM-DDTHH:MM:SS, for example 2026-11-24T14:00:00. Call {tool} again with {field} in that form.',
   cursor_invalid: 'This cursor was not issued for these arguments. Call {tool} again with cursor null, or with the arguments that gave it.',
   unknown_tool: 'There is no such tool. Call one of the listed tools.',
 });
@@ -88,6 +89,7 @@ function problem(schema, value, field) {
   if ((schema.minimum !== undefined && value < schema.minimum) || (schema.maximum !== undefined && value > schema.maximum)) {
     return { key: 'arg_range', field, min: schema.minimum ?? 'any', max: schema.maximum ?? 'any' };
   }
+  if (schema.pattern === STORE_TIME.pattern && Number.isNaN(fromStoreTime(value))) return { key: 'arg_date', field };
   if (schema.pattern && !new RegExp(schema.pattern).test(value)) return { key: 'arg_pattern', field, pattern: schema.pattern };
   if (schema.type === 'object') {
     const keys = Object.keys(schema.properties);
@@ -105,7 +107,7 @@ function problem(schema, value, field) {
   return null;
 }
 const ARG_ERRORS = { arg_missing: 'The field is required', arg_extra: 'The request has an extra field', arg_type: 'The field has the wrong type',
-  arg_range: 'The field is out of range', arg_pattern: 'The field has the wrong format' };
+  arg_range: 'The field is out of range', arg_pattern: 'The field has the wrong format', arg_date: 'The field has the wrong format' };
 function argumentError(tool, args) {
   const found = problem(tool.schema, args, '');
   if (!found) return null;
@@ -125,31 +127,40 @@ const readCursor = (tool, args) => {
   return match && match[1] === seal(tool, args, Number(match[2])) ? Number(match[2]) : null;
 };
 export const CURSOR = { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'null for the first page; then the cursor of the previous result.' };
+// WooCommerce's after/before: ISO 8601 in the site's time; the pattern is checked, then the date itself.
+export const STORE_TIME = Object.freeze({ type: 'string', pattern: '^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$' });
 export const WINDOW = {
   from: { type: 'integer', minimum: 946684800, maximum: 4765046400, description: 'Window start, unix seconds, inclusive.' },
   to: { type: 'integer', minimum: 946684800, maximum: 4765046400, description: 'Window end, unix seconds, inclusive.' },
 };
 
-// One page of a list tool. `fetch({ count, skip })` answers a backend collection; rows are projected, then the
-// page is cut at a row boundary until the envelope fits the cap, and the cursor resumes at the first row cut.
-// With `args.from`/`args.to` the note echoes the window in IST (ticket 02 saw a model send a window a year early).
+// One page of a list tool. `fetch({ count, skip })` answers a backend list in `body.items`; rows are projected,
+// then the page is cut at a row boundary until the envelope fits the cap, and the cursor resumes at the first row
+// cut. A window (`args.from`/`args.to`, or `window`: { from, to } in unix seconds with the argument names `start`
+// and `end`) is echoed in IST in the note (ticket 02 saw a model send a window a year early).
 // `notFound` ({ field, thing, id, source }) turns a backend refusal into a not-found envelope naming the tool's field.
-export async function listPage({ tool, args, now, fetch, project, header = {}, notFound }) {
+// `wrap(rows)` gives the result's shape, Razorpay's collection by default; `total` names a total header the backend
+// answers (WooCommerce's X-WP-Total), which the envelope carries in `headers`.
+export async function listPage({ tool, args, now, fetch, project, header = {}, notFound, window, wrap, total }) {
   const skip = readCursor(tool, args);
   if (skip === null) return fail(badRequest('The cursor is not valid for this request', 'cursor'), note('cursor_invalid', { tool }));
-  const windowed = 'from' in args;
-  const span = windowed ? { from: ist(args.from), to: ist(args.to), now: ist(now) } : { now: ist(now) };
-  if (windowed && args.from > args.to) return fail(badRequest('from must be at or before to', 'from'), note('window_order', { tool, from: span.from, to: span.to }));
-  if (windowed && args.from > now) return ok({ ...header, entity: 'collection', count: 0, items: [] }, note('window_future', span), { cursor: null });
+  const win = window ?? ('from' in args ? { from: args.from, to: args.to, start: 'from', end: 'to' } : null);
+  const span = win ? { from: ist(win.from), to: ist(win.to), now: ist(now) } : { now: ist(now) };
+  const shape = wrap ?? (rows => ({ ...header, entity: 'collection', count: rows.length, items: rows }));
+  const headers = n => (total ? { headers: { [total]: n } } : {});
+  if (win && win.from > win.to) {
+    return fail(badRequest(`${win.start} must be at or before ${win.end}`, win.start), note('window_order', { tool, from: span.from, to: span.to, start: win.start, end: win.end }));
+  }
+  if (win && win.from > now) return ok(shape([]), note('window_future', { ...span, start: win.start }), { ...headers(0), cursor: null });
   const reply = await fetch({ count: PAGE_ROWS + 1, skip });
   if (!reply.ok && notFound) return notFoundError(reply.error, { ...notFound, now });
-  requireThat(reply.ok, `${tool}: the backend refused a validated query: ${reply.error?.description}`);
+  requireThat(reply.ok, `${tool}: the backend refused a validated query: ${reply.error?.description ?? reply.error?.message}`);
   const rows = reply.body.items.slice(0, PAGE_ROWS).map(project);
   for (let n = rows.length; ; n -= 1) {
     const more = n < rows.length || reply.body.items.length > PAGE_ROWS;
-    const result = { ...header, entity: 'collection', count: n, items: rows.slice(0, n) };
-    const kind = `${windowed ? 'window' : 'list'}_${more ? 'more' : 'last'}`;
-    const envelope = ok(result, note(kind, { ...span, rows: n }), { cursor: more ? `${seal(tool, args, skip + n)}.${skip + n}` : null });
+    const kind = `${win ? 'window' : 'list'}_${more ? 'more' : 'last'}`;
+    const envelope = ok(shape(rows.slice(0, n)), note(kind, { ...span, rows: n }),
+      { ...headers(total && reply.headers[total]), cursor: more ? `${seal(tool, args, skip + n)}.${skip + n}` : null });
     if (resultBytes(envelope) <= RESULT_BYTE_CAP) return envelope;
     // A cursor past an empty page would point at the same row forever, so a row that cannot fit alone is a harness error.
     requireThat(n > 1, `${tool}: the row at skip ${skip} is over the cap on its own`);

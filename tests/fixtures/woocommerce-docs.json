@@ -1,0 +1,97 @@
+{
+  "checked": "2026-11-27",
+  "about": "Field names and JSON types from the WooCommerce REST API v3 docs (their markdown source in woocommerce/woocommerce-rest-api-docs, trunk), with the docs' own example values where they give one, and the order-note texts from the code that writes them. A tool may leave a field out but may not add one or change its type. 'date-time' is the docs' type: a string YYYY-MM-DDTHH:MM:SS with no offset, in the site's timezone, or GMT for fields ending _gmt.",
+  "list_orders": {
+    "sources": [
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#list-all-orders",
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#pagination",
+      "https://github.com/woocommerce/woocommerce-rest-api-docs/blob/trunk/source/includes/wp-api-v3/_orders.md",
+      "https://github.com/woocommerce/woocommerce-rest-api-docs/blob/trunk/source/includes/wp-api-v3/_introduction.md"
+    ],
+    "body": "array",
+    "headers": { "X-WP-Total": "integer", "X-WP-TotalPages": "integer" },
+    "parameters": {
+      "page": "integer", "per_page": "integer", "after": "string", "before": "string", "status": "array", "order": "string", "orderby": "string"
+    },
+    "values": { "status": ["any", "pending", "processing", "on-hold", "completed", "cancelled", "refunded", "failed", "trash"] },
+    "notes": "The body is a bare array of orders. 'The total number of resources and pages are always included in the X-WP-Total and X-WP-TotalPages HTTP headers.' after and before 'Limit response to resources published after/before a given ISO8601 compliant date'; the docs do not say whether either end is inclusive, and this project treats both as inclusive, as its Razorpay windows are. per_page defaults to 10. order defaults to desc; this project fixes oldest first (section 3 item 10)."
+  },
+  "order": {
+    "sources": [
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#order-properties",
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#retrieve-an-order"
+    ],
+    "fields": {
+      "id": "integer", "parent_id": "integer", "number": "string", "order_key": "string", "created_via": "string", "version": "string",
+      "status": "string", "currency": "string", "date_created": "date-time", "date_created_gmt": "date-time", "date_modified": "date-time",
+      "date_modified_gmt": "date-time", "discount_total": "string", "discount_tax": "string", "shipping_total": "string",
+      "shipping_tax": "string", "cart_tax": "string", "total": "string", "total_tax": "string", "prices_include_tax": "boolean",
+      "customer_id": "integer", "customer_ip_address": "string", "customer_user_agent": "string", "customer_note": "string",
+      "billing": "object", "shipping": "object", "payment_method": "string", "payment_method_title": "string", "transaction_id": "string",
+      "date_paid": "date-time|null", "date_paid_gmt": "date-time|null", "date_completed": "date-time|null", "date_completed_gmt": "date-time|null",
+      "cart_hash": "string", "meta_data": "array", "line_items": "array", "tax_lines": "array", "shipping_lines": "array",
+      "fee_lines": "array", "coupon_lines": "array", "refunds": "array"
+    },
+    "billing_fields": {
+      "first_name": "string", "last_name": "string", "company": "string", "address_1": "string", "address_2": "string", "city": "string",
+      "state": "string", "postcode": "string", "country": "string", "email": "string", "phone": "string"
+    },
+    "line_item_fields": {
+      "id": "integer", "name": "string", "product_id": "integer", "variation_id": "integer", "quantity": "integer", "tax_class": "string",
+      "subtotal": "string", "subtotal_tax": "string", "total": "string", "total_tax": "string", "taxes": "array", "meta_data": "array",
+      "sku": "string", "price": "string|number"
+    },
+    "examples": {
+      "id": 727, "number": "727", "created_via": "rest-api", "status": "processing", "date_created": "2017-03-22T16:28:02",
+      "date_created_gmt": "2017-03-22T19:28:02", "discount_total": "0.00", "total": "29.35", "customer_id": 0
+    },
+    "values": { "status": ["pending", "processing", "on-hold", "completed", "cancelled", "refunded", "failed", "trash"] },
+    "notes": "Monetary amounts 'will be returned as strings with two decimal places'. The line-item table types price as string, but the docs' own example gives a number (\"price\": 3); this project gives a number. date_paid is null on an unpaid order."
+  },
+  "order_note": {
+    "sources": [
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#order-note-properties",
+      "https://github.com/woocommerce/woocommerce-rest-api-docs/blob/trunk/source/includes/wp-api-v3/_order-notes.md"
+    ],
+    "fields": {
+      "id": "integer", "author": "string", "date_created": "date-time", "date_created_gmt": "date-time", "note": "string",
+      "customer_note": "boolean", "added_by_user": "boolean"
+    },
+    "examples": { "id": 281, "author": "system", "date_created": "2017-03-21T16:46:41", "date_created_gmt": "2017-03-21T19:46:41", "customer_note": false },
+    "texts": {
+      "sources": [
+        "https://github.com/razorpay/razorpay-woocommerce/blob/master/woo-razorpay.php",
+        "https://github.com/woocommerce/woocommerce/blob/trunk/plugins/woocommerce/includes/class-wc-order.php",
+        "https://github.com/woocommerce/woocommerce/blob/trunk/plugins/woocommerce/includes/wc-order-functions.php"
+      ],
+      "razorpay_order": "Razorpay OrderId: $razorpayOrderId",
+      "razorpay_success": "Razorpay payment successful <br/>Razorpay Id: $razorpayPaymentId",
+      "status_change": "Order status changed from %1$s to %2$s.",
+      "status_names": { "pending": "Pending payment", "processing": "Processing" },
+      "notes": "Plugin version 4.8.10 (header 'Plugin Name: 1 Razorpay', 'Version: 4.8.10', 'WC tested up to: 10.6.2'). Its gateway id is 'razorpay' and its default title 'UPI, Cards, NetBanking'. createRazorpayOrderId() writes the order note at checkout; on success updateOrder() calls payment_complete(), whose status change WooCommerce notes, then writes the success note."
+    }
+  },
+  "system_status": {
+    "sources": [
+      "https://woocommerce.github.io/woocommerce-rest-api-docs/#system-status-properties",
+      "https://github.com/woocommerce/woocommerce-rest-api-docs/blob/trunk/source/includes/wp-api-v3/_system-status.md"
+    ],
+    "fields": { "environment": "object", "database": "object", "active_plugins": "array", "theme": "object", "settings": "object", "security": "object", "pages": "array" },
+    "environment_fields": {
+      "home_url": "string", "site_url": "string", "version": "string", "log_directory": "string", "log_directory_writable": "boolean",
+      "wp_version": "string", "wp_multisite": "boolean", "wp_memory_limit": "integer", "wp_debug_mode": "boolean", "wp_cron": "boolean",
+      "language": "string", "server_info": "string", "php_version": "string", "default_timezone": "string"
+    },
+    "plugin_fields": {
+      "plugin": "string", "name": "string", "version": "string", "version_latest": "string", "url": "string", "author_name": "string",
+      "author_url": "string", "network_activated": "boolean"
+    },
+    "settings_fields": {
+      "api_enabled": "boolean", "force_ssl": "boolean", "currency": "string", "currency_symbol": "string", "currency_position": "string",
+      "thousand_separator": "string", "decimal_separator": "string", "number_of_decimals": "integer", "geolocation_enabled": "boolean",
+      "taxonomies": "array"
+    },
+    "examples": { "plugin": "woocommerce/woocommerce.php", "name": "WooCommerce", "author_name": "Automattic" },
+    "notes": "The environment's version is WooCommerce's. The active_plugins item fields come from the docs' example response; the properties table lists active_plugins as an array without item fields."
+  }
+}

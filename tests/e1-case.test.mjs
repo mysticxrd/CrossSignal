@@ -75,9 +75,13 @@ test('the #670 symptoms from the public report appear in the records the backend
   const sim = openSimulator({ world, journal: join(mkdtempSync(join(tmpdir(), 'e1-case-')), 'r_670.sim.jsonl'), clock: () => clock.now });
   const after = world.orders.filter(o => o.created_at >= START && o.created_at < now - HOUR);
   const failed = after.filter(o => o.status === 'failed'), paid = after.filter(o => o.status === 'processing');
-  // About half the orders since the cause started reach the store only by webhook, UPI most often.
-  assert.ok(failed.length / after.length > 0.4 && failed.length / after.length < 0.6, `${failed.length} of ${after.length}`);
-  const rate = method => after.filter(o => o.payment.method === method && o.status === 'failed').length / after.filter(o => o.payment.method === method).length;
+  // About half the orders since the cause started reach the store only by webhook, UPI most often. One seed's ~40
+  // orders are too few to hold that (the share runs 31-56% across the sweep), so the rates pool 20 seeds.
+  const pool = ['case-670', ...Array.from({ length: 19 }, (_, i) => `sweep-${i + 1}`)].flatMap(seed =>
+    (seed === spec.seed ? world : buildCase({ ...spec, seed, rows })).orders.filter(o => o.created_at >= START && o.created_at < now - HOUR));
+  const share = pool.filter(o => o.status === 'failed').length / pool.length;
+  assert.ok(share > 0.4 && share < 0.6, `${share.toFixed(3)} of ${pool.length} orders`);
+  const rate = method => pool.filter(o => o.payment.method === method && o.status === 'failed').length / pool.filter(o => o.payment.method === method).length;
   assert.ok(rate('upi') > rate('card'));
 
   // An order marked Failed, with the plugin's two notes, while Razorpay holds its payment authorized.
