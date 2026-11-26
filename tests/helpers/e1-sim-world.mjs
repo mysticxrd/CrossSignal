@@ -7,6 +7,6 @@ export function authorizedWorld(seed = 'sim-test', index = 0) {
   const payment = world.orders[index].payment;
   payment.status = 'authorized';
   delete payment.captured_at;
-  world.hash = worldHash(world.version, world.seed, world.orders);
+  world.hash = worldHash(world);
   return { world, payment };
 }
