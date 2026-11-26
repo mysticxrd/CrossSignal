@@ -1,7 +1,7 @@
 // Ticket 08: the four Razorpay tools by their MCP names, and the two dashboard-shaped ones that have no public API
 // (Razorpay's MCP README says so). The backend answers raw world records; these functions give them Razorpay's
 // documented field names and formats. tests/fixtures/razorpay-docs.json holds the doc fields they must match.
-import { CURSOR, WINDOW, defineTool, dropEmpty, fail, ist, listPage, note, ok, pick } from './core.mjs';
+import { CURSOR, WINDOW, defineTool, dropEmpty, ist, listPage, note, notFoundError, ok, pick } from './core.mjs';
 
 const ID = { payment: '^pay_[0-9A-Za-z]{14}$', order: '^order_[0-9A-Za-z]{14}$' };
 const object = properties => ({ type: 'object', properties, required: Object.keys(properties), additionalProperties: false });
@@ -48,7 +48,7 @@ export const RAZORPAY_TOOLS = Object.freeze([
     handler: async ({ payment_id }, { backend, now }) => {
       const reply = await backend.fetchPayment(payment_id);
       return reply.ok ? ok(dropEmpty(paymentEntity(reply.body)), note('one', { now: ist(now) }))
-        : fail(reply.error, note('not_found', { thing: 'payment', id: payment_id, now: ist(now), source: 'fetch_all_payments' }));
+        : notFoundError(reply.error, { field: 'payment_id', thing: 'payment', id: payment_id, now, source: 'fetch_all_payments' });
     },
   }),
   defineTool({
@@ -56,7 +56,7 @@ export const RAZORPAY_TOOLS = Object.freeze([
     schema: object({ order_id: { type: 'string', pattern: ID.order }, cursor: CURSOR }),
     handler: async (args, { backend, now }) => listPage({
       tool: 'fetch_order_payments', args, now, project: p => pick(paymentEntity(p), PAYMENT_ROW),
-      notFound: { thing: 'order', id: args.order_id, source: 'fetch_all_payments' },
+      notFound: { field: 'order_id', thing: 'order', id: args.order_id, source: 'fetch_all_payments' },
       // Razorpay pages nothing here; the cap still might, so the page is cut from the whole list.
       fetch: async ({ count, skip }) => {
         const reply = await backend.fetchOrderPayments(args.order_id);

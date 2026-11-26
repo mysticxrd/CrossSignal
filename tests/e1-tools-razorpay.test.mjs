@@ -30,7 +30,7 @@ function open(now = NOW) {
   const clock = { now };
   const sim = openSimulator({ world, journal: join(mkdtempSync(join(tmpdir(), 'e1-tools-')), 'r_t.sim.jsonl'), clock: () => clock.now });
   const call = async (name, args) => {
-    const envelope = await toolset.call(name, args, { backend: sim.backend, now: clock.now });
+    const envelope = await toolset.call(name, args, { backend: sim.backend });
     seen.push({ envelope, now: clock.now });
     return envelope;
   };
@@ -132,6 +132,9 @@ test('pagination returns every record once, in time order, even when "now" moves
   const hookPages = await walk(call, 'webhook_deliveries', { from, to: NOW });
   const events = hookPages.flatMap(p => p.result.items.map(row => row.event_id));
   assert.equal(new Set(events).size, events.length);
+  for (const row of hookPages.flatMap(p => p.result.items)) {
+    assert.match(row.entity_id, row.event === 'order.paid' ? /^order_/ : /^pay_/, 'order.paid carries the order, as on Razorpay');
+  }
   const inWindow = at => at !== undefined && at >= from && at <= NOW;
   const payments = world.orders.map(o => o.payment);
   assert.equal(events.length, payments.filter(p => inWindow(p.created_at)).length + payments.filter(p => inWindow(p.captured_at)).length,
@@ -148,10 +151,10 @@ test('reads answer as of now: later payments do not exist and later captures hav
   assert.equal(byId.result.amount_refunded, 0);
   const next = refunded[3].payment;
   const missing = await call('fetch_payment', { payment_id: next.id });
-  assert.equal(missing.error.description, 'The id provided does not exist');
+  assert.deepEqual(missing.error, { code: 'BAD_REQUEST_ERROR', description: 'The id provided does not exist', field: 'payment_id' });
   assert.match(missing.note, /No payment pay_\w+ exists as of now .*fetch_all_payments/);
   const order = await call('fetch_order_payments', { order_id: next.order_id, cursor: null });
-  assert.equal(order.error.code, 'BAD_REQUEST_ERROR');
+  assert.equal(order.error.field, 'order_id', 'the error names the argument of the tool');
   clock.now = p.captured_at;
   assert.equal((await call('fetch_payment', { payment_id: p.id })).result.status, 'captured');
   sim.close();
@@ -164,7 +167,7 @@ test('bad arguments return an error envelope whose note names the fix in the too
     ['fetch_all_payments', { from: NOW - DAY, cursor: null }, 'to', /to is missing. Call fetch_all_payments again/],
     ['fetch_all_payments', { from: String(NOW), to: NOW, cursor: null }, 'from', /from must be a whole number/],
     ['fetch_all_payments', { from: NOW * 1000, to: NOW, cursor: null }, 'from', /from must be from 946684800 to 4765046400/],
-    ['fetch_all_payments', { from: NOW, to: NOW - DAY, cursor: null }, 'from', /from \(2026-11-24 14:00 IST\) is after to/],
+    ['fetch_all_payments', { from: NOW, to: NOW - DAY, cursor: null }, 'from', /from \(2026-11-24 14:00:00 IST\) is after to/],
     ['fetch_all_payments', { from: NOW - DAY, to: NOW - 1, cursor: first.cursor }, 'cursor', /cursor null/],
     ['fetch_payment', { payment_id: 'pay_123' }, 'payment_id', /payment_id must match/],
     ['fetch_order_payments', { order_id: 'order_AAAAAAAAAAAAAA', cursor: 7 }, 'cursor', /a string or null/],
@@ -180,8 +183,8 @@ test('bad arguments return an error envelope whose note names the fix in the too
   }
   const future = await call('fetch_all_payments', { from: NOW + HOUR, to: NOW + DAY, cursor: null });
   assert.deepEqual(future.result, { entity: 'collection', count: 0, items: [] }, 'the real empty shape');
-  assert.match(future.note, /starts after now \(2026-11-24 14:00 IST\)/);
-  assert.match(first.note, /^Window 2026-11-23 14:00 to 2026-11-24 14:00 IST; now is 2026-11-24 14:00 IST/, 'the window is echoed in IST');
+  assert.match(future.note, /starts after now \(2026-11-24 14:00:00 IST\)/);
+  assert.match(first.note, /^Window 2026-11-23 14:00:00 to 2026-11-24 14:00:00 IST; now is 2026-11-24 14:00:00 IST/, 'the window is echoed in IST');
   sim.close();
 });
 

@@ -26,11 +26,13 @@ const refusal = (description, field) =>
 // Each write: `check` returns a refusal or null and changes nothing; `apply` changes the state and returns the
 // record. Replay runs the same pair over the journal, so a restart cannot apply a write differently.
 const WRITES = {
-  // Razorpay capture: the amount must equal the authorized amount, and a second capture is refused.
+  // Razorpay capture, judged as of the write's clock `at`, as reads are: the amount must equal the authorized
+  // amount, and a second capture is refused.
   capture_payment: {
-    check: (payments, { payment_id, amount_paise }) => {
-      const payment = payments.get(payment_id);
-      if (!payment) return refusal('The id provided does not exist', 'payment_id');
+    check: (payments, { payment_id, amount_paise, at }) => {
+      const stored = payments.get(payment_id);
+      if (!(stored?.created_at <= at)) return refusal('The id provided does not exist', 'payment_id');
+      const payment = asOf(stored, at);
       if (payment.status === 'captured') return refusal('This payment is already either captured or voided');
       if (payment.status !== 'authorized') return refusal('Only an authorized payment can be captured');
       if (amount_paise !== payment.amount_paise) return refusal('Capture amount must be equal to the amount authorized', 'amount');
@@ -123,10 +125,10 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
 
   function write(op, args) {
     requireThat(!broken, 'simulator: a journal write failed; reopen the simulator to recover');
-    const refused = WRITES[op].check(payments, args);
-    if (refused) return refused;
     const landed = { ...args, at: clock() };
     requireThat(Number.isInteger(landed.at), 'simulator: the case clock must give whole seconds');
+    const refused = WRITES[op].check(payments, landed);
+    if (refused) return refused;
     append({ type: 'op', op, args: landed });
     // Memory follows the journal at once, so nothing after this line can leave the two apart.
     const body = structuredClone(WRITES[op].apply(payments, landed));
@@ -134,34 +136,40 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     return { ok: true, http: 200, body };
   }
 
-  const visiblePayments = now => [...payments.values()].filter(p => p.created_at <= now).map(p => asOf(p, now));
+  // Payments that exist as of now and were created by `last`; the window cuts first, so a page copies a day, not
+  // the whole world. A refund or a delivery follows its payment, so only the window's end can cut those.
+  const visiblePayments = (now, last = now) => [...payments.values()]
+    .filter(p => p.created_at <= Math.min(now, last ?? now)).map(p => asOf(p, now));
   // The webhook log: one delivery per subscribed event, answered 200 on the first attempt in the baseline world.
-  const deliveries = now => orders.filter(order => order.payment.created_at <= now).flatMap(order => {
+  // payment.authorized carries the payment, order.paid the Razorpay order.
+  const deliveries = (now, last) => orders.filter(order => order.payment.created_at <= Math.min(now, last ?? now)).flatMap(order => {
     const payment = asOf(order.payment, now);
-    const events = [['payment.authorized', payment.created_at], ['order.paid', payment.captured_at]];
-    return events.filter(([event, at]) => at !== undefined && version.webhook.events.includes(event)).map(([event, at]) => ({
-      id: razorpayId(version.id, seed, `${order.index}|${event}`, 'evt'), event, entity_id: payment.id, created_at: at,
+    const events = [['payment.authorized', payment.created_at, payment.id], ['order.paid', payment.captured_at, payment.order_id]];
+    return events.filter(([event, at]) => at !== undefined && version.webhook.events.includes(event)).map(([event, at, entity_id]) => ({
+      id: razorpayId(version.id, seed, `${order.index}|${event}`, 'evt'), event, entity_id, created_at: at,
       attempts: [{ at, response_code: 200 }],
     }));
   });
   const ok = body => ({ ok: true, http: 200, body: structuredClone(body) });
 
   const backend = asBackend({
+    now: () => clock(),
     fetchPayment: id => {
       const now = clock();
       return payments.get(id)?.created_at <= now ? ok(asOf(payments.get(id), now)) : refusal('The id provided does not exist', 'id');
     },
-    fetchAllPayments: query => collection(visiblePayments(clock()), query),
+    fetchAllPayments: query => collection(visiblePayments(clock(), query?.to), query),
     // Razorpay's GET /orders/:id/payments takes no paging; an order placed before its payment answers an empty list.
     fetchOrderPayments: id => {
       const now = clock();
-      if (!(razorpayOrders.get(id)?.created_at <= now)) return refusal('The id provided does not exist', 'id');
-      return collection(visiblePayments(now).filter(p => p.order_id === id), { count: 100 });
+      const order = razorpayOrders.get(id);
+      if (!(order?.created_at <= now)) return refusal('The id provided does not exist', 'id');
+      return collection(order.payment.created_at <= now ? [asOf(order.payment, now)] : [], { count: 100 });
     },
-    fetchAllRefunds: query => collection(visiblePayments(clock())
+    fetchAllRefunds: query => collection(visiblePayments(clock(), query?.to)
       .flatMap(p => (p.refunds ?? []).map(refund => ({ ...refund, payment_id: p.id }))), query),
     fetchWebhook: () => ok(version.webhook),
-    fetchWebhookDeliveries: query => collection(deliveries(clock()), query),
+    fetchWebhookDeliveries: query => collection(deliveries(clock(), query?.to), query),
     fetchCaptureSettings: () => ok(version.capture),
     capturePayment: ({ payment_id, amount_paise } = {}) => write('capture_payment', { payment_id, amount_paise }),
   });
