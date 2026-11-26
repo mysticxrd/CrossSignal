@@ -24,7 +24,7 @@ function proposedRun(path) {
   const op = log.append('op_intent', { key: 'k1' });
   log.append('op_outcome', { intent: op.seq, result: 'landed' });
   log.append('verification', { landed: 'verified' });
-  log.append('stamp', { landed: 'verified', fixed: 'resolved', realised: 149900 });
+  log.append('stamp', { status: 'proposed', landed: 'verified', fixed: 'resolved', realised: 149900 });
   log.close('proposed');
   return path;
 }
@@ -109,7 +109,7 @@ test('an executor crash resumes in the same file and reconciles the op it lost',
   resumed.append('op_outcome', { intent: 4, result: 'reconciled' });
   const k2 = resumed.append('op_intent', { key: 'k2' });
   resumed.append('op_outcome', { intent: k2.seq, result: 'landed' });
-  resumed.append('stamp', { landed: 'verified', fixed: 'uncertain', realised: 0 });
+  resumed.append('stamp', { status: 'proposed', landed: 'verified', fixed: 'uncertain', realised: 0 });
   resumed.close('proposed');
   assert.deepEqual(cardinality(events(path)), []);
 });
@@ -130,7 +130,7 @@ test('cardinality names each broken rule', () => {
   const path = fresh();
   const log = createRunLog(path, HEADER);
   log.append('proposal_retry'); log.append('proposal_retry');
-  log.append('stamp', { landed: 'not_run(malformed_proposal)', fixed: 'not_run(malformed_proposal)', realised: 'not_run(malformed_proposal)' });
+  log.append('stamp', { status: 'malformed_proposal', landed: 'not_run(malformed_proposal)', fixed: 'not_run(malformed_proposal)', realised: 'not_run(malformed_proposal)' });
   log.close('malformed_proposal');
   assert.deepEqual(cardinality(events(path)), []);
   const failed = events(path).map(e => (e.type === 'closed' ? { ...e, status: 'no_action' } : e));
@@ -168,29 +168,50 @@ test('local review fixes: header failure, failed write, a closer dying after the
 });
 
 test('Codex review fixes: stamp already on disk, verification_mismatch, sparse arrays, ledger_unavailable', () => {
-  // The writer dies between `stamp` and `closed`: the closer keeps that stamp and writes no second one.
+  // The writer dies between `stamp` and `closed`: the closer finishes the pair under the stamp's status, with no
+  // second stamp, so the run stays a run_timeout instead of becoming crashed.
   const path = fresh();
   const log = createRunLog(path, HEADER);
-  log.append('stamp', { landed: 'not_run(run_timeout)', fixed: 'not_run(run_timeout)', realised: 'not_run(run_timeout)' });
+  log.append('stamp', { status: 'run_timeout', landed: 'not_run(run_timeout)', fixed: 'not_run(run_timeout)', realised: 'not_run(run_timeout)' });
   writeFileSync(`${path}.lock`, JSON.stringify({ pid: DEAD_PID, host: hostname() }));
   closeCrashed(path);
   assert.equal(events(path).filter(e => e.type === 'stamp').length, 1);
+  assert.equal(events(path).at(-1).status, 'run_timeout');
   assert.deepEqual(cardinality(events(path)), []);
+  // A stamp that contradicts its `closed` is caught.
+  const relabelled = events(path).map(e => (e.type === 'closed' ? { ...e, status: 'crashed' } : e));
+  assert.ok(cardinality(relabelled).includes('stamp names the status closed carries'));
+  assert.ok(cardinality(relabelled).includes('crashed: stamp landed is not_run(crashed)'));
 
-  // A mismatch after execution keeps the proposed run's events, with landed = mismatch.
+  // A mismatch after execution keeps the proposed run's events, with landed = mismatch and nothing watched.
   const run = events(proposedRun(fresh()));
-  const mismatch = run.map(e => (e.type === 'stamp' ? { ...e, landed: 'mismatch' } : e.type === 'closed' ? { ...e, status: 'verification_mismatch' } : e));
+  const nr = 'not_run(verification_mismatch)';
+  const mismatch = run.map(e => (e.type === 'stamp' ? { ...e, status: 'verification_mismatch', landed: 'mismatch', fixed: nr, realised: nr }
+    : e.type === 'closed' ? { ...e, status: 'verification_mismatch' } : e));
   assert.deepEqual(cardinality(mismatch), []);
-  assert.deepEqual(cardinality(mismatch.filter(e => e.type !== 'verification').map((e, i) => ({ ...e, seq: i }))), ['verification_mismatch: one verification']);
-  assert.ok(cardinality(run.map(e => (e.type === 'stamp' ? { ...e, landed: 'mismatch' } : e))).includes('proposed: stamp landed is not mismatch'));
+  const renumber = list => list.map((e, i) => ({ ...e, seq: i }));
+  assert.ok(cardinality(renumber(mismatch.filter(e => e.type !== 'verification'))).includes('verification_mismatch: one verification, after the decision and operations'));
+  assert.ok(cardinality(mismatch.map(e => (e.type === 'stamp' ? { ...e, realised: 50000 } : e))).includes(`verification_mismatch: stamp realised is ${nr}`));
+  assert.ok(cardinality(run.map(e => (e.type === 'stamp' ? { ...e, landed: 'mismatch' } : e))).includes('proposed: stamp landed is verified or not_run'));
+  assert.ok(cardinality(run.map(e => (e.type === 'stamp' ? { ...e, realised: undefined } : e))).includes('proposed: stamp realised is a figure or not_run'));
 
-  // A sparse array never reaches the disk, where `[,]` would break the chain for good.
+  // A sparse array, or one with extra keys, never reaches the disk, where `[,]` would break the chain for good.
   const sparse = createRunLog(fresh(), HEADER);
   assert.throws(() => sparse.append('notice', { result: Array(2) }), /plain JSON values/);
+  const holed = [1];
+  holed.length = 2;
+  holed.x = 0;
+  assert.throws(() => sparse.append('notice', { result: holed }), /plain JSON values/);
   assert.doesNotThrow(() => sparse.append('notice', { result: [null, 1] }));
 
   // A busy ledger voids the run, unsent (F6).
-  sparse.append('stamp', { landed: 'not_run(ledger_unavailable)', fixed: 'not_run(ledger_unavailable)', realised: 'not_run(ledger_unavailable)' });
+  const lu = 'not_run(ledger_unavailable)';
+  sparse.append('stamp', { status: 'ledger_unavailable', landed: lu, fixed: lu, realised: lu });
   sparse.close('ledger_unavailable');
   assert.deepEqual(cardinality(events(sparse.path)), []);
+
+  // A harness error can stop after a proposal, like a crash.
+  const broken = run.map(e => (e.type === 'stamp' ? { ...e, status: 'harness_error', landed: 'not_run(harness_error)', fixed: 'not_run(harness_error)', realised: 'not_run(harness_error)' }
+    : e.type === 'closed' ? { ...e, status: 'harness_error' } : e));
+  assert.deepEqual(cardinality(broken), []);
 });
