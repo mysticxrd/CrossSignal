@@ -6,6 +6,9 @@
 import { createHash } from 'node:crypto';
 import { loadDaily } from '../db/benchmark/ga4-daily.mjs';
 import { requireThat } from '../db/benchmark/contracts.mjs';
+import { canonicalJson } from './canonical.mjs';
+
+export { canonicalJson };
 
 const DAY = 86400;
 const freeze = value => {
@@ -39,14 +42,6 @@ export const WORLD_VERSION = freeze({
   ].map(([sku, name, price_paise]) => ({ sku, name, price_paise })),
 });
 
-// Sorted keys at every depth, so the same value always gives the same bytes.
-export function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${canonicalJson(value[k])}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
 const sha256 = text => createHash('sha256').update(text).digest();
 
 // sfc32, seeded from SHA-256 of (world version, seed).
