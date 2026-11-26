@@ -20,14 +20,18 @@ export const EVENT_TYPES = new Set([
   'proposal', 'priced_proposal', 'notice', 'decision', 'op_intent', 'op_outcome', 'guard_catch', 'stop', 'resume',
   'verification', 'watch_window', 'stamp', 'closed',
 ]);
-export const VOID_STATUSES = new Set(['provider_unavailable', 'spend_ceiling_reached', 'model_version_changed', 'reservation_bound_broken']);
+export const VOID_STATUSES = new Set([
+  'provider_unavailable', 'spend_ceiling_reached', 'model_version_changed', 'reservation_bound_broken', 'ledger_unavailable',
+]);
 const FAIL_STATUSES = ['malformed_proposal', 'no_action', 'run_timeout', 'context_overflow', 'harness_error', 'verification_mismatch'];
 export const STATUSES = new Set(['proposed', ...FAIL_STATUSES, ...VOID_STATUSES, 'crashed']);
 const TIERS = ['landed', 'fixed', 'realised'];
 
 const plain = value => value === null || typeof value === 'string' || typeof value === 'boolean'
   || (Number.isFinite(value) && !Object.is(value, -0))
-  || (Array.isArray(value) ? value.every(plain)
+  // Keys exactly '0'..'n-1': `every` skips holes (canonicalJson would write `[,]`) and extra keys would be dropped.
+  || (Array.isArray(value) ? Object.keys(value).every((key, i) => key === String(i)) && Object.keys(value).length === value.length
+    && value.every(plain)
     : typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype && Object.values(value).every(plain));
 const lockPath = path => `${path}.lock`;
 const alive = pid => { try { process.kill(pid, 0); return true; } catch (error) { return error.code === 'EPERM'; } };
@@ -168,12 +172,16 @@ const danglingIntents = events => {
 };
 
 // Closes a log whose writer died (section 7 decision 2): cuts a torn line, then a stamp with every tier not run
-// and `closed` naming the dangling intents and the torn bytes. The restart opens a new run with `restart_of`.
+// and `closed` naming the dangling intents and the torn bytes. The stamp names the status its `closed` carries, so
+// when a stamp is already on disk (the writer, or an earlier closer, died between the two lines) the closer only
+// finishes the pair under that stamp's status, and never writes a second stamp. The restart opens a new run with
+// `restart_of`.
 export function closeCrashed(path, { status = 'crashed', takeStale = true } = {}) {
   if (status !== 'crashed' && !VOID_STATUSES.has(status)) throw new Error(`a crash closer writes crashed or a void status, not ${status}`);
   const { log, events, torn } = reopenRunLog(path, { takeStale });
-  log.append('stamp', Object.fromEntries(TIERS.map(tier => [tier, `not_run(${status})`])));
-  return log.close(status, { dangling: danglingIntents(events), torn });
+  const kept = events.at(-1)?.type === 'stamp' ? events.at(-1) : null;
+  if (!kept) log.append('stamp', { status, ...Object.fromEntries(TIERS.map(tier => [tier, `not_run(${status})`])) });
+  return log.close(kept ? kept.status : status, { dangling: danglingIntents(events), torn });
 }
 
 const count = (events, type) => events.filter(e => e.type === type).length;
@@ -206,10 +214,28 @@ export function cardinality(events) {
   rule(dangling.length === 0 || status === 'crashed' || VOID_STATUSES.has(status), `dangling intents (${dangling.join(', ')}) only under crashed or void`);
 
   const stamp = events.find(e => e.type === 'stamp');
-  if (status === 'proposed') {
-    rule(count(events, 'proposal') === 1 && count(events, 'proposal_retry') <= 1, 'proposed: one proposal, at most two attempts');
-    rule(count(events, 'priced_proposal') === 1 && count(events, 'decision') === 1, 'proposed: one priced proposal and one decision');
-    rule(count(events, 'verification') <= 1, 'proposed: at most one verification');
+  rule(stamp?.status === status, 'stamp names the status closed carries');
+  const notRun = value => typeof value === 'string' && /^not_run\(.+\)$/.test(value);
+  const allNotRun = () => {
+    for (const tier of TIERS) rule(stamp?.[tier] === `not_run(${status})`, `${status}: stamp ${tier} is not_run(${status})`);
+  };
+  // verification_mismatch ends after execution (section 6 decision 1): it keeps a proposed run's events, with one
+  // verification after the operations, landed = mismatch, and no watch or realised rupees on an unlanded fix.
+  if (status === 'proposed' || status === 'verification_mismatch') {
+    rule(count(events, 'proposal') === 1 && count(events, 'proposal_retry') <= 1, `${status}: one proposal, at most two attempts`);
+    rule(count(events, 'priced_proposal') === 1 && count(events, 'decision') === 1, `${status}: one priced proposal and one decision`);
+    if (status === 'proposed') {
+      rule(count(events, 'verification') <= 1, 'proposed: at most one verification');
+      rule(stamp?.landed === 'verified' || notRun(stamp?.landed), 'proposed: stamp landed is verified or not_run');
+      rule(['resolved', 'uncertain', 'reopened'].includes(stamp?.fixed) || notRun(stamp?.fixed), 'proposed: stamp fixed is resolved, uncertain, reopened or not_run');
+      rule(Number.isInteger(stamp?.realised) || notRun(stamp?.realised), 'proposed: stamp realised is a figure or not_run');
+    } else {
+      const verification = events.find(e => e.type === 'verification');
+      const after = events.filter(e => e.type === 'decision' || e.type === 'op_outcome').at(-1);
+      rule(count(events, 'verification') === 1 && verification.seq > (after?.seq ?? Infinity), 'verification_mismatch: one verification, after the decision and operations');
+      rule(stamp?.landed === 'mismatch', 'verification_mismatch: stamp landed is mismatch');
+      for (const tier of ['fixed', 'realised']) rule(stamp?.[tier] === `not_run(${status})`, `${status}: stamp ${tier} is not_run(${status})`);
+    }
     // Op keys are unique within each execution attempt; a `resume` starts the next attempt, where `reconciled`
     // outcomes may name the same keys again.
     let keys = new Set();
@@ -221,12 +247,12 @@ export function cardinality(events) {
     }
   } else {
     if (status === 'malformed_proposal') rule(count(events, 'proposal_retry') === 2, 'malformed_proposal: two proposal attempts');
-    // A crashed or void run stopped wherever its writer died, possibly after a proposal: only its stamp is checked.
-    const stopped = status === 'crashed' || VOID_STATUSES.has(status);
-    for (const type of stopped ? [] : ['proposal', 'priced_proposal', 'decision', 'op_intent', 'op_outcome', 'verification']) {
+    // Crashed, void and harness_error can stop anywhere, even after a proposal; the other fails end before one.
+    const anywhere = status === 'crashed' || status === 'harness_error' || VOID_STATUSES.has(status);
+    for (const type of anywhere ? [] : ['proposal', 'priced_proposal', 'decision', 'op_intent', 'op_outcome', 'verification']) {
       rule(count(events, type) === 0, `${status}: no ${type}`);
     }
-    for (const tier of TIERS) rule(stamp?.[tier] === `not_run(${status})`, `${status}: stamp ${tier} is not_run(${status})`);
+    allNotRun();
   }
   return broken;
 }
