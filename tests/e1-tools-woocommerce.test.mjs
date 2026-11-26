@@ -8,7 +8,8 @@ import { RESULT_BYTE_CAP, checkStrict, createToolset, resultBytes } from '../e1/
 import { scanForLeaks } from '../e1/tools/leaks.mjs';
 import { RAZORPAY_TOOLS } from '../e1/tools/razorpay.mjs';
 import { WOOCOMMERCE_TOOLS } from '../e1/tools/woocommerce.mjs';
-import { WORLD_VERSION, buildWorld, customerFor, fromStoreTime, storeTime, worldHash } from '../e1/world.mjs';
+import { buildCase } from '../e1/case.mjs';
+import { WORLD_VERSION, buildWorld, customerFor, fromStoreTime, orderNotes, storeTime, worldHash } from '../e1/world.mjs';
 
 const docs = JSON.parse(readFileSync(new URL('./fixtures/woocommerce-docs.json', import.meta.url), 'utf8'));
 const toolset = createToolset([...RAZORPAY_TOOLS, ...WOOCOMMERCE_TOOLS]);
@@ -22,7 +23,7 @@ const seen = []; // every envelope any test is shown, for the leak check at the 
 const world = buildWorld({ seed: 'wc-tools-test', version: { ...WORLD_VERSION, store: { ...WORLD_VERSION.store,
   plugins: WORLD_VERSION.store.plugins.map(p => (p.plugin.startsWith('woo-razorpay') ? { ...p, updates: [{ at: NOW + HOUR, version: '4.8.8' }] } : p)) } } });
 const lastBefore = world.orders.findLast(o => o.created_at < NOW - 60);
-Object.assign(lastBefore, { created_at: NOW - 60, paid_at: NOW + 60 });
+Object.assign(lastBefore, { created_at: NOW - 60, paid_at: NOW + 60, notes: orderNotes(world.version, 'processing', lastBefore.payment.id, NOW + 60) });
 Object.assign(lastBefore.payment, { created_at: NOW + 50, captured_at: NOW + 60 });
 world.hash = worldHash(world);
 
@@ -190,6 +191,33 @@ test('an order holding all 20 catalog items, every note included, fits the cap',
   assert.equal(envelope.result.order.line_items.length, 20);
   assert.equal(envelope.result.notes.length, 3);
   assert.ok(resultBytes(envelope) <= RESULT_BYTE_CAP, `${resultBytes(envelope)} bytes`);
+  sim.close();
+});
+
+test("a case's cause shows in WooCommerce as of now: #670 marks orders failed, with its notes, on plugin 4.8.8", async () => {
+  const start = Date.parse('2026-11-18T10:00:00+05:30') / 1000;
+  const kase = buildCase({ seed: 'case-670', cause: { kind: 'plugin_670', starts_at: start } });
+  const failed = kase.orders.find(o => o.status === 'failed');
+  const { sim, clock, call } = open(failed.failed_at - 1, kase);
+  const read = async () => (await call('wc_get_order', { order_id: failed.woo_id })).result;
+  const before = await read();
+  assert.equal(before.order.status, 'pending', 'the cron job has not run yet');
+  assert.deepEqual(before.notes.map(n => n.note), [`Razorpay OrderId: ${failed.payment.order_id}`]);
+  clock.now = failed.failed_at;
+  const after = await read();
+  assert.equal(after.order.status, 'failed');
+  assert.equal(fromStoreTime(after.order.date_modified), failed.failed_at);
+  assert.equal('date_paid' in after.order, false);
+  assert.deepEqual(after.notes.map(n => n.note), [`Razorpay OrderId: ${failed.payment.order_id}`, ...failed.notes.map(n => n.note)]);
+  assert.ok(after.notes.every((n, i) => i === 0 || n.id > after.notes[i - 1].id));
+  const row = (await walk(call, { after: at(failed.created_at), before: at(failed.created_at) })).flatMap(p => p.result)
+    .find(r => r.id === failed.woo_id);
+  assert.equal(row.status, 'failed');
+  const razorpay = async () => (await call('wc_system_status', {})).result.active_plugins.find(p => p.plugin.startsWith('woo-razorpay')).version;
+  clock.now = start - 1;
+  assert.equal(await razorpay(), '4.8.6', 'before the cause starts');
+  clock.now = start;
+  assert.equal(await razorpay(), '4.8.8', 'the cause installs 4.8.8 when it starts');
   sim.close();
 });
 
