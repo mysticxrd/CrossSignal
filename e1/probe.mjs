@@ -2,7 +2,7 @@ import { check, reserveMicros } from './price-card.mjs';
 import { checkCatalog, sendE1 } from './provider.mjs';
 import { e1Request } from './request.mjs';
 
-// Ticket 02: six small sends that show what section 9 decision 2 asks of DeepSeek V4.1 Flash on Nebius. Everything
+// Ticket 02: seven small sends that show what section 9 decision 2 asks of DeepSeek V4.1 Flash on Nebius. Everything
 // sent is a made-up store and our own schemas (decision 13). This is a probe toolset, not E1's (ticket 10 hashes that).
 export const probeCapMicros = 50000;
 export const probeOutputCap = 2048;
@@ -116,20 +116,19 @@ export function probeSnapshot(card) {
 }
 
 // The ledger, behind a cap of the probe's own: an attempt counts its reservation until settled, as the ledger does.
-// The cap covers every e1-probe-* run together, since the owner cleared $0.05 for the probe, not per run.
-export function priorProbeMicros(budget) {
+// The cap covers every e1-probe-* run together, since the owner cleared $0.05 for the probe, not per run, and is
+// read from the ledger at every reserve, so a second probe run started meanwhile counts too.
+export function probeMicros(budget, runId = null) {
   return budget.db.prepare(`SELECT COALESCE(SUM(COALESCE(accounted, reserved)), 0) AS used FROM sends
-    WHERE run LIKE 'e1-probe-%'`).get().used;
+    WHERE run LIKE 'e1-probe-%' AND (? IS NULL OR run = ?)`).get(runId, runId).used;
 }
-export function probeBudget(budget, capMicros = probeCapMicros, priorMicros = 0) {
-  const attempts = new Map(), used = () => [...attempts.values()].reduce((sum, a) => sum + (a.settled ?? a.reserved), 0);
+export function probeBudget(budget, capMicros = probeCapMicros) {
   return {
     reserve(runId, attempt, micros) {
-      check(priorMicros + used() + micros <= capMicros, 'probe_cap_reached');
-      budget.reserve(runId, attempt, micros); attempts.set(attempt, { reserved: micros });
+      check(probeMicros(budget) + micros <= capMicros, 'probe_cap_reached');
+      budget.reserve(runId, attempt, micros);
     },
-    settle(runId, attempt, micros) { budget.settle(runId, attempt, micros); attempts.get(attempt).settled = micros; },
-    usedMicros: used,
+    settle: (runId, attempt, micros) => budget.settle(runId, attempt, micros),
   };
 }
 
@@ -151,40 +150,44 @@ export function fitsSchema(schema, value) {
 export function callsOf(message) {
   return (message?.tool_calls ?? []).map(call => {
     let args = null;
-    try { args = JSON.parse(call.function.arguments); } catch { /* Not JSON: invalid below. */ }
-    const schema = probeTools.find(t => t.function.name === call.function.name)?.function.parameters;
-    return { name: call.function.name, arguments: call.function.arguments, valid: Boolean(schema) && fitsSchema(schema, args) };
+    try { args = JSON.parse(call.function.arguments); } catch { /* Not JSON, or no function: invalid below. */ }
+    const name = call?.function?.name ?? null, schema = probeTools.find(t => t.function.name === name)?.function.parameters;
+    return { name, arguments: call?.function?.arguments ?? null, valid: Boolean(schema) && fitsSchema(schema, args) };
   });
 }
 
-// Runs the probe: the free catalog check, then the six sends in order. A refused send is recorded and the probe goes
+// Runs the probe: the free catalog check, then the seven sends in order. A refused send is recorded and the probe goes
 // on; turn 2 is skipped only if send 2 made no call. `save(name, value)` writes one file of the run.
 export async function runProbe({ card, key, budget, runId, save, fetchImpl = globalThis.fetch, wait }) {
   const catalog = await checkCatalog({ card, key, fetchImpl });
   save('catalog.json', catalog);
-  const priorMicros = priorProbeMicros(budget);
+  const priorMicros = probeMicros(budget), guard = probeBudget(budget), outcomes = [];
   budget.claim(runId, 'nebius');
-  const guard = probeBudget(budget, probeCapMicros, priorMicros), outcomes = [];
   let plan = probeSends(card);
   for (let i = 0; i < plan.length; i++) {
     const { label, body } = plan[i], send = i + 1, name = `${send}-${label}`;
     if (label.startsWith('turn2') && !outcomes[1]?.calls?.length) { outcomes.push({ send, label, skipped: 'send 2 made no tool call' }); continue; }
     save(`${name}.request.json`, body);
     const outcome = { send, label, requestBytes: Buffer.byteLength(JSON.stringify(body)) };
+    outcomes.push(outcome);
+    let result;
+    // Only the send is guarded, so a paid answer is never recorded as refused by a later bug.
     try {
-      const result = await sendE1({ body, card, key, budget: guard, runId, send, fetchImpl, wait,
+      result = await sendE1({ body, card, key, budget: guard, runId, send, fetchImpl, wait,
         persist: async answer => save(`${name}.response.json`, answer.raw) });
-      Object.assign(outcome, { status: 'answered', finishReason: result.finishReason, usage: result.usage,
-        rawUsage: result.raw.usage, calls: callsOf(result.message), reasoningChars: reasoningOf(result.message)?.length ?? 0,
-        settledMicros: result.attempts.at(-1).settledMicros, attempts: result.attempts.length });
-      if (send === 2) plan = probeSends(card, result.message);
     } catch (error) {
       Object.assign(outcome, { status: 'refused', error: error.message, attempts: error.attempts ?? [] });
-      if (error.message === 'probe_cap_reached') { outcomes.push(outcome); break; }
+      // A broken reservation bound still carries the answer: keep it, since item 8 is about that bound.
+      if (error.result) { save(`${name}.response.json`, error.result.raw); outcome.usage = error.result.usage; }
+      if (error.message === 'probe_cap_reached') break;
+      continue;
     }
-    outcomes.push(outcome);
+    Object.assign(outcome, { status: 'answered', finishReason: result.finishReason, usage: result.usage,
+      rawUsage: result.raw.usage, settledMicros: result.attempts.at(-1).settledMicros, attempts: result.attempts.length });
+    Object.assign(outcome, { calls: callsOf(result.message), reasoningChars: String(reasoningOf(result.message) ?? '').length });
+    if (send === 2) plan = probeSends(card, result.message);
   }
-  return { catalog, outcomes, usedMicros: guard.usedMicros(), priorMicros };
+  return { catalog, outcomes, usedMicros: probeMicros(budget, runId), priorMicros };
 }
 
 // One line per item of section 9 decision 2 that the sends can show (7 is the owner's; 9 is ticket 23's).

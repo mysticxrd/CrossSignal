@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { OrderBudget } from '../order-recovery/budget.mjs';
 import { loadPriceCard } from '../e1/price-card.mjs';
-import { fitsSchema, priorProbeMicros, probeBudget, probeCapMicros, probeFindings, probeSends, probeSnapshot, probeTools, runProbe }
+import { fitsSchema, probeBudget, probeMicros, probeCapMicros, probeFindings, probeSends, probeSnapshot, probeTools, runProbe }
   from '../e1/probe.mjs';
 import { extendsPrefix } from '../e1/request.mjs';
 
@@ -50,11 +50,13 @@ test('the probe stops itself at its cap, counting an unsettled attempt at its re
   guard.reserve('e1-probe-t', 11, 6000); guard.settle('e1-probe-t', 11, 1000);
   guard.reserve('e1-probe-t', 21, 6000);
   assert.throws(() => guard.reserve('e1-probe-t', 31, 3001), /probe_cap_reached/);
-  assert.equal(guard.usedMicros(), 7000);
-  // Earlier probe runs count against the same $0.05; other runs in the ledger don't.
+  assert.equal(probeMicros(budget, 'e1-probe-t'), 7000);
+  // Another probe run, even one started meanwhile, counts against the same cap; non-probe runs don't.
   budget.claim('other-run', 'nebius'); budget.reserve('other-run', 1, 40000);
-  assert.equal(priorProbeMicros(budget), 7000);
-  assert.throws(() => probeBudget(budget, 10000, priorProbeMicros(budget)).reserve('e1-probe-t', 41, 3001), /probe_cap_reached/);
+  budget.claim('e1-probe-u', 'nebius');
+  assert.throws(() => probeBudget(budget, 10000).reserve('e1-probe-u', 11, 3001), /probe_cap_reached/);
+  probeBudget(budget, 10000).reserve('e1-probe-u', 11, 3000);
+  assert.equal(probeMicros(budget), 10000);
 });
 
 test('a live run offline: catalog first, turn 2 replays send 2 three ways, a refusal is recorded', async t => {
@@ -81,9 +83,21 @@ test('a live run offline: catalog first, turn 2 replays send 2 three ways, a ref
   assert.equal(posted[4].messages[2].reasoning, 'think');
   assert.ok(!('reasoning' in posted[5].messages[2]) && posted[5].messages[3].tool_call_id === 'c1');
   assert.ok(saved['catalog.json'] && saved['4-turn2-reasoning_content.response.json']);
-  // Five settled sends plus the refused one, which keeps its reservation until a correction settles it.
+  // Six settled sends plus the refused one, which keeps its reservation until a correction settles it.
   assert.equal(budget.usedMicros(), run.usedMicros);
   const findings = probeFindings(run, card);
   assert.equal(findings.length, 8);
   assert.match(findings[4], /2 1408\/1500/);
+});
+
+test('an answer that breaks the reservation bound is still saved, with its usage', async t => {
+  const budget = ledger(t), saved = {};
+  const fetchImpl = async (url, init) => (init.method === 'GET' ? Response.json({ data: [{ id: card.model, context_length: 1048576,
+    pricing: { prompt: '0.0000003', completion: '0.0000012', input_cache_read: '0.000000006' } }] })
+    : Response.json({ id: 'r', model: card.model, usage: { prompt_tokens: 900000, completion_tokens: 10, total_tokens: 900010 },
+      choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'x' } }] }));
+  const run = await runProbe({ card, key, budget, runId: 'e1-probe-b', fetchImpl, save: (name, value) => { saved[name] = value; } });
+  assert.equal(run.outcomes[0].error, 'reservation_bound_broken');
+  assert.equal(run.outcomes[0].usage.inputTokens, 900000);
+  assert.equal(saved['1-named.response.json'].usage.prompt_tokens, 900000);
 });

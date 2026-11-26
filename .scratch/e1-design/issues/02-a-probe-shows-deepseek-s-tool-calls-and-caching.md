@@ -38,7 +38,8 @@ Run 01's turn 2 passed back `reasoning_content: null`, because Nebius returns th
 
 Side findings for later tickets:
 - **Ticket 08:** in run 01 the model wrote `fetch_all_payments` windows as unix seconds a year early (Nov 2025); run 02 got them right. The tool's note should echo the window back in IST.
-- The probe's own made-up payment `created_at` was also a 2025 value (1763356800). It is kept as sent, so the snapshot matches run 02.
+  - The error appeared in send 2, before the model had seen any result.
+  - The probe's own made-up payment `created_at` (1763356800) is also a 2025 value, but the model only saw it in turn 2, after that error. It is kept as sent, so the snapshot matches run 02.
 - **Decision 1's length rule:** at `reasoning_effort: "low"`, turn 2 reasoned 1,125-2,048 tokens, and 1 of 13 sends hit the probe's 2,048 cap. E1's 8,192 cap stands; development batch 1 applies the 1-in-100 rule.
 - Item 9 (the GLM judge probe) is deferred to ticket 23.
 
