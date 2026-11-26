@@ -39,10 +39,13 @@ export class OrderBudget {
     });
   }
   usedMicros() { return this.db.prepare('SELECT COALESCE(SUM(COALESCE(accounted,reserved)),0) AS used FROM sends').get().used; }
-  reserve(runId, attempt, micros) {
+  // `admit` runs inside the same write transaction, so a caller's own cap (the E1 probe's) is checked atomically with
+  // the insert: no other process can reserve between its read and this one's write.
+  reserve(runId, attempt, micros, admit = () => {}) {
     check(Number.isSafeInteger(micros) && micros >= 0, 'invalid_spend_reservation');
     this.transaction(() => {
       check(micros <= this.ceilingMicros - this.usedMicros(), 'spend_ceiling_reached');
+      admit(micros);
       this.db.prepare('INSERT INTO sends VALUES (?,?,?,NULL)').run(runId, attempt, micros);
     });
   }

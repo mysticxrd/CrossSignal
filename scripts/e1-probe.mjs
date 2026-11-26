@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { loadPriceCard } from '../e1/price-card.mjs';
-import { probeFindings, probeSnapshot, runProbe } from '../e1/probe.mjs';
+import { attemptErrors, probeFindings, probeSnapshot, runProbe } from '../e1/probe.mjs';
 
 const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const snapshotFile = resolve(root, 'tests/fixtures/e1-probe-requests.json');
@@ -40,12 +40,8 @@ async function main(args) {
     const findings = probeFindings(run, card);
     save('outcomes.json', run.outcomes);
     save('findings.json', { runId: values['run-id'], at: new Date().toISOString(), findings });
-    // Provider errors arrive with the key already hidden (e1/provider.mjs).
-    for (const o of run.outcomes.filter(o => o.status === 'refused')) {
-      console.log(`send ${o.send} ${o.label} refused: ${o.error}`);
-      for (const a of o.attempts) if (a.error) console.log(`  HTTP ${a.httpStatus}: ${a.error}`);
-    }
-    console.log(findings.join('\n'));
+    // Provider errors arrive with the key already hidden (e1/provider.mjs), retried ones included.
+    console.log([...attemptErrors(run.outcomes), ...findings].join('\n'));
     console.log(`saved ${directory}; ledger used ${usd(budget.usedMicros())} of ${usd(budget.ceilingMicros)}`);
   } finally { budget.close(); }
 }
