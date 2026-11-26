@@ -4,7 +4,6 @@
 // records, which e1/tools/woocommerce.mjs gives WooCommerce's REST shapes.
 import { customerFor, fromStoreTime } from './world.mjs';
 
-const STATUSES = ['any', 'pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed'];
 const invalid = param => ({ ok: false, http: 400,
   error: { code: 'rest_invalid_param', message: `Invalid parameter(s): ${param}`, data: { status: 400 } } });
 const noOrder = { ok: false, http: 404, error: { code: 'woocommerce_rest_shop_order_invalid_id', message: 'Invalid ID.', data: { status: 404 } } };
@@ -31,6 +30,8 @@ export function openStore({ version, seed, orders }) {
   const notes = new Map(orders.map(order => [order.woo_id, []]));
   orders.flatMap(notesOf).sort(byTime).forEach((n, i) => notes.get(n.woo_id).push({ ...n, id: store.first_note_id + i }));
   const byId = new Map(orders.map(order => [order.woo_id, order]));
+  const inOrder = [...orders].sort((a, b) => a.created_at - b.created_at || a.woo_id - b.woo_id);
+  const offset = version.utc_offset_s;
 
   const asOf = (order, now) => {
     const paid = order.paid_at !== undefined && order.paid_at <= now;
@@ -45,19 +46,19 @@ export function openStore({ version, seed, orders }) {
   const visible = (id, now) => (byId.get(id)?.created_at <= now ? byId.get(id) : null);
 
   return {
-    // GET /wc/v3/orders with after/before in site time, a status, per_page and offset. WooCommerce sorts by date;
-    // section 3 item 10 fixes time order, then id. X-WP-Total counts only what exists as of now.
-    listOrders({ after, before, status = 'any', per_page = 10, offset = 0 } = {}, now) {
-      const from = fromStoreTime(after), to = fromStoreTime(before);
+    // GET /wc/v3/orders with after/before in site time, per_page and offset. WooCommerce sorts by date; section 3
+    // item 10 fixes time order, then id. X-WP-Total counts only what exists as of now. No status filter: a status
+    // changes as the clock moves, which would shift an offset cursor past rows (rows carry their status instead).
+    // A refund made in Razorpay's dashboard leaves the WooCommerce order as it was.
+    listOrders({ after, before, per_page = 10, offset: skip = 0 } = {}, now) {
+      const from = fromStoreTime(after, offset), to = fromStoreTime(before, offset);
       if (Number.isNaN(from)) return invalid('after');
       if (Number.isNaN(to)) return invalid('before');
-      if (!STATUSES.includes(status)) return invalid('status');
       if (!(Number.isInteger(per_page) && per_page >= 1 && per_page <= 100)) return invalid('per_page');
-      if (!(Number.isInteger(offset) && offset >= 0)) return invalid('offset');
-      const matching = orders.filter(o => o.created_at >= from && o.created_at <= Math.min(to, now)).map(o => asOf(o, now))
-        .filter(o => status === 'any' || o.status === status);
+      if (!(Number.isInteger(skip) && skip >= 0)) return invalid('offset');
+      const matching = inOrder.filter(o => o.created_at >= from && o.created_at <= Math.min(to, now)).map(o => asOf(o, now));
       return { ok: true, http: 200, headers: { 'X-WP-Total': matching.length, 'X-WP-TotalPages': Math.ceil(matching.length / per_page) },
-        body: matching.slice(offset, offset + per_page) };
+        body: matching.slice(skip, skip + per_page) };
     },
     getOrder(id, now) {
       const order = visible(id, now);

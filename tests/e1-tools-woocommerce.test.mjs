@@ -66,7 +66,7 @@ test('the three tools are registered beside the Razorpay ones, with strict schem
 
 test('every response matches the fields and types of the WooCommerce doc fixtures', async () => {
   const { sim, call } = open();
-  const list = await call('wc_list_orders', { after: at(NOW - DAY), before: at(NOW), status: 'any', cursor: null });
+  const list = await call('wc_list_orders', { after: at(NOW - DAY), before: at(NOW), cursor: null });
   assert.ok(Array.isArray(list.result), 'the body is a bare array, as WooCommerce answers');
   for (const row of list.result) {
     matchesDoc(row, docs.order.fields, 'row');
@@ -106,7 +106,7 @@ test('every response matches the fields and types of the WooCommerce doc fixture
 
 test('X-WP-Total is given and counts only what exists as of now; Razorpay lists give no total', async () => {
   const { sim, clock, call } = open();
-  const window = { after: at(NOW - DAY), before: at(NOW + 2 * DAY), status: 'any' };
+  const window = { after: at(NOW - DAY), before: at(NOW + 2 * DAY) };
   const first = await call('wc_list_orders', { ...window, cursor: null });
   assert.equal(first.headers['X-WP-Total'], visible(NOW - DAY, NOW + 2 * DAY).length, 'orders after now are not counted');
   assert.deepEqual(Object.keys(first.headers), ['X-WP-Total'], 'X-WP-TotalPages is left out: the cap makes pages uneven');
@@ -114,12 +114,11 @@ test('X-WP-Total is given and counts only what exists as of now; Razorpay lists 
   const later = await call('wc_list_orders', { ...window, cursor: null });
   assert.equal(later.headers['X-WP-Total'], visible(NOW - DAY, NOW + 2 * DAY, NOW + 6 * HOUR).length);
   assert.ok(later.headers['X-WP-Total'] > first.headers['X-WP-Total']);
-  const pending = await call('wc_list_orders', { ...window, status: 'pending', cursor: null });
-  assert.equal(pending.headers['X-WP-Total'], 0, 'every order placed by then is paid');
+  const statuses = async () => (await walk(call, { after: at(NOW - HOUR), before: at(NOW) })).flatMap(p => p.result.map(r => [r.id, r.status]));
+  assert.ok((await statuses()).every(([, status]) => status === 'processing'), 'every order placed by then is paid');
   clock.now = NOW;
-  const atNow = await call('wc_list_orders', { ...window, status: 'pending', cursor: null });
-  assert.deepEqual(atNow.result.map(r => r.id), [lastBefore.woo_id], 'the order paid after now is still pending');
-  assert.equal(atNow.headers['X-WP-Total'], 1);
+  assert.deepEqual((await statuses()).filter(([, status]) => status === 'pending'), [[lastBefore.woo_id, 'pending']],
+    'the order paid after now is still pending');
   const razorpay = await call('fetch_all_payments', { from: NOW - DAY, to: NOW, cursor: null });
   assert.equal(razorpay.headers, undefined);
   assert.equal(JSON.stringify(razorpay).includes('X-WP'), false);
@@ -129,12 +128,12 @@ test('X-WP-Total is given and counts only what exists as of now; Razorpay lists 
 test('pagination returns every order once, oldest first, each page under the cap, as now moves on', async () => {
   const { sim, clock, call } = open();
   const expected = visible(NOW - 2 * DAY, NOW).map(o => o.woo_id);
-  const pages = await walk(call, { after: at(NOW - 2 * DAY), before: at(NOW), status: 'any' });
+  const pages = await walk(call, { after: at(NOW - 2 * DAY), before: at(NOW) });
   assert.deepEqual(pages.flatMap(p => p.result.map(row => row.id)), expected);
   assert.ok(pages.every(p => resultBytes(p) <= RESULT_BYTE_CAP && p.headers['X-WP-Total'] === expected.length));
   assert.ok(pages.length > expected.length / 20, 'the cap made pages shorter than 20 rows');
   assert.match(pages.at(-1).note, /no more/);
-  const later = await walk(call, { after: at(NOW - 2 * DAY), before: at(NOW + DAY), status: 'any' }, n => { if (n === 2) clock.now = NOW + 3 * HOUR; });
+  const later = await walk(call, { after: at(NOW - 2 * DAY), before: at(NOW + DAY) }, n => { if (n === 2) clock.now = NOW + 3 * HOUR; });
   const ids = later.flatMap(p => p.result.map(row => row.id));
   assert.equal(new Set(ids).size, ids.length);
   assert.deepEqual(ids.slice(0, expected.length), expected);
@@ -163,10 +162,9 @@ test('reads answer as of now: a later order does not exist, an unpaid one has no
 test('bad arguments return an error envelope whose note names the fix in the tool\'s own arguments', async () => {
   const { sim, call } = open();
   const cases = [
-    [{ after: '2026-11-24', before: at(NOW), status: 'any', cursor: null }, 'after', /after must be a real date in store time \(IST\) as YYYY-MM-DDTHH:MM:SS/],
-    [{ after: '2026-02-30T00:00:00', before: at(NOW), status: 'any', cursor: null }, 'after', /Call wc_list_orders again with after in that form/],
-    [{ after: at(NOW), before: at(NOW - DAY), status: 'any', cursor: null }, 'after', /after \(2026-11-24 14:00:00 IST\) is after before .* with after at or before before/],
-    [{ after: at(NOW - DAY), before: at(NOW), status: 'paid', cursor: null }, 'status', /status must be one of any, pending/],
+    [{ after: '2026-11-24', before: at(NOW), cursor: null }, 'after', /after must be a real date in store time \(IST\) as YYYY-MM-DDTHH:MM:SS/],
+    [{ after: '2026-02-30T00:00:00', before: at(NOW), cursor: null }, 'after', /Call wc_list_orders again with after in that form/],
+    [{ after: at(NOW), before: at(NOW - DAY), cursor: null }, 'after', /after \(2026-11-24 14:00:00 IST\) is after before .* with after at or before before/],
   ];
   for (const [args, field, pattern] of cases) {
     const envelope = await call('wc_list_orders', args);
@@ -174,7 +172,7 @@ test('bad arguments return an error envelope whose note names the fix in the too
     assert.match(envelope.note, pattern);
   }
   assert.match((await call('wc_get_order', { order_id: '10001' })).note, /order_id must be a whole number/);
-  const future = await call('wc_list_orders', { after: at(NOW + HOUR), before: at(NOW + DAY), status: 'any', cursor: null });
+  const future = await call('wc_list_orders', { after: at(NOW + HOUR), before: at(NOW + DAY), cursor: null });
   assert.deepEqual([future.result, future.headers], [[], { 'X-WP-Total': 0 }], 'the real empty shape');
   assert.match(future.note, /starts after now .* Call again with after at or before now/);
   sim.close();
@@ -212,5 +210,8 @@ test('a customer\'s billing details are fixed by the world version, seed and ord
   assert.deepEqual(a, customerFor(WORLD_VERSION, 's', 7));
   assert.notDeepEqual(a, customerFor(WORLD_VERSION, 's', 8));
   assert.match(a.phone, /^[6-9]\d{9}$/);
-  assert.match(a.email, /^[a-z]+\.[a-z]+\d{2}@example\.com$/);
+  assert.match(a.email, /^[a-z]+\.[a-z]+8@example\.com$/);
+  // No two orders share an email, so a customer's message names one order (ticket 05).
+  const emails = world.orders.map(o => customerFor(world.version, world.seed, o.index).email);
+  assert.equal(new Set(emails).size, emails.length);
 });

@@ -111,12 +111,13 @@ export function fromStoreTime(text, offset = WORLD_VERSION.utc_offset_s) {
 }
 
 // A guest's billing details, from hash(world version, seed, order index), so ticket 05's messages can write as
-// the same customer. Phones are 10 digits starting 6-9, as Indian mobiles are; emails use example.com.
+// the same customer. Phones are 10 digits starting 6-9, as Indian mobiles are; emails use example.com and end in
+// the order index, so no two orders share one and a message's address names one order.
 export function customerFor(version, seed, index) {
   const h = sha256(`${version.id}|${seed}|customer|${index}`);
   const { first, last } = version.customers;
   const first_name = first[h[0] % first.length], last_name = last[h[1] % last.length];
-  return { first_name, last_name, email: `${first_name}.${last_name}${10 + (h[2] % 90)}@example.com`.toLowerCase(),
+  return { first_name, last_name, email: `${first_name}.${last_name}${index + 1}@example.com`.toLowerCase(),
     phone: `${6 + (h[3] % 4)}${String(h.readUInt32LE(4) % 1e9).padStart(9, '0')}` };
 }
 

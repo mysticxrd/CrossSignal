@@ -154,7 +154,7 @@ export async function listPage({ tool, args, now, fetch, project, header = {}, n
   if (win && win.from > now) return ok(shape([]), note('window_future', { ...span, start: win.start }), { ...headers(0), cursor: null });
   const reply = await fetch({ count: PAGE_ROWS + 1, skip });
   if (!reply.ok && notFound) return notFoundError(reply.error, { ...notFound, now });
-  requireThat(reply.ok, `${tool}: the backend refused a validated query: ${reply.error?.description}`);
+  requireThat(reply.ok, `${tool}: the backend refused a validated query: ${reply.error?.description ?? reply.error?.message}`);
   const rows = reply.body.items.slice(0, PAGE_ROWS).map(project);
   for (let n = rows.length; ; n -= 1) {
     const more = n < rows.length || reply.body.items.length > PAGE_ROWS;
