@@ -73,8 +73,9 @@ test('cursor paging returns every record once, in time order, each page cut at a
 
 test('a cursor continues only the query that gave it; a window after now returns the real empty shape unasked', async () => {
   const first = await call('stub_list', { from: T0, to: NOW, cursor: null });
+  const forged = `${first.cursor.split('.')[0]}.${first.result.count + PAGE_ROWS}`; // the real seal, a later skip
   for (const args of [{ from: T0 + 1, to: NOW, cursor: first.cursor }, { from: T0, to: NOW, cursor: `000000000000.${first.result.count}` },
-    { from: T0, to: NOW, cursor: 'anything' }]) {
+    { from: T0, to: NOW, cursor: forged }, { from: T0, to: NOW, cursor: 'anything' }]) {
     const envelope = await call('stub_list', args);
     assert.deepEqual(envelope.error, { code: 'BAD_REQUEST_ERROR', description: 'The cursor is not valid for this request', field: 'cursor' });
     assert.match(envelope.note, /Call stub_list again with cursor null/);
@@ -123,11 +124,16 @@ test('the leak scanner flags labels, build words, paise fields and the future, a
   const findings = scanForLeaks({ result: { truthMode: 'SIMULATED', items: [{ access: 'simulated', amount_paise: 1, created_at: NOW + 1,
     attempts: [{ at: NOW + 5 }] }], text: 'a decoy' } }, { now: NOW });
   assert.equal(findings.length, 8, findings.join('\n'));
-  assert.deepEqual(scanForLeaks({ result: { id: 'pay_xxDeCoYxxxxxxx', amount: 100, created_at: NOW, attempts: [{ at: NOW }], note: 'access' } },
-    { now: NOW }), [], 'an id that spells a build word by chance is not text');
+  assert.deepEqual(scanForLeaks({ result: { id: 'pay_xxDeCoYxxxxxxx', amount: 100, created_at: NOW, attempts: [{ at: NOW }], note: 'access' },
+    note: 'No payment pay_xxDeCoYxxxxxxx exists as of now.' }, { now: NOW }), [], 'an id that spells a build word by chance is not text');
+  assert.equal(scanForLeaks({ note: 'pay_xxxxxxxxxxxxxx is a decoy' }, { now: NOW }).length, 1, 'the words around an id are still read');
   const leaky = defineTool({ name: 'leaky', description: 'x', schema: object({}), handler: async (_, { now }) => ({ result: { created_at: now + 1 }, note: 'x' }) });
   await assert.rejects(createToolset([leaky]).call('leaky', {}, { backend }), /leak: \$\.result\.created_at/);
   const huge = defineTool({ name: 'huge', description: 'x', schema: object({}), handler: async () => ({ result: 'x'.repeat(RESULT_BYTE_CAP), note: 'x' }) });
   await assert.rejects(createToolset([huge]).call('huge', {}, { backend }), /over the cap/);
   assert.throws(() => createToolset([leaky, leaky]), /share a name/);
+  const fat = defineTool({ name: 'fat', description: 'x', schema: object({ cursor: CURSOR }), handler: (args, { now }) => listPage({
+    tool: 'fat', args, now, project: r => r, fetch: async () => ({ ok: true, body: { items: [{ text: 'x'.repeat(RESULT_BYTE_CAP) }, { text: 'y' }] } }) }) });
+  await assert.rejects(createToolset([fat]).call('fat', { cursor: null }, { backend }), /over the cap on its own/,
+    'a row that cannot fit alone is not paged past with a cursor that never moves');
 });

@@ -8,13 +8,14 @@
 const KEYS = new Set(['truthMode', 'access', 'heldBy', 'answer_key', 'cause', 'decoy', 'seed', 'world_version', 'index', 'woo_id', 'injected']);
 const WORDS = /simulat|decoy|answer.?key|held.?out|truth.?mode|e1-world|merchant consent/i;
 const TIME = /(^|_)at$/;
-// A Razorpay-form id is 14 random base62 characters; about 0.4% of seeds would spell "decoy" in one by chance.
-const ID = /^[a-z]+_[0-9A-Za-z]{14}$/;
+// A Razorpay-form id is 14 random base62 characters; about 0.4% of seeds would spell "decoy" in one by chance. Ids
+// are cut out before the word check, alone or inside a note, and the text around them is still checked.
+const IDS = /\b[a-z]+_[0-9A-Za-z]{14}\b/g;
 
 export function scanForLeaks(value, { now }) {
   const findings = [];
   const walk = (node, path, key) => {
-    if (typeof node === 'string' && !ID.test(node) && WORDS.test(node)) findings.push(`${path}: text names the build`);
+    if (typeof node === 'string' && WORDS.test(node.replace(IDS, ' '))) findings.push(`${path}: text names the build`);
     if (typeof node === 'number' && TIME.test(key) && node > now) findings.push(`${path}: ${node} is after now (${now})`);
     if (!node || typeof node !== 'object') return;
     for (const [k, child] of Object.entries(node)) {

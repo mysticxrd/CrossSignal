@@ -115,12 +115,14 @@ function argumentError(tool, args) {
   return fail(error, note(key, { ...slots, tool: tool.name }));
 }
 
-// A cursor is the arguments' fingerprint plus the next row's skip, so it only continues the query that gave it.
-const fingerprint = (tool, args) => createHash('sha256').update(canonicalJson({ tool, args: { ...args, cursor: null } })).digest('hex').slice(0, 12);
+// A cursor is a seal over the query and the next row's skip, then that skip: it only continues the query that
+// gave it, from the row it gave, so an edited skip cannot jump past rows.
+const seal = (tool, args, skip) =>
+  createHash('sha256').update(canonicalJson({ tool, args: { ...args, cursor: null }, skip })).digest('hex').slice(0, 12);
 const readCursor = (tool, args) => {
   if (args.cursor === null) return 0;
   const match = /^([0-9a-f]{12})\.(\d{1,7})$/.exec(args.cursor);
-  return match?.[1] === fingerprint(tool, args) ? Number(match[2]) : null;
+  return match && match[1] === seal(tool, args, Number(match[2])) ? Number(match[2]) : null;
 };
 export const CURSOR = { anyOf: [{ type: 'string' }, { type: 'null' }], description: 'null for the first page; then the cursor of the previous result.' };
 export const WINDOW = {
@@ -147,8 +149,10 @@ export async function listPage({ tool, args, now, fetch, project, header = {}, n
     const more = n < rows.length || reply.body.items.length > PAGE_ROWS;
     const result = { ...header, entity: 'collection', count: n, items: rows.slice(0, n) };
     const kind = `${windowed ? 'window' : 'list'}_${more ? 'more' : 'last'}`;
-    const envelope = ok(result, note(kind, { ...span, rows: n }), { cursor: more ? `${fingerprint(tool, args)}.${skip + n}` : null });
-    if (n === 0 || resultBytes(envelope) <= RESULT_BYTE_CAP) return envelope;
+    const envelope = ok(result, note(kind, { ...span, rows: n }), { cursor: more ? `${seal(tool, args, skip + n)}.${skip + n}` : null });
+    if (resultBytes(envelope) <= RESULT_BYTE_CAP) return envelope;
+    // A cursor past an empty page would point at the same row forever, so a row that cannot fit alone is a harness error.
+    requireThat(n > 1, `${tool}: the row at skip ${skip} is over the cap on its own`);
   }
 }
 
