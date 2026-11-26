@@ -116,18 +116,16 @@ export function probeSnapshot(card) {
 }
 
 // The ledger, behind a cap of the probe's own: an attempt counts its reservation until settled, as the ledger does.
-// The cap covers every e1-probe-* run together, since the owner cleared $0.05 for the probe, not per run, and is
-// read from the ledger at every reserve, so a second probe run started meanwhile counts too.
+// The cap covers every e1-probe-* run together, since the owner cleared $0.05 for the probe, not per run. It is checked
+// inside the ledger's write transaction, so two probe processes can't both pass it before either reserves.
 export function probeMicros(budget, runId = null) {
   return budget.db.prepare(`SELECT COALESCE(SUM(COALESCE(accounted, reserved)), 0) AS used FROM sends
     WHERE run LIKE 'e1-probe-%' AND (? IS NULL OR run = ?)`).get(runId, runId).used;
 }
 export function probeBudget(budget, capMicros = probeCapMicros) {
   return {
-    reserve(runId, attempt, micros) {
-      check(probeMicros(budget) + micros <= capMicros, 'probe_cap_reached');
-      budget.reserve(runId, attempt, micros);
-    },
+    reserve: (runId, attempt, micros) => budget.reserve(runId, attempt, micros,
+      () => check(probeMicros(budget) + micros <= capMicros, 'probe_cap_reached')),
     settle: (runId, attempt, micros) => budget.settle(runId, attempt, micros),
   };
 }
@@ -182,12 +180,19 @@ export async function runProbe({ card, key, budget, runId, save, fetchImpl = glo
       if (error.message === 'probe_cap_reached') break;
       continue;
     }
+    // Every attempt is kept, so a retry that recovered still shows the provider's error (key hidden by sendE1).
     Object.assign(outcome, { status: 'answered', finishReason: result.finishReason, usage: result.usage,
-      rawUsage: result.raw.usage, settledMicros: result.attempts.at(-1).settledMicros, attempts: result.attempts.length });
+      rawUsage: result.raw.usage, settledMicros: result.attempts.at(-1).settledMicros, attempts: result.attempts });
     Object.assign(outcome, { calls: callsOf(result.message), reasoningChars: String(reasoningOf(result.message) ?? '').length });
     if (send === 2) plan = probeSends(card, result.message);
   }
   return { catalog, outcomes, usedMicros: probeMicros(budget, runId), priorMicros };
+}
+
+// Every provider error the run met, answered sends included, for the console.
+export function attemptErrors(outcomes) {
+  return outcomes.flatMap(o => [...(o.status === 'refused' ? [`send ${o.send} ${o.label} refused: ${o.error}`] : []),
+    ...(o.attempts ?? []).filter(a => a.error).map(a => `send ${o.send} ${o.label} attempt ${a.attempt} HTTP ${a.httpStatus}: ${a.error}`)]);
 }
 
 // One line per item of section 9 decision 2 that the sends can show (7 is the owner's; 9 is ticket 23's).

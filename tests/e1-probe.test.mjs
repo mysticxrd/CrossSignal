@@ -5,18 +5,18 @@ import { join } from 'node:path';
 import test from 'node:test';
 import { OrderBudget } from '../order-recovery/budget.mjs';
 import { loadPriceCard } from '../e1/price-card.mjs';
-import { fitsSchema, probeBudget, probeMicros, probeCapMicros, probeFindings, probeSends, probeSnapshot, probeTools, runProbe }
+import { attemptErrors, fitsSchema, probeBudget, probeMicros, probeCapMicros, probeFindings, probeSends, probeSnapshot, probeTools, runProbe }
   from '../e1/probe.mjs';
 import { extendsPrefix } from '../e1/request.mjs';
 
 const card = loadPriceCard('deepseek-v4.1-flash-1017');
 const key = 'test-key-not-real-0123456789';
 
-function ledger(t) {
-  const dir = mkdtempSync(join(tmpdir(), 'e1-probe-'));
-  const budget = new OrderBudget(join(dir, 'budget.sqlite'), 25000000);
+function ledger(t, Ledger = OrderBudget) {
+  const dir = mkdtempSync(join(tmpdir(), 'e1-probe-')), path = join(dir, 'budget.sqlite');
+  const budget = new Ledger(path, 25000000);
   t.after(() => { budget.close(); rmSync(dir, { recursive: true, force: true }); });
-  return budget;
+  return Object.assign(budget, { path });
 }
 
 test('--prepare writes exactly the committed snapshot, and its worst case fits the $0.05 cap', () => {
@@ -57,6 +57,50 @@ test('the probe stops itself at its cap, counting an unsettled attempt at its re
   assert.throws(() => probeBudget(budget, 10000).reserve('e1-probe-u', 11, 3001), /probe_cap_reached/);
   probeBudget(budget, 10000).reserve('e1-probe-u', 11, 3000);
   assert.equal(probeMicros(budget), 10000);
+});
+
+test('the cap is checked while the ledger is write-locked, so a second process cannot reserve in between', t => {
+  let other, seen = 0;
+  // Wraps the probe's own check: if it runs while another connection can still write, the race is open.
+  class Watched extends OrderBudget {
+    reserve(runId, attempt, micros, admit) {
+      return super.reserve(runId, attempt, micros, m => {
+        assert.throws(() => other.reserve('other-run', seen++, 1), /database is locked/);
+        admit(m);
+      });
+    }
+  }
+  const budget = ledger(t, Watched);
+  other = new OrderBudget(budget.path, 25000000);
+  other.db.exec('PRAGMA busy_timeout=0');
+  budget.claim('e1-probe-t', 'nebius'); other.claim('other-run', 'nebius');
+  probeBudget(budget, 10000).reserve('e1-probe-t', 11, 6000);
+  assert.throws(() => probeBudget(budget, 10000).reserve('e1-probe-t', 21, 4001), /probe_cap_reached/);
+  // The refused reservation rolled back: only the first is counted, and the other process can write again.
+  assert.equal(seen, 2);
+  assert.equal(probeMicros(budget), 6000);
+  other.reserve('other-run', 1, 1);
+  other.close();
+});
+
+test('a retry that recovers keeps the failed attempt, and its error is printed', async t => {
+  const budget = ledger(t);
+  let posts = 0;
+  const fetchImpl = async (url, init) => {
+    if (init.method === 'GET') return Response.json({ data: [{ id: card.model, context_length: 1048576,
+      pricing: { prompt: '0.0000003', completion: '0.0000012', input_cache_read: '0.000000006' } }] });
+    if (++posts === 1) return new Response(`{"error":"rate limited for ${key}"}`, { status: 429 });
+    return Response.json({ id: 'r', model: card.model, usage: { prompt_tokens: 1500, completion_tokens: 10, total_tokens: 1510 },
+      choices: [{ finish_reason: 'stop', message: { role: 'assistant', content: 'x' } }] });
+  };
+  const run = await runProbe({ card, key, budget, runId: 'e1-probe-r', fetchImpl, wait: async () => {}, save: () => {} });
+  const first = run.outcomes[0];
+  assert.equal(first.status, 'answered');
+  assert.deepEqual(first.attempts.map(a => a.httpStatus), [429, 200]);
+  const lines = attemptErrors(run.outcomes);
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /^send 1 named attempt 1 HTTP 429: .*rate limited/);
+  assert.ok(!lines[0].includes(key), 'the key stays hidden');
 });
 
 test('a live run offline: catalog first, turn 2 replays send 2 three ways, a refusal is recorded', async t => {
