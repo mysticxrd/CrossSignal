@@ -67,8 +67,8 @@ test('the first crossing freezes "now"; the record is figures from code and sees
   // Orders paid at or after "now" don't reach the record, so a cause acting after "now" can't leak into it.
   const later = { ...world, orders: world.orders.map(o => (o.paid_at >= now ? { ...o, total_paise: 1 } : o)) };
   assert.equal(triggerRecord(later), triggerRecord(world));
-  // An unpaid order counts nowhere.
-  const unpaid = { ...world, orders: world.orders.map(o => (o.paid_at >= now - HOUR && o.paid_at < now ? { ...o, paid_at: undefined } : o)) };
+  // An unpaid order counts nowhere (3 h, so the hour before "now" holding no orders can't hide it).
+  const unpaid = { ...world, orders: world.orders.map(o => (o.paid_at >= now - 3 * HOUR && o.paid_at < now ? { ...o, paid_at: undefined } : o)) };
   assert.ok(JSON.parse(triggerRecord(unpaid)).dip_revenue_paise < record.dip_revenue_paise);
   // An hour with no revenue to compare against neither crosses nor stops the scan.
   const first = possibleNows(world)[0];

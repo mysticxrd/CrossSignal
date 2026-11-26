@@ -19,7 +19,8 @@ const freeze = value => {
 export const WORLD_VERSION = freeze({
   // 2: the trigger's drop and re-arm settings joined the version (ticket 04).
   // 3: Razorpay order ids, capture settings and the webhook (ticket 08).
-  id: 'e1-world-3',
+  // 4: order statuses and the plugin's order notes; causes, the first being #670 (ticket 05a).
+  id: 'e1-world-4',
   ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd' },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
@@ -36,6 +37,24 @@ export const WORLD_VERSION = freeze({
     refund_automatically: true, refund_speed: 'normal' },
   webhook: { url: 'https://merch-store.example/wp-admin/admin-post.php?action=rzp_wc_webhook', active: true,
     events: ['order.paid', 'payment.authorized'] },
+  // The notes an order gets, in the order they are written: WooCommerce's own status-change note, and the
+  // Razorpay plugin's (woo-razorpay.php updateOrder() at 4.8.8, d8138d7). {payment_id} is the Razorpay payment id.
+  order_notes: {
+    processing: ['Order status changed from Pending payment to Processing.', 'Razorpay payment successful <br/>Razorpay Id: {payment_id}'],
+    failed: ['Payment Failed. Please check Razorpay Dashboard. <br/> Razorpay Id: {payment_id}', 'Transaction Failed: The payment has failed.<br/>',
+      'Order status changed from Pending payment to Failed.'],
+  },
+  causes: {
+    // razorpay-woocommerce issue #670: on 4.8.8 with Payment Action "Authorize", payments stay authorized, and an
+    // order whose payment reaches the store only through the webhook is marked Failed by the webhook's cron job; an
+    // order the browser callback reaches is marked paid. webhook_only_pct: the share of payments, by method, whose
+    // customer never comes back to the browser (a UPI app most often leaves it behind). The merchant captures the
+    // paid orders from the dashboard when packing them; the Failed ones are never packed, so Razorpay refunds them
+    // when the capture window ends.
+    plugin_670: { plugin_version: '4.8.8', payment_action: 'authorize',
+      webhook_only_pct: [['upi', 55], ['card', 25], ['netbanking', 35], ['wallet', 35]],
+      cron_s: [60, 600], merchant_capture_s: [7200, 93600] },
+  },
   order_spread_sigma: 0.6, // lognormal spread of order sizes within a day
   device: [['mobile', 80], ['desktop', 17], ['tablet', 3]],
   method: [['upi', 70], ['card', 20], ['netbanking', 6], ['wallet', 4]],
@@ -151,13 +170,15 @@ export function buildWorld({ seed, version = WORLD_VERSION, rows } = {}) {
     }));
     drafts.push(...dayOrders.sort((x, y) => x.created_at - y.created_at)); // stable: ties keep draw order
   }
-  // The WooCommerce order is placed first; its Razorpay payment follows and is auto-captured seconds later.
-  const orders = drafts.map(({ pay_s, capture_s, method, ...o }, index) => ({
-    index, woo_id: version.first_order_id + index, ...o, paid_at: o.created_at + pay_s + capture_s,
-    payment: { id: razorpayId(version.id, seed, index), order_id: razorpayId(version.id, seed, index, 'order'), method,
-      amount_paise: o.total_paise, status: 'captured', created_at: o.created_at + pay_s,
-      captured_at: o.created_at + pay_s + capture_s },
-  }));
+  // The WooCommerce order is placed first; its Razorpay payment follows and is auto-captured seconds later, when the
+  // browser callback marks the order paid.
+  const orders = drafts.map(({ pay_s, capture_s, method, ...o }, index) => {
+    const payment = { id: razorpayId(version.id, seed, index), order_id: razorpayId(version.id, seed, index, 'order'), method,
+      amount_paise: o.total_paise, status: 'captured', created_at: o.created_at + pay_s, captured_at: o.created_at + pay_s + capture_s };
+    const paid_at = payment.captured_at;
+    return { index, woo_id: version.first_order_id + index, ...o, status: 'processing', paid_at,
+      notes: orderNotes(version, 'processing', payment.id, paid_at), payment };
+  });
   const starts_at = days[0].start, ends_at = days.at(-1).start + DAY;
   const saleStart = Date.parse(`${version.sale.from}T00:00:00Z`) / 1000 - version.utc_offset_s;
   const saleEnd = Date.parse(`${version.sale.to}T00:00:00Z`) / 1000 - version.utc_offset_s + DAY;
@@ -166,12 +187,19 @@ export function buildWorld({ seed, version = WORLD_VERSION, rows } = {}) {
     days: days.map(({ ga4_day, date, start, revenue_paise, orders: n }) => ({ ga4_day, date, start, revenue_paise, orders: n })),
     orders, catalog: version.catalog,
     calendar: [{ kind: 'sale', name: version.sale.name, starts_at: saleStart, ends_at: saleEnd }],
-    hash: worldHash(version, String(seed), orders),
+    // A case's cause and decoy records (e1/case.mjs), and customer messages (ticket 05d); a baseline has neither.
+    injection: null, messages: [],
+    hash: worldHash({ version, seed: String(seed), injection: null, orders, messages: [] }),
   };
 }
 
-export const worldHash = (version, seed, orders) =>
-  sha256(canonicalJson({ version, seed, orders })).toString('hex');
+// The order notes of one outcome, all written at `at`.
+export const orderNotes = (version, outcome, paymentId, at) =>
+  version.order_notes[outcome].map(text => ({ created_at: at, note: text.replace('{payment_id}', paymentId) }));
+
+// Covers everything a case is built from and everything it holds (ADR 0001), so a changed injection is a new hash.
+export const worldHash = ({ version, seed, injection, orders, messages }) =>
+  sha256(canonicalJson({ version, seed, injection, orders, messages })).toString('hex');
 
 // Every hour that can become the frozen "now": the trigger's week-earlier window must lie inside GA4's days, and
 // 7 full GA4 days must follow (F7). The last one is 7 Dec 2026 00:00 IST.

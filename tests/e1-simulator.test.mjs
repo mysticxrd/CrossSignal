@@ -149,7 +149,7 @@ test('the world is never rebuilt from the run log', () => {
 test('a capture is judged as of the case clock, as reads are', async () => {
   const { world } = authorizedWorld();
   const [early, late] = [world.orders[1].payment, world.orders.at(-1).payment];
-  const at = early.created_at + 1; // authorized, its capture still ahead in the hidden days
+  const at = early.created_at; // authorized, its capture (1-5 s later) still ahead in the hidden days
   const sim = open(fresh(), { clock: () => at });
   assert.equal((await sim.backend.now()), at);
   assert.equal((await sim.backend.fetchPayment(early.id)).body.status, 'authorized');
