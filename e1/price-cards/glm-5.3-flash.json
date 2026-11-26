@@ -1,0 +1,9 @@
+{
+  "id": "glm-5.3-flash",
+  "provider": "nebius",
+  "model": "zai-org/GLM-5.3-Flash",
+  "contextTokens": null,
+  "usdPerMillion": { "input": 0.15, "cachedInput": 0.03, "output": 0.5 },
+  "source": "https://tokenfactory.nebius.com/api/public/models_info",
+  "checked": "2026-11-25"
+}

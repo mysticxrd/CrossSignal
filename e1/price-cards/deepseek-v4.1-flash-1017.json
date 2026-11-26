@@ -1,0 +1,9 @@
+{
+  "id": "deepseek-v4.1-flash-1017",
+  "provider": "nebius",
+  "model": "deepseek-ai/DeepSeek-V4.1-Flash-1017",
+  "contextTokens": 1048576,
+  "usdPerMillion": { "input": 0.3, "cachedInput": 0.006, "output": 1.2 },
+  "source": "https://tokenfactory.nebius.com/api/public/models_info",
+  "checked": "2026-11-25"
+}
