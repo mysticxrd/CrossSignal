@@ -4,9 +4,9 @@
 
 **Blocked by:** 03: A GA4 world with 7 real future days
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A fixture lists the baseline's crossing hours and the test matches it.
-- [ ] The distinct-window count is written into the world report.
-- [ ] The agent run and the checklist get byte-identical trigger records.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] A fixture lists the baseline's crossing hours and the test matches it.
+- [x] The distinct-window count is written into the world report.
+- [x] The agent run and the checklist get byte-identical trigger records.
+- [x] `npm test` and `npm run lint` pass.

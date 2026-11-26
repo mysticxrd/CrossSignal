@@ -17,13 +17,15 @@ const freeze = value => {
 };
 
 export const WORLD_VERSION = freeze({
-  id: 'e1-world-1',
+  id: 'e1-world-2', // 2: the trigger's drop and re-arm settings joined the version (ticket 04)
   ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd' },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
   usd_inr_paise: 8800, // one fixed round rate, ₹88.00 a US dollar, not a market quote
   future_days: 7, // F7: every possible "now" has 7 full GA4 days after it
   trigger_lookback_days: 8, // ADR 0008: trailing 24 h against the same 24 h 7 days earlier
+  trigger_drop_pct: 25, // ADR 0008: a crossing is the trailing 24 h at least 25% below its comparison
+  trigger_rearm_pct: 10, // section 8 decision 5: a dip re-arms once the trailing 24 h is back within 10%
   sale: { name: 'Sale week', from: '2026-11-23', to: '2026-11-30' },
   first_order_id: 10001,
   order_spread_sigma: 0.6, // lognormal spread of order sizes within a day
