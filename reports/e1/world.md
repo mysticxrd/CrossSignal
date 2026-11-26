@@ -13,20 +13,21 @@
 
 ## Trigger crossings (Fix F2)
 
-The trigger crosses when store revenue paid in the trailing 24 h is at least 25% below the same 24 h 7 days earlier, checked every hour on the case clock. A window opens at a crossing and ends when the trailing 24 h is back within 10% of its comparison, as a dip re-arms; crossings inside it open nothing.
+The trigger crosses when store revenue paid in the trailing 24 h is at least 25% below the same 24 h 7 days earlier, checked every hour on the case clock. A window opens at a crossing and ends when the trailing 24 h is back within 10% of its comparison; a crossing within 24 h of a window's last crossing hour shares its days and rejoins it.
 
-Crossing hours: 92.
+Seed `baseline`: 92 crossing hours in **5 distinct crossing windows**.
 
-**Distinct crossing windows: 6** (gate: at least 6, pass).
+Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 to 6 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
 
 | Window | Opens (IST) | Crossing hours | Gap at opening | Re-arms (IST) | Sale week in |
 |---|---|---|---|---|---|
 | 1 | 2026-11-10 00:00 | 18 | 54.46% | 2026-11-10 19:00 | no |
 | 2 | 2026-11-15 11:00 | 25 | 28.32% | 2026-11-16 13:00 | no |
-| 3 | 2026-11-26 23:00 | 6 | 31.86% | 2026-11-27 20:00 | dip |
-| 4 | 2026-11-27 22:00 | 1 | 27.00% | 2026-11-28 11:00 | dip |
-| 5 | 2026-12-01 23:00 | 38 | 29.05% | 2026-12-03 20:00 | dip, comparison |
-| 6 | 2026-12-06 20:00 | 4 | 26.41% | open at the last "now" | comparison |
+| 3 | 2026-11-26 23:00 | 7 | 31.86% | 2026-11-28 11:00 | dip |
+| 4 | 2026-12-01 23:00 | 38 | 29.05% | 2026-12-03 20:00 | dip, comparison |
+| 5 | 2026-12-06 20:00 | 4 | 26.41% | open at the last "now" | comparison |
+
+Window 1 opens at the first possible "now": the trigger may have crossed earlier, before a week-earlier comparison exists, so its "now" is set by where the data starts.
 
 The windows are public by construction: anyone with the committed GA4 CSV can recompute them. Development and held-out no-cause cases use disjoint windows (section 8 decision 7). The crossing hours are pinned in `tests/fixtures/e1-trigger/baseline-crossings.json`.
 
