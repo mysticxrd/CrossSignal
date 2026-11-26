@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| World version | `e1-world-5` |
+| World version | `e1-world-6` |
 | Seed | `baseline` |
-| World hash | `d0d081c9953e8104e9494106fd4af8f760d009d51027f6e519001831e4468745` |
+| World hash | `16dd418ee20edff44f604b5daf48caa91c5c74f44cbe09504e05616c97862438` |
 | Days | 2026-11-02 to 2026-12-13 (GA4 2020-11-02 to 2020-12-13), 42 |
 | Orders | 3051 |
 | Possible "now" hours | 649, 2026-11-10 00:00 to 2026-12-07 00:00 IST |
@@ -15,17 +15,17 @@
 
 The trigger crosses when store revenue paid in the trailing 24 h is at least 25% below the same 24 h 7 days earlier, checked every hour on the case clock. A window opens at a crossing and ends when the trailing 24 h is back within 10% of its comparison; a crossing within 24 h of a window's last crossing hour shares its days and rejoins it.
 
-Seed `baseline`: 114 crossing hours in **5 distinct crossing windows**.
+Seed `baseline`: 121 crossing hours in **5 distinct crossing windows**.
 
 Across 20 seeds (`baseline`, `sweep-1` to `sweep-19`): 5 to 6 windows. **Distinct crossing windows: 5** (the fewest; gate: at least 6, fail: no-cause cases share windows, and the README must say so).
 
 | Window | Opens (IST) | Crossing hours | Gap at opening | Re-arms (IST) | Sale week in |
 |---|---|---|---|---|---|
 | 1 | 2026-11-10 00:00 | 19 | 54.46% | 2026-11-10 21:00 | no |
-| 2 | 2026-11-15 11:00 | 26 | 25.22% | 2026-11-16 14:00 | no |
-| 3 | 2026-11-26 21:00 | 21 | 28.85% | 2026-11-28 16:00 | dip |
-| 4 | 2026-12-01 23:00 | 42 | 29.56% | 2026-12-03 21:00 | dip, comparison |
-| 5 | 2026-12-06 15:00 | 6 | 25.04% | open at the last "now" | comparison |
+| 2 | 2026-11-14 22:00 | 26 | 29.23% | 2026-11-16 17:00 | no |
+| 3 | 2026-11-26 21:00 | 26 | 26.02% | 2026-11-28 15:00 | dip |
+| 4 | 2026-12-01 21:00 | 47 | 25.06% | 2026-12-03 21:00 | dip, comparison |
+| 5 | 2026-12-06 22:00 | 3 | 28.69% | open at the last "now" | comparison |
 
 Window 1 opens at the first possible "now": the trigger may have crossed earlier, before a week-earlier comparison exists, so its "now" is set by where the data starts.
 

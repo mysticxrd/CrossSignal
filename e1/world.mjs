@@ -21,8 +21,12 @@ export const WORLD_VERSION = freeze({
   // 3: Razorpay order ids, capture settings and the webhook (ticket 08).
   // 4: the WooCommerce store: its site, plugins, ids and customers (ticket 09).
   // 5: order statuses, the plugin's order notes and causes, the first being #670 (ticket 05a), on that store.
-  id: 'e1-world-5',
-  ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd' },
+  // 6: GA4's daily funnel counts and the store's deploy log (ticket 09 part 2).
+  id: 'e1-world-6',
+  // `funnel` maps ga4_run_report's metric names to GA4 CSV columns. The CSV counts sessions that began checkout, not
+  // events, so checkouts is that session count. Its add-to-cart column is empty on 18 of the 42 days, so it is left out.
+  ga4: { from: '2020-11-02', to: '2020-12-13', orders: 'transaction_ids', revenue: 'revenue_usd',
+    funnel: { sessions: 'sessions', checkouts: 'sessions_begin_checkout' } },
   shift_days: 2191, // 313 weeks: 2 Nov 2020 (Mon) becomes 2 Nov 2026 (Mon)
   utc_offset_s: 19800, // the merchant's clock is IST; each GA4 day is one IST calendar day
   usd_inr_paise: 8800, // one fixed round rate, ₹88.00 a US dollar, not a market quote
@@ -51,6 +55,19 @@ export const WORLD_VERSION = freeze({
       { plugin: 'woo-razorpay/woo-razorpay.php', name: '1 Razorpay', version: '4.8.6', url: 'https://razorpay.com',
         author_name: 'Team Razorpay', updates: [] },
     ],
+    // The store's code, plugins included, lives in one GitHub repository, and each push to main deploys it, so a
+    // plugin update is a deploy too (e1/store.mjs adds one per update). These are the baseline's own: theme and
+    // content changes that move no plugin version, at store times (IST).
+    deployer: 'merch-store-ops', first_deploy_id: 1840000101,
+    deploys: [
+      ['2026-11-04T16:10:00', 'Theme: tighten the product grid spacing on mobile'],
+      ['2026-11-12T11:45:00', 'Theme: add a size guide link to apparel pages'],
+      ['2026-11-20T18:30:00', 'Theme: sale-week banner and countdown'],
+      ['2026-11-23T00:05:00', 'Content: home page shows the sale-week collection'],
+      ['2026-11-27T15:20:00', 'Theme: fix the cart drawer overlapping the header on small screens'],
+      ['2026-12-01T10:00:00', 'Content: take down the sale-week banner'],
+      ['2026-12-08T12:30:00', 'Theme: footer newsletter form copy'],
+    ].map(([at, description]) => ({ at, description })),
   },
   // Guest checkout: each order's billing name, email and phone come from customerFor.
   customers: {
@@ -152,9 +169,11 @@ export function ga4Days(rows = loadDaily(), version = WORLD_VERSION) {
   const byDay = new Map();
   for (const row of rows) {
     if (row.day < version.ga4.from || row.day > version.ga4.to) continue;
-    const day = byDay.get(row.day) ?? { ga4_day: row.day, cents: 0, orders: 0 };
+    const funnel = Object.entries(version.ga4.funnel);
+    const day = byDay.get(row.day) ?? { ga4_day: row.day, cents: 0, orders: 0, funnel: Object.fromEntries(funnel.map(([m]) => [m, 0])) };
     day.cents += Math.round(row[version.ga4.revenue] * 100);
     day.orders += row[version.ga4.orders];
+    for (const [metric, column] of funnel) day.funnel[metric] += row[column];
     byDay.set(row.day, day);
   }
   const days = [...byDay.values()].sort((x, y) => x.ga4_day.localeCompare(y.ga4_day));
@@ -226,7 +245,7 @@ export function buildWorld({ seed, version = WORLD_VERSION, rows } = {}) {
   const saleEnd = Date.parse(`${version.sale.to}T00:00:00Z`) / 1000 - version.utc_offset_s + DAY;
   return {
     version, seed: String(seed), starts_at, ends_at,
-    days: days.map(({ ga4_day, date, start, revenue_paise, orders: n }) => ({ ga4_day, date, start, revenue_paise, orders: n })),
+    days: days.map(({ ga4_day, date, start, revenue_paise, orders: n, funnel }) => ({ ga4_day, date, start, revenue_paise, orders: n, funnel })),
     orders, catalog: version.catalog,
     calendar: [{ kind: 'sale', name: version.sale.name, starts_at: saleStart, ends_at: saleEnd }],
     // A case's cause and decoy records (e1/case.mjs), and customer messages (ticket 05d); a baseline has neither.

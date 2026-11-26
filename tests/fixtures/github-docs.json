@@ -1,0 +1,26 @@
+{
+  "checked": "2026-11-27",
+  "about": "Field names and JSON types from GitHub's REST API reference (the pages answer X-GitHub-Api-Version 2026-03-10). A tool may leave a field out but may not add one or change its type. 'date-time' is a string YYYY-MM-DDTHH:MM:SSZ in UTC.",
+  "deployments": {
+    "sources": ["https://docs.github.com/en/rest/deployments/deployments?apiVersion=2022-11-28#list-deployments"],
+    "endpoint": "GET /repos/{owner}/{repo}/deployments",
+    "parameters": { "sha": "string", "ref": "string", "task": "string", "environment": "string|null", "per_page": "integer", "page": "integer" },
+    "body": "array",
+    "fields": {
+      "url": "string", "id": "integer", "node_id": "string", "sha": "string", "ref": "string", "task": "string",
+      "payload": "object|string", "original_environment": "string", "environment": "string", "description": "string|null",
+      "creator": "object|null", "created_at": "date-time", "updated_at": "date-time", "statuses_url": "string",
+      "repository_url": "string", "transient_environment": "boolean", "production_environment": "boolean",
+      "performed_via_github_app": "object|null"
+    },
+    "creator_fields": {
+      "name": "string|null", "email": "string|null", "login": "string", "id": "integer", "node_id": "string", "avatar_url": "string",
+      "gravatar_id": "string|null", "url": "string", "html_url": "string", "followers_url": "string", "following_url": "string",
+      "gists_url": "string", "starred_url": "string", "subscriptions_url": "string", "organizations_url": "string",
+      "repos_url": "string", "events_url": "string", "received_events_url": "string", "type": "string", "site_admin": "boolean",
+      "starred_at": "string", "user_view_type": "string"
+    },
+    "examples": { "task": ["deploy", "deploy:migrations"], "environment": ["staging", "production"] },
+    "notes": "per_page defaults to 30, at most 100. The page states no sort order and gives no example response."
+  }
+}

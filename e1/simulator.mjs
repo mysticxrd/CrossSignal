@@ -6,6 +6,7 @@
 import { closeSync, openSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { requireThat } from '../db/benchmark/contracts.mjs';
+import { openAnalytics } from './analytics.mjs';
 import { asBackend } from './backend.mjs';
 import { canonicalJson } from './canonical.mjs';
 import { cutTornTail, readAll, writeAll } from './durable.mjs';
@@ -91,6 +92,7 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
   const payments = new Map(orders.map(order => [order.payment.id, order.payment]));
   const razorpayOrders = new Map(orders.map(order => [order.payment.order_id, order]));
   const store = openStore({ version, seed, orders, injection });
+  const analytics = openAnalytics({ version, days: structuredClone(world.days), orders: structuredClone(world.orders) });
   const header = { type: 'header', world_version: version.id, seed, world_hash: hash };
 
   closeSync(openSync(journal, 'a'));
@@ -185,6 +187,8 @@ export function openSimulator({ world, journal, clock, onJournaled } = {}) {
     wcGetOrder: id => store.getOrder(id, clock()),
     wcOrderNotes: id => store.orderNotes(id, clock()),
     wcSystemStatus: () => store.systemStatus(clock()),
+    listDeploys: query => store.listDeploys(query, clock()),
+    ga4Daily: query => analytics.daily(query, clock()),
     capturePayment: ({ payment_id, amount_paise } = {}) => write('capture_payment', { payment_id, amount_paise }),
   });
   return {
