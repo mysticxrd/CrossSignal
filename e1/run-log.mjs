@@ -3,15 +3,13 @@
 // line and only then makes the send, call or operation it announces. Every line carries `seq` and `prev`, the
 // sha256 of the previous line's bytes (the header's `prev` is zeros), so a changed byte anywhere breaks the chain.
 // A lock file beside the log admits one writer per run id.
-import { createHash } from 'node:crypto';
-import {
-  closeSync, existsSync, fstatSync, fsyncSync, ftruncateSync, linkSync, openSync, readFileSync, readSync, unlinkSync, writeSync,
-} from 'node:fs';
+import { closeSync, fsyncSync, linkSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { hostname } from 'node:os';
 import { canonicalJson } from './canonical.mjs';
+import { cutTornTail, readAll, sha256, writeAll } from './durable.mjs';
 
+export { sha256 };
 export const ZERO = '0'.repeat(64);
-export const sha256 = bytes => createHash('sha256').update(bytes).digest('hex');
 
 export const INTENT_OF = { send_attempt: 'send_intent', send_outcome: 'send_intent', call_outcome: 'call_intent', op_outcome: 'op_intent' };
 const ONE_OUTCOME = new Set(['send_outcome', 'call_outcome', 'op_outcome']);
@@ -61,12 +59,6 @@ function acquireLock(path, { takeStale = false } = {}) {
   }
   unlinkSync(lock);
   acquireLock(path);
-}
-
-function writeAll(fd, text) {
-  const bytes = Buffer.from(text);
-  for (let at = 0; at < bytes.length;) at += writeSync(fd, bytes, at, bytes.length - at);
-  fsyncSync(fd);
 }
 
 export class RunLog {
@@ -141,22 +133,12 @@ export function reopenRunLog(path, { takeStale = false } = {}) {
   acquireLock(path, { takeStale });
   try {
     const fd = openSync(path, 'r+');
-    const bytes = Buffer.alloc(fstatSync(fd).size);
-    readSync(fd, bytes, 0, bytes.length, 0);
+    const bytes = readAll(fd);
     const end = bytes.lastIndexOf(0x0a) + 1;
     const chain = verifyChain(bytes.subarray(0, end).toString('utf8'));
     if (!chain.ok) { closeSync(fd); throw new Error(`run log ${path} breaks at seq ${chain.error.seq}: ${chain.error.reason}`); }
     if (chain.events.at(-1)?.type === 'closed') { closeSync(fd); throw new Error(`run log ${path} is already closed`); }
-    // Any line written after a cut moves the end, so a saved cut at this offset has not been recorded yet.
-    const saved = `${path}.torn-${end}`;
-    let cut = existsSync(saved) ? readFileSync(saved) : null;
-    if (end < bytes.length) {
-      cut = bytes.subarray(end);
-      const side = openSync(saved, 'w');
-      writeAll(side, cut); closeSync(side);
-      ftruncateSync(fd, end); fsyncSync(fd);
-    }
-    const torn = cut && { bytes: cut.length, sha256: sha256(cut) };
+    const torn = cutTornTail(path, fd, bytes, end);
     const log = new RunLog(path, openSync(path, 'a'), chain.events.length, chain.head);
     closeSync(fd);
     return { log, events: chain.events, torn };

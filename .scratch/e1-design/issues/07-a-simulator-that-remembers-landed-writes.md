@@ -4,9 +4,9 @@
 
 **Blocked by:** 03: A GA4 world with 7 real future days
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Kill the process after the journal write and before the reply: the restarted world holds the write.
-- [ ] A torn last journal line is cut and recorded.
-- [ ] The run log is not read to rebuild the world.
-- [ ] `npm test` and `npm run lint` pass.
+- [x] Kill the process after the journal write and before the reply: the restarted world holds the write.
+- [x] A torn last journal line is cut and recorded.
+- [x] The run log is not read to rebuild the world.
+- [x] `npm test` and `npm run lint` pass.
