@@ -36,6 +36,10 @@ test('the same world version and seed give the same world hash; a new seed or ve
   assert.notEqual(buildWorld({ seed: 'other', rows }).hash, world.hash);
   const rate = { ...WORLD_VERSION, usd_inr_paise: 8801 };
   assert.notEqual(buildWorld({ seed: 'baseline', rows, version: rate }).hash, world.hash);
+  // GA4's funnel counts change no order, but ga4_run_report serves them, so they are part of the world.
+  const busier = buildWorld({ seed: 'baseline', rows: rows.map(r => (r.day === '2020-11-02' ? { ...r, sessions: r.sessions + 1 } : r)) });
+  assert.deepEqual(busier.orders, world.orders);
+  assert.notEqual(busier.hash, world.hash, 'a changed session count is a new world');
   assert.throws(() => buildWorld({ rows }), /seed is required/);
 });
 
